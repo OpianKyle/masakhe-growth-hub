@@ -1,0 +1,157 @@
+You are Replit AI. In the existing **Masakhe Growth Hub** (React + Vite) project, create a **Website Builder** module that produces a published public page styled like the provided **BrokerLanding** page (same layout quality, hero styling, section spacing, cards, dark hero glow effects), but customized to fit the **Masakhe SMME home page** context (not brokers).
+
+CRITICAL: NO REPLIT UPGRADE
+
+* Do NOT use paid Replit services (no hosted Postgres/Redis/queues).
+* Persist data using **SQLite (better-sqlite3)** in `./data/masakhe.db` (or JSON fallback if needed).
+* Publish pages dynamically at `/site/:slug` (do NOT generate new source files).
+* Use existing Tailwind + shadcn/ui components already in the repo.
+* Keep dependencies minimal: better-sqlite3, multer, react-hook-form, zod, @hookform/resolvers (only if missing).
+
+GOAL
+Add a dashboard page: `/website-builder`
+
+* Left panel: form inputs to customize the website (Masakhe SMME microsite)
+* Right panel: live preview that looks like the BrokerLanding layout (hero + stats bar + sections + contact)
+* Save Draft button
+* Publish button (slug becomes public URL `/site/:slug`)
+
+When published, visiting `/site/:slug` must render the same template with saved data.
+
+DESIGN TARGET (MATCH THIS STYLE)
+Match the structure/styling of the provided code:
+
+* Dark hero section: `bg-slate-950`, glowing blurred circles, large headline, subtitle, two CTA buttons
+* Image block on right: rounded, border, shadow, gradient glow
+* Stats bar under hero: 4 stats
+* 3 main content sections with alternating image positions (left/right toggle)
+* Contact section with email/phone/location and optional social icons
+* Use shadcn/ui: Button, Card, Dialog, Form, Input, Textarea
+* Icons: lucide-react
+
+BUT REPLACE BROKER CONCEPT WITH MASAKHE SMME WEBSITE
+Instead of “BrokerLanding”, build “SMMEWebsiteTemplate” which supports SMME content:
+
+* Business name
+* Verified badge label becomes: “Masakhe Verified SMME”
+* Hero title/subtitle (SMME oriented: “Grow your business online” etc.)
+* CTAs become:
+
+  * Primary: “Chat on WhatsApp” OR “Get a Quote” (configurable)
+  * Secondary: “Contact Us”
+* Right image becomes business photo/logo (optional)
+* Stats bar: use fields like:
+
+  * Years Operating
+  * Products/Services
+  * Response Time (e.g. “Same day”)
+  * Trust/Compliance (e.g. “POPIA Ready”)
+* Expertise section becomes “What we offer” (feature cards)
+* Philosophy section becomes “Our story / Why choose us”
+* Services section becomes “Products & Services”
+* Contact section uses SMME address/email/phone/whatsapp and social links
+
+DATA MODEL (STORE IN SQLITE)
+Create table `websites`:
+
+* id TEXT PRIMARY KEY
+* owner_id TEXT (can be “local” if auth missing)
+* slug TEXT UNIQUE
+* status TEXT ('draft'|'published')
+* content_json TEXT (stores full site config)
+* created_at TEXT
+* updated_at TEXT
+
+SITE CONFIG SHAPE (content_json)
+{
+businessName: string,
+slug: string,
+photoUrl?: string,
+theme: { primary?: string, accent?: string },
+hero: { title: string, subtitle: string, badgeText?: string, ctaPrimaryText?: string, ctaSecondaryText?: string },
+stats: [{ value: string, label: string } x4],
+section1: { title: string, subtitle: string, imageUrl?: string, cards: [{ icon: string, title: string, desc: string }] },
+section2: { title: string, quote: string, imageUrl?: string, bullets: [{ title: string, desc: string }] },
+section3: { title: string, subtitle: string, imageUrl?: string, services: [{ title: string, desc: string }] },
+contact: { title: string, subtitle: string, email?: string, phone?: string, address?: string, whatsapp?: string },
+social: { linkedIn?: string, facebook?: string, instagram?: string, x?: string }
+}
+
+FUNCTIONAL REQUIREMENTS
+
+1. `/website-builder`
+
+* Form using react-hook-form + zod
+* Allows editing all config fields above
+* Supports repeatable lists:
+
+  * stats (exactly 4)
+  * cards (2-4)
+  * bullets (2-6)
+  * services (3-9)
+* Allows choosing image position per section (left/right toggle) like broker page:
+
+  * `layoutSection1ImagePosition`
+  * `layoutSection2ImagePosition`
+  * `layoutSection3ImagePosition`
+* Live preview updates instantly (watch form values) by rendering `<SMMEWebsiteTemplate site={values} />`
+
+2. Draft saving
+
+* Button “Save Draft” calls POST `/api/websites` with content_json
+* Show “Last saved” time
+
+3. Publish
+
+* Button “Publish” calls POST `/api/websites/:id/publish`
+* Show published URL: `/site/:slug` with copy button
+
+4. Public route
+
+* Add React Router route: `/site/:slug`
+* Fetch published config from GET `/api/websites/:slug`
+* Render `<SMMEWebsiteTemplate site={config} />`
+* If not found, show friendly not-found screen
+
+BACKEND ENDPOINTS (EXPRESS)
+Implement:
+
+* POST `/api/websites` -> upsert draft for owner
+* GET `/api/websites/mine` -> list drafts/published
+* GET `/api/websites/:slug` -> fetch published site
+* POST `/api/websites/:id/publish` -> set status published and ensure slug unique
+  Optional upload:
+* POST `/api/upload` -> multer upload local image and return URL
+
+IMPLEMENTATION DETAILS
+
+* Create `src/components/website/SMMEWebsiteTemplate.tsx`:
+
+  * Copy the layout patterns from BrokerLanding (hero glow, stats bar, alternating sections, contact layout)
+  * Replace broker fields with site config fields
+  * Replace “Book Consultation” dialogs with simpler actions:
+
+    * CTA button opens Contact Dialog (shadcn Dialog) with a simple contact form (name/email/message) that just shows a toast “Message sent (mock)”
+    * Optional WhatsApp button opens wa.me link
+
+* Create `src/pages/WebsiteBuilder.tsx`:
+
+  * Use shadcn Form fields and repeatable arrays
+  * Provide sensible default content themed for SA SMMEs
+  * Use Tailwind classes consistent with broker page
+
+* Create `src/pages/PublishedSite.tsx`:
+
+  * Fetch by slug and render template
+
+OUTPUT REQUIRED
+
+* Provide the complete code for:
+
+  * `server/db.ts` (SQLite init + migrations)
+  * `server/routes.ts` (websites endpoints)
+  * `src/components/website/SMMEWebsiteTemplate.tsx`
+  * `src/pages/WebsiteBuilder.tsx`
+  * `src/pages/PublishedSite.tsx`
+  * Router wiring changes (wherever routes are defined)
+* Ensure `npm run dev` works on Replit free plan and does not require upgrades.

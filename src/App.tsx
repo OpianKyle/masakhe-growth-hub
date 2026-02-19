@@ -7,6 +7,8 @@ import LandingPage from "./pages/LandingPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import Onboarding from "./pages/Onboarding";
+import WebsiteBuilder from "./pages/WebsiteBuilder";
+import PublishedSite from "./pages/PublishedSite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +25,8 @@ const App = () => (
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/*" element={<DashboardPage />} />
+          <Route path="/website-builder" element={<WebsiteBuilder />} />
+          <Route path="/site/:slug" element={<PublishedSite />} />
           <Route path="/login" element={<RegisterPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

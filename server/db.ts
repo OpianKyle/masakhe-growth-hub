@@ -49,5 +49,15 @@ export function runMigrations() {
       payload_json TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS websites (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      status TEXT NOT NULL,
+      content_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 }

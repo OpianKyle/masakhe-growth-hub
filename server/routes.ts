@@ -52,3 +52,61 @@ router.get("/pages/by-route", (req, res) => {
     })),
   });
 });
+
+// Website Builder Endpoints
+router.post("/websites", (req, res) => {
+  try {
+    const { id, slug, content } = req.body;
+    const ownerId = "local";
+    const now = new Date().toISOString();
+    
+    const existing = id ? sqlite.prepare("SELECT id FROM websites WHERE id = ?").get(id) : null;
+    
+    if (existing) {
+      sqlite.prepare(`
+        UPDATE websites 
+        SET slug = ?, content_json = ?, updated_at = ? 
+        WHERE id = ?
+      `).run(slug, JSON.stringify(content), now, id);
+      res.json({ id, ok: true });
+    } else {
+      const newId = id || randomUUID();
+      sqlite.prepare(`
+        INSERT INTO websites (id, owner_id, slug, status, content_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(newId, ownerId, slug, "draft", JSON.stringify(content), now, now);
+      res.json({ id: newId, ok: true });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to save website" });
+  }
+});
+
+router.get("/websites/mine", (req, res) => {
+  try {
+    const sites = sqlite.prepare("SELECT * FROM websites WHERE owner_id = 'local'").all();
+    res.json(sites.map((s: any) => ({ ...s, content: JSON.parse(s.content_json) })));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch websites" });
+  }
+});
+
+router.get("/websites/:slug", (req, res) => {
+  try {
+    const site = sqlite.prepare("SELECT * FROM websites WHERE slug = ?").get(req.params.slug);
+    if (!site) return res.status(404).json({ error: "Website not found" });
+    res.json({ ...site, content: JSON.parse((site as any).content_json) });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch website" });
+  }
+});
+
+router.post("/websites/:id/publish", (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    sqlite.prepare("UPDATE websites SET status = 'published', updated_at = ? WHERE id = ?").run(now, req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to publish" });
+  }
+});
