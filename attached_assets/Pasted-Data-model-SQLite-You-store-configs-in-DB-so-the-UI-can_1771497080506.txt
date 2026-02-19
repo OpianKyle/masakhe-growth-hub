@@ -1,0 +1,610 @@
+Data model (SQLite)
+
+You store configs in DB so the UI can render dynamically:
+
+Tables
+
+onboarding_flows → one flow, versioned
+
+onboarding_steps → steps + conditional rules + fields JSON
+
+page_definitions → pages like website-builder, tax, etc.
+
+page_sections → sections like “Stats cards”, “Table”, “Wizard”, “Form”
+
+submissions → onboarding submissions / service requests
+
+This avoids any paid DB while still being “dynamic”.
+
+1) Add SQLite + Drizzle (recommended on Replit)
+npm i drizzle-orm better-sqlite3
+npm i -D drizzle-kit
+
+
+Create a DB file like ./data/masakhe.db (persisted in repl).
+
+2) Create DB schema
+server/db.ts
+import Database from "better-sqlite3";
+
+export const sqlite = new Database("./data/masakhe.db");
+sqlite.pragma("journal_mode = WAL");
+
+// basic migration runner (free-friendly)
+export function runMigrations() {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS onboarding_flows (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS onboarding_steps (
+      id TEXT PRIMARY KEY,
+      flow_id TEXT NOT NULL,
+      step_key TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      order_index INTEGER NOT NULL,
+      condition_json TEXT,      -- JSON string
+      fields_json TEXT NOT NULL, -- JSON string
+      FOREIGN KEY(flow_id) REFERENCES onboarding_flows(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS page_definitions (
+      id TEXT PRIMARY KEY,
+      route TEXT NOT NULL UNIQUE, -- e.g. "/website-builder"
+      title TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS page_sections (
+      id TEXT PRIMARY KEY,
+      page_id TEXT NOT NULL,
+      section_type TEXT NOT NULL, -- "stats" | "table" | "wizard" | "form" | "cards" etc.
+      order_index INTEGER NOT NULL,
+      config_json TEXT NOT NULL,
+      FOREIGN KEY(page_id) REFERENCES page_definitions(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS submissions (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL, -- "onboarding" | "service_request"
+      payload_json TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `);
+}
+
+3) Seed dynamic onboarding + dynamic pages
+server/seed.ts
+import { sqlite } from "./db";
+import { randomUUID } from "crypto";
+
+function now() { return new Date().toISOString(); }
+
+export function seedIfEmpty() {
+  const flowCount = sqlite.prepare(`SELECT COUNT(*) as c FROM onboarding_flows`).get() as any;
+  if (flowCount.c > 0) return;
+
+  const flowId = "flow_default";
+  sqlite.prepare(`INSERT INTO onboarding_flows (id, name, active, created_at) VALUES (?, ?, ?, ?)`)
+    .run(flowId, "Masakhe Smart Registration", 1, now());
+
+  const steps = [
+    {
+      step_key: "welcome",
+      title: "Welcome to Masakhe",
+      description: "Choose your registration path.",
+      order_index: 1,
+      condition_json: null,
+      fields_json: JSON.stringify([
+        {
+          name: "journey",
+          label: "I am…",
+          type: "radio",
+          required: true,
+          options: [
+            { label: "Registered business (I have a reg number)", value: "registered" },
+            { label: "Still registering", value: "registering" },
+            { label: "Informal trader / spaza", value: "informal" },
+          ],
+        }
+      ]),
+    },
+    {
+      step_key: "identity",
+      title: "Identity",
+      description: "Enter SA ID number for verification (stub).",
+      order_index: 2,
+      condition_json: null,
+      fields_json: JSON.stringify([
+        { name: "saId", label: "South African ID Number", type: "text", required: true, placeholder: "e.g. 9001015009087" },
+        { name: "skipVerify", label: "Continue without verification", type: "checkbox", required: false },
+      ]),
+    },
+    {
+      step_key: "cipc",
+      title: "Business Lookup",
+      description: "Lookup using CIPC registration number (stub).",
+      order_index: 3,
+      condition_json: JSON.stringify({ equals: [{ field: "journey", value: "registered" }] }),
+      fields_json: JSON.stringify([
+        { name: "registrationNumber", label: "CIPC Registration Number", type: "text", required: true, placeholder: "YYYY/NNNNNN/07" },
+        { name: "businessName", label: "Company Name", type: "text", required: false },
+        { name: "tradingName", label: "Trading Name", type: "text", required: false },
+      ]),
+    },
+    {
+      step_key: "profile",
+      title: "Business Profile",
+      description: "Tell us about the business.",
+      order_index: 4,
+      condition_json: null,
+      fields_json: JSON.stringify([
+        { name: "businessType", label: "Business Type", type: "select", required: true, options: [
+          { label: "Pty Ltd", value: "pty" },
+          { label: "CC", value: "cc" },
+          { label: "Sole Proprietor", value: "sole" },
+          { label: "Non-Profit", value: "npo" },
+          { label: "Informal", value: "informal" },
+        ]},
+        { name: "industrySector", label: "Industry Sector", type: "select", required: true, options: [
+          { label: "Retail", value: "retail" },
+          { label: "Services", value: "services" },
+          { label: "Construction", value: "construction" },
+          { label: "Agriculture", value: "agriculture" },
+          { label: "Manufacturing", value: "manufacturing" },
+        ]},
+        { name: "yearsOperating", label: "Years Operating", type: "number", required: false },
+        { name: "employeeCount", label: "Employee Count", type: "number", required: false },
+        { name: "phone", label: "Phone", type: "text", required: true, placeholder: "+27..." },
+        { name: "email", label: "Email", type: "text", required: true, placeholder: "name@domain.com" },
+        { name: "addressPhysical", label: "Physical Address", type: "text", required: true },
+      ]),
+    },
+    {
+      step_key: "banking",
+      title: "Banking (Optional for MVP)",
+      description: "Add banking details. (We’ll encrypt later.)",
+      order_index: 5,
+      condition_json: null,
+      fields_json: JSON.stringify([
+        { name: "bankName", label: "Bank", type: "text", required: false },
+        { name: "accountType", label: "Account Type", type: "select", required: false, options: [
+          { label: "Cheque", value: "cheque" },
+          { label: "Savings", value: "savings" },
+          { label: "Business", value: "business" },
+        ]},
+        { name: "accountNumber", label: "Account Number", type: "text", required: false },
+        { name: "branchCode", label: "Branch Code", type: "text", required: false },
+      ]),
+    },
+    {
+      step_key: "review",
+      title: "Review & Submit",
+      description: "Confirm and submit.",
+      order_index: 6,
+      condition_json: null,
+      fields_json: JSON.stringify([
+        { name: "popiaConsent", label: "I consent to POPIA terms", type: "checkbox", required: true },
+      ]),
+    },
+  ];
+
+  const insertStep = sqlite.prepare(`
+    INSERT INTO onboarding_steps
+    (id, flow_id, step_key, title, description, order_index, condition_json, fields_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const s of steps) {
+    insertStep.run(randomUUID(), flowId, s.step_key, s.title, s.description, s.order_index, s.condition_json, s.fields_json);
+  }
+
+  // Seed pages + sections (dynamic)
+  const pages = [
+    { id: "p_web", route: "/website-builder", title: "AI Website Builder", description: "Generate and manage your website draft." },
+    { id: "p_social", route: "/social-media", title: "Social Media Launch", description: "Launch pack and content calendar." },
+    { id: "p_comms", route: "/communications", title: "Communication Hub", description: "Unified inbox and auto replies." },
+    { id: "p_campaign", route: "/campaigns", title: "Campaign Builder", description: "Budget → creatives → tracking (mock)." },
+    { id: "p_books", route: "/bookkeeping", title: "Bookkeeping Lite", description: "Transactions, categorization, invoices." },
+    { id: "p_tax", route: "/tax", title: "SARS Compliance", description: "Returns dashboard, health score (mock)." },
+    { id: "p_gov", route: "/gov/dashboard", title: "Government Analytics", description: "Adoption + compliance stats (mock)." },
+  ];
+
+  const insPage = sqlite.prepare(`INSERT INTO page_definitions (id, route, title, description, created_at) VALUES (?, ?, ?, ?, ?)`);
+  const insSection = sqlite.prepare(`INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)`);
+
+  for (const p of pages) insPage.run(p.id, p.route, p.title, p.description, now());
+
+  // Example sections for Website Builder
+  insSection.run(randomUUID(), "p_web", "stats", 1, JSON.stringify({
+    cards: [
+      { label: "Website Status", value: "Draft" },
+      { label: "Pages", value: "4" },
+      { label: "Leads (30d)", value: "36" },
+      { label: "SEO Score", value: "72/100" }
+    ]
+  }));
+  insSection.run(randomUUID(), "p_web", "wizard", 2, JSON.stringify({ wizardKey: "website_5q" }));
+  insSection.run(randomUUID(), "p_web", "table", 3, JSON.stringify({
+    title: "Website Draft Pages",
+    columns: ["Page", "Status", "Last Updated"],
+    rows: [
+      ["Home", "Draft", "Today"],
+      ["About", "Draft", "Yesterday"],
+      ["Services", "Draft", "Today"],
+      ["Contact", "Draft", "Yesterday"],
+    ]
+  }));
+
+  // Add simple sections for other pages so none are blank
+  for (const pid of ["p_social","p_comms","p_campaign","p_books","p_tax","p_gov"]) {
+    insSection.run(randomUUID(), pid, "stats", 1, JSON.stringify({ cards: [
+      { label: "This Week", value: "Active" },
+      { label: "Tasks", value: "8" },
+      { label: "Alerts", value: "2" },
+      { label: "Health", value: "Good" },
+    ]}));
+    insSection.run(randomUUID(), pid, "cards", 2, JSON.stringify({
+      title: "Quick Actions",
+      items: [
+        { title: "Create new", description: "Start a new workflow", action: "create" },
+        { title: "Generate (mock AI)", description: "Run the generator", action: "generate" },
+        { title: "View history", description: "See saved outputs", action: "history" },
+      ]
+    }));
+  }
+}
+
+4) Start your server on Replit (Express)
+server/index.ts
+import express from "express";
+import cors from "cors";
+import { runMigrations } from "./db";
+import { seedIfEmpty } from "./seed";
+import { router } from "./routes";
+
+runMigrations();
+seedIfEmpty();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.use("/api", router);
+
+const port = Number(process.env.PORT || 5000);
+app.listen(port, () => console.log(`API running on :${port}`));
+
+server/routes.ts
+import { Router } from "express";
+import { sqlite } from "./db";
+import { randomUUID } from "crypto";
+
+export const router = Router();
+
+// fetch onboarding steps (dynamic)
+router.get("/onboarding/flow", (req, res) => {
+  const flow = sqlite.prepare(`SELECT * FROM onboarding_flows WHERE active=1 LIMIT 1`).get();
+  const steps = sqlite.prepare(`SELECT * FROM onboarding_steps WHERE flow_id=? ORDER BY order_index ASC`).all((flow as any).id);
+  res.json({
+    flow,
+    steps: steps.map((s: any) => ({
+      ...s,
+      condition: s.condition_json ? JSON.parse(s.condition_json) : null,
+      fields: JSON.parse(s.fields_json),
+    }))
+  });
+});
+
+// save submission
+router.post("/submissions", (req, res) => {
+  const id = randomUUID();
+  sqlite.prepare(`INSERT INTO submissions (id, kind, payload_json, created_at) VALUES (?, ?, ?, ?)`)
+    .run(id, req.body.kind || "onboarding", JSON.stringify(req.body.payload || {}), new Date().toISOString());
+  res.json({ ok: true, id });
+});
+
+// dynamic page config
+router.get("/pages", (req, res) => {
+  const pages = sqlite.prepare(`SELECT * FROM page_definitions`).all();
+  res.json(pages);
+});
+
+router.get("/pages/by-route", (req, res) => {
+  const route = String(req.query.route || "");
+  const page = sqlite.prepare(`SELECT * FROM page_definitions WHERE route=?`).get(route);
+  if (!page) return res.status(404).json({ error: "Not found" });
+  const sections = sqlite.prepare(`SELECT * FROM page_sections WHERE page_id=? ORDER BY order_index ASC`).all((page as any).id);
+  res.json({
+    page,
+    sections: sections.map((s: any) => ({
+      ...s,
+      config: JSON.parse(s.config_json),
+    })),
+  });
+});
+
+// mock AI endpoints (free plan = just return JSON)
+router.post("/ai/website/generate", (req, res) => {
+  const { businessName = "Your Business", services = "Products & services", location = "South Africa" } = req.body || {};
+  res.json({
+    seo: { title: `${businessName} | ${location}`, description: `Trusted local business for ${services}.` },
+    pages: [
+      { name: "Home", sections: ["hero","services","testimonials","contact"] },
+      { name: "Services", sections: ["services_grid","cta"] },
+      { name: "About", sections: ["about_story","values"] },
+      { name: "Contact", sections: ["map","form","whatsapp"] },
+    ],
+    hero: {
+      heading: `Welcome to ${businessName}`,
+      subheading: `Serving ${location} with reliable ${services}.`,
+      cta: "Chat on WhatsApp"
+    }
+  });
+});
+
+
+If your project already has Express routes, just merge these endpoints.
+
+5) Frontend: make onboarding wizard truly dynamic
+
+This renders steps from /api/onboarding/flow and applies conditions (registered vs informal etc).
+
+src/pages/Onboarding.tsx
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+
+type Field =
+  | { name: string; label: string; type: "text"|"number"|"select"|"radio"|"checkbox"|"textarea"; required?: boolean; placeholder?: string; options?: {label:string; value:string}[] };
+
+type Step = {
+  step_key: string;
+  title: string;
+  description?: string;
+  order_index: number;
+  condition: any | null;
+  fields: Field[];
+};
+
+function meetsCondition(values: any, condition: any | null) {
+  if (!condition) return true;
+  // simple condition format: { equals: [{field, value}, ...] }
+  if (condition.equals) {
+    return condition.equals.every((c: any) => values?.[c.field] === c.value);
+  }
+  return true;
+}
+
+export default function Onboarding() {
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [active, setActive] = useState(0);
+
+  const { register, handleSubmit, watch, getValues } = useForm({ defaultValues: {} });
+  const values = watch();
+
+  useEffect(() => {
+    fetch("/api/onboarding/flow")
+      .then(r => r.json())
+      .then(data => setSteps(data.steps));
+  }, []);
+
+  const visibleSteps = useMemo(() => steps.filter(s => meetsCondition(values, s.condition)), [steps, values]);
+  const step = visibleSteps[active];
+
+  async function submitAll(payload: any) {
+    await fetch("/api/submissions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "onboarding", payload }),
+    });
+    alert("Submitted ✅");
+    window.location.href = "/dashboard";
+  }
+
+  if (!step) return <div style={{ padding: 20 }}>Loading…</div>;
+
+  return (
+    <div style={{ padding: 20, maxWidth: 720, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 26, fontWeight: 800 }}>{step.title}</h1>
+      <p style={{ opacity: 0.8 }}>{step.description}</p>
+
+      <form
+        onSubmit={handleSubmit(async () => {
+          if (active < visibleSteps.length - 1) setActive(a => a + 1);
+          else await submitAll(getValues());
+        })}
+        style={{ display: "grid", gap: 14, marginTop: 16 }}
+      >
+        {step.fields.map((f) => (
+          <label key={f.name} style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontWeight: 700 }}>{f.label}</span>
+
+            {f.type === "radio" ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(f.options ?? []).map(opt => (
+                  <label key={opt.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="radio" value={opt.value} {...register(f.name, { required: !!f.required })} />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            ) : f.type === "select" ? (
+              <select {...register(f.name, { required: !!f.required })} style={{ padding: 10, borderRadius: 10 }}>
+                <option value="">Select…</option>
+                {(f.options ?? []).map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            ) : f.type === "checkbox" ? (
+              <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input type="checkbox" {...register(f.name)} />
+                <span style={{ opacity: 0.9 }}>{f.label}</span>
+              </label>
+            ) : f.type === "textarea" ? (
+              <textarea {...register(f.name, { required: !!f.required })} placeholder={f.placeholder} rows={4} style={{ padding: 10, borderRadius: 10 }} />
+            ) : (
+              <input
+                type={f.type === "number" ? "number" : "text"}
+                {...register(f.name, { required: !!f.required })}
+                placeholder={f.placeholder}
+                style={{ padding: 10, borderRadius: 10 }}
+              />
+            )}
+          </label>
+        ))}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button type="button" disabled={active === 0} onClick={() => setActive(a => Math.max(0, a - 1))}>
+            Back
+          </button>
+          <button type="submit">
+            {active < visibleSteps.length - 1 ? "Continue" : "Submit"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+
+This is fully dynamic because steps/fields live in the DB, and the UI reads them.
+
+6) Frontend: dynamic module pages (no hardcoded UI)
+
+You requested these pages:
+
+Core registration + AI website builder
+
+Social media + communication hub
+
+Campaign builder + bookkeeping lite
+
+SARS integration dashboard
+
+Government analytics + policy tools
+
+Instead of hardcoding each page’s layout, you render “sections” from DB.
+
+src/pages/DynamicPage.tsx
+import { useEffect, useState } from "react";
+
+export default function DynamicPage({ route }: { route: string }) {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(`/api/pages/by-route?route=${encodeURIComponent(route)}`)
+      .then(r => r.json())
+      .then(setData);
+  }, [route]);
+
+  if (!data) return <div style={{ padding: 20 }}>Loading…</div>;
+
+  const { page, sections } = data;
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1 style={{ fontSize: 26, fontWeight: 800 }}>{page.title}</h1>
+      <p style={{ opacity: 0.8 }}>{page.description}</p>
+
+      <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
+        {sections.map((s: any) => (
+          <Section key={s.id} type={s.section_type} config={s.config} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Section({ type, config }: { type: string; config: any }) {
+  if (type === "stats") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10 }}>
+        {config.cards.map((c: any, i: number) => (
+          <div key={i} style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.15)" }}>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>{c.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "cards") {
+    return (
+      <div style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(0,0,0,0.15)" }}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>{config.title}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 10 }}>
+          {config.items.map((it: any, i: number) => (
+            <button key={i} onClick={() => alert(it.action)} style={{ textAlign: "left", padding: 12, borderRadius: 12 }}>
+              <div style={{ fontWeight: 800 }}>{it.title}</div>
+              <div style={{ opacity: 0.75, fontSize: 13 }}>{it.description}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "table") {
+    return (
+      <div style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(0,0,0,0.15)" }}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>{config.title}</div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              {config.columns.map((c: string) => (
+                <th key={c} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {config.rows.map((row: any[], idx: number) => (
+              <tr key={idx}>
+                {row.map((cell, i) => (
+                  <td key={i} style={{ padding: 8, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (type === "wizard") {
+    // example: website builder wizard
+    return (
+      <div style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(0,0,0,0.15)" }}>
+        <div style={{ fontWeight: 800 }}>Wizard: {config.wizardKey}</div>
+        <p style={{ opacity: 0.8 }}>Plug your module wizard here (AI website, campaign, etc.).</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 14, borderRadius: 14, border: "1px dashed rgba(0,0,0,0.3)" }}>
+      Unknown section: {type}
+    </div>
+  );
+}
+
+
+Now each of those pages can be created just by inserting DB rows (page + sections). No paid features needed.
+
+7) Wire routes (example)
+
+If your frontend uses React Router:
+
+<Route path="/onboarding" element={<Onboarding />} />
+<Route path="/website-builder" element={<DynamicPage route="/website-builder" />} />
+<Route path="/social-media" element={<DynamicPage route="/social-media" />} />
+<Route path="/communications" element={<DynamicPage route="/communications" />} />
+<Route path="/campaigns" element={<DynamicPage route="/campaigns" />} />
+<Route path="/bookkeeping" element={<DynamicPage route="/bookkeeping" />} />
+<Route path="/tax" element={<DynamicPage route="/tax" />} />
+<Route path="/gov/dashboard" element={<DynamicPage route="/gov/dashboard" />} />
