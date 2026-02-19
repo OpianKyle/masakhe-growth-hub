@@ -94,9 +94,20 @@ export default function Onboarding() {
   const values = watch();
 
   useEffect(() => {
-    // In a real app, this would be a fetch call
-    // fetch("/api/onboarding/flow").then(r => r.json()).then(data => setSteps(data.steps));
-    setSteps(MOCK_FLOW.steps);
+    fetch("/api/onboarding/flow")
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch");
+        return r.json();
+      })
+      .then(data => setSteps(data.steps))
+      .catch(err => {
+        console.error(err);
+        toast({
+          title: "Error",
+          description: "Failed to load onboarding flow.",
+          variant: "destructive",
+        });
+      });
   }, []);
 
   const visibleSteps = useMemo(() => steps.filter(s => meetsCondition(values, s.condition)), [steps, values]);
@@ -104,14 +115,27 @@ export default function Onboarding() {
 
   async function submitAll(payload: any) {
     console.log("Submitting payload:", payload);
-    // Mocking API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Success! ✅",
-      description: "Your business onboarding is complete.",
-    });
-    navigate("/dashboard");
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "onboarding", payload }),
+      });
+      
+      if (!res.ok) throw new Error("Submission failed");
+
+      toast({
+        title: "Success! ✅",
+        description: "Your business onboarding is complete.",
+      });
+      navigate("/dashboard");
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to submit onboarding.",
+        variant: "destructive",
+      });
+    }
   }
 
   if (!step) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
