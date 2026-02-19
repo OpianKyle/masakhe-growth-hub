@@ -23,7 +23,7 @@ export interface SiteConfig {
     subtitle: string; 
     imageUrl?: string; 
     imagePosition: 'left' | 'right';
-    cards: Array<{ icon: string; title: string; desc: string }> 
+    cards: Array<{ icon?: string; title: string; desc: string }> 
   };
   section2: { 
     title: string; 
@@ -45,7 +45,8 @@ export interface SiteConfig {
     email?: string; 
     phone?: string; 
     address?: string; 
-    whatsapp?: string 
+    whatsapp?: string;
+    enableWhatsApp?: boolean;
   };
   social: { linkedIn?: string; facebook?: string; instagram?: string; x?: string };
 }
@@ -148,16 +149,81 @@ export const SMMEWebsiteTemplate = ({ site }: { site: SiteConfig }) => {
                 ))}
               </div>
             </div>
-            <div className={`overflow-hidden rounded-2xl ${site.section1.imagePosition === 'left' ? 'order-2' : 'order-1'}`}>
+            <div className={`overflow-hidden rounded-2xl shadow-2xl ${site.section1.imagePosition === 'left' ? 'order-2' : 'order-1'}`}>
               <img 
                 src={site.section1.imageUrl || "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80"} 
-                className="h-full w-full object-cover shadow-xl"
+                className="aspect-square w-full object-cover"
                 alt="Feature"
               />
             </div>
           </div>
         </div>
       </section>
+
+      {/* Section 2: Story/Quote */}
+      {site.section2 && site.section2.title && (
+        <section className="bg-slate-50 py-24">
+          <div className="container mx-auto px-4">
+            <div className={`grid items-center gap-16 lg:grid-cols-2 ${site.section2.imagePosition === 'left' ? '' : 'lg:flex-row-reverse'}`}>
+              <div className={`overflow-hidden rounded-2xl shadow-2xl ${site.section2.imagePosition === 'left' ? 'order-1' : 'order-2'}`}>
+                <img 
+                  src={site.section2.imageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80"} 
+                  className="aspect-video w-full object-cover"
+                  alt="Story"
+                />
+              </div>
+              <div className={site.section2.imagePosition === 'left' ? 'order-2' : 'order-1'}>
+                <h2 className="mb-6 text-4xl font-bold tracking-tight">{site.section2.title}</h2>
+                <div className="mb-8 border-l-4 border-green-500 pl-6 text-2xl italic text-slate-600">
+                  "{site.section2.quote}"
+                </div>
+                <div className="grid gap-4">
+                  {site.section2.bullets.map((bullet, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                      </div>
+                      <div>
+                        <span className="font-bold">{bullet.title}: </span>
+                        <span className="text-slate-500">{bullet.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Section 3: Services */}
+      {site.section3 && site.section3.title && (
+        <section className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="mb-16 text-center">
+              <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100">{site.section3.subtitle}</Badge>
+              <h2 className="text-4xl font-bold tracking-tight">{site.section3.title}</h2>
+            </div>
+            <div className={`grid items-center gap-16 lg:grid-cols-2 ${site.section3.imagePosition === 'left' ? '' : 'lg:flex-row-reverse'}`}>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {site.section3.services.map((service, i) => (
+                  <Card key={i} className="p-6 transition-all hover:-translate-y-1 hover:shadow-lg">
+                    <h3 className="mb-2 text-lg font-bold">{service.title}</h3>
+                    <p className="text-sm text-slate-500">{service.desc}</p>
+                  </Card>
+                ))}
+              </div>
+              <div className="overflow-hidden rounded-2xl shadow-2xl">
+                <img 
+                  src={site.section3.imageUrl || "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80"} 
+                  className="aspect-square w-full object-cover"
+                  alt="Services"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Contact Section */}
       <section className="bg-slate-950 py-24 text-white">
@@ -167,33 +233,57 @@ export const SMMEWebsiteTemplate = ({ site }: { site: SiteConfig }) => {
             <p className="mb-12 text-xl text-slate-400">{site.contact.subtitle}</p>
             
             <div className="grid gap-8 md:grid-cols-3">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
-                  <Phone className="h-6 w-6" />
+              {site.contact.phone && (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
+                    <Phone className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500 uppercase">Phone</div>
+                    <div className="font-bold">{site.contact.phone}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500 uppercase">Phone</div>
-                  <div className="font-bold">{site.contact.phone}</div>
+              )}
+              {site.contact.email && (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
+                    <Mail className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500 uppercase">Email</div>
+                    <div className="font-bold">{site.contact.email}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
-                  <Mail className="h-6 w-6" />
+              )}
+              {site.contact.address && (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
+                    <MapPin className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500 uppercase">Address</div>
+                    <div className="font-bold">{site.contact.address}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500 uppercase">Email</div>
-                  <div className="font-bold">{site.contact.email}</div>
+              )}
+              {site.contact.enableWhatsApp && site.contact.whatsapp && (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-400">
+                    <MessageSquare className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500 uppercase">WhatsApp</div>
+                    <a 
+                      href={`https://wa.me/${site.contact.whatsapp.replace(/\D/g, '')}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-bold hover:text-green-400 transition-colors"
+                    >
+                      Chat Now
+                    </a>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-green-500">
-                  <MapPin className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 uppercase">Address</div>
-                  <div className="font-bold">{site.contact.address}</div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

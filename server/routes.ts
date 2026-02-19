@@ -1,8 +1,30 @@
 import { Router } from "express";
 import { sqlite } from "./db";
 import { randomUUID } from "crypto";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 export const router = Router();
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "public/uploads";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage });
+
+router.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  res.json({ ok: true, url: `/uploads/${req.file.filename}` });
+});
 
 router.get("/onboarding/flow", (req, res) => {
   try {
@@ -61,6 +83,12 @@ router.post("/websites", (req, res) => {
     const now = new Date().toISOString();
     
     const existing = id ? sqlite.prepare("SELECT id FROM websites WHERE id = ?").get(id) : null;
+    
+    // Check slug uniqueness
+    const slugOwner = sqlite.prepare("SELECT id FROM websites WHERE slug = ?").get(slug);
+    if (slugOwner && (slugOwner as any).id !== id) {
+      return res.status(400).json({ error: "Slug is already taken" });
+    }
     
     if (existing) {
       sqlite.prepare(`

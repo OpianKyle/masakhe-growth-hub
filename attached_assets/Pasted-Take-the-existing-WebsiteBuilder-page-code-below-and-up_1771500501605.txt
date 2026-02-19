@@ -1,0 +1,195 @@
+Take the existing WebsiteBuilder page code below and upgrade it so ALL visible elements in the live preview are editable from the builder UI, and the user can upload/replace images (hero/business photo + section images) without any paid Replit upgrades.
+
+CRITICAL: NO UPGRADE
+
+Do NOT use paid services (no Postgres/Redis/queues).
+
+Use local uploads with multer to a folder served publicly (e.g. public/uploads).
+
+Persist only the returned image URL paths in SQLite/JSON.
+
+Must work on Replit Free with npm run dev.
+
+1) MAKE EVERYTHING EDITABLE (FORM COVERAGE)
+
+Expand the builder form so it edits every field used by SMMEWebsiteTemplate including:
+
+General
+
+businessName, slug
+
+theme.primary, theme.accent (add color picker or text input)
+
+photoUrl (upload + paste URL)
+
+Hero
+
+hero.badgeText, hero.title, hero.subtitle
+
+hero.ctaPrimaryText, hero.ctaSecondaryText
+
+Add toggles:
+
+hero.ctaPrimaryAction ("whatsapp" | "contact" | "link")
+
+hero.ctaPrimaryLink (optional)
+
+hero.ctaSecondaryAction ("contact" | "link")
+
+hero.ctaSecondaryLink (optional)
+
+Stats (exactly 4)
+
+Make all 4 stats editable:
+
+stats[i].value, stats[i].label
+
+Section 1 (Cards)
+
+section1.title, section1.subtitle
+
+section1.imageUrl (upload + paste URL)
+
+section1.imagePosition ("left" | "right")
+
+section1.cards should be fully editable with add/remove (min 2, max 4):
+
+cards[i].title, cards[i].desc
+
+Section 2 (Story/Quote + Bullets)
+
+Add these fields to schema, defaults, and UI:
+
+section2.title
+
+section2.quote
+
+section2.imageUrl (upload + paste URL)
+
+section2.imagePosition ("left" | "right")
+
+section2.bullets editable with add/remove (min 2, max 6):
+
+bullets[i].title, bullets[i].desc
+
+Section 3 (Products/Services List)
+
+Add these fields to schema, defaults, and UI:
+
+section3.title
+
+section3.subtitle
+
+section3.imageUrl (upload + paste URL)
+
+section3.imagePosition ("left" | "right")
+
+section3.services editable with add/remove (min 3, max 9):
+
+services[i].title, services[i].desc
+
+Contact
+
+contact.title, contact.subtitle
+
+contact.email, contact.phone, contact.address
+
+Add WhatsApp fields:
+
+contact.whatsapp and contact.enableWhatsApp toggle
+
+Social Links
+
+social.linkedIn, social.facebook, social.instagram, social.x
+
+2) ADD REPEATABLE LIST EDITING (useFieldArray)
+
+Implement useFieldArray for:
+
+stats (fixed 4 but still editable)
+
+section1.cards (add/remove buttons, enforce min/max)
+
+section2.bullets (add/remove buttons, enforce min/max)
+
+section3.services (add/remove buttons, enforce min/max)
+
+UI:
+
+Each list item should be inside a shadcn Card with a remove button.
+
+Provide “Add item” button that disables when max reached.
+
+Show small helper text about limits.
+
+3) IMAGE UPLOAD (LOCAL, FREE)
+
+Implement an image upload endpoint:
+
+Backend (Express)
+
+Add POST /api/upload
+
+Use multer to accept a single file image
+
+Save into public/uploads/ with a unique filename
+
+Return { ok:true, url:"/uploads/<filename>" }
+
+Frontend
+
+Add an ImageUploadField component used for:
+
+photoUrl
+
+section1.imageUrl
+
+section2.imageUrl
+
+section3.imageUrl
+
+Behavior:
+
+Button “Upload Image” opens file chooser
+
+Upload to /api/upload
+
+On success, set the corresponding form value to the returned url
+
+Show preview thumbnail + “Remove image” button
+
+Also allow manual URL paste (Input)
+
+4) BUILDER UX IMPROVEMENTS
+
+Add Tabs: General, Hero, Stats, Section 1, Section 2, Section 3, Contact, Social
+
+Add “Auto-generate slug” button from businessName (lowercase + hyphens)
+
+Validate slug uniqueness on publish:
+
+If backend detects slug exists, return error and show toast.
+
+5) UPDATE THE ZOD SCHEMA + DEFAULT VALUES
+
+Your current schema is missing section2/section3/social. Update:
+
+siteSchema to include section2, section3, social, whatsapp toggle
+
+Ensure defaults include realistic SA SMME content and Unsplash fallback images.
+
+Make contact.email optional (allow empty string) but if present must be valid email.
+
+6) OUTPUT REQUIRED
+
+Provide complete updated code for:
+
+src/pages/WebsiteBuilder.tsx (fully editable, with useFieldArray + uploads)
+
+src/components/website/SMMEWebsiteTemplate.tsx (ensure it renders section2/section3/social and uses new fields)
+
+server/routes.ts (add /api/upload and slug conflict handling)
+
+Any new helper component like src/components/website/ImageUploadField.tsx
+
+Ensure it runs on Replit Free and does not require upgrades.
