@@ -122,7 +122,7 @@ export default function LandingPage() {
                 From registration to digital presence, tax compliance to customer engagement—everything your SMME needs to thrive in the digital economy.
               </motion.p>
               <motion.div variants={fadeInUp} custom={3} className="flex flex-wrap gap-4">
-                <Link to="/register">
+                <Link to="/onboarding">
                   <Button variant="hero" size="lg" className="text-base">
                     Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>

@@ -1,0 +1,112 @@
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+
+type Field =
+  | { name: string; label: string; type: "text"|"number"|"select"|"radio"|"checkbox"|"textarea"; required?: boolean; placeholder?: string; options?: {label:string; value:string}[] };
+
+type Step = {
+  step_key: string;
+  title: string;
+  description?: string;
+  order_index: number;
+  condition: any | null;
+  fields: Field[];
+};
+
+function meetsCondition(values: any, condition: any | null) {
+  if (!condition) return true;
+  // simple condition format: { equals: [{field, value}, ...] }
+  if (condition.equals) {
+    return condition.equals.every((c: any) => values?.[c.field] === c.value);
+  }
+  return true;
+}
+
+export default function Onboarding() {
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [active, setActive] = useState(0);
+
+  const { register, handleSubmit, watch, getValues } = useForm({ defaultValues: {} });
+  const values = watch();
+
+  useEffect(() => {
+    fetch("/api/onboarding/flow")
+      .then(r => r.json())
+      .then(data => setSteps(data.steps));
+  }, []);
+
+  const visibleSteps = useMemo(() => steps.filter(s => meetsCondition(values, s.condition)), [steps, values]);
+  const step = visibleSteps[active];
+
+  async function submitAll(payload: any) {
+    await fetch("/api/submissions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "onboarding", payload }),
+    });
+    alert("Submitted ✅");
+    window.location.href = "/dashboard";
+  }
+
+  if (!step) return <div style={{ padding: 20 }}>Loading…</div>;
+
+  return (
+    <div style={{ padding: 20, maxWidth: 720, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 26, fontWeight: 800 }}>{step.title}</h1>
+      <p style={{ opacity: 0.8 }}>{step.description}</p>
+
+      <form
+        onSubmit={handleSubmit(async () => {
+          if (active < visibleSteps.length - 1) setActive(a => a + 1);
+          else await submitAll(getValues());
+        })}
+        style={{ display: "grid", gap: 14, marginTop: 16 }}
+      >
+        {step.fields.map((f) => (
+          <label key={f.name} style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontWeight: 700 }}>{f.label}</span>
+
+            {f.type === "radio" ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(f.options ?? []).map(opt => (
+                  <label key={opt.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="radio" value={opt.value} {...register(f.name, { required: !!f.required })} />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            ) : f.type === "select" ? (
+              <select {...register(f.name, { required: !!f.required })} style={{ padding: 10, borderRadius: 10 }}>
+                <option value="">Select…</option>
+                {(f.options ?? []).map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            ) : f.type === "checkbox" ? (
+              <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input type="checkbox" {...register(f.name)} />
+                <span style={{ opacity: 0.9 }}>{f.label}</span>
+              </label>
+            ) : f.type === "textarea" ? (
+              <textarea {...register(f.name, { required: !!f.required })} placeholder={f.placeholder} rows={4} style={{ padding: 10, borderRadius: 10 }} />
+            ) : (
+              <input
+                type={f.type === "number" ? "number" : "text"}
+                {...register(f.name, { required: !!f.required })}
+                placeholder={f.placeholder}
+                style={{ padding: 10, borderRadius: 10 }}
+              />
+            )}
+          </label>
+        ))}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button type="button" disabled={active === 0} onClick={() => setActive(a => Math.max(0, a - 1))}>
+            Back
+          </button>
+          <button type="submit">
+            {active < visibleSteps.length - 1 ? "Continue" : "Submit"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
