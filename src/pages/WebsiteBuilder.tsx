@@ -199,13 +199,13 @@ export default function WebsiteBuilder() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
       {/* Left Panel: Form */}
       <div className="w-[450px] overflow-y-auto border-r bg-white p-6 shadow-xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Website Builder</h1>
-            <p className="text-xs text-slate-500">Customize your SMME microsite</p>
+            <h2 className="text-xl font-bold">Edit Site</h2>
+            <p className="text-xs text-slate-500">Changes update preview instantly</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={form.handleSubmit(onSave)}>

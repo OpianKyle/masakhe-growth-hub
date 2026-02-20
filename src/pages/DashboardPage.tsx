@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt, FileText, MessageSquare,
   Settings, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Users, DollarSign,
@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import WebsiteBuilder from "./WebsiteBuilder";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
@@ -42,9 +43,125 @@ const upcomingTasks = [
   { task: "Update product catalog", due: "01 Apr 2026", priority: "medium" },
 ];
 
+function DashboardOverview() {
+  return (
+    <div className="p-6 space-y-8">
+      {/* Welcome Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-xl gradient-hero p-6 text-primary-foreground"
+      >
+        <h2 className="text-2xl font-bold font-heading">Good morning, Jabu! 👋</h2>
+        <p className="text-primary-foreground/80 mt-1">Your business is performing well this month. Here&apos;s your overview.</p>
+        <div className="flex gap-3 mt-4">
+          <Button variant="gold" size="sm">View Compliance Status</Button>
+          <Button variant="ghost" size="sm" className="text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
+            Generate Report
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            className="rounded-xl border border-border bg-card p-5 shadow-card"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <kpi.icon className="h-5 w-5 text-primary" />
+              </div>
+              <span className={`text-xs font-semibold flex items-center gap-1 ${kpi.positive ? "text-primary" : "text-sa-gold"}`}>
+                {kpi.change} {kpi.positive && <ArrowUpRight className="h-3 w-3" />}
+              </span>
+            </div>
+            <p className="text-2xl font-bold font-heading text-foreground mt-3">{kpi.value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-card">
+          <h3 className="text-lg font-bold font-heading text-foreground mb-4">Recent Activity</h3>
+          <div className="space-y-4">
+            {recentActivity.map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{item.text}</p>
+                  <p className="text-xs text-muted-foreground">{item.time}</p>
+                </div>
+                {item.amount && (
+                  <span className="text-sm font-semibold text-foreground">{item.amount}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Upcoming Tasks */}
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          <h3 className="text-lg font-bold font-heading text-foreground mb-4 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" /> Upcoming
+          </h3>
+          <div className="space-y-3">
+            {upcomingTasks.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <div className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${
+                  item.priority === "high" ? "bg-sa-red" : item.priority === "medium" ? "bg-sa-gold" : "bg-primary"
+                }`} />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.task}</p>
+                  <p className="text-xs text-muted-foreground">{item.due}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+        <h3 className="text-lg font-bold font-heading text-foreground mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { icon: Globe, label: "Update Website", color: "gradient-hero", path: "/dashboard/website" },
+            { icon: Receipt, label: "Create Invoice", color: "gradient-gold", path: "/dashboard/bookkeeping" },
+            { icon: Megaphone, label: "Launch Campaign", color: "gradient-warm", path: "/dashboard/campaigns" },
+            { icon: FileText, label: "File Tax Return", color: "gradient-hero", path: "/dashboard/tax" },
+          ].map((action) => (
+            <Link
+              key={action.label}
+              to={action.path}
+              className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-4 text-primary-foreground hover:opacity-90 transition-opacity`}
+            >
+              <action.icon className="h-6 w-6" />
+              <span className="text-xs font-semibold">{action.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+
+  const getPageTitle = () => {
+    const item = navItems.find(item => item.path === location.pathname);
+    return item ? item.label : "Dashboard";
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -102,7 +219,7 @@ export default function DashboardPage() {
         {/* Top Bar */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold font-heading text-foreground">Dashboard</h1>
+            <h1 className="text-xl font-bold font-heading text-foreground">{getPageTitle()}</h1>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
@@ -119,111 +236,11 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="p-6 space-y-8">
-          {/* Welcome Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl gradient-hero p-6 text-primary-foreground"
-          >
-            <h2 className="text-2xl font-bold font-heading">Good morning, Jabu! 👋</h2>
-            <p className="text-primary-foreground/80 mt-1">Your business is performing well this month. Here&apos;s your overview.</p>
-            <div className="flex gap-3 mt-4">
-              <Button variant="gold" size="sm">View Compliance Status</Button>
-              <Button variant="ghost" size="sm" className="text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
-                Generate Report
-              </Button>
-            </div>
-          </motion.div>
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {kpis.map((kpi, i) => (
-              <motion.div
-                key={kpi.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="rounded-xl border border-border bg-card p-5 shadow-card"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <kpi.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className={`text-xs font-semibold flex items-center gap-1 ${kpi.positive ? "text-primary" : "text-sa-gold"}`}>
-                    {kpi.change} {kpi.positive && <ArrowUpRight className="h-3 w-3" />}
-                  </span>
-                </div>
-                <p className="text-2xl font-bold font-heading text-foreground mt-3">{kpi.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Recent Activity */}
-            <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-card">
-              <h3 className="text-lg font-bold font-heading text-foreground mb-4">Recent Activity</h3>
-              <div className="space-y-4">
-                {recentActivity.map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="mt-0.5">
-                      <item.icon className={`h-5 w-5 ${item.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{item.text}</p>
-                      <p className="text-xs text-muted-foreground">{item.time}</p>
-                    </div>
-                    {item.amount && (
-                      <span className="text-sm font-semibold text-foreground">{item.amount}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Upcoming Tasks */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-              <h3 className="text-lg font-bold font-heading text-foreground mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" /> Upcoming
-              </h3>
-              <div className="space-y-3">
-                {upcomingTasks.map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${
-                      item.priority === "high" ? "bg-sa-red" : item.priority === "medium" ? "bg-sa-gold" : "bg-primary"
-                    }`} />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.task}</p>
-                      <p className="text-xs text-muted-foreground">{item.due}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-            <h3 className="text-lg font-bold font-heading text-foreground mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { icon: Globe, label: "Update Website", color: "gradient-hero" },
-                { icon: Receipt, label: "Create Invoice", color: "gradient-gold" },
-                { icon: Megaphone, label: "Launch Campaign", color: "gradient-warm" },
-                { icon: FileText, label: "File Tax Return", color: "gradient-hero" },
-              ].map((action) => (
-                <button
-                  key={action.label}
-                  className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-4 text-primary-foreground hover:opacity-90 transition-opacity`}
-                >
-                  <action.icon className="h-6 w-6" />
-                  <span className="text-xs font-semibold">{action.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <Routes>
+          <Route index element={<DashboardOverview />} />
+          <Route path="website" element={<WebsiteBuilder />} />
+          <Route path="*" element={<DashboardOverview />} />
+        </Routes>
       </main>
     </div>
   );
