@@ -79,7 +79,7 @@ router.get("/pages/by-route", (req, res) => {
 router.post("/websites", (req, res) => {
   try {
     const { id, slug, content } = req.body;
-    const ownerId = "local";
+    const ownerId = req.session?.userId || "local";
     const now = new Date().toISOString();
     
     const existing = id ? sqlite.prepare("SELECT id FROM websites WHERE id = ?").get(id) : null;
@@ -112,7 +112,8 @@ router.post("/websites", (req, res) => {
 
 router.get("/websites/mine", (req, res) => {
   try {
-    const sites = sqlite.prepare("SELECT * FROM websites WHERE owner_id = 'local'").all();
+    const ownerId = req.session?.userId || "local";
+    const sites = sqlite.prepare("SELECT * FROM websites WHERE owner_id = ?").all(ownerId);
     res.json(sites.map((s: any) => ({ ...s, content: JSON.parse(s.content_json) })));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch websites" });

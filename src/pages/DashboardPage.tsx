@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Link, useLocation, Routes, Route } from "react-router-dom";
+import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt, FileText, MessageSquare,
   Settings, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Users, DollarSign,
-  ArrowUpRight, Bell, Search, Calendar, AlertTriangle, CheckCircle2
+  ArrowUpRight, Bell, Search, Calendar, AlertTriangle, CheckCircle2, LogOut, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 import WebsiteBuilder from "./WebsiteBuilder";
 
 const navItems = [
@@ -44,6 +45,9 @@ const upcomingTasks = [
 ];
 
 function DashboardOverview() {
+  const { user } = useAuth();
+  const firstName = user?.full_name?.split(" ")[0] || "there";
+
   return (
     <div className="p-6 space-y-8">
       {/* Welcome Banner */}
@@ -52,8 +56,10 @@ function DashboardOverview() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-xl gradient-hero p-6 text-primary-foreground"
       >
-        <h2 className="text-2xl font-bold font-heading">Good morning, Jabu! 👋</h2>
-        <p className="text-primary-foreground/80 mt-1">Your business is performing well this month. Here&apos;s your overview.</p>
+        <h2 className="text-2xl font-bold font-heading">Welcome, {firstName}!</h2>
+        <p className="text-primary-foreground/80 mt-1">
+          {user?.business_name ? `${user.business_name} is performing well.` : "Your business is performing well this month."} Here&apos;s your overview.
+        </p>
         <div className="flex gap-3 mt-4">
           <Button variant="gold" size="sm">View Compliance Status</Button>
           <Button variant="ghost" size="sm" className="text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
@@ -157,11 +163,20 @@ function DashboardOverview() {
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const getPageTitle = () => {
     const item = navItems.find(item => item.path === location.pathname);
     return item ? item.label : "Dashboard";
   };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
+  const initials = user?.full_name?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U";
 
   return (
     <div className="flex h-screen bg-background">
@@ -205,6 +220,19 @@ export default function DashboardPage() {
           })}
         </nav>
 
+        <div className="px-2 pb-4 space-y-1">
+          {user?.role === "admin" && (
+            <Link to="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
+              <Shield className="h-5 w-5 shrink-0" />
+              {!collapsed && <span>Admin Panel</span>}
+            </Link>
+          )}
+          <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+        </div>
+
         {/* SA flag stripe at bottom */}
         <div className="flex h-1">
           <div className="flex-1 bg-sa-green" />
@@ -231,7 +259,7 @@ export default function DashboardPage() {
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-sa-red text-[10px] font-bold text-primary-foreground">3</span>
             </button>
             <div className="h-8 w-8 rounded-full gradient-hero flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">JM</span>
+              <span className="text-xs font-bold text-primary-foreground">{initials}</span>
             </div>
           </div>
         </header>

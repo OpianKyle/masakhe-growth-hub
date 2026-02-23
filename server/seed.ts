@@ -1,9 +1,27 @@
 import { sqlite } from "./db";
 import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
 
 function now() { return new Date().toISOString(); }
 
+function seedAdminUser() {
+  const existing = sqlite.prepare("SELECT id FROM users WHERE email = 'admin@masakhe.co.za'").get();
+  if (existing) return;
+
+  const hash = bcrypt.hashSync("admin123", 10);
+  const userId = randomUUID();
+  const ts = now();
+
+  sqlite.prepare(`
+    INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'admin', ?, ?)
+  `).run(userId, "admin@masakhe.co.za", hash, "Masakhe Admin", ts, ts);
+}
+
 export function seedIfEmpty() {
+  const usersTableCheck = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+  if (usersTableCheck) seedAdminUser();
+
   const tableCheck = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='onboarding_flows'").get();
   if (!tableCheck) return;
 

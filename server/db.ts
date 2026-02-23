@@ -59,5 +59,41 @@ export function runMigrations() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS business_profiles (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      business_name TEXT,
+      trading_name TEXT,
+      business_status TEXT,
+      business_type TEXT,
+      industry_sector TEXT,
+      years_operating INTEGER,
+      employee_count INTEGER,
+      sa_id TEXT,
+      cipc_number TEXT,
+      phone TEXT,
+      whatsapp TEXT,
+      email TEXT,
+      physical_address TEXT,
+      bank_name TEXT,
+      account_type TEXT,
+      account_number TEXT,
+      branch_code TEXT,
+      popia_consent INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
   `);
 }
