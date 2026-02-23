@@ -13,8 +13,29 @@ adminRouter.get("/stats", (req, res) => {
     const publishedWebsites = (sqlite.prepare("SELECT COUNT(*) as c FROM websites WHERE status = 'published'").get() as any).c;
     const totalProfiles = (sqlite.prepare("SELECT COUNT(*) as c FROM business_profiles").get() as any).c;
     const recentUsers = (sqlite.prepare("SELECT COUNT(*) as c FROM users WHERE created_at > datetime('now', '-7 days')").get() as any).c;
+    const totalInvoices = (sqlite.prepare("SELECT COUNT(*) as c FROM invoices").get() as any).c;
+    const totalLedgerEntries = (sqlite.prepare("SELECT COUNT(*) as c FROM ledger_entries").get() as any).c;
 
-    res.json({ totalUsers, totalWebsites, publishedWebsites, totalProfiles, recentUsers });
+    const monthlyTotals = sqlite.prepare(`
+      SELECT substr(occurred_at, 1, 7) as month, type, SUM(amount_cents) as total
+      FROM ledger_entries
+      GROUP BY month, type
+      ORDER BY month DESC
+      LIMIT 24
+    `).all() as any[];
+
+    const revenueByMonth: Record<string, { income: number; expense: number }> = {};
+    for (const row of monthlyTotals) {
+      if (!revenueByMonth[row.month]) revenueByMonth[row.month] = { income: 0, expense: 0 };
+      if (row.type === "INCOME") revenueByMonth[row.month].income = row.total;
+      else revenueByMonth[row.month].expense = row.total;
+    }
+
+    res.json({
+      totalUsers, totalWebsites, publishedWebsites, totalProfiles, recentUsers,
+      totalInvoices, totalLedgerEntries,
+      revenueByMonth: Object.entries(revenueByMonth).map(([month, d]) => ({ month, ...d })),
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch stats" });
   }

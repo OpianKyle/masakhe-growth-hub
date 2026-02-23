@@ -95,5 +95,43 @@ export function runMigrations() {
       updated_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS ledger_entries (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE')),
+      amount_cents INTEGER NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT,
+      occurred_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS invoices (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      invoice_number TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      customer_email TEXT,
+      total_cents INTEGER NOT NULL DEFAULT 0,
+      items_json TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS grant_readiness (
+      user_id TEXT PRIMARY KEY,
+      id_verified INTEGER NOT NULL DEFAULT 0,
+      business_registered INTEGER NOT NULL DEFAULT 0,
+      tax_number TEXT,
+      vat_registered INTEGER NOT NULL DEFAULT 0,
+      bank_account_provided INTEGER NOT NULL DEFAULT 0,
+      six_months_records INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
   `);
 }

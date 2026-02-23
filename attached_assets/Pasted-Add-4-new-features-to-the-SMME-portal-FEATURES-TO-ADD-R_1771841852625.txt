@@ -1,0 +1,216 @@
+Add 4 new features to the SMME portal:
+
+FEATURES TO ADD
+
+Revenue Logger (Income + Expenses)
+
+Compliance Score Calculation
+
+Grant Readiness Checklist
+
+Invoice PDF System
+
+IMPORTANT
+
+Keep the current Website Builder and Dashboard Overview intact.
+
+Use the existing DB/ORM approach already in the project (do NOT replace the database stack).
+
+Keep UI styling consistent with the current portal (government portal look + SA colours).
+
+Add role-safe routing: these features are for SME users only, but Admin can view aggregated stats.
+
+REVENUE LOGGER (MVP)
+Add a new “Finance” section in the SME dashboard:
+
+Tabs: “Income”, “Expenses”, “Monthly Summary”
+
+Allow SME to add entries manually.
+
+Data model:
+
+Table: ledger_entries
+
+id (uuid)
+
+userId (fk)
+
+type ("INCOME" | "EXPENSE")
+
+amountCents (int)
+
+category (string) // e.g. Sales, Transport, Rent, Stock, Utilities
+
+description (string, optional)
+
+occurredAt (date)
+
+createdAt (date)
+
+Backend:
+
+CRUD endpoints:
+
+POST /api/finance/entries
+
+GET /api/finance/entries?month=YYYY-MM
+
+DELETE /api/finance/entries/
+
+Summary endpoint:
+
+GET /api/finance/summary?from=YYYY-MM&to=YYYY-MM
+
+returns totals per month + income/expense breakdown
+
+Frontend:
+
+Add “Finance” nav item
+
+Add forms to create entries
+
+Add table list with delete
+
+Add a simple bar chart for monthly income vs expenses (Recharts)
+
+COMPLIANCE SCORE (MVP, HIGH IMPACT)
+Add “Compliance Score” card to the SME Overview page:
+
+Score from 0–100 with a progress bar
+
+Show checklist items and what’s missing
+
+Scoring rules (simple + explainable):
+
+POPIA consent completed: +10
+
+Business profile completed (required fields present): +20
+
+Website published: +20
+
+At least 3 social drafts generated: +10
+
+At least 1 invoice created: +20
+
+At least 10 ledger entries logged: +20
+
+Backend:
+
+GET /api/compliance/score
+
+Returns { score, items: [{key,label,points,completed}], nextSteps: [...] }
+
+Frontend:
+
+Show score + “Next Best Actions” list
+
+Make each missing item link to the relevant page
+
+GRANT READINESS CHECKLIST (MVP)
+Create a “Funding Readiness” page for SMEs:
+
+Checkbox checklist (some auto-checked based on data; some user-provided)
+
+Show readiness % and a “Download Readiness Summary” button (PDF optional, can be v2)
+
+Data model:
+
+Table: grant_readiness
+
+userId (pk)
+
+idVerified (bool)
+
+businessRegistered (bool)
+
+taxNumber (string, optional)
+
+vatRegistered (bool)
+
+bankAccountProvided (bool)
+
+sixMonthsRecords (bool)
+
+createdAt, updatedAt
+
+Backend:
+
+GET /api/funding/readiness
+
+POST /api/funding/readiness (upsert)
+
+Readiness % = (#completed / #items) * 100
+
+Frontend:
+
+Page with sections:
+
+Identity & Registration
+
+Tax & Compliance
+
+Banking
+
+Records
+
+Auto-check what can be inferred (POPIA, profile complete, invoices exist, ledger entries exist)
+
+INVOICE PDF SYSTEM (MVP)
+Add a “Invoices” page:
+
+Create invoice form:
+
+Customer name/email
+
+Items (name, qty, unit price)
+
+Auto totals
+
+Save invoices to DB
+
+Generate downloadable PDF using server-side PDF generation (pdf-lib)
+
+Data model:
+
+invoices
+
+id (uuid)
+
+userId
+
+customerName
+
+customerEmail
+
+totalCents
+
+itemsJson
+
+createdAt
+
+invoice_items can be JSON for MVP
+
+Backend:
+
+POST /api/invoices
+
+GET /api/invoices
+
+GET /api/invoices//pdf -> returns application/pdf with attachment filename
+
+Frontend:
+
+List invoices + “Download PDF”
+
+Create invoice wizard (simple)
+
+ADMIN INSIGHTS (Nice & fast)
+Add Admin dashboard tiles:
+
+total SMEs
+
+total invoices created
+
+total vouchers redeemed
+
+aggregated monthly income/expense totals (from ledger_entries), anonymised

@@ -3,22 +3,26 @@ import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom"
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt, FileText, MessageSquare,
   Settings, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Users, DollarSign,
-  ArrowUpRight, Bell, Search, Calendar, AlertTriangle, CheckCircle2, LogOut, Shield
+  ArrowUpRight, Bell, Search, Calendar, AlertTriangle, CheckCircle2, LogOut, Shield, Wallet, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import WebsiteBuilder from "./WebsiteBuilder";
+import FinancePage from "./FinancePage";
+import InvoicesPage from "./InvoicesPage";
+import GrantReadinessPage from "./GrantReadinessPage";
+import ComplianceScoreCard from "@/components/ComplianceScoreCard";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website" },
+  { icon: Wallet, label: "Finance", path: "/dashboard/finance" },
+  { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
+  { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
-  { icon: MessageSquare, label: "Communications", path: "/dashboard/comms" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
-  { icon: Receipt, label: "Bookkeeping", path: "/dashboard/bookkeeping" },
-  { icon: FileText, label: "Tax & Compliance", path: "/dashboard/tax" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -135,25 +139,29 @@ function DashboardOverview() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-        <h3 className="text-lg font-bold font-heading text-foreground mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: Globe, label: "Update Website", color: "gradient-hero", path: "/dashboard/website" },
-            { icon: Receipt, label: "Create Invoice", color: "gradient-gold", path: "/dashboard/bookkeeping" },
-            { icon: Megaphone, label: "Launch Campaign", color: "gradient-warm", path: "/dashboard/campaigns" },
-            { icon: FileText, label: "File Tax Return", color: "gradient-hero", path: "/dashboard/tax" },
-          ].map((action) => (
-            <Link
-              key={action.label}
-              to={action.path}
-              className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-4 text-primary-foreground hover:opacity-90 transition-opacity`}
-            >
-              <action.icon className="h-6 w-6" />
-              <span className="text-xs font-semibold">{action.label}</span>
-            </Link>
-          ))}
+      {/* Compliance Score + Quick Actions */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <ComplianceScoreCard />
+
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          <h3 className="text-lg font-bold font-heading text-foreground mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: Globe, label: "Update Website", color: "gradient-hero", path: "/dashboard/website" },
+              { icon: Receipt, label: "Create Invoice", color: "gradient-gold", path: "/dashboard/invoices" },
+              { icon: Wallet, label: "Log Finance", color: "gradient-warm", path: "/dashboard/finance" },
+              { icon: ClipboardCheck, label: "Funding Check", color: "gradient-hero", path: "/dashboard/funding" },
+            ].map((action) => (
+              <Link
+                key={action.label}
+                to={action.path}
+                className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-4 text-primary-foreground hover:opacity-90 transition-opacity`}
+              >
+                <action.icon className="h-6 w-6" />
+                <span className="text-xs font-semibold">{action.label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -267,6 +275,9 @@ export default function DashboardPage() {
         <Routes>
           <Route index element={<DashboardOverview />} />
           <Route path="website" element={<WebsiteBuilder />} />
+          <Route path="finance" element={<FinancePage />} />
+          <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="funding" element={<GrantReadinessPage />} />
           <Route path="*" element={<DashboardOverview />} />
         </Routes>
       </main>

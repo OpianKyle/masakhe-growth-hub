@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
-  TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye
+  TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +18,9 @@ interface Stats {
   publishedWebsites: number;
   totalProfiles: number;
   recentUsers: number;
+  totalInvoices: number;
+  totalLedgerEntries: number;
+  revenueByMonth: Array<{ month: string; income: number; expense: number }>;
 }
 
 interface Client {
@@ -57,7 +63,15 @@ function AdminOverview() {
     { label: "New This Week", value: stats.recentUsers, icon: TrendingUp, color: "bg-green-500/10 text-green-600" },
     { label: "Total Websites", value: stats.totalWebsites, icon: Globe, color: "bg-purple-500/10 text-purple-600" },
     { label: "Published Sites", value: stats.publishedWebsites, icon: ExternalLink, color: "bg-orange-500/10 text-orange-600" },
+    { label: "Invoices Created", value: stats.totalInvoices, icon: Receipt, color: "bg-teal-500/10 text-teal-600" },
+    { label: "Ledger Entries", value: stats.totalLedgerEntries, icon: FileText, color: "bg-indigo-500/10 text-indigo-600" },
   ];
+
+  const chartData = (stats.revenueByMonth || []).map((r) => ({
+    month: r.month,
+    Income: r.income / 100,
+    Expenses: r.expense / 100,
+  }));
 
   return (
     <div className="p-6 space-y-8">
@@ -66,7 +80,7 @@ function AdminOverview() {
         <p className="text-muted-foreground">Platform statistics and management.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((card) => (
           <div key={card.label} className="rounded-xl border bg-card p-5 shadow-sm">
             <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${card.color}`}>
@@ -77,6 +91,26 @@ function AdminOverview() {
           </div>
         ))}
       </div>
+
+      {chartData.length > 0 && (
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <h3 className="text-lg font-bold font-heading mb-4 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Platform Revenue Overview (Aggregated, Anonymised)
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `R${v}`} />
+              <Tooltip formatter={(v: number) => `R${v.toFixed(2)}`} />
+              <Legend />
+              <Bar dataKey="Income" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Expenses" fill="#dc2626" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
