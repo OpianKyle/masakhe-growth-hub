@@ -1,9 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { SMMEWebsiteTemplate, SiteConfig } from "@/components/website/SMMEWebsiteTemplate";
+import { SectionRenderer } from "@/components/website/SectionRenderer";
+import { SiteConfig } from "@/types/site";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+
+function migrateLegacyConfig(raw: any): SiteConfig {
+  if (raw.sections && Array.isArray(raw.sections)) return raw as SiteConfig;
+
+  const sections: SiteConfig["sections"] = [];
+  let id = 1;
+  if (raw.hero) sections.push({ id: `legacy_${id++}`, type: "hero", enabled: true, data: raw.hero });
+  if (raw.stats) sections.push({ id: `legacy_${id++}`, type: "stats", enabled: true, data: { items: raw.stats } });
+  if (raw.section1) sections.push({ id: `legacy_${id++}`, type: "features", enabled: true, data: { title: raw.section1.title, subtitle: raw.section1.subtitle, imageUrl: raw.section1.imageUrl, imagePosition: raw.section1.imagePosition, items: raw.section1.cards } });
+  if (raw.section2) sections.push({ id: `legacy_${id++}`, type: "about", enabled: true, data: { title: raw.section2.title, quote: raw.section2.quote, imageUrl: raw.section2.imageUrl, imagePosition: raw.section2.imagePosition, items: raw.section2.bullets } });
+  if (raw.section3) sections.push({ id: `legacy_${id++}`, type: "services", enabled: true, data: { title: raw.section3.title, subtitle: raw.section3.subtitle, imageUrl: raw.section3.imageUrl, items: raw.section3.services } });
+  if (raw.contact) sections.push({ id: `legacy_${id++}`, type: "contact", enabled: true, data: raw.contact });
+
+  return {
+    businessName: raw.businessName || "Business",
+    slug: raw.slug || "",
+    templateId: "professional",
+    theme: raw.theme || { primary: "#2563eb", accent: "#16a34a" },
+    social: raw.social || {},
+    sections,
+  };
+}
 
 export default function PublishedSite() {
   const { slug } = useParams();
@@ -17,7 +40,7 @@ export default function PublishedSite() {
         const res = await fetch(`/api/websites/${slug}`);
         if (!res.ok) throw new Error("Site not found");
         const data = await res.json();
-        setConfig(data.content);
+        setConfig(migrateLegacyConfig(data.content));
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -56,5 +79,5 @@ export default function PublishedSite() {
     );
   }
 
-  return <SMMEWebsiteTemplate site={config} />;
+  return <SectionRenderer site={config} />;
 }
