@@ -87,10 +87,36 @@ function ArrayEditor({ items, onUpdate, fields, addLabel, minItems, maxItems }: 
   );
 }
 
+const heroStyleOptions = [
+  { value: "corporate", label: "Corporate", desc: "Dark split layout with image" },
+  { value: "centered", label: "Centered", desc: "Full background image overlay" },
+  { value: "bold", label: "Bold", desc: "Vibrant gradient with shapes" },
+] as const;
+
 function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
   const update = (key: string, val: string) => onChange({ ...data, [key]: val });
   return (
     <div className="space-y-3">
+      <div>
+        <Label className="text-xs font-semibold">Hero Style</Label>
+        <div className="mt-1 grid grid-cols-3 gap-2">
+          {heroStyleOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange({ ...data, heroStyle: opt.value })}
+              className={`rounded-lg border-2 p-2 text-left transition-all ${
+                (data.heroStyle || "corporate") === opt.value
+                  ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200"
+                  : "border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="text-xs font-bold">{opt.label}</div>
+              <div className="text-[10px] text-slate-500 leading-tight">{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
       <div><Label className="text-xs">Badge Label</Label><Input value={data.badgeText || ""} onChange={(e) => update("badgeText", e.target.value)} className="mt-1 h-8 text-sm" /></div>
       <div><Label className="text-xs">Main Heading</Label><Textarea value={data.title || ""} onChange={(e) => update("title", e.target.value)} className="mt-1 text-sm" /></div>
       <div><Label className="text-xs">Sub-heading</Label><Textarea value={data.subtitle || ""} onChange={(e) => update("subtitle", e.target.value)} className="mt-1 text-sm" /></div>
@@ -98,6 +124,7 @@ function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void 
         <div><Label className="text-xs">Primary Button</Label><Input value={data.ctaPrimaryText || ""} onChange={(e) => update("ctaPrimaryText", e.target.value)} className="mt-1 h-8 text-sm" /></div>
         <div><Label className="text-xs">Secondary Button</Label><Input value={data.ctaSecondaryText || ""} onChange={(e) => update("ctaSecondaryText", e.target.value)} className="mt-1 h-8 text-sm" /></div>
       </div>
+      <div><Label className="text-xs">Background Image URL</Label><Input value={data.backgroundImageUrl || ""} onChange={(e) => update("backgroundImageUrl", e.target.value)} placeholder="https://..." className="mt-1 h-8 text-sm" /></div>
     </div>
   );
 }

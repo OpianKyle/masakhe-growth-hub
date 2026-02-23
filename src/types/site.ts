@@ -18,12 +18,16 @@ export interface SiteSection {
   data: any;
 }
 
+export type HeroStyle = "corporate" | "centered" | "bold";
+
 export interface HeroData {
   title: string;
   subtitle: string;
   badgeText?: string;
   ctaPrimaryText?: string;
   ctaSecondaryText?: string;
+  heroStyle?: HeroStyle;
+  backgroundImageUrl?: string;
 }
 
 export interface StatsData {

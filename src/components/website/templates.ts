@@ -54,11 +54,13 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
+              heroStyle: "centered",
               title: "Authentic Flavours, Made with Love",
               subtitle: "Experience the best of South African cuisine in a warm, welcoming atmosphere.",
               badgeText: "Now Open for Dine-in & Takeaway",
               ctaPrimaryText: "View Our Menu",
               ctaSecondaryText: "Book a Table",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80",
             },
           },
           {
@@ -148,11 +150,13 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
+              heroStyle: "bold",
               title: "Quality Products, Great Prices",
               subtitle: "Your one-stop shop for everyday essentials and unique local goods.",
               badgeText: "Trusted Local Shop",
               ctaPrimaryText: "Shop Now",
               ctaSecondaryText: "WhatsApp Us",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80",
             },
           },
           {
@@ -254,6 +258,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
+              heroStyle: "corporate",
               title: "Empowering Local SMMEs to Grow Online",
               subtitle: "Professional digital presence for South African businesses. Fast, reliable, and compliant.",
               badgeText: "Masakhe Verified SMME",
