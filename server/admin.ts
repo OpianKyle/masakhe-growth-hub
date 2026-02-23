@@ -8,7 +8,7 @@ adminRouter.use(requireAdmin);
 
 adminRouter.get("/stats", (req, res) => {
   try {
-    const totalUsers = (sqlite.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'user'").get() as any).c;
+    const totalUsers = (sqlite.prepare("SELECT COUNT(*) as c FROM users").get() as any).c;
     const totalWebsites = (sqlite.prepare("SELECT COUNT(*) as c FROM websites").get() as any).c;
     const publishedWebsites = (sqlite.prepare("SELECT COUNT(*) as c FROM websites WHERE status = 'published'").get() as any).c;
     const totalProfiles = (sqlite.prepare("SELECT COUNT(*) as c FROM business_profiles").get() as any).c;

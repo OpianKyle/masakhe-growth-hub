@@ -92,12 +92,12 @@ function AdminOverview() {
         ))}
       </div>
 
-      {chartData.length > 0 && (
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h3 className="text-lg font-bold font-heading mb-4 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Platform Revenue Overview (Aggregated, Anonymised)
-          </h3>
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <h3 className="text-lg font-bold font-heading mb-4 flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Platform Revenue Overview (Aggregated, Anonymised)
+        </h3>
+        {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -109,8 +109,14 @@ function AdminOverview() {
               <Bar dataKey="Expenses" fill="#dc2626" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+            <BarChart3 className="h-12 w-12 mb-3 opacity-30" />
+            <p className="text-sm font-medium">No revenue data yet</p>
+            <p className="text-xs mt-1">Revenue will appear here once clients start logging income and expenses.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
