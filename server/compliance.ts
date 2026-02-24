@@ -17,6 +17,14 @@ complianceRouter.get("/score", (req, res) => {
     const profileComplete = profile && profile.business_name && profile.business_type && profile.industry_sector && profile.phone;
     const popiaConsent = profile?.popia_consent === 1;
 
+    let socialPostCount = 0;
+    try {
+      const wsMember = sqlite.prepare("SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1").get(userId) as any;
+      if (wsMember) {
+        socialPostCount = (sqlite.prepare("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ?").get(wsMember.workspace_id) as any).c;
+      }
+    } catch {}
+
     const items = [
       {
         key: "popia",
@@ -57,7 +65,7 @@ complianceRouter.get("/score", (req, res) => {
         key: "social",
         label: "At least 3 social posts created",
         points: 10,
-        completed: false,
+        completed: socialPostCount >= 3,
         link: "/dashboard/social",
       },
     ];

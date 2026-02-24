@@ -11,6 +11,8 @@ import { financeRouter } from "./finance";
 import { invoiceRouter } from "./invoices";
 import { complianceRouter } from "./compliance";
 import { grantsRouter } from "./grants";
+import { socialRouter } from "./social/index";
+import { startScheduler } from "./social/scheduler";
 import path from "path";
 
 runMigrations();
@@ -45,9 +47,11 @@ app.use("/api/finance", financeRouter);
 app.use("/api/invoices", invoiceRouter);
 app.use("/api/compliance", complianceRouter);
 app.use("/api/funding", grantsRouter);
+app.use("/api/social", socialRouter);
 app.use("/api", router);
 
 const port = Number(process.env.API_PORT || 3001);
 app.listen(port, "0.0.0.0", () => {
   console.log(`API running on 0.0.0.0:${port}`);
+  startScheduler();
 });

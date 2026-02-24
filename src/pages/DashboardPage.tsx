@@ -13,6 +13,7 @@ import WebsiteBuilder from "./WebsiteBuilder";
 import FinancePage from "./FinancePage";
 import InvoicesPage from "./InvoicesPage";
 import GrantReadinessPage from "./GrantReadinessPage";
+import SocialHub from "./social/SocialHub";
 import ComplianceScoreCard from "@/components/ComplianceScoreCard";
 
 const navItems = [
@@ -175,6 +176,7 @@ export default function DashboardPage() {
   const { user, logout } = useAuth();
 
   const getPageTitle = () => {
+    if (location.pathname.startsWith("/dashboard/social")) return "Social Media Hub";
     const item = navItems.find(item => item.path === location.pathname);
     return item ? item.label : "Dashboard";
   };
@@ -210,7 +212,9 @@ export default function DashboardPage() {
 
         <nav className="flex-1 py-4 space-y-1 px-2">
           {navItems.map((item) => {
-            const active = location.pathname === item.path;
+            const active = item.path === "/dashboard"
+              ? location.pathname === "/dashboard"
+              : location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.path}
@@ -278,6 +282,7 @@ export default function DashboardPage() {
           <Route path="finance" element={<FinancePage />} />
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="funding" element={<GrantReadinessPage />} />
+          <Route path="social/*" element={<SocialHub />} />
           <Route path="*" element={<DashboardOverview />} />
         </Routes>
       </main>

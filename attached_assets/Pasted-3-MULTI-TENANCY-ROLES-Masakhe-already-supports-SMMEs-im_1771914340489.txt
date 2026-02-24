@@ -1,0 +1,307 @@
+3) MULTI-TENANCY + ROLES
+
+Masakhe already supports SMMEs; implement Workspaces (Businesses) properly.
+
+Roles:
+
+Workspace Owner
+
+Admin
+
+Editor
+
+Viewer
+
+Permissions:
+
+Owner/Admin: connect accounts, manage team, publish/schedule, view analytics
+
+Editor: create/edit/schedule content, upload media
+
+Viewer: view calendar + analytics only
+
+All data must be scoped to workspaceId.
+
+4) DATABASE MODELS (PRISMA)
+
+Add these models and relations (align with existing schema; do not break current tables):
+
+Workspace (already exists or create)
+
+WorkspaceMember (already exists or create)
+
+SocialAccount
+
+id
+
+workspaceId
+
+platform (META_FACEBOOK, META_INSTAGRAM, LINKEDIN, X optional)
+
+accountName
+
+platformAccountId
+
+accessTokenEncrypted
+
+refreshTokenEncrypted (nullable)
+
+tokenExpiresAt (nullable)
+
+connectedByUserId
+
+createdAt, updatedAt
+
+MediaAsset
+
+id
+
+workspaceId
+
+url
+
+type (IMAGE, VIDEO)
+
+fileName
+
+size
+
+uploadedByUserId
+
+createdAt
+
+SocialPost
+
+id
+
+workspaceId
+
+createdByUserId
+
+contentText
+
+mediaAssetIds (relation table recommended)
+
+scheduledAt (nullable)
+
+status (DRAFT, SCHEDULED, PUBLISHING, PUBLISHED, FAILED, CANCELLED)
+
+createdAt, updatedAt
+
+SocialPostTarget
+
+id
+
+socialPostId
+
+socialAccountId
+
+platform
+
+status (SCHEDULED, PUBLISHED, FAILED)
+
+platformPostId (nullable)
+
+errorMessage (nullable)
+
+publishedAt (nullable)
+
+AuditLog
+
+id
+
+workspaceId
+
+actorUserId
+
+action (CONNECTED_ACCOUNT, DISCONNECTED_ACCOUNT, CREATED_POST, UPDATED_POST, SCHEDULED_POST, PUBLISHED_POST, FAILED_POST, DELETED_POST, UPLOADED_MEDIA)
+
+entityType
+
+entityId
+
+metadata JSON
+
+createdAt
+
+Encrypt tokens at rest. Store encryption key in env var.
+
+5) NAVIGATION + ROUTES (APP ROUTER)
+
+Add a new sidebar section: “Social Media Hub” with routes:
+
+/dashboard/social
+
+overview stats (scheduled, published, failed, connected accounts)
+
+“Create Post” button
+
+/dashboard/social/calendar
+
+calendar month/week view
+
+drag/drop reschedule (updates scheduledAt)
+
+click to open post detail drawer/modal
+
+/dashboard/social/create
+
+post builder (multi-platform)
+
+/dashboard/social/media
+
+media library grid + upload modal
+
+/dashboard/social/accounts
+
+connect/disconnect social accounts
+
+/dashboard/social/analytics
+
+basic analytics + charts
+
+All pages must use the existing Masakhe layout, theme, and auth guards.
+
+6) OAUTH + PLATFORM INTEGRATIONS (PHASE 1 REQUIRED)
+Meta (Facebook Pages + Instagram Business)
+
+OAuth connect flow
+
+list pages/ig business accounts to select from
+
+store chosen page/ig account as SocialAccount entries
+
+publish:
+
+Facebook Page post
+
+Instagram Business publishing (via Graph API publishing endpoints)
+
+LinkedIn
+
+OAuth connect flow
+
+connect either personal or organization (prefer organizations if available)
+
+publish text + image post to LinkedIn
+
+If API credentials are missing, implement a Mock Provider Mode:
+
+still allows connecting “fake” accounts
+
+posting simulates success/failure
+
+UI remains fully usable for demos
+
+7) POST BUILDER REQUIREMENTS
+
+Post builder must include:
+
+Select target platforms (multi-select)
+
+Select which connected accounts (multi-select)
+
+Text editor with:
+
+character count per platform
+
+hashtag suggestions (simple)
+
+Media upload (image/video) + attach existing assets
+
+Schedule datetime picker (timezone Africa/Johannesburg)
+
+Preview tabs per platform (how it will roughly look)
+
+Save as Draft / Schedule / Publish Now buttons
+
+Validation:
+
+cannot schedule in the past
+
+enforce basic platform limits (best-effort)
+
+8) SCHEDULER / PUBLISHING ENGINE
+
+Create a background worker that runs every minute:
+
+fetch SocialPosts with status SCHEDULED and scheduledAt <= now
+
+mark as PUBLISHING
+
+publish to each SocialPostTarget using platform provider
+
+update target status + platformPostId
+
+if all targets succeed: SocialPost => PUBLISHED
+
+if any fail: SocialPost => FAILED (but keep per-target statuses)
+
+write AuditLog entries
+
+Must be resilient:
+
+avoid double posting (idempotency key per target)
+
+retries for transient failures (max 3 with backoff)
+
+store failure reason
+
+9) ANALYTICS (MVP)
+
+Analytics page must show:
+
+totals per platform (published posts, engagement if available)
+
+charts:
+
+posts published per day/week
+
+engagement per platform (if API supports; otherwise show “not available” gracefully)
+
+list of top posts (by likes/comments if available; else by recency)
+
+Must degrade gracefully if platform metrics are unavailable.
+
+10) GOVERNMENT-FRIENDLY TIE-IN (MASAKHE VALUE)
+
+Add “Compliance & Proof of Activity” features:
+
+Audit log export (CSV/PDF) for a workspace
+
+Monthly “Marketing Activity Report” (summary)
+
+“Grant readiness” style badge: Social activity consistency score (simple calculation)
+These outputs help SMMEs show digital activity and marketing maturity.
+
+11) UI/UX
+
+Use shadcn cards, tables, dialogs
+
+Clean dashboard look
+
+Mobile responsive
+
+Use Masakhe colors (South African flag-inspired)
+
+Toast notifications for actions
+
+Empty states with guidance (“Connect accounts first”)
+
+12) DELIVERABLES
+
+Generate:
+
+Updated Prisma schema + migration
+
+All pages/routes/components
+
+OAuth handlers + provider services
+
+Publishing worker
+
+Seed/demo data
+
+.env.example with required keys
+
+README instructions for running locally and on Replit

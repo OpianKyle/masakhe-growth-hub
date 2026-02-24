@@ -133,5 +133,107 @@ export function runMigrations() {
       updated_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS workspaces (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      owner_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(owner_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS workspace_members (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'viewer' CHECK(role IN ('owner','admin','editor','viewer')),
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      UNIQUE(workspace_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS social_accounts (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      platform TEXT NOT NULL CHECK(platform IN ('META_FACEBOOK','META_INSTAGRAM','LINKEDIN','X')),
+      account_name TEXT NOT NULL,
+      platform_account_id TEXT,
+      access_token_enc TEXT,
+      refresh_token_enc TEXT,
+      token_expires_at TEXT,
+      connected_by_user_id TEXT NOT NULL,
+      is_mock INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+      FOREIGN KEY(connected_by_user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS media_assets (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('IMAGE','VIDEO')),
+      file_name TEXT NOT NULL,
+      size INTEGER NOT NULL DEFAULT 0,
+      uploaded_by_user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+      FOREIGN KEY(uploaded_by_user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS social_posts (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      created_by_user_id TEXT NOT NULL,
+      content_text TEXT,
+      media_asset_ids TEXT DEFAULT '[]',
+      scheduled_at TEXT,
+      status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','SCHEDULED','PUBLISHING','PUBLISHED','FAILED','CANCELLED')),
+      idempotency_key TEXT UNIQUE,
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+      FOREIGN KEY(created_by_user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS social_post_targets (
+      id TEXT PRIMARY KEY,
+      social_post_id TEXT NOT NULL,
+      social_account_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'SCHEDULED' CHECK(status IN ('SCHEDULED','PUBLISHING','PUBLISHED','FAILED')),
+      platform_post_id TEXT,
+      error_message TEXT,
+      published_at TEXT,
+      FOREIGN KEY(social_post_id) REFERENCES social_posts(id),
+      FOREIGN KEY(social_account_id) REFERENCES social_accounts(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      actor_user_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      metadata TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+      FOREIGN KEY(actor_user_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_workspace_members_ws ON workspace_members(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_workspace_members_user ON workspace_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_social_accounts_ws ON social_accounts(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_social_posts_ws ON social_posts(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_social_posts_status ON social_posts(status);
+    CREATE INDEX IF NOT EXISTS idx_social_posts_scheduled ON social_posts(scheduled_at);
+    CREATE INDEX IF NOT EXISTS idx_post_targets_post ON social_post_targets(social_post_id);
+    CREATE INDEX IF NOT EXISTS idx_media_assets_ws ON media_assets(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_ws ON audit_logs(workspace_id);
   `);
 }
