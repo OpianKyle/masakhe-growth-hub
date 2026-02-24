@@ -14,7 +14,7 @@ function HeroCorporate({ data, site }: { data: any; site: SiteConfig }) {
         <nav className="mb-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {site.logoUrl ? (
-              <img src={site.logoUrl} alt={site.businessName} className="h-10 w-10 rounded-lg object-contain" />
+              <img src={site.logoUrl} alt={site.businessName} className="h-12 max-w-[160px] rounded-lg object-contain" />
             ) : (
               <Globe className="h-6 w-6" style={{ color: site.theme.primary }} />
             )}
@@ -58,7 +58,7 @@ function HeroCentered({ data, site }: { data: any; site: SiteConfig }) {
         <nav className="flex items-center justify-between py-6">
           <div className="flex items-center gap-2">
             {site.logoUrl ? (
-              <img src={site.logoUrl} alt={site.businessName} className="h-10 w-10 rounded-full object-contain bg-white/10 backdrop-blur-sm" />
+              <img src={site.logoUrl} alt={site.businessName} className="h-12 max-w-[160px] rounded-lg object-contain bg-white/10 backdrop-blur-sm p-1" />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/30">
                 <span className="text-lg font-bold">{site.businessName[0]}</span>
@@ -118,7 +118,7 @@ function HeroBold({ data, site }: { data: any; site: SiteConfig }) {
         <nav className="mb-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {site.logoUrl ? (
-              <img src={site.logoUrl} alt={site.businessName} className="h-10 w-10 rounded-xl object-contain bg-white/20 backdrop-blur-sm" />
+              <img src={site.logoUrl} alt={site.businessName} className="h-12 max-w-[160px] rounded-xl object-contain bg-white/20 backdrop-blur-sm p-1" />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm font-bold text-lg">
                 {site.businessName[0]}
@@ -433,7 +433,7 @@ export function SectionRenderer({ site }: { site: SiteConfig }) {
       <footer className="border-t border-slate-100 py-8 text-center text-slate-400">
         <div className="container mx-auto px-4 flex flex-col items-center gap-2">
           {site.logoUrl && (
-            <img src={site.logoUrl} alt={site.businessName} className="h-8 w-8 rounded object-contain" />
+            <img src={site.logoUrl} alt={site.businessName} className="h-10 max-w-[140px] rounded object-contain" />
           )}
           <p>&copy; {new Date().getFullYear()} {site.businessName}. Built with Masakhe Growth Hub.</p>
         </div>
