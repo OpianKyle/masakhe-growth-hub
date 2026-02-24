@@ -260,6 +260,7 @@ export default function WebsiteBuilder() {
                 </div>
               </div>
             </div>
+            <ImageUploadField value={site.logoUrl} onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))} label="Business Logo" />
             <ImageUploadField value={site.photoUrl} onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))} label="Hero Photo" />
           </div>
 

@@ -3,6 +3,7 @@ export interface SiteConfig {
   businessName: string;
   slug: string;
   templateId: string;
+  logoUrl?: string;
   photoUrl?: string;
   theme: { primary: string; accent: string };
   social: { linkedIn?: string; facebook?: string; instagram?: string; x?: string };
