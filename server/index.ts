@@ -55,7 +55,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 if (isProduction) {
   app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
+  app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
