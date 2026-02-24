@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft
+  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe
 } from "lucide-react";
 
 interface Account {
@@ -31,6 +31,8 @@ const PLATFORM_ICONS: Record<string, any> = {
   META_INSTAGRAM: Instagram,
   LINKEDIN: Linkedin,
   X: X,
+  TIKTOK: Globe,
+  YOUTUBE: Globe,
 };
 
 const PLATFORM_LIMITS: Record<string, number> = {
@@ -38,6 +40,8 @@ const PLATFORM_LIMITS: Record<string, number> = {
   META_INSTAGRAM: 2200,
   LINKEDIN: 3000,
   X: 280,
+  TIKTOK: 2200,
+  YOUTUBE: 5000,
 };
 
 const HASHTAG_SUGGESTIONS = [

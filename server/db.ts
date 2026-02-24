@@ -157,8 +157,9 @@ export function runMigrations() {
     CREATE TABLE IF NOT EXISTS social_accounts (
       id TEXT PRIMARY KEY,
       workspace_id TEXT NOT NULL,
-      platform TEXT NOT NULL CHECK(platform IN ('META_FACEBOOK','META_INSTAGRAM','LINKEDIN','X')),
+      platform TEXT NOT NULL CHECK(platform IN ('META_FACEBOOK','META_INSTAGRAM','LINKEDIN','X','TIKTOK','YOUTUBE')),
       account_name TEXT NOT NULL,
+      profile_url TEXT,
       platform_account_id TEXT,
       access_token_enc TEXT,
       refresh_token_enc TEXT,
@@ -236,4 +237,58 @@ export function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_media_assets_ws ON media_assets(workspace_id);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_ws ON audit_logs(workspace_id);
   `);
+
+  const schemaSql = (sqlite.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='social_accounts'").get() as any)?.sql || '';
+  const hasProfileUrl = schemaSql.includes('profile_url');
+  const hasTikTok = schemaSql.includes('TIKTOK');
+
+  if (!hasProfileUrl && hasTikTok) {
+    sqlite.exec("ALTER TABLE social_accounts ADD COLUMN profile_url TEXT");
+  }
+
+  if (!hasTikTok) {
+    const migrateInTransaction = sqlite.transaction(() => {
+      sqlite.pragma("foreign_keys = OFF");
+      sqlite.exec("DROP TABLE IF EXISTS social_accounts_tmp");
+
+      const colList = hasProfileUrl
+        ? 'id, workspace_id, platform, account_name, profile_url, platform_account_id, access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at'
+        : 'id, workspace_id, platform, account_name, NULL AS profile_url, platform_account_id, access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at';
+
+      sqlite.exec(`
+        CREATE TABLE social_accounts_tmp (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          platform TEXT NOT NULL CHECK(platform IN ('META_FACEBOOK','META_INSTAGRAM','LINKEDIN','X','TIKTOK','YOUTUBE')),
+          account_name TEXT NOT NULL,
+          profile_url TEXT,
+          platform_account_id TEXT,
+          access_token_enc TEXT,
+          refresh_token_enc TEXT,
+          token_expires_at TEXT,
+          connected_by_user_id TEXT NOT NULL,
+          is_mock INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+          FOREIGN KEY(connected_by_user_id) REFERENCES users(id)
+        )
+      `);
+      sqlite.exec(`INSERT INTO social_accounts_tmp SELECT ${colList} FROM social_accounts`);
+
+      sqlite.exec("DELETE FROM social_post_targets WHERE account_id NOT IN (SELECT id FROM social_accounts_tmp)");
+
+      sqlite.exec("DROP TABLE social_accounts");
+      sqlite.exec("ALTER TABLE social_accounts_tmp RENAME TO social_accounts");
+      sqlite.exec("CREATE INDEX IF NOT EXISTS idx_social_accounts_ws ON social_accounts(workspace_id)");
+      sqlite.pragma("foreign_keys = ON");
+
+      const fkCheck = sqlite.pragma("foreign_key_check") as any[];
+      if (fkCheck.length > 0) {
+        throw new Error("Foreign key integrity check failed after migration");
+      }
+    });
+
+    migrateInTransaction();
+  }
 }

@@ -14,7 +14,7 @@ const MOCK_MODE = !process.env.META_APP_ID && !process.env.LINKEDIN_CLIENT_ID;
 accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admin", "editor", "viewer"), (req, res) => {
   try {
     const accounts = sqlite.prepare(`
-      SELECT id, workspace_id, platform, account_name, platform_account_id, is_mock,
+      SELECT id, workspace_id, platform, account_name, profile_url, platform_account_id, is_mock,
              token_expires_at, connected_by_user_id, created_at, updated_at
       FROM social_accounts WHERE workspace_id = ?
       ORDER BY created_at DESC
@@ -27,10 +27,10 @@ accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admi
 
 accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owner", "admin"), (req, res) => {
   try {
-    const { platform, accountName } = req.body;
+    const { platform, accountName, profileUrl } = req.body;
     if (!platform || !accountName) return res.status(400).json({ error: "platform and accountName required" });
 
-    const validPlatforms = ["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN", "X"];
+    const validPlatforms = ["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN", "X", "TIKTOK", "YOUTUBE"];
     if (!validPlatforms.includes(platform)) return res.status(400).json({ error: "Invalid platform" });
 
     const id = randomUUID();
@@ -38,17 +38,17 @@ accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owne
     const mockToken = encrypt(`mock_token_${platform}_${Date.now()}`);
 
     sqlite.prepare(`
-      INSERT INTO social_accounts (id, workspace_id, platform, account_name, platform_account_id,
+      INSERT INTO social_accounts (id, workspace_id, platform, account_name, profile_url, platform_account_id,
         access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
-      id, req.params.workspaceId, platform, accountName,
+      id, req.params.workspaceId, platform, accountName, profileUrl || null,
       `mock_${platform.toLowerCase()}_${Date.now()}`,
       mockToken, null, null,
       req.session.userId!, MOCK_MODE ? 1 : 0, now, now
     );
 
-    writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, mock: MOCK_MODE });
+    writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, profileUrl, mock: MOCK_MODE });
 
     res.json({ ok: true, id, mockMode: MOCK_MODE });
   } catch (err: any) {
