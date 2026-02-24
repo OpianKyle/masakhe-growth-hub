@@ -11,13 +11,17 @@ import { SiteConfig, SiteSection, SectionType, SECTION_LABELS, makeSectionId } f
 import { toast } from "sonner";
 import {
   Save, Rocket, Copy, Plus, Wand2, Smartphone, Monitor, ArrowLeft,
-  Briefcase, UtensilsCrossed, ShoppingBag, Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown
+  Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
+  Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
   professional: Briefcase,
   restaurant: UtensilsCrossed,
   retail: ShoppingBag,
+  beauty: Sparkles,
+  construction: HardHat,
+  creative: Palette,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {
@@ -45,7 +49,7 @@ const defaultSectionData: Record<SectionType, any> = {
 function TemplatePicker({ onSelect }: { onSelect: (templateId: string) => void }) {
   return (
     <div className="flex h-full items-center justify-center bg-slate-50 p-8">
-      <div className="max-w-3xl w-full">
+      <div className="max-w-4xl w-full">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold font-heading mb-2">Choose a Template</h2>
           <p className="text-slate-500">Pick a starting point for your website. You can customize everything afterwards.</p>
