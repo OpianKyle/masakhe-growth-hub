@@ -6,7 +6,8 @@ Masakhe is a Government-as-a-Platform application designed to help South African
 ## Recent Changes
 - 2026-02-24: Added Social Media Hub with full content management
   - Multi-tenant workspace system with roles (Owner, Admin, Editor, Viewer)
-  - Connect social accounts (Meta Facebook/Instagram, LinkedIn, X) with Mock Provider Mode
+  - Connect social accounts (Meta Facebook/Instagram, LinkedIn, X, TikTok, YouTube) with Mock Provider Mode
+  - Profile URL linking for each social account (direct links to profiles)
   - Content calendar with month view and post detail modals
   - Post builder: multi-platform targeting, text editor with char limits, hashtag suggestions, media attach, preview per platform
   - Schedule posts with Africa/Johannesburg timezone support
