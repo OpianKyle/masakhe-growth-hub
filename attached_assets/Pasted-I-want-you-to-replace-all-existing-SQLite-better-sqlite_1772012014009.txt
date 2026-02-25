@@ -1,0 +1,103 @@
+I want you to replace all existing SQLite (better-sqlite3 / connect-sqlite3) code and configurations with MySQL/MariaDB (Xneelo-hosted) equivalents.
+
+Requirements:
+
+Replace SQLite with MySQL/MariaDB everywhere
+
+Remove all usage of SQLite libraries and APIs:
+
+better-sqlite3 (db.prepare().get/all/run, db.exec, db.transaction, PRAGMA)
+
+connect-sqlite3 (session store)
+
+Replace them with:
+
+mysql2/promise for database access using connection pooling
+
+a MySQL-compatible session store (express-mysql-session or equivalent) for express-session
+
+Use MySQL/MariaDB-compatible schema definitions
+
+Convert all SQLite CREATE TABLE statements to MySQL/MariaDB DDL:
+
+Use INT AUTO_INCREMENT PRIMARY KEY instead of SQLite INTEGER PRIMARY KEY behavior
+
+Use DATETIME or TIMESTAMP for dates (store UTC)
+
+Replace SQLite-specific syntax (IF NOT EXISTS is OK, but no PRAGMA; adjust constraints)
+
+Use ENGINE=InnoDB, add indexes and foreign keys where applicable
+
+Replace any JSON usage with MySQL JSON type if available; otherwise TEXT
+
+Automatic table creation at application startup
+
+Keep the existing “runMigrations() on startup” behavior:
+
+Implement a runMigrations() function that runs when the server starts
+
+It must create tables if they do not exist (CREATE TABLE IF NOT EXISTS ...)
+
+It must also create required indexes and session tables automatically
+
+Replace DB connection code with MySQL pooling
+
+Create a single db module (e.g., server/db.ts) that exports:
+
+pool = mysql2.createPool({...})
+
+helper functions: queryOne, queryAll, execute
+
+All queries must use parameterized placeholders (?) and safe binding.
+
+Add robust error handling
+
+Wrap all DB operations in try/catch
+
+Log server-side errors with enough context (query name, not raw secrets)
+
+Return safe API errors to the client (no leaking SQL or credentials)
+
+Implement retry for transient connection errors (optional but recommended)
+
+Environment variables (DO NOT hardcode secrets)
+
+Use these environment variables for configuration:
+
+DATABASE_URL = mysql://XNEELO_DB_USER@XNEELO_DB_HOST/XNEELO_DB_NAME
+
+XNEELO_DB_HOST = sql16.cpt3.host-h.net
+XNEELO_DB_PORT = 3306
+XNEELO_DB_NAME = opiandigital
+XNEELO_DB_USER = admin
+XNEELO_DB_PASSWORD = 0x6970y086D0Mr
+
+SSL/TLS secure connection to Xneelo
+
+Add TLS support for MySQL connections.
+
+Support loading a CA bundle from a file path:
+
+XNEELO_DB_SSL_CA_PATH=/certs/xneelo-ca.pem
+
+If CA path is not provided, attempt SSL using the system trust store with rejectUnauthorized: true.
+
+Document in README how to add the CA bundle file to the project and set XNEELO_DB_SSL_CA_PATH.
+
+Codebase-wide refactor expectations
+
+Update every file that queries the database so it no longer uses sqlite.prepare().get/all/run.
+
+Replace those calls with mysql2 pool execute/query calls.
+
+Update any SQL that depended on SQLite behavior:
+
+placeholders (?, ?)
+
+LIMIT/OFFSET rules
+
+date functions
+
+boolean storage (use TINYINT(1) or ENUM)
+
+Ensure the application still boots, runs migrations, authenticates, and performs CRUD operations as before.

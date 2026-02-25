@@ -42,3 +42,11 @@ externalPort = 3001
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+XNEELO_DB_HOST = "sql16.cpt3.host-h.net"
+XNEELO_DB_PORT = "3306"
+XNEELO_DB_NAME = "opiandigital"
+XNEELO_DB_USER = "admin"
