@@ -3,6 +3,8 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fs from "fs";
+import path from "path";
 
 export const invoiceRouter = Router();
 invoiceRouter.use(requireAuth);
@@ -55,7 +57,7 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
 
     const user = await queryOne(
-      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address
+      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url
        FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
        WHERE u.id = ?`,
       [userId]
@@ -72,22 +74,48 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     const grey = rgb(0.4, 0.4, 0.4);
 
     let y = 790;
+    let textStartX = 50;
 
-    page.drawText(user?.business_name || user?.full_name || "Business", { x: 50, y, size: 20, font: fontBold, color: green });
+    if (user?.logo_url) {
+      try {
+        const logoPath = path.join(process.cwd(), "public", user.logo_url);
+        if (fs.existsSync(logoPath)) {
+          const logoBytes = fs.readFileSync(logoPath);
+          const ext = path.extname(logoPath).toLowerCase();
+          let logoImage;
+          if (ext === ".png") {
+            logoImage = await pdfDoc.embedPng(logoBytes);
+          } else if (ext === ".jpg" || ext === ".jpeg") {
+            logoImage = await pdfDoc.embedJpg(logoBytes);
+          }
+          if (logoImage) {
+            const logoDim = logoImage.scale(1);
+            const logoHeight = 50;
+            const logoWidth = (logoDim.width / logoDim.height) * logoHeight;
+            page.drawImage(logoImage, { x: 50, y: y - 35, width: logoWidth, height: logoHeight });
+            textStartX = 50 + logoWidth + 12;
+          }
+        }
+      } catch (logoErr) {
+        console.error("Failed to embed logo in PDF:", logoErr);
+      }
+    }
+
+    page.drawText(user?.business_name || user?.full_name || "Business", { x: textStartX, y, size: 20, font: fontBold, color: green });
     y -= 20;
     page.drawText("TAX INVOICE", { x: 400, y: y + 15, size: 14, font: fontBold, color: green });
     y -= 5;
 
     if (user?.physical_address) {
-      page.drawText(user.physical_address, { x: 50, y, size: 9, font, color: grey });
+      page.drawText(user.physical_address, { x: textStartX, y, size: 9, font, color: grey });
       y -= 14;
     }
     if (user?.phone) {
-      page.drawText(`Tel: ${user.phone}`, { x: 50, y, size: 9, font, color: grey });
+      page.drawText(`Tel: ${user.phone}`, { x: textStartX, y, size: 9, font, color: grey });
       y -= 14;
     }
     if (user?.email) {
-      page.drawText(`Email: ${user.email}`, { x: 50, y, size: 9, font, color: grey });
+      page.drawText(`Email: ${user.email}`, { x: textStartX, y, size: 9, font, color: grey });
       y -= 14;
     }
 
