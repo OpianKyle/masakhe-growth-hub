@@ -4,6 +4,17 @@
 Masakhe is a Government-as-a-Platform application designed to help South African SMMEs (Small, Medium and Micro Enterprises) with business registration, digital presence, tax compliance, financial tracking, social media management, and customer engagement. It features a South African flag-inspired color palette.
 
 ## Recent Changes
+- 2026-02-25: Made dashboard overview fully dynamic with real data and charts
+  - New /api/dashboard/overview endpoint aggregates KPIs, finance, invoices, social stats
+  - Revenue vs Expenses area chart (last 12 months from ledger)
+  - Expenses by Category donut chart
+  - Income by Category horizontal bar chart
+  - Social Media Activity bar chart (posts per day, last 14 days)
+  - KPI cards: Revenue MTD, Expenses MTD, Invoices, Social Posts (with month-over-month change %)
+  - Recent Activity feed from real ledger entries and invoices
+  - Business Status summary panel
+  - Compliance Score card
+  - Empty states with CTAs when no data exists
 - 2026-02-25: Added Settings page with profile editing and logo upload
   - Business profile CRUD via /api/profile (GET, PUT)
   - Logo upload/delete via /api/profile/logo (POST, DELETE)

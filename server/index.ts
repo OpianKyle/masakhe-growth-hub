@@ -12,6 +12,7 @@ import { invoiceRouter } from "./invoices";
 import { complianceRouter } from "./compliance";
 import { grantsRouter } from "./grants";
 import { profileRouter } from "./profile";
+import { dashboardRouter } from "./dashboard";
 import { socialRouter } from "./social/index";
 import { startScheduler } from "./social/scheduler";
 import path from "path";
@@ -61,6 +62,7 @@ async function main() {
   app.use("/api/compliance", complianceRouter);
   app.use("/api/funding", grantsRouter);
   app.use("/api/profile", profileRouter);
+  app.use("/api/dashboard", dashboardRouter);
   app.use("/api/social", socialRouter);
   app.use("/api", router);
 
