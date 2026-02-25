@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sqlite } from "./db";
+import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
@@ -7,7 +7,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export const invoiceRouter = Router();
 invoiceRouter.use(requireAuth);
 
-invoiceRouter.post("/", (req, res) => {
+invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { customerName, customerEmail, items } = req.body;
@@ -20,16 +20,17 @@ invoiceRouter.post("/", (req, res) => {
       return sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100);
     }, 0);
 
-    const count = (sqlite.prepare("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?").get(userId) as any).c;
+    const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0;
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
 
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    sqlite.prepare(`
-      INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, items_json, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'final', ?)
-    `).run(id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now);
+    await execute(
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, items_json, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
+      [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
+    );
 
     res.json({ ok: true, id, invoiceNumber });
   } catch (err: any) {
@@ -37,10 +38,10 @@ invoiceRouter.post("/", (req, res) => {
   }
 });
 
-invoiceRouter.get("/", (req, res) => {
+invoiceRouter.get("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const invoices = sqlite.prepare("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC").all(userId);
+    const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     res.json(invoices.map((inv: any) => ({ ...inv, items: JSON.parse(inv.items_json) })));
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch invoices" });
@@ -50,18 +51,19 @@ invoiceRouter.get("/", (req, res) => {
 invoiceRouter.get("/:id/pdf", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const invoice = sqlite.prepare("SELECT * FROM invoices WHERE id = ? AND user_id = ?").get(req.params.id, userId) as any;
+    const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
 
-    const user = sqlite.prepare(`
-      SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address
-      FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
-      WHERE u.id = ?
-    `).get(userId) as any;
+    const user = await queryOne(
+      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address
+       FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       WHERE u.id = ?`,
+      [userId]
+    );
 
     const items = JSON.parse(invoice.items_json);
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595, 842]); // A4
+    const page = pdfDoc.addPage([595, 842]);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -71,7 +73,6 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     let y = 790;
 
-    // Header
     page.drawText(user?.business_name || user?.full_name || "Business", { x: 50, y, size: 20, font: fontBold, color: green });
     y -= 20;
     page.drawText("TAX INVOICE", { x: 400, y: y + 15, size: 14, font: fontBold, color: green });
@@ -94,14 +95,12 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     page.drawRectangle({ x: 50, y, width: 495, height: 1, color: rgb(0.85, 0.85, 0.85) });
     y -= 25;
 
-    // Invoice details
     page.drawText("Invoice Number:", { x: 50, y, size: 9, font, color: grey });
     page.drawText(invoice.invoice_number, { x: 150, y, size: 9, font: fontBold, color: black });
     page.drawText("Date:", { x: 350, y, size: 9, font, color: grey });
     page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black });
     y -= 18;
 
-    // Bill to
     y -= 10;
     page.drawText("BILL TO:", { x: 50, y, size: 9, font: fontBold, color: green });
     y -= 15;
@@ -114,7 +113,6 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     y -= 20;
 
-    // Table header
     page.drawRectangle({ x: 50, y: y - 2, width: 495, height: 22, color: rgb(0.95, 0.95, 0.95) });
     page.drawText("Description", { x: 55, y: y + 3, size: 9, font: fontBold, color: black });
     page.drawText("Qty", { x: 320, y: y + 3, size: 9, font: fontBold, color: black });
@@ -122,7 +120,6 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     page.drawText("Amount", { x: 480, y: y + 3, size: 9, font: fontBold, color: black });
     y -= 25;
 
-    // Table rows
     for (const item of items) {
       const qty = item.qty || 1;
       const unitPrice = item.unitPrice || 0;
@@ -145,7 +142,6 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     page.drawText("TOTAL:", { x: 380, y, size: 11, font: fontBold, color: black });
     page.drawText(`R${totalRands.toFixed(2)}`, { x: 465, y, size: 11, font: fontBold, color: green });
 
-    // Footer
     page.drawText("Thank you for your business!", { x: 50, y: 60, size: 9, font, color: grey });
     page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: rgb(0.7, 0.7, 0.7) });
 

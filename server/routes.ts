@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sqlite } from "./db";
+import { queryOne, queryAll, execute } from "./db";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
@@ -26,12 +26,12 @@ router.post("/upload", upload.single("image"), (req, res) => {
   res.json({ ok: true, url: `/uploads/${req.file.filename}` });
 });
 
-router.get("/onboarding/flow", (req, res) => {
+router.get("/onboarding/flow", async (req, res) => {
   try {
-    const flow = sqlite.prepare(`SELECT * FROM onboarding_flows WHERE active=1 LIMIT 1`).get();
+    const flow = await queryOne("SELECT * FROM onboarding_flows WHERE active=1 LIMIT 1");
     if (!flow) return res.status(404).json({ error: "No active flow" });
     
-    const steps = sqlite.prepare(`SELECT * FROM onboarding_steps WHERE flow_id=? ORDER BY order_index ASC`).all((flow as any).id);
+    const steps = await queryAll("SELECT * FROM onboarding_steps WHERE flow_id=? ORDER BY order_index ASC", [flow.id]);
     res.json({
       flow,
       steps: steps.map((s: any) => ({
@@ -45,27 +45,29 @@ router.get("/onboarding/flow", (req, res) => {
   }
 });
 
-router.post("/submissions", (req, res) => {
+router.post("/submissions", async (req, res) => {
   try {
     const id = randomUUID();
-    sqlite.prepare(`INSERT INTO submissions (id, kind, payload_json, created_at) VALUES (?, ?, ?, ?)`)
-      .run(id, req.body.kind || "onboarding", JSON.stringify(req.body.payload || {}), new Date().toISOString());
+    await execute(
+      "INSERT INTO submissions (id, kind, payload_json, created_at) VALUES (?, ?, ?, ?)",
+      [id, req.body.kind || "onboarding", JSON.stringify(req.body.payload || {}), new Date().toISOString()]
+    );
     res.json({ ok: true, id });
   } catch (err) {
     res.status(500).json({ error: "Failed to save submission" });
   }
 });
 
-router.get("/pages", (req, res) => {
-  const pages = sqlite.prepare(`SELECT * FROM page_definitions`).all();
+router.get("/pages", async (req, res) => {
+  const pages = await queryAll("SELECT * FROM page_definitions");
   res.json(pages);
 });
 
-router.get("/pages/by-route", (req, res) => {
+router.get("/pages/by-route", async (req, res) => {
   const route = String(req.query.route || "");
-  const page = sqlite.prepare(`SELECT * FROM page_definitions WHERE route=?`).get(route);
+  const page = await queryOne("SELECT * FROM page_definitions WHERE route=?", [route]);
   if (!page) return res.status(404).json({ error: "Not found" });
-  const sections = sqlite.prepare(`SELECT * FROM page_sections WHERE page_id=? ORDER BY order_index ASC`).all((page as any).id);
+  const sections = await queryAll("SELECT * FROM page_sections WHERE page_id=? ORDER BY order_index ASC", [page.id]);
   res.json({
     page,
     sections: sections.map((s: any) => ({
@@ -75,34 +77,31 @@ router.get("/pages/by-route", (req, res) => {
   });
 });
 
-// Website Builder Endpoints
-router.post("/websites", (req, res) => {
+router.post("/websites", async (req, res) => {
   try {
     const { id, slug, content } = req.body;
     const ownerId = req.session?.userId || "local";
     const now = new Date().toISOString();
     
-    const existing = id ? sqlite.prepare("SELECT id FROM websites WHERE id = ?").get(id) : null;
+    const existing = id ? await queryOne("SELECT id FROM websites WHERE id = ?", [id]) : null;
     
-    // Check slug uniqueness
-    const slugOwner = sqlite.prepare("SELECT id FROM websites WHERE slug = ?").get(slug);
-    if (slugOwner && (slugOwner as any).id !== id) {
+    const slugOwner = await queryOne("SELECT id FROM websites WHERE slug = ?", [slug]);
+    if (slugOwner && slugOwner.id !== id) {
       return res.status(400).json({ error: "Slug is already taken" });
     }
     
     if (existing) {
-      sqlite.prepare(`
-        UPDATE websites 
-        SET slug = ?, content_json = ?, updated_at = ? 
-        WHERE id = ?
-      `).run(slug, JSON.stringify(content), now, id);
+      await execute(
+        "UPDATE websites SET slug = ?, content_json = ?, updated_at = ? WHERE id = ?",
+        [slug, JSON.stringify(content), now, id]
+      );
       res.json({ id, ok: true });
     } else {
       const newId = id || randomUUID();
-      sqlite.prepare(`
-        INSERT INTO websites (id, owner_id, slug, status, content_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(newId, ownerId, slug, "draft", JSON.stringify(content), now, now);
+      await execute(
+        "INSERT INTO websites (id, owner_id, slug, status, content_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [newId, ownerId, slug, "draft", JSON.stringify(content), now, now]
+      );
       res.json({ id: newId, ok: true });
     }
   } catch (err: any) {
@@ -110,30 +109,30 @@ router.post("/websites", (req, res) => {
   }
 });
 
-router.get("/websites/mine", (req, res) => {
+router.get("/websites/mine", async (req, res) => {
   try {
     const ownerId = req.session?.userId || "local";
-    const sites = sqlite.prepare("SELECT * FROM websites WHERE owner_id = ?").all(ownerId);
+    const sites = await queryAll("SELECT * FROM websites WHERE owner_id = ?", [ownerId]);
     res.json(sites.map((s: any) => ({ ...s, content: JSON.parse(s.content_json) })));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch websites" });
   }
 });
 
-router.get("/websites/:slug", (req, res) => {
+router.get("/websites/:slug", async (req, res) => {
   try {
-    const site = sqlite.prepare("SELECT * FROM websites WHERE slug = ?").get(req.params.slug);
+    const site = await queryOne("SELECT * FROM websites WHERE slug = ?", [req.params.slug]);
     if (!site) return res.status(404).json({ error: "Website not found" });
-    res.json({ ...site, content: JSON.parse((site as any).content_json) });
+    res.json({ ...site, content: JSON.parse(site.content_json) });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch website" });
   }
 });
 
-router.post("/websites/:id/publish", (req, res) => {
+router.post("/websites/:id/publish", async (req, res) => {
   try {
     const now = new Date().toISOString();
-    sqlite.prepare("UPDATE websites SET status = 'published', updated_at = ? WHERE id = ?").run(now, req.params.id);
+    await execute("UPDATE websites SET status = 'published', updated_at = ? WHERE id = ?", [now, req.params.id]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to publish" });

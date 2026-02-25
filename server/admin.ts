@@ -1,28 +1,28 @@
 import { Router } from "express";
-import { sqlite } from "./db";
+import { queryOne, queryAll, execute } from "./db";
 import { requireAdmin } from "./auth";
 
 export const adminRouter = Router();
 
 adminRouter.use(requireAdmin);
 
-adminRouter.get("/stats", (req, res) => {
+adminRouter.get("/stats", async (req, res) => {
   try {
-    const totalUsers = (sqlite.prepare("SELECT COUNT(*) as c FROM users").get() as any).c;
-    const totalWebsites = (sqlite.prepare("SELECT COUNT(*) as c FROM websites").get() as any).c;
-    const publishedWebsites = (sqlite.prepare("SELECT COUNT(*) as c FROM websites WHERE status = 'published'").get() as any).c;
-    const totalProfiles = (sqlite.prepare("SELECT COUNT(*) as c FROM business_profiles").get() as any).c;
-    const recentUsers = (sqlite.prepare("SELECT COUNT(*) as c FROM users WHERE created_at > datetime('now', '-7 days')").get() as any).c;
-    const totalInvoices = (sqlite.prepare("SELECT COUNT(*) as c FROM invoices").get() as any).c;
-    const totalLedgerEntries = (sqlite.prepare("SELECT COUNT(*) as c FROM ledger_entries").get() as any).c;
+    const totalUsers = (await queryOne("SELECT COUNT(*) as c FROM users"))?.c || 0;
+    const totalWebsites = (await queryOne("SELECT COUNT(*) as c FROM websites"))?.c || 0;
+    const publishedWebsites = (await queryOne("SELECT COUNT(*) as c FROM websites WHERE status = 'published'"))?.c || 0;
+    const totalProfiles = (await queryOne("SELECT COUNT(*) as c FROM business_profiles"))?.c || 0;
+    const recentUsers = (await queryOne("SELECT COUNT(*) as c FROM users WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)"))?.c || 0;
+    const totalInvoices = (await queryOne("SELECT COUNT(*) as c FROM invoices"))?.c || 0;
+    const totalLedgerEntries = (await queryOne("SELECT COUNT(*) as c FROM ledger_entries"))?.c || 0;
 
-    const monthlyTotals = sqlite.prepare(`
-      SELECT substr(occurred_at, 1, 7) as month, type, SUM(amount_cents) as total
-      FROM ledger_entries
-      GROUP BY month, type
-      ORDER BY month DESC
-      LIMIT 24
-    `).all() as any[];
+    const monthlyTotals = await queryAll(
+      `SELECT LEFT(occurred_at, 7) as month, type, SUM(amount_cents) as total
+       FROM ledger_entries
+       GROUP BY month, type
+       ORDER BY month DESC
+       LIMIT 24`
+    );
 
     const revenueByMonth: Record<string, { income: number; expense: number }> = {};
     for (const row of monthlyTotals) {
@@ -41,35 +41,39 @@ adminRouter.get("/stats", (req, res) => {
   }
 });
 
-adminRouter.get("/clients", (req, res) => {
+adminRouter.get("/clients", async (req, res) => {
   try {
-    const clients = sqlite.prepare(`
-      SELECT u.id, u.email, u.full_name, u.role, u.created_at,
-             bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
-             bp.industry_sector, bp.phone, bp.physical_address,
-             (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count
-      FROM users u
-      LEFT JOIN business_profiles bp ON bp.user_id = u.id
-      ORDER BY u.created_at DESC
-    `).all();
+    const clients = await queryAll(
+      `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
+              bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
+              bp.industry_sector, bp.phone, bp.physical_address,
+              (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       ORDER BY u.created_at DESC`
+    );
     res.json(clients);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch clients" });
   }
 });
 
-adminRouter.get("/clients/:id", (req, res) => {
+adminRouter.get("/clients/:id", async (req, res) => {
   try {
-    const user = sqlite.prepare(`
-      SELECT u.*, bp.*
-      FROM users u
-      LEFT JOIN business_profiles bp ON bp.user_id = u.id
-      WHERE u.id = ?
-    `).get(req.params.id) as any;
+    const user = await queryOne(
+      `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.updated_at,
+              bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
+              bp.industry_sector, bp.years_operating, bp.employee_count,
+              bp.phone, bp.whatsapp, bp.email as bp_email, bp.physical_address
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       WHERE u.id = ?`,
+      [req.params.id]
+    );
 
     if (!user) return res.status(404).json({ error: "Client not found" });
 
-    const websites = sqlite.prepare("SELECT * FROM websites WHERE owner_id = ?").all(req.params.id);
+    const websites = await queryAll("SELECT * FROM websites WHERE owner_id = ?", [req.params.id]);
 
     res.json({
       user: {
@@ -85,7 +89,7 @@ adminRouter.get("/clients/:id", (req, res) => {
         employee_count: user.employee_count,
         phone: user.phone,
         whatsapp: user.whatsapp,
-        email: user.email,
+        email: user.bp_email,
         physical_address: user.physical_address,
       },
       websites: websites.map((w: any) => ({ ...w, content: JSON.parse(w.content_json) })),
@@ -95,29 +99,29 @@ adminRouter.get("/clients/:id", (req, res) => {
   }
 });
 
-adminRouter.patch("/clients/:id/role", (req, res) => {
+adminRouter.patch("/clients/:id/role", async (req, res) => {
   try {
     const { role } = req.body;
     if (!["user", "admin"].includes(role)) {
       return res.status(400).json({ error: "Invalid role" });
     }
-    sqlite.prepare("UPDATE users SET role = ?, updated_at = ? WHERE id = ?")
-      .run(role, new Date().toISOString(), req.params.id);
+    await execute("UPDATE users SET role = ?, updated_at = ? WHERE id = ?",
+      [role, new Date().toISOString(), req.params.id]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update role" });
   }
 });
 
-adminRouter.delete("/clients/:id", (req, res) => {
+adminRouter.delete("/clients/:id", async (req, res) => {
   try {
     const userId = req.params.id;
     if (userId === req.session?.userId) {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
-    sqlite.prepare("DELETE FROM websites WHERE owner_id = ?").run(userId);
-    sqlite.prepare("DELETE FROM business_profiles WHERE user_id = ?").run(userId);
-    sqlite.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    await execute("DELETE FROM websites WHERE owner_id = ?", [userId]);
+    await execute("DELETE FROM business_profiles WHERE user_id = ?", [userId]);
+    await execute("DELETE FROM users WHERE id = ?", [userId]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete client" });

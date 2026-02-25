@@ -1,36 +1,35 @@
-import { sqlite } from "./db";
+import { queryOne, execute } from "./db";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 
 function now() { return new Date().toISOString(); }
 
-function seedAdminUser() {
-  const existing = sqlite.prepare("SELECT id FROM users WHERE email = 'admin@masakhe.co.za'").get();
+async function seedAdminUser() {
+  const existing = await queryOne("SELECT id FROM users WHERE email = 'admin@masakhe.co.za'");
   if (existing) return;
 
   const hash = bcrypt.hashSync("admin123", 10);
   const userId = randomUUID();
   const ts = now();
 
-  sqlite.prepare(`
-    INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
-    VALUES (?, ?, ?, ?, 'admin', ?, ?)
-  `).run(userId, "admin@masakhe.co.za", hash, "Masakhe Admin", ts, ts);
+  await execute(
+    `INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'admin', ?, ?)`,
+    [userId, "admin@masakhe.co.za", hash, "Masakhe Admin", ts, ts]
+  );
 }
 
-export function seedIfEmpty() {
-  const usersTableCheck = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
-  if (usersTableCheck) seedAdminUser();
+export async function seedIfEmpty() {
+  await seedAdminUser();
 
-  const tableCheck = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='onboarding_flows'").get();
-  if (!tableCheck) return;
-
-  const flowCount = sqlite.prepare(`SELECT COUNT(*) as c FROM onboarding_flows`).get() as any;
-  if (flowCount.c > 0) return;
+  const flowCount = await queryOne("SELECT COUNT(*) as c FROM onboarding_flows");
+  if (flowCount && flowCount.c > 0) return;
 
   const flowId = "flow_default";
-  sqlite.prepare(`INSERT INTO onboarding_flows (id, name, active, created_at) VALUES (?, ?, ?, ?)`)
-    .run(flowId, "Masakhe Smart Registration", 1, now());
+  await execute(
+    "INSERT INTO onboarding_flows (id, name, active, created_at) VALUES (?, ?, ?, ?)",
+    [flowId, "Masakhe Smart Registration", 1, now()]
+  );
 
   const steps = [
     {
@@ -133,14 +132,12 @@ export function seedIfEmpty() {
     },
   ];
 
-  const insertStep = sqlite.prepare(`
-    INSERT INTO onboarding_steps
-    (id, flow_id, step_key, title, description, order_index, condition_json, fields_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
   for (const s of steps) {
-    insertStep.run(randomUUID(), flowId, s.step_key, s.title, s.description, s.order_index, s.condition_json, s.fields_json);
+    await execute(
+      `INSERT INTO onboarding_steps (id, flow_id, step_key, title, description, order_index, condition_json, fields_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [randomUUID(), flowId, s.step_key, s.title, s.description, s.order_index, s.condition_json, s.fields_json]
+    );
   }
 
   const pages = [
@@ -153,45 +150,62 @@ export function seedIfEmpty() {
     { id: "p_gov", route: "/gov/dashboard", title: "Government Analytics", description: "Adoption + compliance stats (mock)." },
   ];
 
-  const insPage = sqlite.prepare(`INSERT INTO page_definitions (id, route, title, description, created_at) VALUES (?, ?, ?, ?, ?)`);
-  const insSection = sqlite.prepare(`INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)`);
+  for (const p of pages) {
+    await execute(
+      "INSERT INTO page_definitions (id, route, title, description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [p.id, p.route, p.title, p.description, now()]
+    );
+  }
 
-  for (const p of pages) insPage.run(p.id, p.route, p.title, p.description, now());
-
-  insSection.run(randomUUID(), "p_web", "stats", 1, JSON.stringify({
-    cards: [
-      { label: "Website Status", value: "Draft" },
-      { label: "Pages", value: "4" },
-      { label: "Leads (30d)", value: "36" },
-      { label: "SEO Score", value: "72/100" }
-    ]
-  }));
-  insSection.run(randomUUID(), "p_web", "wizard", 2, JSON.stringify({ wizardKey: "website_5q" }));
-  insSection.run(randomUUID(), "p_web", "table", 3, JSON.stringify({
-    title: "Website Draft Pages",
-    columns: ["Page", "Status", "Last Updated"],
-    rows: [
-      ["Home", "Draft", "Today"],
-      ["About", "Draft", "Yesterday"],
-      ["Services", "Draft", "Today"],
-      ["Contact", "Draft", "Yesterday"],
-    ]
-  }));
+  await execute(
+    "INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)",
+    [randomUUID(), "p_web", "stats", 1, JSON.stringify({
+      cards: [
+        { label: "Website Status", value: "Draft" },
+        { label: "Pages", value: "4" },
+        { label: "Leads (30d)", value: "36" },
+        { label: "SEO Score", value: "72/100" }
+      ]
+    })]
+  );
+  await execute(
+    "INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)",
+    [randomUUID(), "p_web", "wizard", 2, JSON.stringify({ wizardKey: "website_5q" })]
+  );
+  await execute(
+    "INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)",
+    [randomUUID(), "p_web", "table", 3, JSON.stringify({
+      title: "Website Draft Pages",
+      columns: ["Page", "Status", "Last Updated"],
+      rows: [
+        ["Home", "Draft", "Today"],
+        ["About", "Draft", "Yesterday"],
+        ["Services", "Draft", "Today"],
+        ["Contact", "Draft", "Yesterday"],
+      ]
+    })]
+  );
 
   for (const pid of ["p_social","p_comms","p_campaign","p_books","p_tax","p_gov"]) {
-    insSection.run(randomUUID(), pid, "stats", 1, JSON.stringify({ cards: [
-      { label: "This Week", value: "Active" },
-      { label: "Tasks", value: "8" },
-      { label: "Alerts", value: "2" },
-      { label: "Health", value: "Good" },
-    ]}));
-    insSection.run(randomUUID(), pid, "cards", 2, JSON.stringify({
-      title: "Quick Actions",
-      items: [
-        { title: "Create new", description: "Start a new workflow", action: "create" },
-        { title: "Generate (mock AI)", description: "Run the generator", action: "generate" },
-        { title: "View history", description: "See saved outputs", action: "history" },
-      ]
-    }));
+    await execute(
+      "INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)",
+      [randomUUID(), pid, "stats", 1, JSON.stringify({ cards: [
+        { label: "This Week", value: "Active" },
+        { label: "Tasks", value: "8" },
+        { label: "Alerts", value: "2" },
+        { label: "Health", value: "Good" },
+      ]})]
+    );
+    await execute(
+      "INSERT INTO page_sections (id, page_id, section_type, order_index, config_json) VALUES (?, ?, ?, ?, ?)",
+      [randomUUID(), pid, "cards", 2, JSON.stringify({
+        title: "Quick Actions",
+        items: [
+          { title: "Create new", description: "Start a new workflow", action: "create" },
+          { title: "Generate (mock AI)", description: "Run the generator", action: "generate" },
+          { title: "View history", description: "See saved outputs", action: "history" },
+        ]
+      })]
+    );
   }
 }

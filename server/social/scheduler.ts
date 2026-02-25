@@ -1,34 +1,39 @@
-import { sqlite } from "../db";
+import { queryAll, execute } from "../db";
 import { publishPostNow } from "./posts";
 
 const MAX_RETRIES = 3;
 
 export function startScheduler() {
-  setInterval(() => {
+  setInterval(async () => {
     try {
       const now = new Date().toISOString();
-      const duePosts = sqlite.prepare(`
-        SELECT id, workspace_id, created_by_user_id, retry_count
-        FROM social_posts
-        WHERE status = 'SCHEDULED' AND scheduled_at <= ?
-        LIMIT 10
-      `).all(now) as any[];
+      const duePosts = await queryAll(
+        `SELECT id, workspace_id, created_by_user_id, retry_count
+         FROM social_posts
+         WHERE status = 'SCHEDULED' AND scheduled_at <= ?
+         LIMIT 10`,
+        [now]
+      );
 
-      for (const post of duePosts) {
+      for (const post of duePosts as any[]) {
         try {
-          sqlite.prepare("UPDATE social_posts SET status = 'PUBLISHING', updated_at = ? WHERE id = ? AND status = 'SCHEDULED'").run(now, post.id);
+          const result = await execute(
+            "UPDATE social_posts SET status = 'PUBLISHING', updated_at = ? WHERE id = ? AND status = 'SCHEDULED'",
+            [now, post.id]
+          );
+          if (result.affectedRows === 0) continue;
 
-          const updated = sqlite.prepare("SELECT status FROM social_posts WHERE id = ?").get(post.id) as any;
-          if (updated?.status !== "PUBLISHING") continue;
+          await publishPostNow(post.id, post.workspace_id, post.created_by_user_id);
 
-          publishPostNow(post.id, post.workspace_id, post.created_by_user_id);
-
-          const result = sqlite.prepare("SELECT status FROM social_posts WHERE id = ?").get(post.id) as any;
-          if (result?.status === "FAILED" && post.retry_count < MAX_RETRIES) {
-            sqlite.prepare("UPDATE social_posts SET status = 'SCHEDULED', retry_count = retry_count + 1, updated_at = ? WHERE id = ?").run(now, post.id);
+          const updated = await import("../db").then(db => db.queryOne("SELECT status FROM social_posts WHERE id = ?", [post.id]));
+          if (updated?.status === "FAILED" && post.retry_count < MAX_RETRIES) {
+            await execute(
+              "UPDATE social_posts SET status = 'SCHEDULED', retry_count = retry_count + 1, updated_at = ? WHERE id = ?",
+              [now, post.id]
+            );
           }
         } catch (err) {
-          sqlite.prepare("UPDATE social_posts SET status = 'FAILED', updated_at = ? WHERE id = ?").run(now, post.id);
+          await execute("UPDATE social_posts SET status = 'FAILED', updated_at = ? WHERE id = ?", [now, post.id]);
         }
       }
     } catch (err) {

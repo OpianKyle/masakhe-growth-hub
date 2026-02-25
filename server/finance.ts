@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { sqlite } from "./db";
+import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 
 export const financeRouter = Router();
 financeRouter.use(requireAuth);
 
-financeRouter.post("/entries", (req, res) => {
+financeRouter.post("/entries", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { type, amountCents, category, description, occurredAt } = req.body;
@@ -21,10 +21,11 @@ financeRouter.post("/entries", (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    sqlite.prepare(`
-      INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, userId, type, Math.round(amountCents), category, description || null, occurredAt, now);
+    await execute(
+      `INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, type, Math.round(amountCents), category, description || null, occurredAt, now]
+    );
 
     res.json({ ok: true, id });
   } catch (err: any) {
@@ -32,10 +33,10 @@ financeRouter.post("/entries", (req, res) => {
   }
 });
 
-financeRouter.get("/entries", (req, res) => {
+financeRouter.get("/entries", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const month = req.query.month as string; // YYYY-MM
+    const month = req.query.month as string;
 
     let query = "SELECT * FROM ledger_entries WHERE user_id = ?";
     const params: any[] = [userId];
@@ -47,33 +48,33 @@ financeRouter.get("/entries", (req, res) => {
 
     query += " ORDER BY occurred_at DESC, created_at DESC";
 
-    const entries = sqlite.prepare(query).all(...params);
+    const entries = await queryAll(query, params);
     res.json(entries);
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch entries" });
   }
 });
 
-financeRouter.delete("/entries/:id", (req, res) => {
+financeRouter.delete("/entries/:id", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const result = sqlite.prepare("DELETE FROM ledger_entries WHERE id = ? AND user_id = ?").run(req.params.id, userId);
-    if (result.changes === 0) return res.status(404).json({ error: "Entry not found" });
+    const result = await execute("DELETE FROM ledger_entries WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Entry not found" });
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to delete entry" });
   }
 });
 
-financeRouter.get("/summary", (req, res) => {
+financeRouter.get("/summary", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const from = req.query.from as string; // YYYY-MM
-    const to = req.query.to as string; // YYYY-MM
+    const from = req.query.from as string;
+    const to = req.query.to as string;
 
     let query = `
       SELECT 
-        substr(occurred_at, 1, 7) as month,
+        LEFT(occurred_at, 7) as month,
         type,
         SUM(amount_cents) as total
       FROM ledger_entries
@@ -86,13 +87,13 @@ financeRouter.get("/summary", (req, res) => {
       params.push(`${from}-01`);
     }
     if (to) {
-      query += " AND occurred_at < date(?, '+1 month')";
+      query += " AND occurred_at < DATE_ADD(?, INTERVAL 1 MONTH)";
       params.push(`${to}-01`);
     }
 
     query += " GROUP BY month, type ORDER BY month ASC";
 
-    const rows = sqlite.prepare(query).all(...params) as any[];
+    const rows = await queryAll(query, params);
 
     const monthMap: Record<string, { income: number; expense: number }> = {};
     for (const row of rows) {

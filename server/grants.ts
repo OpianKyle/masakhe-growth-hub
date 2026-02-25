@@ -1,28 +1,18 @@
 import { Router } from "express";
-import { sqlite } from "./db";
+import { queryOne, execute } from "./db";
 import { requireAuth } from "./auth";
 
 export const grantsRouter = Router();
 grantsRouter.use(requireAuth);
 
-const CHECKLIST_FIELDS = [
-  "id_verified",
-  "business_registered",
-  "tax_number",
-  "vat_registered",
-  "bank_account_provided",
-  "six_months_records",
-] as const;
-
-grantsRouter.get("/readiness", (req, res) => {
+grantsRouter.get("/readiness", async (req, res) => {
   try {
     const userId = req.session.userId!;
 
-    let readiness = sqlite.prepare("SELECT * FROM grant_readiness WHERE user_id = ?").get(userId) as any;
-
-    const profile = sqlite.prepare("SELECT * FROM business_profiles WHERE user_id = ?").get(userId) as any;
-    const invoiceCount = (sqlite.prepare("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?").get(userId) as any).c;
-    const ledgerCount = (sqlite.prepare("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?").get(userId) as any).c;
+    const readiness = await queryOne("SELECT * FROM grant_readiness WHERE user_id = ?", [userId]);
+    const profile = await queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [userId]);
+    const invoiceCount = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0;
+    const ledgerCount = (await queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]))?.c || 0;
 
     const autoChecks = {
       profileComplete: profile && profile.business_name && profile.business_type && profile.phone,
@@ -55,45 +45,47 @@ grantsRouter.get("/readiness", (req, res) => {
   }
 });
 
-grantsRouter.post("/readiness", (req, res) => {
+grantsRouter.post("/readiness", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const now = new Date().toISOString();
     const data = req.body;
 
-    const existing = sqlite.prepare("SELECT user_id FROM grant_readiness WHERE user_id = ?").get(userId);
+    const existing = await queryOne("SELECT user_id FROM grant_readiness WHERE user_id = ?", [userId]);
 
     if (existing) {
-      sqlite.prepare(`
-        UPDATE grant_readiness SET
+      await execute(
+        `UPDATE grant_readiness SET
           id_verified = ?, business_registered = ?, tax_number = ?,
           vat_registered = ?, bank_account_provided = ?, six_months_records = ?,
           updated_at = ?
-        WHERE user_id = ?
-      `).run(
-        data.id_verified ? 1 : 0,
-        data.business_registered ? 1 : 0,
-        data.tax_number || null,
-        data.vat_registered ? 1 : 0,
-        data.bank_account_provided ? 1 : 0,
-        data.six_months_records ? 1 : 0,
-        now,
-        userId
+         WHERE user_id = ?`,
+        [
+          data.id_verified ? 1 : 0,
+          data.business_registered ? 1 : 0,
+          data.tax_number || null,
+          data.vat_registered ? 1 : 0,
+          data.bank_account_provided ? 1 : 0,
+          data.six_months_records ? 1 : 0,
+          now,
+          userId
+        ]
       );
     } else {
-      sqlite.prepare(`
-        INSERT INTO grant_readiness (user_id, id_verified, business_registered, tax_number, vat_registered, bank_account_provided, six_months_records, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        userId,
-        data.id_verified ? 1 : 0,
-        data.business_registered ? 1 : 0,
-        data.tax_number || null,
-        data.vat_registered ? 1 : 0,
-        data.bank_account_provided ? 1 : 0,
-        data.six_months_records ? 1 : 0,
-        now,
-        now
+      await execute(
+        `INSERT INTO grant_readiness (user_id, id_verified, business_registered, tax_number, vat_registered, bank_account_provided, six_months_records, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          data.id_verified ? 1 : 0,
+          data.business_registered ? 1 : 0,
+          data.tax_number || null,
+          data.vat_registered ? 1 : 0,
+          data.bank_account_provided ? 1 : 0,
+          data.six_months_records ? 1 : 0,
+          now,
+          now
+        ]
       );
     }
 

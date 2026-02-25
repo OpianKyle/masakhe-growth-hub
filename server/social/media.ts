@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sqlite } from "../db";
+import { queryOne, queryAll, execute } from "../db";
 import { requireAuth } from "../auth";
 import { requireWorkspaceRole } from "./workspace";
 import { writeAuditLog } from "./audit";
@@ -35,22 +35,23 @@ const upload = multer({
 export const mediaRouter = Router();
 mediaRouter.use(requireAuth);
 
-mediaRouter.get("/:workspaceId/media", requireWorkspaceRole("owner", "admin", "editor", "viewer"), (req, res) => {
+mediaRouter.get("/:workspaceId/media", requireWorkspaceRole("owner", "admin", "editor", "viewer"), async (req, res) => {
   try {
-    const assets = sqlite.prepare(`
-      SELECT ma.*, u.full_name as uploader_name
-      FROM media_assets ma
-      JOIN users u ON u.id = ma.uploaded_by_user_id
-      WHERE ma.workspace_id = ?
-      ORDER BY ma.created_at DESC
-    `).all(req.params.workspaceId);
+    const assets = await queryAll(
+      `SELECT ma.*, u.full_name as uploader_name
+       FROM media_assets ma
+       JOIN users u ON u.id = ma.uploaded_by_user_id
+       WHERE ma.workspace_id = ?
+       ORDER BY ma.created_at DESC`,
+      [req.params.workspaceId]
+    );
     res.json(assets);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "admin", "editor"), upload.single("file"), (req, res) => {
+mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "admin", "editor"), upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -58,12 +59,13 @@ mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "ad
     const isVideo = /\.(mp4|mov|avi)$/i.test(req.file.originalname);
     const url = `/uploads/media/${req.file.filename}`;
 
-    sqlite.prepare(`
-      INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
-      VALUES (?,?,?,?,?,?,?,?)
-    `).run(id, req.params.workspaceId, url, isVideo ? "VIDEO" : "IMAGE", req.file.originalname, req.file.size, req.session.userId!, new Date().toISOString());
+    await execute(
+      `INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [id, req.params.workspaceId, url, isVideo ? "VIDEO" : "IMAGE", req.file.originalname, req.file.size, req.session.userId!, new Date().toISOString()]
+    );
 
-    writeAuditLog(req.params.workspaceId, req.session.userId!, "UPLOADED_MEDIA", "media_asset", id, { fileName: req.file.originalname, size: req.file.size });
+    await writeAuditLog(req.params.workspaceId, req.session.userId!, "UPLOADED_MEDIA", "media_asset", id, { fileName: req.file.originalname, size: req.file.size });
 
     res.json({ ok: true, id, url, type: isVideo ? "VIDEO" : "IMAGE", fileName: req.file.originalname });
   } catch (err: any) {
@@ -71,15 +73,15 @@ mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "ad
   }
 });
 
-mediaRouter.delete("/:workspaceId/media/:assetId", requireWorkspaceRole("owner", "admin", "editor"), (req, res) => {
+mediaRouter.delete("/:workspaceId/media/:assetId", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
-    const asset = sqlite.prepare("SELECT * FROM media_assets WHERE id = ? AND workspace_id = ?").get(req.params.assetId, req.params.workspaceId) as any;
+    const asset = await queryOne("SELECT * FROM media_assets WHERE id = ? AND workspace_id = ?", [req.params.assetId, req.params.workspaceId]);
     if (!asset) return res.status(404).json({ error: "Asset not found" });
 
     const filePath = path.join(process.cwd(), "public", asset.url);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-    sqlite.prepare("DELETE FROM media_assets WHERE id = ?").run(req.params.assetId);
+    await execute("DELETE FROM media_assets WHERE id = ?", [req.params.assetId]);
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sqlite } from "../db";
+import { queryOne, queryAll, execute } from "../db";
 import { requireAuth } from "../auth";
 import { requireWorkspaceRole } from "./workspace";
 import { encrypt, decrypt } from "../crypto";
@@ -11,21 +11,22 @@ accountsRouter.use(requireAuth);
 
 const MOCK_MODE = !process.env.META_APP_ID && !process.env.LINKEDIN_CLIENT_ID;
 
-accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admin", "editor", "viewer"), (req, res) => {
+accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admin", "editor", "viewer"), async (req, res) => {
   try {
-    const accounts = sqlite.prepare(`
-      SELECT id, workspace_id, platform, account_name, profile_url, platform_account_id, is_mock,
-             token_expires_at, connected_by_user_id, created_at, updated_at
-      FROM social_accounts WHERE workspace_id = ?
-      ORDER BY created_at DESC
-    `).all(req.params.workspaceId);
+    const accounts = await queryAll(
+      `SELECT id, workspace_id, platform, account_name, profile_url, platform_account_id, is_mock,
+              token_expires_at, connected_by_user_id, created_at, updated_at
+       FROM social_accounts WHERE workspace_id = ?
+       ORDER BY created_at DESC`,
+      [req.params.workspaceId]
+    );
     res.json({ accounts, mockMode: MOCK_MODE });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owner", "admin"), (req, res) => {
+accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owner", "admin"), async (req, res) => {
   try {
     const { platform, accountName, profileUrl } = req.body;
     if (!platform || !accountName) return res.status(400).json({ error: "platform and accountName required" });
@@ -37,18 +38,19 @@ accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owne
     const now = new Date().toISOString();
     const mockToken = encrypt(`mock_token_${platform}_${Date.now()}`);
 
-    sqlite.prepare(`
-      INSERT INTO social_accounts (id, workspace_id, platform, account_name, profile_url, platform_account_id,
+    await execute(
+      `INSERT INTO social_accounts (id, workspace_id, platform, account_name, profile_url, platform_account_id,
         access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(
-      id, req.params.workspaceId, platform, accountName, profileUrl || null,
-      `mock_${platform.toLowerCase()}_${Date.now()}`,
-      mockToken, null, null,
-      req.session.userId!, MOCK_MODE ? 1 : 0, now, now
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        id, req.params.workspaceId, platform, accountName, profileUrl || null,
+        `mock_${platform.toLowerCase()}_${Date.now()}`,
+        mockToken, null, null,
+        req.session.userId!, MOCK_MODE ? 1 : 0, now, now
+      ]
     );
 
-    writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, profileUrl, mock: MOCK_MODE });
+    await writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, profileUrl, mock: MOCK_MODE });
 
     res.json({ ok: true, id, mockMode: MOCK_MODE });
   } catch (err: any) {
@@ -74,15 +76,15 @@ accountsRouter.post("/:workspaceId/accounts/oauth/linkedin/start", requireWorksp
   res.json({ authUrl });
 });
 
-accountsRouter.delete("/:workspaceId/accounts/:accountId", requireWorkspaceRole("owner", "admin"), (req, res) => {
+accountsRouter.delete("/:workspaceId/accounts/:accountId", requireWorkspaceRole("owner", "admin"), async (req, res) => {
   try {
-    const account = sqlite.prepare("SELECT * FROM social_accounts WHERE id = ? AND workspace_id = ?").get(req.params.accountId, req.params.workspaceId) as any;
+    const account = await queryOne("SELECT * FROM social_accounts WHERE id = ? AND workspace_id = ?", [req.params.accountId, req.params.workspaceId]);
     if (!account) return res.status(404).json({ error: "Account not found" });
 
-    sqlite.prepare("DELETE FROM social_post_targets WHERE social_account_id = ?").run(req.params.accountId);
-    sqlite.prepare("DELETE FROM social_accounts WHERE id = ?").run(req.params.accountId);
+    await execute("DELETE FROM social_post_targets WHERE social_account_id = ?", [req.params.accountId]);
+    await execute("DELETE FROM social_accounts WHERE id = ?", [req.params.accountId]);
 
-    writeAuditLog(req.params.workspaceId, req.session.userId!, "DISCONNECTED_ACCOUNT", "social_account", req.params.accountId, { platform: account.platform });
+    await writeAuditLog(req.params.workspaceId, req.session.userId!, "DISCONNECTED_ACCOUNT", "social_account", req.params.accountId, { platform: account.platform });
 
     res.json({ ok: true });
   } catch (err: any) {
