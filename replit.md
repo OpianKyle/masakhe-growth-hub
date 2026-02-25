@@ -4,6 +4,14 @@
 Masakhe is a Government-as-a-Platform application designed to help South African SMMEs (Small, Medium and Micro Enterprises) with business registration, digital presence, tax compliance, financial tracking, social media management, and customer engagement. It features a South African flag-inspired color palette.
 
 ## Recent Changes
+- 2026-02-25: Added Settings page with profile editing and logo upload
+  - Business profile CRUD via /api/profile (GET, PUT)
+  - Logo upload/delete via /api/profile/logo (POST, DELETE)
+  - Logo stored in public/uploads/logos/, URL in business_profiles.logo_url column
+  - Dashboard sidebar shows business logo + name instead of Masakhe branding when set
+  - Top bar avatar links to settings and shows logo when available
+  - Settings page has 3 tabs: Personal & Business, Business Details, Banking
+  - Collapsed sidebar also shows logo
 - 2026-02-25: Completed full migration from SQLite to remote MySQL (Xneelo)
   - All server files rewritten to async/await MySQL patterns (mysql2/promise)
   - Session store migrated to express-mysql-session

@@ -9,7 +9,21 @@ interface User {
   business_name?: string;
   trading_name?: string;
   business_status?: string;
+  business_type?: string;
   industry_sector?: string;
+  years_operating?: number;
+  employee_count?: number;
+  phone?: string;
+  whatsapp?: string;
+  bp_email?: string;
+  physical_address?: string;
+  bank_name?: string;
+  account_type?: string;
+  account_number?: string;
+  branch_code?: string;
+  sa_id?: string;
+  cipc_number?: string;
+  logo_url?: string;
 }
 
 interface AuthContextType {

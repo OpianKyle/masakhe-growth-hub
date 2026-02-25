@@ -326,6 +326,7 @@ export async function runMigrations() {
 
     await addColumnIfMissing("social_post_targets", "created_at", "VARCHAR(30)");
     await addColumnIfMissing("social_post_targets", "updated_at", "VARCHAR(30)");
+    await addColumnIfMissing("business_profiles", "logo_url", "VARCHAR(500)");
 
     const createIndex = async (name: string, table: string, col: string) => {
       try {

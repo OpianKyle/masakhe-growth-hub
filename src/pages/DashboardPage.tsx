@@ -15,6 +15,7 @@ import InvoicesPage from "./InvoicesPage";
 import GrantReadinessPage from "./GrantReadinessPage";
 import SocialHub from "./social/SocialHub";
 import ComplianceScoreCard from "@/components/ComplianceScoreCard";
+import SettingsPage from "./SettingsPage";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
@@ -198,11 +199,32 @@ export default function DashboardPage() {
       >
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           {!collapsed && (
-            <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
-                <span className="text-sm font-bold text-primary-foreground font-heading">M</span>
-              </div>
-              <span className="text-lg font-bold font-heading text-sidebar-foreground">Masakhe</span>
+            <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
+              {user?.logo_url ? (
+                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero shrink-0">
+                  <span className="text-sm font-bold text-primary-foreground font-heading">
+                    {user?.business_name?.[0] || "M"}
+                  </span>
+                </div>
+              )}
+              <span className="text-lg font-bold font-heading text-sidebar-foreground truncate">
+                {user?.business_name || "Masakhe"}
+              </span>
+            </Link>
+          )}
+          {collapsed && (
+            <Link to="/dashboard" className="mx-auto">
+              {user?.logo_url ? (
+                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
+                  <span className="text-sm font-bold text-primary-foreground font-heading">
+                    {user?.business_name?.[0] || "M"}
+                  </span>
+                </div>
+              )}
             </Link>
           )}
           <button onClick={() => setCollapsed(!collapsed)} className="text-sidebar-foreground/60 hover:text-sidebar-foreground">
@@ -270,9 +292,15 @@ export default function DashboardPage() {
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-sa-red text-[10px] font-bold text-primary-foreground">3</span>
             </button>
-            <div className="h-8 w-8 rounded-full gradient-hero flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">{initials}</span>
-            </div>
+            <Link to="/dashboard/settings" className="shrink-0">
+              {user?.logo_url ? (
+                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <div className="h-8 w-8 rounded-full gradient-hero flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary-foreground">{initials}</span>
+                </div>
+              )}
+            </Link>
           </div>
         </header>
 
@@ -283,6 +311,7 @@ export default function DashboardPage() {
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="funding" element={<GrantReadinessPage />} />
           <Route path="social/*" element={<SocialHub />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<DashboardOverview />} />
         </Routes>
       </main>

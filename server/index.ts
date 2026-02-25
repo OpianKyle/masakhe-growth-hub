@@ -11,6 +11,7 @@ import { financeRouter } from "./finance";
 import { invoiceRouter } from "./invoices";
 import { complianceRouter } from "./compliance";
 import { grantsRouter } from "./grants";
+import { profileRouter } from "./profile";
 import { socialRouter } from "./social/index";
 import { startScheduler } from "./social/scheduler";
 import path from "path";
@@ -59,6 +60,7 @@ async function main() {
   app.use("/api/invoices", invoiceRouter);
   app.use("/api/compliance", complianceRouter);
   app.use("/api/funding", grantsRouter);
+  app.use("/api/profile", profileRouter);
   app.use("/api/social", socialRouter);
   app.use("/api", router);
 
