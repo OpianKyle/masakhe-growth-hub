@@ -73,8 +73,7 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     const black = rgb(0, 0, 0);
     const grey = rgb(0.4, 0.4, 0.4);
 
-    let y = 790;
-    let textStartX = 50;
+    let y = 800;
 
     if (user?.logo_url) {
       try {
@@ -90,10 +89,16 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
           }
           if (logoImage) {
             const logoDim = logoImage.scale(1);
-            const logoHeight = 50;
-            const logoWidth = (logoDim.width / logoDim.height) * logoHeight;
-            page.drawImage(logoImage, { x: 50, y: y - 35, width: logoWidth, height: logoHeight });
-            textStartX = 50 + logoWidth + 12;
+            const maxLogoHeight = 80;
+            const maxLogoWidth = 200;
+            let logoWidth = (logoDim.width / logoDim.height) * maxLogoHeight;
+            let logoHeight = maxLogoHeight;
+            if (logoWidth > maxLogoWidth) {
+              logoWidth = maxLogoWidth;
+              logoHeight = (logoDim.height / logoDim.width) * maxLogoWidth;
+            }
+            page.drawImage(logoImage, { x: 50, y: y - logoHeight + 10, width: logoWidth, height: logoHeight });
+            y -= logoHeight + 15;
           }
         }
       } catch (logoErr) {
@@ -101,21 +106,20 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       }
     }
 
-    page.drawText(user?.business_name || user?.full_name || "Business", { x: textStartX, y, size: 20, font: fontBold, color: green });
+    page.drawText(user?.business_name || user?.full_name || "Business", { x: 50, y, size: 20, font: fontBold, color: green });
+    page.drawText("TAX INVOICE", { x: 400, y, size: 14, font: fontBold, color: green });
     y -= 20;
-    page.drawText("TAX INVOICE", { x: 400, y: y + 15, size: 14, font: fontBold, color: green });
-    y -= 5;
 
     if (user?.physical_address) {
-      page.drawText(user.physical_address, { x: textStartX, y, size: 9, font, color: grey });
+      page.drawText(user.physical_address, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
     if (user?.phone) {
-      page.drawText(`Tel: ${user.phone}`, { x: textStartX, y, size: 9, font, color: grey });
+      page.drawText(`Tel: ${user.phone}`, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
     if (user?.email) {
-      page.drawText(`Email: ${user.email}`, { x: textStartX, y, size: 9, font, color: grey });
+      page.drawText(`Email: ${user.email}`, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
 
