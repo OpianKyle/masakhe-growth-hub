@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "../db";
 import { requireAuth } from "../auth";
 import { requireWorkspaceRole } from "./workspace";
+import { requireActiveSubscription } from "../feature-gate";
 import { encrypt, decrypt } from "../crypto";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
@@ -26,7 +27,7 @@ accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admi
   }
 });
 
-accountsRouter.post("/:workspaceId/accounts/connect", requireWorkspaceRole("owner", "admin"), async (req, res) => {
+accountsRouter.post("/:workspaceId/accounts/connect", requireActiveSubscription, requireWorkspaceRole("owner", "admin"), async (req, res) => {
   try {
     const { platform, accountName, profileUrl } = req.body;
     if (!platform || !accountName) return res.status(400).json({ error: "platform and accountName required" });
@@ -76,7 +77,7 @@ accountsRouter.post("/:workspaceId/accounts/oauth/linkedin/start", requireWorksp
   res.json({ authUrl });
 });
 
-accountsRouter.delete("/:workspaceId/accounts/:accountId", requireWorkspaceRole("owner", "admin"), async (req, res) => {
+accountsRouter.delete("/:workspaceId/accounts/:accountId", requireActiveSubscription, requireWorkspaceRole("owner", "admin"), async (req, res) => {
   try {
     const account = await queryOne("SELECT * FROM social_accounts WHERE id = ? AND workspace_id = ?", [req.params.accountId, req.params.workspaceId]);
     if (!account) return res.status(404).json({ error: "Account not found" });

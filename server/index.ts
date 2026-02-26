@@ -15,6 +15,8 @@ import { profileRouter } from "./profile";
 import { dashboardRouter } from "./dashboard";
 import { socialRouter } from "./social/index";
 import { startScheduler } from "./social/scheduler";
+import { billingRouter } from "./billing";
+import { startBillingScheduler } from "./billing-scheduler";
 import path from "path";
 
 async function main() {
@@ -64,6 +66,7 @@ async function main() {
   app.use("/api/profile", profileRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/social", socialRouter);
+  app.use("/api/billing", billingRouter);
   app.use("/api", router);
 
   const distPath = path.join(process.cwd(), "dist");
@@ -80,8 +83,17 @@ async function main() {
   app.listen(port, "0.0.0.0", () => {
     console.log(`API running on 0.0.0.0:${port}`);
     startScheduler();
+    startBillingScheduler();
   });
 }
+
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
 
 main().catch((err) => {
   console.error("Failed to start server:", err);

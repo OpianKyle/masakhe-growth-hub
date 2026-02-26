@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "../db";
 import { requireAuth } from "../auth";
 import { requireWorkspaceRole } from "./workspace";
+import { requireActiveSubscription } from "../feature-gate";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 
@@ -62,7 +63,7 @@ postsRouter.get("/:workspaceId/posts/:postId", requireWorkspaceRole("owner", "ad
   }
 });
 
-postsRouter.post("/:workspaceId/posts", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+postsRouter.post("/:workspaceId/posts", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const { contentText, mediaAssetIds, scheduledAt, targetAccountIds, action } = req.body;
     if (!contentText && (!mediaAssetIds || mediaAssetIds.length === 0)) {
@@ -115,7 +116,7 @@ postsRouter.post("/:workspaceId/posts", requireWorkspaceRole("owner", "admin", "
   }
 });
 
-postsRouter.put("/:workspaceId/posts/:postId", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+postsRouter.put("/:workspaceId/posts/:postId", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const post = await queryOne("SELECT * FROM social_posts WHERE id = ? AND workspace_id = ?", [req.params.postId, req.params.workspaceId]);
     if (!post) return res.status(404).json({ error: "Post not found" });
@@ -153,7 +154,7 @@ postsRouter.put("/:workspaceId/posts/:postId", requireWorkspaceRole("owner", "ad
   }
 });
 
-postsRouter.delete("/:workspaceId/posts/:postId", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+postsRouter.delete("/:workspaceId/posts/:postId", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const post = await queryOne("SELECT status FROM social_posts WHERE id = ? AND workspace_id = ?", [req.params.postId, req.params.workspaceId]);
     if (!post) return res.status(404).json({ error: "Post not found" });

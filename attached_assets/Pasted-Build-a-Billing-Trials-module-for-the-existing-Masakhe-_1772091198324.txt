@@ -1,0 +1,247 @@
+Build a “Billing & Trials” module for the existing Masakhe SMME platform with a Free Trial (card required) that auto-bills when the trial ends, using Xneelo-hosted MySQL/MariaDB and Adumo Online Virtual (Hosted Payment Page) with JWT validation + webhooks.
+
+PLANS (ZAR):
+
+* PLAN_STARTER: R899 / month
+* PLAN_PRO: R2500 / month
+
+Trial:
+
+* 14 days free trial
+* Card required upfront (captured via Adumo Hosted Payment Page)
+* No charge during trial
+* Auto-charge the plan price when trial ends, then monthly thereafter
+
+IMPORTANT CONTEXT:
+
+* This project must use Xneelo MySQL/MariaDB (NOT SQLite, NOT PostgreSQL).
+* Replace any existing SQLite DB access with mysql2/promise connection pooling.
+* Keep the “auto-create tables on startup” behavior (runMigrations()).
+
+DATABASE (XNEELO MYSQL / MARIADB):
+
+1. Connection + pooling
+
+* Use mysql2/promise createPool.
+* All queries MUST be parameterized with ? placeholders.
+* Add db helpers: queryOne, queryAll, execute, and a transaction helper.
+
+2. Environment variables (DO NOT hardcode secrets):
+   DATABASE_URL=mysql://XNEELO_DB_USER:XNEELO_DB_PASSWORD@XNEELO_DB_HOST:XNEELO_DB_PORT/XNEELO_DB_NAME
+
+XNEELO_DB_HOST=sql17.cpt1.host-h.net
+XNEELO_DB_PORT=3306
+XNEELO_DB_NAME=lifestylerewards
+XNEELO_DB_USER=lifes
+XNEELO_DB_PASSWORD=... (set in .env only)
+
+3. SSL/TLS:
+
+* Connect using TLS.
+* Support optional CA bundle file path:
+  XNEELO_DB_SSL_CA_PATH=/certs/xneelo-ca.pem
+* If CA path is not set, enable SSL with rejectUnauthorized:true using system trust store.
+* Document in README how to upload the CA bundle into /certs and set XNEELO_DB_SSL_CA_PATH.
+
+4. Automatic table creation on startup:
+
+* Implement runMigrations() called during server startup.
+* Use MySQL-compatible DDL (ENGINE=InnoDB, proper indexes, foreign keys).
+* Create tables with CREATE TABLE IF NOT EXISTS...
+* Also create the session store table automatically (see “Sessions” below).
+
+SESSIONS:
+
+* Replace connect-sqlite3 with express-mysql-session (or a MySQL session store compatible with express-session).
+* Session table must auto-create if missing.
+
+PAYMENT GATEWAY:
+Use Adumo Online Virtual Hosted Payment Pages:
+
+* Card details are entered ONLY on Adumo’s Hosted Payment Page (HPP). We never store raw card details.
+* Validate JWT return payload (signature + critical fields like mref, amount, cuid, auid).
+* Use webhooks to confirm payment success/failure and finalize invoices/subscription state.
+* Implement “mock mode” if Adumo env vars are missing, so the app remains demo-ready.
+
+CORE UX FLOW:
+
+1. User chooses a plan on /pricing:
+
+   * Starter: R899 pm
+   * Pro: R2500 pm
+2. User starts Free Trial -> redirected to Adumo HPP to capture card
+3. On successful return + JWT validation:
+
+   * store payment method token/reference returned by provider (no PAN)
+   * activate trial: status=TRIAL, trialStartAt=now, trialEndAt=now+14 days
+4. Trial runs with full access
+5. 3 days before trial ends: send reminder email with exact date and amount
+6. At trial end: background job creates an invoice and attempts first charge:
+
+   * Starter invoice = 89900 cents
+   * Pro invoice = 250000 cents
+   * success: subscription becomes ACTIVE, nextBillingAt=+1 month
+   * fail: subscription becomes PAST_DUE, restrict premium features, email user to update card
+7. User can cancel before trial end to prevent billing.
+
+PAGES / ROUTES:
+
+* /pricing (public pricing + feature list + “Start 14-day trial”)
+* /checkout?plan=starter|pro (creates checkout session + redirects to Adumo HPP)
+* /billing/return (Adumo return URL: validate JWT, mark card-on-file, activate TRIAL)
+* /webhooks/adumo (receive events, idempotent processing)
+* /dashboard/billing (plan, trial status, next billing, invoices, update card, cancel)
+  All routes must be workspace-aware (multi-tenant).
+
+FEATURE GATING (MANDATORY):
+
+* If subscription.status is not ACTIVE or TRIAL:
+
+  * lock premium modules (e.g., Social Media Hub scheduling/publishing)
+  * allow read-only dashboard access + billing page access
+* TRIAL should have full access until trialEndAt.
+* PAST_DUE should restrict premium actions but allow “update card” and “pay invoice”.
+
+DATABASE TABLES (MYSQL/MARIADB, AUTO-CREATE):
+
+* plans:
+  id INT AUTO_INCREMENT PK
+  code VARCHAR(50) UNIQUE
+  name VARCHAR(100)
+  priceCents INT
+  currency VARCHAR(10) default 'ZAR'
+  interval ENUM('MONTHLY') default 'MONTHLY'
+  createdAt DATETIME, updatedAt DATETIME
+
+Seed plans on startup if missing:
+
+* starter: code='starter', name='Starter', priceCents=89900
+
+* pro: code='pro', name='Pro', priceCents=250000
+
+* subscriptions:
+  id INT AUTO_INCREMENT PK
+  workspaceId INT (FK)
+  planId INT (FK)
+  status ENUM('TRIAL','ACTIVE','PAST_DUE','CANCELLED')
+  trialStartAt DATETIME NULL
+  trialEndAt DATETIME NULL
+  nextBillingAt DATETIME NULL
+  cancelledAt DATETIME NULL
+  createdAt DATETIME, updatedAt DATETIME
+  indexes: (workspaceId,status), (nextBillingAt)
+
+* payment_methods:
+  id INT AUTO_INCREMENT PK
+  workspaceId INT (FK)
+  provider ENUM('ADUMO')
+  providerCustomerRef VARCHAR(255) NULL
+  providerPaymentMethodRef VARCHAR(255) NULL (token/reference from Adumo)
+  last4 VARCHAR(4) NULL
+  brand VARCHAR(50) NULL
+  expMonth TINYINT NULL
+  expYear SMALLINT NULL
+  status ENUM('ON_FILE','REPLACED','REVOKED') default 'ON_FILE'
+  createdAt DATETIME, updatedAt DATETIME
+
+* invoices:
+  id INT AUTO_INCREMENT PK
+  workspaceId INT (FK)
+  subscriptionId INT (FK)
+  amountCents INT
+  currency VARCHAR(10) default 'ZAR'
+  status ENUM('PENDING','PAID','FAILED')
+  providerRef VARCHAR(255) UNIQUE NULL
+  createdAt DATETIME
+  paidAt DATETIME NULL
+  failureReason TEXT NULL
+  indexes: (subscriptionId, status), (createdAt)
+
+* webhook_events:
+  id INT AUTO_INCREMENT PK
+  provider ENUM('ADUMO')
+  eventKey VARCHAR(255) UNIQUE (use provider event id / unique ref)
+  payloadJson JSON (or TEXT)
+  receivedAt DATETIME
+  processedAt DATETIME NULL
+  status ENUM('RECEIVED','PROCESSED','FAILED') default 'RECEIVED'
+
+* audit_log:
+  id INT AUTO_INCREMENT PK
+  workspaceId INT
+  actorUserId INT NULL
+  action VARCHAR(80)
+  entityType VARCHAR(80)
+  entityId VARCHAR(80)
+  metadataJson JSON (or TEXT)
+  createdAt DATETIME
+
+ADUMO INTEGRATION (BACKEND):
+
+* /api/billing/checkout-session:
+
+  * validate plan code
+  * generate merchant reference (mref) unique
+  * determine amount from plan (in cents)
+  * create invoice row status=PENDING
+  * generate redirect data/url for Adumo HPP (per docs)
+* /billing/return:
+
+  * verify JWT signature using ADUMO_JWT_SECRET
+  * validate mref/amount/cuid/auid match what we created
+  * store providerPaymentMethodRef (token/ref if provided)
+  * activate TRIAL subscription
+* /webhooks/adumo:
+
+  * verify authenticity (JWT/signature per docs)
+  * store event idempotently in webhook_events
+  * update invoice/subscription status safely (PAID/FAILED)
+
+SCHEDULER / JOBS:
+Implement a background job runner that executes every hour:
+
+* send trial-ending reminders (trialEndAt within 3 days, status=TRIAL)
+* convert ended trials (trialEndAt <= now, status=TRIAL) -> attempt charge
+* charge monthly renewals (status=ACTIVE, nextBillingAt <= now)
+  Idempotency:
+* Create invoice row first (PENDING) and use unique providerRef / eventKey to avoid double charges.
+* Finalize state via webhook confirmation where possible.
+
+EMAILS:
+
+* Trial started confirmation
+* Trial ending reminder (3 days before) with amount (R899 or R2500) and exact billing date
+* Payment success receipt
+* Payment failed + update card link
+* Cancellation confirmation
+
+ERROR HANDLING:
+
+* Wrap all DB ops and provider ops in try/catch.
+* Log server-side with request id and entity ids, never secrets.
+* Return safe errors to UI.
+
+ENV VARS (PAYMENTS):
+ADUMO_CUID=...
+ADUMO_AUID=...
+ADUMO_JWT_SECRET=...
+ADUMO_WEBHOOK_SECRET=... (if used)
+APP_URL=https://...
+TZ=Africa/Johannesburg
+
+MOCK MODE (MANDATORY):
+If ADUMO_* env vars missing:
+
+* allow “simulate card on file”
+* allow “simulate billing success/failure”
+  So the full trial/billing flow can be demoed without credentials.
+
+DELIVERABLES:
+
+* MySQL db module (server/db.ts) with mysql2 pool + TLS + migrations
+* Updated session store for MySQL
+* Billing tables + migrations at startup + seed plans (starter/pro)
+* Pricing + Billing UI pages showing R899 and R2500 plans
+* Checkout + return + webhook endpoints
+* Job runner for trial conversion and renewals
+* README: Xneelo DB setup, SSL CA instructions, Adumo env vars setup

@@ -12,6 +12,9 @@ import DashboardPage from "./pages/DashboardPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Onboarding from "./pages/Onboarding";
 import PublishedSite from "./pages/PublishedSite";
+import PricingPage from "./pages/PricingPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import BillingReturnPage from "./pages/BillingReturnPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +30,9 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+            <Route path="/billing/return" element={<ProtectedRoute><BillingReturnPage /></ProtectedRoute>} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

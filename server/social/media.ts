@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "../db";
 import { requireAuth } from "../auth";
 import { requireWorkspaceRole } from "./workspace";
+import { requireActiveSubscription } from "../feature-gate";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 import multer from "multer";
@@ -51,7 +52,7 @@ mediaRouter.get("/:workspaceId/media", requireWorkspaceRole("owner", "admin", "e
   }
 });
 
-mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "admin", "editor"), upload.single("file"), async (req, res) => {
+mediaRouter.post("/:workspaceId/media/upload", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -73,7 +74,7 @@ mediaRouter.post("/:workspaceId/media/upload", requireWorkspaceRole("owner", "ad
   }
 });
 
-mediaRouter.delete("/:workspaceId/media/:assetId", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+mediaRouter.delete("/:workspaceId/media/:assetId", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const asset = await queryOne("SELECT * FROM media_assets WHERE id = ? AND workspace_id = ?", [req.params.assetId, req.params.workspaceId]);
     if (!asset) return res.status(404).json({ error: "Asset not found" });

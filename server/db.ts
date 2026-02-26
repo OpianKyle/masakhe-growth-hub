@@ -346,6 +346,91 @@ export async function runMigrations() {
     await createIndex("idx_media_assets_ws", "media_assets", "workspace_id");
     await createIndex("idx_audit_logs_ws", "audit_logs", "workspace_id");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS billing_plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
+        price_cents INT NOT NULL,
+        currency VARCHAR(10) NOT NULL DEFAULT 'ZAR',
+        bill_interval VARCHAR(20) NOT NULL DEFAULT 'MONTHLY',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS billing_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        workspace_id VARCHAR(36) NOT NULL,
+        plan_id INT NOT NULL,
+        status ENUM('TRIAL','ACTIVE','PAST_DUE','CANCELLED') NOT NULL DEFAULT 'TRIAL',
+        trial_start_at DATETIME NULL,
+        trial_end_at DATETIME NULL,
+        next_billing_at DATETIME NULL,
+        cancelled_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+        FOREIGN KEY(plan_id) REFERENCES billing_plans(id)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS billing_payment_methods (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        workspace_id VARCHAR(36) NOT NULL,
+        provider VARCHAR(20) NOT NULL DEFAULT 'ADUMO',
+        provider_customer_ref VARCHAR(255) NULL,
+        provider_payment_method_ref VARCHAR(255) NULL,
+        last4 VARCHAR(4) NULL,
+        brand VARCHAR(50) NULL,
+        exp_month TINYINT NULL,
+        exp_year SMALLINT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'ON_FILE',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS billing_invoices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        workspace_id VARCHAR(36) NOT NULL,
+        subscription_id INT NULL,
+        amount_cents INT NOT NULL,
+        currency VARCHAR(10) NOT NULL DEFAULT 'ZAR',
+        status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+        provider_ref VARCHAR(255) NULL UNIQUE,
+        merchant_ref VARCHAR(38) NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        paid_at DATETIME NULL,
+        failure_reason TEXT NULL,
+        FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+        FOREIGN KEY(subscription_id) REFERENCES billing_subscriptions(id)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS billing_webhook_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        provider VARCHAR(20) NOT NULL DEFAULT 'ADUMO',
+        event_key VARCHAR(255) NOT NULL UNIQUE,
+        payload_json TEXT,
+        received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        processed_at DATETIME NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'RECEIVED'
+      ) ENGINE=InnoDB
+    `);
+
+    await createIndex("idx_billing_sub_ws_status", "billing_subscriptions", "workspace_id, status");
+    await createIndex("idx_billing_sub_next", "billing_subscriptions", "next_billing_at");
+    await createIndex("idx_bi_sub_status", "billing_invoices", "subscription_id, status");
+    await createIndex("idx_bi_created", "billing_invoices", "created_at");
+
+    await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

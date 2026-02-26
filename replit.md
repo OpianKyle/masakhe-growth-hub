@@ -4,6 +4,15 @@
 Masakhe is a Government-as-a-Platform application designed to help South African SMMEs (Small, Medium and Micro Enterprises) with business registration, digital presence, tax compliance, financial tracking, social media management, and customer engagement. It features a South African flag-inspired color palette.
 
 ## Recent Changes
+- 2026-02-26: Added Billing & Trials module with subscription management
+  - Two plans: Starter (R899/mo) and Pro (R2,500/mo)
+  - 14-day free trial with card capture via Adumo Online Virtual HPP
+  - Mock mode when Adumo credentials not set (ADUMO_CUID/ADUMO_AUID)
+  - Billing scheduler runs hourly: trial reminders, expired trial processing, monthly renewals
+  - Feature gating middleware for Social Media Hub write operations
+  - Pricing page, checkout flow, billing return handling, billing dashboard
+  - Tables: billing_plans, billing_subscriptions, billing_payment_methods, billing_invoices, billing_webhook_events
+  - Invoice PDFs include business logo at top
 - 2026-02-25: Made dashboard overview fully dynamic with real data and charts
   - New /api/dashboard/overview endpoint aggregates KPIs, finance, invoices, social stats
   - Revenue vs Expenses area chart (last 12 months from ledger)
@@ -56,6 +65,7 @@ Masakhe is a Government-as-a-Platform application designed to help South African
 - **PDF**: pdf-lib for server-side invoice PDF generation
 - **File Upload**: multer (media library, max 25MB)
 - **Encryption**: Node.js crypto (AES-256-GCM for token storage)
+- **Billing**: jsonwebtoken for Adumo JWT tokens
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Routing**: React Router DOM v6
 - **State**: TanStack React Query v5
@@ -91,6 +101,11 @@ src/
 │   ├── FinancePage.tsx
 │   ├── InvoicesPage.tsx
 │   ├── GrantReadinessPage.tsx
+│   ├── PricingPage.tsx         # Public pricing with plan cards
+│   ├── CheckoutPage.tsx        # Checkout flow + mock card capture
+│   ├── BillingReturnPage.tsx   # Adumo HPP return handler
+│   ├── BillingPage.tsx         # Billing dashboard in sidebar
+│   ├── SettingsPage.tsx
 │   └── ...
 └── index.css
 
@@ -104,9 +119,12 @@ server/
 │   ├── analytics.ts   # Analytics queries
 │   ├── audit.ts       # Audit logging + CSV export + monthly report
 │   └── scheduler.ts   # Background post scheduler (60s interval)
+├── billing.ts         # Billing API routes (plans, checkout, return, cancel, webhooks)
+├── billing-scheduler.ts # Hourly billing scheduler (trials, renewals)
+├── feature-gate.ts    # Subscription gating middleware
 ├── crypto.ts          # AES-256-GCM encrypt/decrypt for tokens
 ├── index.ts
-├── db.ts              # MySQL connection pool + migrations
+├── db.ts              # MySQL connection pool + migrations + billing plan seeding
 ├── auth.ts
 ├── admin.ts
 ├── finance.ts
@@ -131,7 +149,7 @@ server/
 - `business_profiles` - user_id, business details, banking, POPIA consent
 - `websites` - owner_id, slug, status, content_json
 - `ledger_entries` - user_id, type (INCOME/EXPENSE), amount_cents, category
-- `invoices` - user_id, invoice_number, customer, items_json, total_cents
+- `invoices` - user_id, invoice_number, customer, items_json, total_cents (customer invoices)
 - `grant_readiness` - user_id, manual checklist items
 - `workspaces` - id, name, owner_id, timestamps
 - `workspace_members` - workspace_id, user_id, role (owner/admin/editor/viewer)
@@ -140,10 +158,26 @@ server/
 - `social_post_targets` - post_id, account_id, platform, status, platform_post_id, error_message
 - `media_assets` - workspace_id, url, type (IMAGE/VIDEO), file_name, size
 - `audit_logs` - workspace_id, actor_user_id, action, entity_type/id, metadata JSON
+- `billing_plans` - id, code (starter/pro), name, price_cents, currency, bill_interval
+- `billing_subscriptions` - workspace_id, plan_id, status (TRIAL/ACTIVE/PAST_DUE/CANCELLED), trial dates, next_billing_at
+- `billing_payment_methods` - workspace_id, provider, last4, brand, exp_month/year, status
+- `billing_invoices` - workspace_id, subscription_id, amount_cents, status (PENDING/PAID/FAILED), merchant_ref, provider_ref
+- `billing_webhook_events` - provider, event_key, payload_json, status (RECEIVED/PROCESSED)
 - `onboarding_flows` / `onboarding_steps` - Registration wizard config
 - `page_definitions` / `page_sections` - Dynamic page builder
 - `submissions` - Form submissions
 - `sessions` - express-mysql-session managed
+
+### Billing & Trials Architecture
+- **Plans**: Starter (R899/mo, code='starter'), Pro (R2500/mo, code='pro')
+- **Trial**: 14 days, card captured upfront via Adumo HPP, no charge during trial
+- **Lifecycle**: TRIAL → ACTIVE (auto on trial end) → PAST_DUE (failed charge) → CANCELLED
+- **Mock Mode**: When ADUMO_CUID/ADUMO_AUID env vars not set, simulates card capture and charges
+- **Scheduler**: Runs hourly - trial reminders (3 days before), expired trial processing, monthly renewals
+- **Feature Gating**: Social Media Hub write operations (POST/PUT/DELETE on posts, accounts, media) require active subscription
+- **Adumo Integration**: JWT-based token for HPP (MerchantID, ApplicationID, Amount, Token, RedirectURLs)
+- **Important**: billing_invoices is separate from invoices table (customer invoices vs platform charges)
+- **Pool queries**: Return handler uses pool helpers (queryOne/execute) not manual getConnection/transactions to avoid pool exhaustion with remote MySQL
 
 ### Social Media Hub Architecture
 - **Workspaces**: Each user auto-gets a workspace; supports multiple members with roles
@@ -175,6 +209,9 @@ server/
 - `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` - LinkedIn OAuth (optional)
 - `TOKEN_ENCRYPTION_KEY` - Custom encryption key for token storage
 - `APP_URL` - Public URL for OAuth callbacks
+- `ADUMO_CUID` - Adumo Customer ID (optional, enables real payments)
+- `ADUMO_AUID` - Adumo Application ID (optional, enables real payments)
+- `ADUMO_JWT_SECRET` - Adumo JWT signing secret (required for real payments)
 
 ## User Preferences
 - Remote MySQL database on Xneelo (no SQLite, no paid Replit services)
