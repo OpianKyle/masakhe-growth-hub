@@ -1,0 +1,21 @@
+Uncaught TypeError: plans.find is not a function
+    at CheckoutPage (CheckoutPage.tsx:39:30)
+
+chunk-R6S4VRB5.js?v=fc808aba:14032 The above error occurred in the <CheckoutPage> component:
+
+    at CheckoutPage (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/src/pages/CheckoutPage.tsx:36:28)
+    at ProtectedRoute (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/src/components/ProtectedRoute.tsx:24:34)
+    at RenderedRoute (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=fc808aba:4088:5)
+    at Routes (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=fc808aba:4558:5)
+    at Router (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=fc808aba:4501:15)
+    at BrowserRouter (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=fc808aba:5247:5)
+    at AuthProvider (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/src/contexts/AuthContext.tsx:24:32)
+    at Provider (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/chunk-BKOR25MY.js?v=fc808aba:38:15)
+    at TooltipProvider (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=fc808aba:60:5)
+    at QueryClientProvider (https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=fc808aba:2934:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-R6S4VRB5.js?v=fc808aba:19413 Uncaught TypeError: plans.find is not a function
+    at CheckoutPage (CheckoutPage.tsx:39:30)

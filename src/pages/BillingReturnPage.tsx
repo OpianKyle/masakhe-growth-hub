@@ -12,10 +12,12 @@ export default function BillingReturnPage() {
   useEffect(() => {
     const processReturn = async () => {
       const status = searchParams.get("status");
+      const merchantRef = searchParams.get("merchantRef") || searchParams.get("_MERCHANTREFERENCE");
       const params: Record<string, string> = {};
       searchParams.forEach((value, key) => {
         params[key] = value;
       });
+      if (merchantRef) params.merchantRef = merchantRef;
 
       try {
         const res = await fetch("/api/billing/return", {

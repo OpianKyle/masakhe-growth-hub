@@ -41,7 +41,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetch("/api/billing/plans")
       .then((r) => r.json())
-      .then((data) => setPlans(data))
+      .then((data) => setPlans(data.plans || data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

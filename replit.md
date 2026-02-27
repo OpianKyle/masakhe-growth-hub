@@ -4,6 +4,14 @@
 Masakhe is a Government-as-a-Platform application designed to help South African SMMEs (Small, Medium and Micro Enterprises) with business registration, digital presence, tax compliance, financial tracking, social media management, and customer engagement. It features a South African flag-inspired color palette.
 
 ## Recent Changes
+- 2026-02-27: Integrated payment into registration flow and fixed billing pages
+  - Plan selection step added to RegisterPage (7-step flow: Account, Business Status, Identity, Business Details, Contact, Choose Plan, Confirmation)
+  - After registration, auto-starts checkout flow (mock card capture or Adumo HPP redirect)
+  - Adumo form updated to 3D Secure format with full fields: puid, txtCurrencyCode, item details, shipping, Variable1/2
+  - Pricing section added to landing page with plan cards and trial CTAs
+  - Fixed CheckoutPage plans API parsing bug (data.plans vs data)
+  - BillingReturnPage now handles merchantRef from URL params for Adumo redirect
+  - Registration links from pricing/landing page pass ?plan= query param
 - 2026-02-26: Added Billing & Trials module with subscription management
   - Two plans: Starter (R899/mo) and Pro (R2,500/mo)
   - 14-day free trial with card capture via Adumo Online Virtual HPP

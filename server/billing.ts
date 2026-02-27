@@ -140,25 +140,44 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       return res.json({ mock: true, invoiceId, merchantRef, planCode });
     }
 
+    const amount = (plan.price_cents / 100).toFixed(2);
     const token = jwt.sign(
       {
         mref: merchantRef,
-        amount: (plan.price_cents / 100).toFixed(2),
+        amount,
         auid: process.env.ADUMO_AUID,
         cuid: process.env.ADUMO_CUID,
       },
       process.env.ADUMO_JWT_SECRET!,
-      { algorithm: "HS256" }
+      { algorithm: "HS256", expiresIn: 600 }
     );
 
-    const formData = {
-      MerchantID: process.env.ADUMO_CUID,
-      ApplicationID: process.env.ADUMO_AUID,
+    const user = await queryOne("SELECT full_name FROM users WHERE id = ?", [userId]);
+    const bp = await queryOne("SELECT business_name, physical_address FROM business_profiles WHERE user_id = ?", [userId]);
+
+    const formData: Record<string, string> = {
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
       MerchantReference: merchantRef,
-      Amount: (plan.price_cents / 100).toFixed(2),
+      Amount: amount,
       Token: token,
-      RedirectSuccessfulURL: `${APP_URL}/billing/return?status=success`,
-      RedirectFailedURL: `${APP_URL}/billing/return?status=failed`,
+      txtCurrencyCode: "ZAR",
+      RedirectSuccessfulURL: `${APP_URL}/billing/return?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/billing/return?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "Subscription",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: plan.code,
+      ItemDescr1: `Masakhe ${plan.name} Plan - 14 Day Trial then ${amount}/mo`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: user?.full_name || "Customer",
+      ShippingAddress1: bp?.physical_address || "",
+      ShippingAddress2: "",
+      ShippingAddress3: "",
+      ShippingAddress4: "",
+      ShippingAddress5: "South Africa",
     };
 
     res.json({ mock: false, formAction: ADUMO_URL, formData });

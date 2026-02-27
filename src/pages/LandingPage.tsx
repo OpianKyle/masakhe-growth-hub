@@ -1,5 +1,5 @@
 import { motion, type Easing } from "framer-motion";
-import { ArrowRight, Globe, Smartphone, BarChart3, Bot, FileText, Shield, Megaphone } from "lucide-react";
+import { ArrowRight, Globe, Smartphone, BarChart3, Bot, FileText, Shield, Megaphone, Check, Wallet, Calendar, Image, Headphones, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
@@ -61,6 +61,42 @@ const stats = [
   { value: "12,000+", label: "Jobs Created" },
 ];
 
+const pricingPlans = [
+  {
+    code: "starter",
+    name: "Starter",
+    price: "R899",
+    period: "/month",
+    description: "Everything you need to get your SMME online and compliant.",
+    features: [
+      { icon: Globe, label: "Website Builder" },
+      { icon: Wallet, label: "Financial Tracking" },
+      { icon: FileText, label: "Invoice Generation" },
+      { icon: Shield, label: "Compliance Score" },
+      { icon: ClipboardCheck, label: "Grant Readiness" },
+      { icon: Headphones, label: "Basic Support" },
+    ],
+    popular: false,
+  },
+  {
+    code: "pro",
+    name: "Pro",
+    price: "R2,500",
+    period: "/month",
+    description: "Full suite with social media management and advanced analytics.",
+    features: [
+      { icon: Globe, label: "Everything in Starter" },
+      { icon: Smartphone, label: "Social Media Hub" },
+      { icon: Calendar, label: "Content Calendar" },
+      { icon: Megaphone, label: "Multi-platform Publishing" },
+      { icon: BarChart3, label: "Analytics Dashboard" },
+      { icon: Image, label: "Media Library" },
+      { icon: Headphones, label: "Priority Support" },
+    ],
+    popular: true,
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -76,6 +112,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#modules" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Modules</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
             <a href="#impact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Impact</a>
           </div>
           <div className="flex items-center gap-3">
@@ -333,6 +370,94 @@ export default function LandingPage() {
               />
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16 space-y-4"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
+              <Shield className="h-3 w-3" /> 14-Day Free Trial
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-foreground">
+              Simple, Transparent{" "}
+              <span className="text-gradient-hero">Pricing</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Choose the plan that fits your business. Start with a 14-day free trial — no commitment, cancel anytime.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {pricingPlans.map((plan, i) => (
+              <motion.div
+                key={plan.code}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                className={`relative rounded-2xl border bg-card p-8 flex flex-col ${
+                  plan.popular
+                    ? "border-secondary shadow-elevated"
+                    : "border-border shadow-card"
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="gradient-gold text-sa-black text-xs font-bold px-4 py-1 rounded-full">
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold font-heading text-foreground">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
+                </div>
+
+                <div className="mb-8">
+                  <span className="text-4xl font-bold font-heading text-foreground">{plan.price}</span>
+                  <span className="text-muted-foreground">{plan.period}</span>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {plan.features.map((feature) => (
+                    <li key={feature.label} className="flex items-center gap-3 text-sm text-foreground">
+                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Check className="h-3 w-3 text-primary" />
+                      </div>
+                      {feature.label}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to={`/register?plan=${plan.code}`}>
+                  <Button
+                    variant={plan.popular ? "gold" : "hero"}
+                    size="lg"
+                    className="w-full text-base"
+                  >
+                    Start 14-day Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-sm text-muted-foreground mt-8"
+          >
+            All prices in South African Rand (ZAR). No charge during your 14-day trial period.
+          </motion.p>
         </div>
       </section>
 
