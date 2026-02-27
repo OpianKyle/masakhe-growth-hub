@@ -1,4 +1,4 @@
-import { pool, queryAll, queryOne, execute } from "./db";
+import { queryAll, queryOne, execute } from "./db";
 import { chargeCardOnFile, isMockMode } from "./adumo";
 
 async function processTrialReminders() {
@@ -23,7 +23,7 @@ async function processTrialReminders() {
 async function processExpiredTrials() {
   try {
     const expired = await queryAll(
-      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents, bp.name as plan_name
+      `SELECT bs.id, bs.workspace_id, bs.plan_id, bs.adumo_subscription_id, bp.price_cents, bp.name as plan_name
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
        WHERE bs.status = 'TRIAL'
@@ -32,6 +32,15 @@ async function processExpiredTrials() {
 
     for (const sub of expired) {
       try {
+        if (sub.adumo_subscription_id) {
+          await execute(
+            `UPDATE billing_subscriptions SET status = 'ACTIVE', next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
+            [sub.id]
+          );
+          console.log(`[Billing] Trial ended for workspace ${sub.workspace_id} — Adumo subscription ${sub.adumo_subscription_id} handles recurring charges`);
+          continue;
+        }
+
         const merchantRef = `MSK-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
         await execute(
@@ -92,7 +101,7 @@ async function processExpiredTrials() {
 async function processMonthlyRenewals() {
   try {
     const due = await queryAll(
-      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents, bp.name as plan_name
+      `SELECT bs.id, bs.workspace_id, bs.plan_id, bs.adumo_subscription_id, bp.price_cents, bp.name as plan_name
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
        WHERE bs.status = 'ACTIVE'
@@ -101,6 +110,15 @@ async function processMonthlyRenewals() {
 
     for (const sub of due) {
       try {
+        if (sub.adumo_subscription_id) {
+          await execute(
+            `UPDATE billing_subscriptions SET next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
+            [sub.id]
+          );
+          console.log(`[Billing] Recurring billing for workspace ${sub.workspace_id} handled by Adumo subscription ${sub.adumo_subscription_id} — advancing next_billing_at`);
+          continue;
+        }
+
         const merchantRef = `MSK-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
         await execute(

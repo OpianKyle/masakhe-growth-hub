@@ -143,9 +143,21 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     const token = generateCheckoutToken(merchantRef, amount);
 
     const user = await queryOne("SELECT full_name FROM users WHERE id = ?", [userId]);
-    const bp = await queryOne("SELECT business_name, physical_address FROM business_profiles WHERE user_id = ?", [userId]);
+    const bp = await queryOne("SELECT business_name, physical_address, phone FROM business_profiles WHERE user_id = ?", [userId]);
 
     const puid = `MSK-${workspaceId}`;
+
+    const trialDays = 14;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + trialDays);
+    const collectionDay = startDate.getDate();
+    const startDateStr = startDate.toISOString().split("T")[0];
+
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 5);
+    const endDateStr = endDate.toISOString().split("T")[0];
+
+    const userEmail = await queryOne("SELECT email FROM users WHERE id = ?", [userId]);
 
     const formData: Record<string, string> = {
       MerchantID: process.env.ADUMO_CUID!,
@@ -162,7 +174,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       Variable2: merchantRef,
       Qty1: "1",
       ItemRef1: plan.code,
-      ItemDescr1: `Masakhe ${plan.name} Plan - 14 Day Trial then ${amount}/mo`,
+      ItemDescr1: `Masakhe ${plan.name} Plan`,
       ItemAmount1: amount,
       ShippingCost: "0.00",
       Discount: "0.00",
@@ -172,6 +184,18 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       ShippingAddress3: "",
       ShippingAddress4: "",
       ShippingAddress5: "South Africa",
+
+      frequency: "MONTHLY",
+      collectionDay: String(collectionDay),
+      accountNumber: `MSK-${workspaceId.slice(0, 12)}`,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      collectionValue: amount,
+      contactNumber: bp?.phone || "",
+      mobileNumber: bp?.phone || "",
+      emailAddress: userEmail?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
     };
 
     res.json({ mock: false, formAction: ADUMO_URL, formData });
@@ -244,7 +268,8 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
       }
     }
 
-    const { _RESPONSE_TOKEN, _RESULT, _TRANSACTIONINDEX, _MERCHANTREFERENCE, _AMOUNT, _ERROR_CODE, _ERROR_MESSAGE } = req.body;
+    const { _RESPONSE_TOKEN, _RESULT, _TRANSACTIONINDEX, _MERCHANTREFERENCE, _AMOUNT, _ERROR_CODE, _ERROR_MESSAGE, subscriptionId: bodySubId, _SUBSCRIPTIONID } = req.body;
+    const adumoSubId = bodySubId || _SUBSCRIPTIONID || null;
 
     if (!_RESPONSE_TOKEN) {
       return res.status(400).json({ error: "Missing response token" });
@@ -279,14 +304,14 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
       let subscriptionId;
       if (existingSub) {
         await execute(
-          "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), updated_at = NOW() WHERE id = ?",
-          [plan.id, existingSub.id]
+          "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+          [plan.id, adumoSubId, existingSub.id]
         );
         subscriptionId = existingSub.id;
       } else {
         const subResult = await execute(
-          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
-          [workspaceId, plan.id]
+          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, adumo_subscription_id) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), ?)",
+          [workspaceId, plan.id, adumoSubId]
         );
         subscriptionId = subResult.insertId;
       }
@@ -358,10 +383,7 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
     const body = req.body;
     console.log("[Billing Webhook] Received:", JSON.stringify(body));
 
-    const eventKey = body._TRANSACTIONINDEX || body.TransactionIndex;
-    if (!eventKey) {
-      return res.status(400).json({ error: "Missing transaction index" });
-    }
+    const eventKey = body._TRANSACTIONINDEX || body.TransactionIndex || `wh-${Date.now()}`;
 
     const alreadyProcessed = await queryOne(
       "SELECT id FROM billing_webhook_events WHERE event_key = ? AND status = 'PROCESSED'",
@@ -387,8 +409,39 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
 
     const merchantRef = body._MERCHANTREFERENCE || body.MerchantReference;
     const result = String(body._RESULT ?? body.Result ?? "");
+    const adumoSubId = body.subscriptionId || body.SubscriptionId || body._SUBSCRIPTIONID || null;
+    const isRecurring = !!(body.isRecurring || body.IsRecurring || body._ISRECURRING || adumoSubId);
 
-    if (merchantRef) {
+    if (isRecurring && adumoSubId) {
+      const sub = await queryOne(
+        "SELECT bs.*, bp.price_cents FROM billing_subscriptions bs JOIN billing_plans bp ON bp.id = bs.plan_id WHERE bs.adumo_subscription_id = ?",
+        [adumoSubId]
+      );
+
+      if (sub) {
+        const recurringRef = `MSK-REC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const invoiceResult = await execute(
+          "INSERT INTO billing_invoices (workspace_id, subscription_id, amount_cents, currency, status, merchant_ref, provider_ref) VALUES (?, ?, ?, 'ZAR', 'PENDING', ?, ?)",
+          [sub.workspace_id, sub.id, sub.price_cents, recurringRef, eventKey]
+        );
+
+        if (result === "0") {
+          await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE id = ?", [invoiceResult.insertId]);
+          await execute(
+            "UPDATE billing_subscriptions SET status = 'ACTIVE', next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?",
+            [sub.id]
+          );
+          console.log(`[Billing Webhook] Recurring charge succeeded for workspace ${sub.workspace_id}, adumo sub: ${adumoSubId}`);
+        } else {
+          const errorDetail = body._ERROR_MESSAGE || body._ERROR_CODE || body.ErrorMessage || "Recurring charge failed";
+          await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?", [errorDetail, invoiceResult.insertId]);
+          await execute("UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?", [sub.id]);
+          console.log(`[Billing Webhook] Recurring charge failed for workspace ${sub.workspace_id}: ${errorDetail}`);
+        }
+      } else {
+        console.warn("[Billing Webhook] Recurring charge for unknown adumo subscription:", adumoSubId);
+      }
+    } else if (merchantRef) {
       const invoice = await queryOne("SELECT * FROM billing_invoices WHERE merchant_ref = ?", [merchantRef]);
       if (invoice) {
         if (result === "0") {
@@ -402,6 +455,9 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
             if (sub && sub.status !== 'ACTIVE' && sub.status !== 'TRIAL') {
               await execute("UPDATE billing_subscriptions SET status = 'ACTIVE', updated_at = NOW() WHERE id = ?", [invoice.subscription_id]);
             }
+            if (adumoSubId) {
+              await execute("UPDATE billing_subscriptions SET adumo_subscription_id = ?, updated_at = NOW() WHERE id = ?", [adumoSubId, invoice.subscription_id]);
+            }
           } else {
             const plan = await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [invoice.amount_cents]);
             if (plan) {
@@ -411,11 +467,13 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
               );
               if (!existingSub) {
                 const subResult = await execute(
-                  "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
-                  [invoice.workspace_id, plan.id]
+                  "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, adumo_subscription_id) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), ?)",
+                  [invoice.workspace_id, plan.id, adumoSubId]
                 );
                 await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subResult.insertId, invoice.id]);
                 console.log("[Billing Webhook] Created subscription via webhook for workspace:", invoice.workspace_id);
+              } else if (adumoSubId) {
+                await execute("UPDATE billing_subscriptions SET adumo_subscription_id = ?, updated_at = NOW() WHERE id = ?", [adumoSubId, existingSub.id]);
               }
             }
           }
@@ -452,7 +510,7 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
       [eventKey]
     );
 
-    console.log("[Billing Webhook] Processed event:", eventKey, "result:", result);
+    console.log("[Billing Webhook] Processed event:", eventKey, "result:", result, "recurring:", isRecurring);
     res.json({ ok: true });
   } catch (err: any) {
     console.error("[Billing Webhook] Processing error:", err.message, err.stack);
