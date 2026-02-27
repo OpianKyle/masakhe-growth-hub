@@ -120,9 +120,8 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      toast.success("Registration successful! Setting up your subscription...");
-      setPaymentStep("checkout");
-      startCheckout();
+      toast.success("Registration successful!");
+      navigate(`/checkout?plan=${formData.selectedPlan}`);
     } else {
       toast.error(result.error || "Registration failed");
     }
