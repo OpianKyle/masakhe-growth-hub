@@ -198,6 +198,21 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       shouldSendEmail: "true",
     };
 
+    console.log("[Billing] Checkout form data for Adumo subscription:", JSON.stringify({
+      MerchantReference: formData.MerchantReference,
+      Amount: formData.Amount,
+      frequency: formData.frequency,
+      collectionDay: formData.collectionDay,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      collectionValue: formData.collectionValue,
+      accountNumber: formData.accountNumber,
+      emailAddress: formData.emailAddress,
+      contactNumber: formData.contactNumber,
+      mobileNumber: formData.mobileNumber,
+      puid: formData.puid,
+    }));
+
     res.json({ mock: false, formAction: ADUMO_URL, formData });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
