@@ -327,6 +327,10 @@ export async function runMigrations() {
     await addColumnIfMissing("social_post_targets", "created_at", "VARCHAR(30)");
     await addColumnIfMissing("social_post_targets", "updated_at", "VARCHAR(30)");
     await addColumnIfMissing("business_profiles", "logo_url", "VARCHAR(500)");
+    await addColumnIfMissing("billing_payment_methods", "puid", "VARCHAR(255) NULL");
+    await addColumnIfMissing("billing_payment_methods", "profile_token", "VARCHAR(255) NULL");
+    await addColumnIfMissing("billing_payment_methods", "card_token", "VARCHAR(255) NULL");
+    await addColumnIfMissing("billing_subscriptions", "adumo_subscription_id", "VARCHAR(255) NULL");
 
     const createIndex = async (name: string, table: string, col: string) => {
       try {

@@ -1,6 +1,5 @@
 import { pool, queryAll, queryOne, execute } from "./db";
-
-const isMockMode = !process.env.ADUMO_CUID || !process.env.ADUMO_AUID;
+import { chargeCardOnFile, isMockMode } from "./adumo";
 
 async function processTrialReminders() {
   try {
@@ -24,7 +23,7 @@ async function processTrialReminders() {
 async function processExpiredTrials() {
   try {
     const expired = await queryAll(
-      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents
+      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents, bp.name as plan_name
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
        WHERE bs.status = 'TRIAL'
@@ -32,61 +31,57 @@ async function processExpiredTrials() {
     );
 
     for (const sub of expired) {
-      const conn = await pool.getConnection();
       try {
-        await conn.beginTransaction();
-
         const merchantRef = `MSK-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-        await conn.execute(
+        await execute(
           `INSERT INTO billing_invoices (workspace_id, subscription_id, amount_cents, currency, status, merchant_ref)
            VALUES (?, ?, ?, 'ZAR', 'PENDING', ?)`,
           [sub.workspace_id, sub.id, sub.price_cents, merchantRef]
         );
 
         if (isMockMode) {
-          await conn.execute(
+          await execute(
             `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE merchant_ref = ?`,
             [merchantRef]
           );
-
-          await conn.execute(
+          await execute(
             `UPDATE billing_subscriptions SET status = 'ACTIVE', next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
             [sub.id]
           );
-
           console.log(`[Billing] Mock: Expired trial auto-charged for workspace ${sub.workspace_id}`);
         } else {
-          const paymentMethod = await queryOne(
-            `SELECT * FROM billing_payment_methods WHERE workspace_id = ? AND status = 'ON_FILE' LIMIT 1`,
-            [sub.workspace_id]
+          const result = await chargeCardOnFile(
+            sub.workspace_id,
+            sub.price_cents,
+            merchantRef,
+            `Masakhe ${sub.plan_name} Plan - First Monthly Charge`
           );
 
-          if (!paymentMethod) {
-            await conn.execute(
-              `UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?`,
+          if (result.success) {
+            await execute(
+              `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE merchant_ref = ?`,
+              [result.transactionIndex || null, merchantRef]
+            );
+            await execute(
+              `UPDATE billing_subscriptions SET status = 'ACTIVE', next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
               [sub.id]
             );
-            await conn.execute(
-              `UPDATE billing_invoices SET status = 'FAILED', failure_reason = 'No payment method on file' WHERE merchant_ref = ?`,
-              [merchantRef]
-            );
-            console.log(`[Billing] No payment method for workspace ${sub.workspace_id}, set PAST_DUE`);
+            console.log(`[Billing] Trial-to-active charge succeeded for workspace ${sub.workspace_id}`);
           } else {
-            await conn.execute(
+            await execute(
+              `UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE merchant_ref = ?`,
+              [result.error || "Charge failed", merchantRef]
+            );
+            await execute(
               `UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?`,
               [sub.id]
             );
-            console.log(`[Billing] Real Adumo charge not implemented, set PAST_DUE for workspace ${sub.workspace_id}`);
+            console.log(`[Billing] Trial-to-active charge failed for workspace ${sub.workspace_id}: ${result.error}`);
           }
         }
-
-        await conn.commit();
       } catch (err) {
-        await conn.rollback();
         console.error(`[Billing] Error processing expired trial for workspace ${sub.workspace_id}:`, err);
-      } finally {
-        conn.release();
       }
     }
   } catch (err) {
@@ -97,7 +92,7 @@ async function processExpiredTrials() {
 async function processMonthlyRenewals() {
   try {
     const due = await queryAll(
-      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents
+      `SELECT bs.id, bs.workspace_id, bs.plan_id, bp.price_cents, bp.name as plan_name
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
        WHERE bs.status = 'ACTIVE'
@@ -105,61 +100,57 @@ async function processMonthlyRenewals() {
     );
 
     for (const sub of due) {
-      const conn = await pool.getConnection();
       try {
-        await conn.beginTransaction();
-
         const merchantRef = `MSK-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-        await conn.execute(
+        await execute(
           `INSERT INTO billing_invoices (workspace_id, subscription_id, amount_cents, currency, status, merchant_ref)
            VALUES (?, ?, ?, 'ZAR', 'PENDING', ?)`,
           [sub.workspace_id, sub.id, sub.price_cents, merchantRef]
         );
 
         if (isMockMode) {
-          await conn.execute(
+          await execute(
             `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE merchant_ref = ?`,
             [merchantRef]
           );
-
-          await conn.execute(
+          await execute(
             `UPDATE billing_subscriptions SET next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
             [sub.id]
           );
-
           console.log(`[Billing] Mock: Monthly renewal charged for workspace ${sub.workspace_id}`);
         } else {
-          const paymentMethod = await queryOne(
-            `SELECT * FROM billing_payment_methods WHERE workspace_id = ? AND status = 'ON_FILE' LIMIT 1`,
-            [sub.workspace_id]
+          const result = await chargeCardOnFile(
+            sub.workspace_id,
+            sub.price_cents,
+            merchantRef,
+            `Masakhe ${sub.plan_name} Plan - Monthly Renewal`
           );
 
-          if (!paymentMethod) {
-            await conn.execute(
-              `UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?`,
+          if (result.success) {
+            await execute(
+              `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE merchant_ref = ?`,
+              [result.transactionIndex || null, merchantRef]
+            );
+            await execute(
+              `UPDATE billing_subscriptions SET next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
               [sub.id]
             );
-            await conn.execute(
-              `UPDATE billing_invoices SET status = 'FAILED', failure_reason = 'No payment method on file' WHERE merchant_ref = ?`,
-              [merchantRef]
-            );
-            console.log(`[Billing] No payment method for renewal, workspace ${sub.workspace_id} set PAST_DUE`);
+            console.log(`[Billing] Monthly renewal charged for workspace ${sub.workspace_id}`);
           } else {
-            await conn.execute(
+            await execute(
+              `UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE merchant_ref = ?`,
+              [result.error || "Charge failed", merchantRef]
+            );
+            await execute(
               `UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?`,
               [sub.id]
             );
-            console.log(`[Billing] Real Adumo charge not implemented for renewal, workspace ${sub.workspace_id} set PAST_DUE`);
+            console.log(`[Billing] Monthly renewal failed for workspace ${sub.workspace_id}: ${result.error}`);
           }
         }
-
-        await conn.commit();
       } catch (err) {
-        await conn.rollback();
         console.error(`[Billing] Error processing renewal for workspace ${sub.workspace_id}:`, err);
-      } finally {
-        conn.release();
       }
     }
   } catch (err) {

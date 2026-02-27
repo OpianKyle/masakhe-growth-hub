@@ -3,10 +3,9 @@ import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
+import { isMockMode, generateCheckoutToken, verifyResponseToken, extractCardDetailsFromResponse } from "./adumo";
 
 export const billingRouter = Router();
-
-const isMockMode = !process.env.ADUMO_CUID || !process.env.ADUMO_AUID;
 
 const ADUMO_URL = process.env.ADUMO_ENV === "production"
   ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
@@ -141,19 +140,12 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     }
 
     const amount = (plan.price_cents / 100).toFixed(2);
-    const token = jwt.sign(
-      {
-        mref: merchantRef,
-        amount,
-        auid: process.env.ADUMO_AUID,
-        cuid: process.env.ADUMO_CUID,
-      },
-      process.env.ADUMO_JWT_SECRET!,
-      { algorithm: "HS256", expiresIn: 600 }
-    );
+    const token = generateCheckoutToken(merchantRef, amount);
 
     const user = await queryOne("SELECT full_name FROM users WHERE id = ?", [userId]);
     const bp = await queryOne("SELECT business_name, physical_address FROM business_profiles WHERE user_id = ?", [userId]);
+
+    const puid = `MSK-${workspaceId}`;
 
     const formData: Record<string, string> = {
       MerchantID: process.env.ADUMO_CUID!,
@@ -161,6 +153,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
+      puid,
       txtCurrencyCode: "ZAR",
       RedirectSuccessfulURL: `${APP_URL}/billing/return?status=success&merchantRef=${merchantRef}`,
       RedirectFailedURL: `${APP_URL}/billing/return?status=failed&merchantRef=${merchantRef}`,
@@ -259,7 +252,7 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
 
     let decoded: any;
     try {
-      decoded = jwt.verify(_RESPONSE_TOKEN, process.env.ADUMO_JWT_SECRET!);
+      decoded = verifyResponseToken(_RESPONSE_TOKEN);
     } catch (e) {
       return res.status(400).json({ error: "Invalid response token" });
     }
@@ -278,19 +271,46 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
 
       const plan = await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [invoice.amount_cents]);
 
-      const subResult = await execute(
-        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
-        [workspaceId, plan.id]
+      const existingSub = await queryOne(
+        "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
+        [workspaceId]
       );
 
-      await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subResult.insertId, invoice.id]);
+      let subscriptionId;
+      if (existingSub) {
+        await execute(
+          "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), updated_at = NOW() WHERE id = ?",
+          [plan.id, existingSub.id]
+        );
+        subscriptionId = existingSub.id;
+      } else {
+        const subResult = await execute(
+          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
+          [workspaceId, plan.id]
+        );
+        subscriptionId = subResult.insertId;
+      }
 
-      await execute(
-        "INSERT INTO billing_payment_methods (workspace_id, provider, provider_payment_method_ref, status) VALUES (?, 'ADUMO', ?, 'ON_FILE')",
-        [workspaceId, _TRANSACTIONINDEX]
-      );
+      await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subscriptionId, invoice.id]);
 
-      const subscription = await queryOne("SELECT * FROM billing_subscriptions WHERE id = ?", [subResult.insertId]);
+      const cardDetails = extractCardDetailsFromResponse(decoded);
+      const responsePuid = cardDetails.puid || `MSK-${workspaceId}`;
+      const { profileToken, cardToken, last4, brand } = cardDetails;
+
+      const existingPm = await queryOne("SELECT id FROM billing_payment_methods WHERE workspace_id = ?", [workspaceId]);
+      if (existingPm) {
+        await execute(
+          `UPDATE billing_payment_methods SET provider = 'ADUMO', provider_payment_method_ref = ?, puid = ?, profile_token = ?, card_token = ?, last4 = COALESCE(?, last4), brand = COALESCE(?, brand), status = 'ON_FILE', updated_at = NOW() WHERE id = ?`,
+          [_TRANSACTIONINDEX, responsePuid, profileToken, cardToken, last4, brand, existingPm.id]
+        );
+      } else {
+        await execute(
+          `INSERT INTO billing_payment_methods (workspace_id, provider, provider_payment_method_ref, puid, profile_token, card_token, last4, brand, status) VALUES (?, 'ADUMO', ?, ?, ?, ?, ?, ?, 'ON_FILE')`,
+          [workspaceId, _TRANSACTIONINDEX, responsePuid, profileToken, cardToken, last4, brand]
+        );
+      }
+
+      const subscription = await queryOne("SELECT * FROM billing_subscriptions WHERE id = ?", [subscriptionId]);
       return res.json({ ok: true, subscription });
     } else {
       const errorDetail = _ERROR_MESSAGE || _ERROR_CODE || "Payment failed";
@@ -358,7 +378,7 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
 
     if (body._RESPONSE_TOKEN && process.env.ADUMO_JWT_SECRET) {
       try {
-        const decoded: any = jwt.verify(body._RESPONSE_TOKEN, process.env.ADUMO_JWT_SECRET);
+        const decoded = verifyResponseToken(body._RESPONSE_TOKEN);
         console.log("[Billing Webhook] JWT verified, mref:", decoded.mref);
       } catch (e: any) {
         console.warn("[Billing Webhook] JWT verification failed:", e.message);
