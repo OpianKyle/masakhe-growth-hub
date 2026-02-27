@@ -167,8 +167,8 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       Token: token,
       puid,
       txtCurrencyCode: "ZAR",
-      RedirectSuccessfulURL: `${APP_URL}/billing/return?status=success&merchantRef=${merchantRef}`,
-      RedirectFailedURL: `${APP_URL}/billing/return?status=failed&merchantRef=${merchantRef}`,
+      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
       NotifyURL: `${APP_URL}/api/billing/webhooks/adumo`,
       Variable1: "Subscription",
       Variable2: merchantRef,
@@ -345,6 +345,96 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
   } catch (err: any) {
     console.error("[Billing] Return handler error:", err.message, err.stack);
     res.status(500).json({ error: err.message });
+  }
+});
+
+billingRouter.get("/return-redirect", async (req, res) => {
+  try {
+    const status = req.query.status as string || "";
+    const merchantRef = (req.query.merchantRef || req.query._MERCHANTREFERENCE || req.query.MerchantReference) as string || "";
+    const adumoResult = req.query._RESULT as string || "";
+    const transactionIndex = req.query._TRANSACTIONINDEX as string || "";
+    const responseToken = req.query._RESPONSE_TOKEN as string || "";
+    const adumoSubId = (req.query.subscriptionId || req.query._SUBSCRIPTIONID) as string || "";
+
+    console.log(`[Billing] Return redirect: status=${status}, merchantRef=${merchantRef}, _RESULT=${adumoResult}`);
+
+    if (merchantRef) {
+      const invoice = await queryOne("SELECT * FROM billing_invoices WHERE merchant_ref = ?", [merchantRef]);
+
+      if (invoice && invoice.status === "PENDING") {
+        const isSuccess = status === "success" || adumoResult === "0";
+
+        if (isSuccess) {
+          await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE id = ?", [transactionIndex || null, invoice.id]);
+
+          const plan = await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [invoice.amount_cents]);
+
+          if (plan) {
+            const existingSub = await queryOne(
+              "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
+              [invoice.workspace_id]
+            );
+
+            let subscriptionId;
+            if (existingSub) {
+              await execute(
+                "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+                [plan.id, adumoSubId || null, existingSub.id]
+              );
+              subscriptionId = existingSub.id;
+            } else {
+              const subResult = await execute(
+                "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, adumo_subscription_id) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), ?)",
+                [invoice.workspace_id, plan.id, adumoSubId || null]
+              );
+              subscriptionId = subResult.insertId;
+            }
+
+            await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subscriptionId, invoice.id]);
+          }
+
+          if (responseToken && process.env.ADUMO_JWT_SECRET) {
+            try {
+              const decoded = verifyResponseToken(responseToken);
+              const cardDetails = extractCardDetailsFromResponse(decoded);
+              const puid = cardDetails.puid || null;
+              const { profileToken, cardToken, last4, brand } = cardDetails;
+
+              const existingPm = await queryOne("SELECT id FROM billing_payment_methods WHERE workspace_id = ?", [invoice.workspace_id]);
+              if (existingPm) {
+                await execute(
+                  `UPDATE billing_payment_methods SET provider = 'ADUMO', provider_payment_method_ref = ?, puid = COALESCE(?, puid), profile_token = COALESCE(?, profile_token), card_token = COALESCE(?, card_token), last4 = COALESCE(?, last4), brand = COALESCE(?, brand), status = 'ON_FILE', updated_at = NOW() WHERE id = ?`,
+                  [transactionIndex, puid, profileToken, cardToken, last4, brand, existingPm.id]
+                );
+              } else {
+                await execute(
+                  `INSERT INTO billing_payment_methods (workspace_id, provider, provider_payment_method_ref, puid, profile_token, card_token, last4, brand, status) VALUES (?, 'ADUMO', ?, ?, ?, ?, ?, ?, 'ON_FILE')`,
+                  [invoice.workspace_id, transactionIndex, puid, profileToken, cardToken, last4, brand]
+                );
+              }
+            } catch (e: any) {
+              console.warn("[Billing] Return redirect JWT parse error:", e.message);
+            }
+          }
+
+          console.log(`[Billing] Return redirect: payment confirmed for merchantRef ${merchantRef}`);
+        } else {
+          const errorMsg = (req.query._ERROR_MESSAGE as string) || "Payment failed";
+          await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?", [errorMsg, invoice.id]);
+          console.log(`[Billing] Return redirect: payment failed for merchantRef ${merchantRef}: ${errorMsg}`);
+        }
+      }
+    }
+
+    if (status === "success" || adumoResult === "0") {
+      return res.redirect("/dashboard/billing?payment=success");
+    } else {
+      return res.redirect("/dashboard/billing?payment=failed");
+    }
+  } catch (err: any) {
+    console.error("[Billing] Return redirect error:", err.message, err.stack);
+    return res.redirect("/dashboard/billing?payment=error");
   }
 });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   CreditCard, Calendar, AlertTriangle, CheckCircle, XCircle,
@@ -101,6 +101,7 @@ export default function BillingPage() {
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   const fetchBilling = async () => {
@@ -120,6 +121,20 @@ export default function BillingPage() {
   };
 
   useEffect(() => { fetchBilling(); }, []);
+
+  useEffect(() => {
+    const paymentResult = searchParams.get("payment");
+    if (paymentResult) {
+      if (paymentResult === "success") {
+        toast({ title: "Payment Successful!", description: "Your subscription is now active. Welcome to Masakhe!" });
+      } else if (paymentResult === "failed") {
+        toast({ title: "Payment Failed", description: "Your payment was not processed. Please try again.", variant: "destructive" });
+      } else if (paymentResult === "error") {
+        toast({ title: "Something went wrong", description: "There was an issue processing your payment. Please contact support.", variant: "destructive" });
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   const handleCancel = async () => {
     setCancelling(true);
