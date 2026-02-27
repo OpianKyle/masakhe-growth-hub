@@ -164,6 +164,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       txtCurrencyCode: "ZAR",
       RedirectSuccessfulURL: `${APP_URL}/billing/return?status=success&merchantRef=${merchantRef}`,
       RedirectFailedURL: `${APP_URL}/billing/return?status=failed&merchantRef=${merchantRef}`,
+      NotifyURL: `${APP_URL}/api/billing/webhooks/adumo`,
       Variable1: "Subscription",
       Variable2: merchantRef,
       Qty1: "1",
@@ -335,9 +336,19 @@ billingRouter.post("/cancel", requireAuth, async (req, res) => {
 billingRouter.post("/webhooks/adumo", async (req, res) => {
   try {
     const body = req.body;
-    const eventKey = body._TRANSACTIONINDEX;
+    console.log("[Billing Webhook] Received:", JSON.stringify(body));
+
+    const eventKey = body._TRANSACTIONINDEX || body.TransactionIndex;
     if (!eventKey) {
       return res.status(400).json({ error: "Missing transaction index" });
+    }
+
+    const alreadyProcessed = await queryOne(
+      "SELECT id FROM billing_webhook_events WHERE event_key = ? AND status = 'PROCESSED'",
+      [eventKey]
+    );
+    if (alreadyProcessed) {
+      return res.json({ ok: true, message: "Already processed" });
     }
 
     await execute(
@@ -345,22 +356,74 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
       [eventKey, JSON.stringify(body)]
     );
 
-    const merchantRef = body._MERCHANTREFERENCE;
+    if (body._RESPONSE_TOKEN && process.env.ADUMO_JWT_SECRET) {
+      try {
+        const decoded: any = jwt.verify(body._RESPONSE_TOKEN, process.env.ADUMO_JWT_SECRET);
+        console.log("[Billing Webhook] JWT verified, mref:", decoded.mref);
+      } catch (e: any) {
+        console.warn("[Billing Webhook] JWT verification failed:", e.message);
+      }
+    }
+
+    const merchantRef = body._MERCHANTREFERENCE || body.MerchantReference;
+    const result = String(body._RESULT ?? body.Result ?? "");
+
     if (merchantRef) {
       const invoice = await queryOne("SELECT * FROM billing_invoices WHERE merchant_ref = ?", [merchantRef]);
       if (invoice) {
-        if (String(body._RESULT) === "0") {
-          await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE id = ?", [eventKey, invoice.id]);
+        if (result === "0") {
+          await execute(
+            "UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE id = ?",
+            [eventKey, invoice.id]
+          );
+
           if (invoice.subscription_id) {
-            await execute("UPDATE billing_subscriptions SET status = 'ACTIVE', updated_at = NOW() WHERE id = ?", [invoice.subscription_id]);
+            const sub = await queryOne("SELECT status FROM billing_subscriptions WHERE id = ?", [invoice.subscription_id]);
+            if (sub && sub.status !== 'ACTIVE' && sub.status !== 'TRIAL') {
+              await execute("UPDATE billing_subscriptions SET status = 'ACTIVE', updated_at = NOW() WHERE id = ?", [invoice.subscription_id]);
+            }
+          } else {
+            const plan = await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [invoice.amount_cents]);
+            if (plan) {
+              const existingSub = await queryOne(
+                "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
+                [invoice.workspace_id]
+              );
+              if (!existingSub) {
+                const subResult = await execute(
+                  "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
+                  [invoice.workspace_id, plan.id]
+                );
+                await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subResult.insertId, invoice.id]);
+                console.log("[Billing Webhook] Created subscription via webhook for workspace:", invoice.workspace_id);
+              }
+            }
+          }
+
+          const existingPm = await queryOne("SELECT id FROM billing_payment_methods WHERE workspace_id = ?", [invoice.workspace_id]);
+          if (existingPm) {
+            await execute(
+              "UPDATE billing_payment_methods SET provider = 'ADUMO', provider_payment_method_ref = ?, status = 'ON_FILE', updated_at = NOW() WHERE id = ?",
+              [eventKey, existingPm.id]
+            );
+          } else {
+            await execute(
+              "INSERT INTO billing_payment_methods (workspace_id, provider, provider_payment_method_ref, status) VALUES (?, 'ADUMO', ?, 'ON_FILE')",
+              [invoice.workspace_id, eventKey]
+            );
           }
         } else {
-          const errorDetail = body._ERROR_MESSAGE || body._ERROR_CODE || "Payment failed";
-          await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?", [errorDetail, invoice.id]);
+          const errorDetail = body._ERROR_MESSAGE || body._ERROR_CODE || body.ErrorMessage || "Payment failed";
+          await execute(
+            "UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?",
+            [errorDetail, invoice.id]
+          );
           if (invoice.subscription_id) {
             await execute("UPDATE billing_subscriptions SET status = 'PAST_DUE', updated_at = NOW() WHERE id = ?", [invoice.subscription_id]);
           }
         }
+      } else {
+        console.warn("[Billing Webhook] No invoice found for merchantRef:", merchantRef);
       }
     }
 
@@ -369,9 +432,10 @@ billingRouter.post("/webhooks/adumo", async (req, res) => {
       [eventKey]
     );
 
+    console.log("[Billing Webhook] Processed event:", eventKey, "result:", result);
     res.json({ ok: true });
   } catch (err: any) {
-    console.error("Webhook processing error:", err.message);
+    console.error("[Billing Webhook] Processing error:", err.message, err.stack);
     res.status(500).json({ error: "Webhook processing failed" });
   }
 });
