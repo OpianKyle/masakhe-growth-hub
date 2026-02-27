@@ -106,11 +106,15 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { planCode } = req.body;
+    const { planCode, collectionDay: clientCollectionDay, frequency: clientFrequency } = req.body;
 
     if (!planCode || !['starter', 'pro'].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
     }
+
+    const allowedFrequencies = ["MONTHLY", "QUARTERLY", "BIANNUALLY", "ANNUALLY"];
+    const chosenFrequency = allowedFrequencies.includes(clientFrequency) ? clientFrequency : "MONTHLY";
+    const chosenCollectionDay = Math.max(1, Math.min(28, parseInt(clientCollectionDay) || 1));
 
     const plan = await queryOne("SELECT * FROM billing_plans WHERE code = ?", [planCode]);
     if (!plan) {
@@ -150,10 +154,15 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     const trialDays = 14;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + trialDays);
-    const collectionDay = startDate.getDate();
-    const startDateStr = startDate.toISOString().split("T")[0];
 
-    const endDate = new Date(startDate);
+    const firstCollection = new Date(startDate);
+    firstCollection.setDate(chosenCollectionDay);
+    if (firstCollection <= startDate) {
+      firstCollection.setMonth(firstCollection.getMonth() + 1);
+    }
+    const startDateStr = firstCollection.toISOString().split("T")[0];
+
+    const endDate = new Date(firstCollection);
     endDate.setFullYear(endDate.getFullYear() + 5);
     const endDateStr = endDate.toISOString().split("T")[0];
 
@@ -185,8 +194,8 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       ShippingAddress4: "",
       ShippingAddress5: "South Africa",
 
-      frequency: "MONTHLY",
-      collectionDay: String(collectionDay),
+      frequency: chosenFrequency,
+      collectionDay: String(chosenCollectionDay),
       accountNumber: `MSK-${workspaceId.slice(0, 12)}`,
       startDate: startDateStr,
       endDate: endDateStr,

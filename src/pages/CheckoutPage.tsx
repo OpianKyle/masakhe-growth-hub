@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  CreditCard, Shield, ArrowLeft, Loader2, CheckCircle, AlertTriangle, Lock
+  CreditCard, Shield, ArrowLeft, Loader2, CheckCircle, AlertTriangle, Lock, CalendarDays
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Plan {
@@ -34,6 +36,8 @@ export default function CheckoutPage() {
   const [mockStep, setMockStep] = useState<"confirm" | "card" | "processing" | "done">("confirm");
   const [checkoutData, setCheckoutData] = useState<any>(null);
   const [cardNumber, setCardNumber] = useState("4111 1111 1111 1111");
+  const [collectionDay, setCollectionDay] = useState("1");
+  const [frequency, setFrequency] = useState("MONTHLY");
   const formRef = useRef<HTMLFormElement>(null);
 
   const selectedPlan = plans.find((p) => p.code === planCode);
@@ -53,7 +57,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ planCode }),
+        body: JSON.stringify({ planCode, collectionDay, frequency }),
       });
       const json = await res.json();
 
@@ -267,7 +271,48 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">After Trial</span>
-                    <span className="text-foreground">{formatCents(selectedPlan.price_cents)}/month</span>
+                    <span className="text-foreground">{formatCents(selectedPlan.price_cents)}/{frequency === "MONTHLY" ? "month" : frequency === "QUARTERLY" ? "quarter" : frequency === "BIANNUALLY" ? "6 months" : "year"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  Billing Preferences
+                </h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Billing Frequency</Label>
+                    <Select value={frequency} onValueChange={setFrequency}>
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                        <SelectItem value="QUARTERLY">Quarterly (every 3 months)</SelectItem>
+                        <SelectItem value="BIANNUALLY">Bi-annually (every 6 months)</SelectItem>
+                        <SelectItem value="ANNUALLY">Annually (once a year)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Collection Day of the Month</Label>
+                    <Select value={collectionDay} onValueChange={setCollectionDay}>
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                          <SelectItem key={day} value={String(day)}>
+                            {day}{day === 1 ? "st" : day === 2 ? "nd" : day === 3 ? "rd" : "th"} of each month
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">Your card will be charged on this day after the trial ends.</p>
                   </div>
                 </div>
               </div>

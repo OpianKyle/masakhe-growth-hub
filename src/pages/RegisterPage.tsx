@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Building2, User, FileText, MapPin, Phone, Check, Lock, CreditCard, Shield, Loader2, Wallet } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, User, FileText, MapPin, Phone, Check, Lock, CreditCard, Shield, Loader2, Wallet, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -66,6 +67,8 @@ export default function RegisterPage() {
     contactEmail: "",
     physicalAddress: "",
     selectedPlan: searchParams.get("plan") || "starter",
+    billingFrequency: "MONTHLY",
+    billingCollectionDay: "1",
   });
 
   const update = (field: string, value: string) => {
@@ -131,7 +134,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ planCode: formData.selectedPlan }),
+        body: JSON.stringify({ planCode: formData.selectedPlan, collectionDay: formData.billingCollectionDay, frequency: formData.billingFrequency }),
       });
       const json = await res.json();
 
@@ -557,6 +560,48 @@ export default function RegisterPage() {
                     </label>
                   ))}
                 </RadioGroup>
+                <div className="border-t border-border pt-4 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-primary" />
+                    Billing Preferences
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Choose when and how often you'd like to be billed after your free trial ends.</p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Billing Frequency</Label>
+                      <Select value={formData.billingFrequency} onValueChange={(v) => update("billingFrequency", v)}>
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MONTHLY">Monthly</SelectItem>
+                          <SelectItem value="QUARTERLY">Quarterly (every 3 months)</SelectItem>
+                          <SelectItem value="BIANNUALLY">Bi-annually (every 6 months)</SelectItem>
+                          <SelectItem value="ANNUALLY">Annually (once a year)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Collection Day of the Month</Label>
+                      <Select value={formData.billingCollectionDay} onValueChange={(v) => update("billingCollectionDay", v)}>
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                            <SelectItem key={day} value={String(day)}>
+                              {day}{day === 1 ? "st" : day === 2 ? "nd" : day === 3 ? "rd" : "th"} of each month
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Your card will be charged on this day after the trial ends.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
                   <Shield className="h-4 w-4 inline mr-1 text-primary" />
                   Your 14-day trial is completely free. Card details are captured for verification only — you won't be charged until the trial ends.
