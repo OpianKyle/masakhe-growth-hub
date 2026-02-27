@@ -13,7 +13,7 @@ Masakhe utilizes a React 18 frontend with TypeScript and Vite, communicating wit
 Key architectural features include:
 - **Modular Design**: The system is organized into distinct modules for social media, billing, finance, and user management, each with dedicated API routes and logic.
 - **Multi-tenancy**: The Social Media Hub supports a workspace system with roles (Owner, Admin, Editor, Viewer), enabling collaborative management for businesses.
-- **Subscription & Billing**: Implements a trial system (14-day free trial) with two plans (Starter, Pro) and integrates with Adumo for payment processing, including card tokenization and recurring billing. A background scheduler handles trial reminders and monthly renewals. Feature gating restricts access to certain functionalities based on subscription status.
+- **Subscription & Billing**: Implements a trial system (14-day free trial) with two plans (Starter R899/mo, Pro R2500/mo) and integrates with Adumo for payment processing. Initial card capture via Virtual HPP with 3D Secure and `puid` for tokenization. Recurring billing uses Adumo Card-on-File API (OAuth2 → initiate → authorise → settle). Background scheduler handles trial reminders, trial-to-active conversion, and monthly renewals. Feature gating restricts premium modules based on subscription status.
 - **Dynamic Dashboard**: The dashboard provides a real-time overview of business KPIs, financial data, and social media activity through dynamic charts and aggregated data.
 - **Content Management**: Features a comprehensive Social Media Hub with a content calendar, post builder supporting multi-platform targeting, and a media library. A background worker handles scheduled post publishing with retry logic.
 - **User & Business Profile Management**: Includes a settings page for managing user and business profiles, including logo uploads.
@@ -24,7 +24,7 @@ Key architectural features include:
 
 ## External Dependencies
 - **Database**: Remote MySQL hosted on Xneelo (`sql16.cpt3.host-h.net`).
-- **Payment Gateway**: Adumo Online Virtual HPP for secure payment processing, including 3D Secure transactions, card tokenization, and recurring billing.
+- **Payment Gateway**: Adumo Online — Virtual HPP for 3D Secure card capture with puid tokenization; Card-on-File API (OAuth2 + REST) for server-to-server recurring charges (initiate/authorise/settle); webhook notifications for transaction confirmations.
 - **Social Media APIs**: Integrations with Meta (Facebook/Instagram), LinkedIn, X, TikTok, and YouTube (with a Mock Provider Mode for development).
 - **Session Management**: `express-mysql-session` for storing session data in MySQL.
 - **PDF Generation**: `pdf-lib` for creating PDF documents.

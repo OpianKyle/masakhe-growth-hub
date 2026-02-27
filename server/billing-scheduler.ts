@@ -61,7 +61,7 @@ async function processExpiredTrials() {
           if (result.success) {
             await execute(
               `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE merchant_ref = ?`,
-              [result.transactionIndex || null, merchantRef]
+              [result.transactionId || null, merchantRef]
             );
             await execute(
               `UPDATE billing_subscriptions SET status = 'ACTIVE', next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
@@ -130,7 +130,7 @@ async function processMonthlyRenewals() {
           if (result.success) {
             await execute(
               `UPDATE billing_invoices SET status = 'PAID', paid_at = NOW(), provider_ref = ? WHERE merchant_ref = ?`,
-              [result.transactionIndex || null, merchantRef]
+              [result.transactionId || null, merchantRef]
             );
             await execute(
               `UPDATE billing_subscriptions SET next_billing_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW() WHERE id = ?`,
