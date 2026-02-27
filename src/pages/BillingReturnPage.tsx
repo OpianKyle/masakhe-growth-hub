@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle, XCircle, Loader2, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function BillingReturnPage() {
   const [searchParams] = useSearchParams();
   const [processing, setProcessing] = useState(true);
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; message: string; needsLogin?: boolean } | null>(null);
 
   useEffect(() => {
     const processReturn = async () => {
@@ -26,6 +26,24 @@ export default function BillingReturnPage() {
           credentials: "include",
           body: JSON.stringify(params),
         });
+
+        if (res.status === 401) {
+          if (status === "success") {
+            setResult({
+              ok: true,
+              message: "Your payment was processed successfully. The webhook has confirmed your transaction. Please log in to view your billing dashboard.",
+              needsLogin: true,
+            });
+          } else {
+            setResult({
+              ok: false,
+              message: "Payment was not completed. Please log in and try again.",
+              needsLogin: true,
+            });
+          }
+          return;
+        }
+
         const json = await res.json();
 
         if (json.ok) {
@@ -83,11 +101,19 @@ export default function BillingReturnPage() {
             </div>
             <h2 className="text-2xl font-bold font-heading text-foreground">Payment Successful!</h2>
             <p className="text-muted-foreground">{result.message}</p>
-            <Link to="/dashboard/billing">
-              <Button className="mt-2">
-                Go to Billing Dashboard <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
+            {result.needsLogin ? (
+              <Link to="/login">
+                <Button className="mt-2">
+                  <LogIn className="h-4 w-4 mr-2" /> Log In to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/dashboard/billing">
+                <Button className="mt-2">
+                  Go to Billing Dashboard <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -101,14 +127,24 @@ export default function BillingReturnPage() {
             <h2 className="text-2xl font-bold font-heading text-foreground">Payment Failed</h2>
             <p className="text-muted-foreground">{result?.message}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-2">
-              <Link to="/pricing">
-                <Button variant="outline">Back to Pricing</Button>
-              </Link>
-              <Link to="/dashboard/billing">
-                <Button>
-                  Billing Dashboard <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
+              {result?.needsLogin ? (
+                <Link to="/login">
+                  <Button>
+                    <LogIn className="h-4 w-4 mr-2" /> Log In
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/pricing">
+                    <Button variant="outline">Back to Pricing</Button>
+                  </Link>
+                  <Link to="/dashboard/billing">
+                    <Button>
+                      Billing Dashboard <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
