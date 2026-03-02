@@ -472,8 +472,8 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
               <span className="font-semibold text-foreground">{plan.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Trial Period</span>
-              <span className="text-sa-green font-semibold">14 days free</span>
+              <span className="text-muted-foreground">Billing Starts</span>
+              <span className="text-sa-green font-semibold">After trial ends</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Then</span>
@@ -515,7 +515,7 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
             <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-            Your debit order will be processed securely via Adumo Online. The first collection only occurs after your 14-day free trial ends.
+            Your debit order will be processed securely via Adumo Online. Your first payment will only be collected once your trial period ends.
           </div>
 
           <Button
@@ -527,7 +527,7 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
             {form.formState.isSubmitting || paymentData ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
             ) : (
-              <><Check className="h-4 w-4 mr-2" />Subscribe & Start Free Trial</>
+              <><Check className="h-4 w-4 mr-2" />Subscribe Now</>
             )}
           </Button>
         </form>
@@ -628,7 +628,7 @@ export default function BillingPage() {
             </div>
             <h3 className="text-xl font-bold font-heading text-foreground">Subscribe to Masakhe</h3>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Start your 14-day free trial. Your debit order only begins after the trial ends. Cancel anytime.
+              Choose a plan to subscribe. Your debit order only begins after your trial ends. Cancel anytime.
             </p>
           </div>
           <InlineSubscribeForm onSuccess={fetchBilling} />

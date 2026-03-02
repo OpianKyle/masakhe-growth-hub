@@ -50,14 +50,14 @@ const steps = [
   },
   {
     title: "Billing & Subscription",
-    description: "Manage your subscription here. Start your debit order to keep access to all features after your 14-day trial.",
+    description: "Manage your subscription here. Set up your debit order to keep access to all features after your trial ends.",
     icon: CreditCard,
     path: "/dashboard/billing",
     color: "bg-sa-red",
   },
   {
     title: "You're all set!",
-    description: "You now know your way around Masakhe. Your 14-day free trial is active — explore everything at no cost.",
+    description: "You now know your way around Masakhe. Your trial is active — explore everything at no cost and subscribe to keep access.",
     icon: Settings,
     path: "/dashboard",
     color: "bg-primary",
