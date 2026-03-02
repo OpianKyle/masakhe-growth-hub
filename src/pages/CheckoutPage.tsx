@@ -30,6 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowLeft,
   CreditCard,
@@ -41,6 +42,7 @@ import {
   Calendar,
   MapPin,
   Check,
+  FileDown,
 } from "lucide-react";
 
 const paymentFormSchema = z.object({
@@ -54,6 +56,9 @@ const paymentFormSchema = z.object({
   shippingAddress1: z.string().optional(),
   shippingAddress2: z.string().optional(),
   shippingAddress3: z.string().optional(),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms and Conditions to continue" }),
+  }),
 });
 
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
@@ -92,6 +97,7 @@ export default function CheckoutPage() {
       shippingAddress1: "",
       shippingAddress2: "",
       shippingAddress3: "",
+      termsAccepted: false as any,
     },
   });
 
@@ -407,6 +413,78 @@ export default function CheckoutPage() {
                         )}
                       />
                     </div>
+
+                    <Separator />
+
+                    <FormField
+                      control={form.control}
+                      name="termsAccepted"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                            <p className="text-sm font-medium">Terms and Conditions</p>
+                            <div className="text-xs text-muted-foreground space-y-2 leading-relaxed max-h-40 overflow-y-auto pr-2">
+                              <p>
+                                By subscribing to Masakhe, you agree to the following terms:
+                              </p>
+                              <p>
+                                <strong>1. Recurring Billing:</strong> Your subscription will be billed automatically
+                                on the selected collection day each month via debit order. Billing will continue
+                                until you cancel your subscription.
+                              </p>
+                              <p>
+                                <strong>2. Cancellation Policy:</strong> Your subscription will not be suspended
+                                or cancelled without a written cancellation request sent via email to{" "}
+                                <a href="mailto:support@masakhe.co.za" className="text-primary underline">
+                                  support@masakhe.co.za
+                                </a>
+                                . You remain responsible for all charges until a cancellation email has been
+                                received and confirmed by our team.
+                              </p>
+                              <p>
+                                <strong>3. Free Trial:</strong> Your 14-day free trial begins immediately upon
+                                registration. No charges will be processed during the trial period. After the
+                                trial ends, your selected plan will be billed automatically.
+                              </p>
+                              <p>
+                                <strong>4. No Refunds:</strong> Subscription fees are non-refundable once processed.
+                                You may cancel at any time, but no partial refunds will be issued for the
+                                remaining billing period.
+                              </p>
+                              <p>
+                                <strong>5. Service Changes:</strong> Masakhe reserves the right to update pricing
+                                or features with 30 days written notice. Continued use after notification
+                                constitutes acceptance of the changes.
+                              </p>
+                            </div>
+                            <a
+                              href="/api/billing/terms-pdf"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                            >
+                              <FileDown className="h-3.5 w-3.5" />
+                              Download Terms and Conditions (PDF)
+                            </a>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal cursor-pointer">
+                                I have read and agree to the Terms and Conditions, including the recurring
+                                billing and cancellation policy
+                              </FormLabel>
+                              <FormMessage />
+                            </div>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
 
                     <Button
                       type="submit"

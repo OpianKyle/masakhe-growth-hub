@@ -3,6 +3,7 @@ import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { isMockMode, generateSubscriptionToken, verifyResponseToken, extractCardDetailsFromResponse } from "./adumo";
 
 export const billingRouter = Router();
@@ -30,6 +31,135 @@ async function ensureDefaultWorkspace(userId: string): Promise<string> {
   await execute("INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)", [randomUUID(), wsId, userId, "owner", now]);
   return wsId;
 }
+
+billingRouter.get("/terms-pdf", async (_req, res) => {
+  try {
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const fontSize = 10;
+    const titleSize = 18;
+    const headingSize = 12;
+    const lineHeight = 16;
+    const margin = 50;
+
+    const addPage = () => {
+      const page = pdf.addPage([595, 842]);
+      return { page, y: 842 - margin };
+    };
+
+    let { page, y } = addPage();
+    const pageWidth = 595 - margin * 2;
+
+    const drawText = (text: string, options: { font?: any; size?: number; indent?: number } = {}) => {
+      const f = options.font || font;
+      const s = options.size || fontSize;
+      const indent = options.indent || 0;
+      const maxWidth = pageWidth - indent;
+      const words = text.split(" ");
+      let line = "";
+
+      for (const word of words) {
+        const testLine = line ? `${line} ${word}` : word;
+        const testWidth = f.widthOfTextAtSize(testLine, s);
+        if (testWidth > maxWidth && line) {
+          if (y < margin + 20) {
+            ({ page, y } = addPage());
+          }
+          page.drawText(line, { x: margin + indent, y, size: s, font: f, color: rgb(0.1, 0.1, 0.1) });
+          y -= lineHeight;
+          line = word;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) {
+        if (y < margin + 20) {
+          ({ page, y } = addPage());
+        }
+        page.drawText(line, { x: margin + indent, y, size: s, font: f, color: rgb(0.1, 0.1, 0.1) });
+        y -= lineHeight;
+      }
+    };
+
+    const spacer = (n = 1) => { y -= lineHeight * n; };
+
+    drawText("MASAKHE PLATFORM", { font: fontBold, size: titleSize });
+    drawText("SUBSCRIPTION TERMS AND CONDITIONS", { font: fontBold, size: 14 });
+    spacer();
+    drawText(`Effective Date: ${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}`);
+    spacer();
+
+    drawText("1. SUBSCRIPTION AND RECURRING BILLING", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("1.1 By subscribing to Masakhe, you authorise a recurring debit order to be processed against your nominated bank account or payment method on the selected collection day each month.", { indent: 10 });
+    spacer(0.5);
+    drawText("1.2 Billing will continue automatically each month until you cancel your subscription in accordance with Section 2 below.", { indent: 10 });
+    spacer(0.5);
+    drawText("1.3 The subscription amount corresponds to the plan selected at checkout (Starter or Pro) and is denominated in South African Rand (ZAR).", { indent: 10 });
+    spacer();
+
+    drawText("2. CANCELLATION POLICY", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("2.1 Your subscription will NOT be suspended or cancelled automatically. It will remain active and you will continue to be billed until a cancellation request is received and processed.", { indent: 10 });
+    spacer(0.5);
+    drawText("2.2 To cancel your subscription, you must send a written cancellation request via email to: support@masakhe.co.za", { indent: 10 });
+    spacer(0.5);
+    drawText("2.3 Cancellation requests will be processed within 5 (five) business days of receipt. You will receive an email confirmation once your cancellation has been processed.", { indent: 10 });
+    spacer(0.5);
+    drawText("2.4 You remain responsible for all charges incurred up to and including the date your cancellation is confirmed.", { indent: 10 });
+    spacer();
+
+    drawText("3. FREE TRIAL", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("3.1 New subscribers receive a 14-day free trial starting from the date of registration.", { indent: 10 });
+    spacer(0.5);
+    drawText("3.2 No charges will be processed during the trial period.", { indent: 10 });
+    spacer(0.5);
+    drawText("3.3 After the trial period ends, your selected plan will be billed automatically unless you cancel before the trial expires.", { indent: 10 });
+    spacer();
+
+    drawText("4. REFUND POLICY", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("4.1 Subscription fees are non-refundable once processed.", { indent: 10 });
+    spacer(0.5);
+    drawText("4.2 You may cancel at any time, but no partial or pro-rated refunds will be issued for the remaining billing period.", { indent: 10 });
+    spacer();
+
+    drawText("5. PRICING AND SERVICE CHANGES", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("5.1 Masakhe reserves the right to update subscription pricing or platform features.", { indent: 10 });
+    spacer(0.5);
+    drawText("5.2 You will be given at least 30 (thirty) days written notice of any pricing changes via email.", { indent: 10 });
+    spacer(0.5);
+    drawText("5.3 Continued use of the platform after receiving such notice constitutes acceptance of the updated terms.", { indent: 10 });
+    spacer();
+
+    drawText("6. PAYMENT PROCESSING", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("6.1 All payments are processed securely through Adumo Online, a registered South African payment gateway.", { indent: 10 });
+    spacer(0.5);
+    drawText("6.2 Masakhe does not store your banking or card details on its servers.", { indent: 10 });
+    spacer(0.5);
+    drawText("6.3 If a scheduled debit order fails, Masakhe may reattempt collection. Repeated failures may result in service suspension after written notice.", { indent: 10 });
+    spacer();
+
+    drawText("7. CONTACT INFORMATION", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("For billing enquiries, cancellations, or support:", { indent: 10 });
+    drawText("Email: support@masakhe.co.za", { indent: 10 });
+    spacer(2);
+
+    drawText("By checking the acceptance box on the checkout page, you confirm that you have read, understood, and agree to these Terms and Conditions.", { font: fontBold });
+
+    const pdfBytes = await pdf.save();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="Masakhe_Terms_and_Conditions.pdf"');
+    res.send(Buffer.from(pdfBytes));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 billingRouter.get("/plans", async (_req, res) => {
   try {
