@@ -20,6 +20,7 @@ Key architectural features include:
 - **Content Management**: Features a comprehensive Social Media Hub with a content calendar, post builder supporting multi-platform targeting, and a media library. A background worker handles scheduled post publishing with retry logic.
 - **User & Business Profile Management**: Includes a settings page for managing user and business profiles, including logo uploads.
 - **Website Builder**: A customizable website builder with multiple templates and dynamic sections allows SMMEs to establish their online presence.
+- **Tenders**: Admins can create business tenders (with title, description, category, budget range, location, deadline, requirements). Platform users can browse open tenders, search/filter by category, view details, and submit applications with cover letters and proposed amounts. Admins can review applications and update their status (Pending → Shortlisted → Accepted/Rejected). DB tables: `tenders` and `tender_applications`. API: `server/tenders.ts` mounted at `/api/tenders`. Frontend: `src/pages/TendersPage.tsx` (user dashboard), `AdminTenders` component in `AdminDashboard.tsx` (admin panel).
 - **Compliance & Grant Readiness**: Incorporates features for tracking compliance scores and assessing grant readiness.
 - **Data Security**: Employs AES-256-GCM encryption for sensitive data like social account tokens.
 - **PDF Generation**: Uses `pdf-lib` for server-side generation of invoices and terms PDFs.

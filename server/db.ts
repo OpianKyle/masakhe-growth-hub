@@ -436,6 +436,42 @@ export async function runMigrations() {
     await createIndex("idx_bi_sub_status", "billing_invoices", "subscription_id, status");
     await createIndex("idx_bi_created", "billing_invoices", "created_at");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS tenders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100),
+        budget_min INT,
+        budget_max INT,
+        currency VARCHAR(10) DEFAULT 'ZAR',
+        location VARCHAR(255),
+        deadline DATE,
+        requirements TEXT,
+        status VARCHAR(20) DEFAULT 'OPEN',
+        created_by VARCHAR(100),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS tender_applications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tender_id INT NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        cover_letter TEXT,
+        proposed_amount INT,
+        status VARCHAR(20) DEFAULT 'PENDING',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    await createIndex("idx_tender_status", "tenders", "status");
+    await createIndex("idx_tender_app_tid", "tender_applications", "tender_id");
+    await createIndex("idx_tender_app_uid", "tender_applications", "user_id");
+
     await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
 
     console.log("MySQL migrations completed successfully");

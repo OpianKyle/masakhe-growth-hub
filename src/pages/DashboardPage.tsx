@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
-  Settings, ChevronLeft, ChevronRight, Bell, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard
+  Settings, ChevronLeft, ChevronRight, Bell, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ import SocialHub from "./social/SocialHub";
 import SettingsPage from "./SettingsPage";
 import DashboardOverview from "./DashboardOverview";
 import BillingPage from "./BillingPage";
+import TendersPage from "./TendersPage";
 import TrialBanner from "@/components/TrialBanner";
 import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
@@ -24,6 +25,7 @@ const navItems = [
   { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
   { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
+  { icon: FileText, label: "Tenders", path: "/dashboard/tenders" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
@@ -172,6 +174,7 @@ export default function DashboardPage() {
             <Route path="invoices" element={<InvoicesPage />} />
             <Route path="funding" element={<GrantReadinessPage />} />
             <Route path="social/*" element={<SocialHub />} />
+            <Route path="tenders" element={<TendersPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
