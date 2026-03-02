@@ -17,6 +17,7 @@ import { socialRouter } from "./social/index";
 import { startScheduler } from "./social/scheduler";
 import { billingRouter } from "./billing";
 import { tendersRouter } from "./tenders";
+import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
 import path from "path";
 
@@ -69,6 +70,7 @@ async function main() {
   app.use("/api/social", socialRouter);
   app.use("/api/billing", billingRouter);
   app.use("/api/tenders", tendersRouter);
+  app.use("/api/notifications", notificationsRouter);
   app.use("/api", router);
 
   const distPath = path.join(process.cwd(), "dist");

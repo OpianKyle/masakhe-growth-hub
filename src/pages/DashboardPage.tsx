@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
-  Settings, ChevronLeft, ChevronRight, Bell, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText
+  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import WebsiteBuilder from "./WebsiteBuilder";
 import FinancePage from "./FinancePage";
@@ -149,10 +150,7 @@ export default function DashboardPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9 w-64" />
             </div>
-            <button className="relative text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-sa-red text-[10px] font-bold text-primary-foreground">3</span>
-            </button>
+            <NotificationDropdown />
             <Link to="/dashboard/settings" className="shrink-0">
               {user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />

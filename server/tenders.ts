@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { pool, queryOne } from "./db";
+import { createNotification } from "./notifications";
 
 export const tendersRouter = Router();
 
@@ -160,6 +161,21 @@ tendersRouter.put("/user/applications/:id/status", requireAuth, async (req, res)
     }
 
     await pool.execute("UPDATE tender_applications SET status = ?, updated_at = NOW() WHERE id = ?", [status, req.params.id]);
+
+    const appDetail = await queryOne(
+      `SELECT ta.user_id, t.title FROM tender_applications ta JOIN tenders t ON t.id = ta.tender_id WHERE ta.id = ?`,
+      [req.params.id]
+    );
+    if (appDetail) {
+      const statusLabel = status === "SHORTLISTED" ? "shortlisted" : status === "ACCEPTED" ? "accepted" : status === "REJECTED" ? "rejected" : "updated";
+      createNotification(
+        appDetail.user_id, "application_status",
+        `Application ${statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}`,
+        `Your application for "${appDetail.title}" has been ${statusLabel}.`,
+        "/dashboard/tenders"
+      );
+    }
+
     res.json({ ok: true });
   } catch (err: any) {
     console.error("Update application status error:", err);
@@ -207,6 +223,21 @@ tendersRouter.put("/admin/applications/:id/status", requireAdmin, async (req, re
       return res.status(400).json({ error: "Invalid status" });
     }
     await pool.execute("UPDATE tender_applications SET status = ?, updated_at = NOW() WHERE id = ?", [status, req.params.id]);
+
+    const appDetail = await queryOne(
+      `SELECT ta.user_id, t.title FROM tender_applications ta JOIN tenders t ON t.id = ta.tender_id WHERE ta.id = ?`,
+      [req.params.id]
+    );
+    if (appDetail) {
+      const statusLabel = status === "SHORTLISTED" ? "shortlisted" : status === "ACCEPTED" ? "accepted" : status === "REJECTED" ? "rejected" : "updated";
+      createNotification(
+        appDetail.user_id, "application_status",
+        `Application ${statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}`,
+        `Your application for "${appDetail.title}" has been ${statusLabel}.`,
+        "/dashboard/tenders"
+      );
+    }
+
     res.json({ ok: true });
   } catch (err: any) {
     console.error("Update application status error:", err);
@@ -349,6 +380,15 @@ tendersRouter.post("/:id/apply", requireAuth, async (req, res) => {
       `INSERT INTO tender_applications (tender_id, user_id, cover_letter, proposed_amount) VALUES (?, ?, ?, ?)`,
       [tenderId, userId, cover_letter || null, validAmount]
     );
+
+    const applicant = await queryOne("SELECT full_name FROM users WHERE id = ?", [userId]);
+    createNotification(
+      tender.created_by, "tender_application",
+      "New Tender Application",
+      `${applicant?.full_name || "Someone"} applied to your tender "${tender.title}"`,
+      "/dashboard/tenders"
+    );
+
     res.json({ ok: true });
   } catch (err: any) {
     console.error("Apply tender error:", err);

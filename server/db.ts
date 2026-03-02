@@ -472,6 +472,21 @@ export async function runMigrations() {
     await createIndex("idx_tender_app_tid", "tender_applications", "tender_id");
     await createIndex("idx_tender_app_uid", "tender_applications", "user_id");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(100) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT,
+        link VARCHAR(255),
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_notif_user_read", "notifications", "user_id, is_read");
+    await createIndex("idx_notif_created", "notifications", "created_at");
+
     await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
 
     console.log("MySQL migrations completed successfully");
