@@ -82,9 +82,9 @@ export default function TrialBanner() {
       {!hasSub && !dismissed && (
         <div className="relative flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-[hsl(225,100%,29%)] to-[hsl(225,80%,40%)] text-white text-sm">
           <div className="flex items-center gap-2">
-            <Gift className="h-4 w-4 shrink-0" />
+            <Clock className="h-4 w-4 shrink-0" />
             <span>
-              You're eligible for a <strong>14-day free trial</strong>. Activate your subscription to unlock all features.
+              Your <strong>14-day free trial</strong> is active. Subscribe before it ends to keep access to all features.
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -94,7 +94,7 @@ export default function TrialBanner() {
               className="h-7 text-xs bg-white text-[hsl(225,100%,29%)] hover:bg-white/90"
               onClick={() => navigate("/dashboard/billing")}
             >
-              Start Free Trial
+              Subscribe Now
             </Button>
             <button onClick={() => setDismissed(true)} className="text-white/70 hover:text-white">
               <X className="h-4 w-4" />
@@ -136,8 +136,8 @@ export default function TrialBanner() {
             </div>
             <h2 className="text-xl font-bold font-heading">Welcome to Masakhe!</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Start your <strong>14-day free trial</strong> to unlock all of Masakhe's powerful tools at no cost.
-              Choose a plan to activate your trial — you won't be charged until the 14 days are up.
+              Your <strong>14-day free trial</strong> has started! Explore all of Masakhe's powerful tools at no cost.
+              Subscribe before your trial ends to keep full access to everything.
             </p>
             <div className="rounded-lg bg-muted/50 p-3 text-left space-y-1.5">
               {[
@@ -155,7 +155,7 @@ export default function TrialBanner() {
             </div>
             <div className="flex gap-3">
               <Button className="flex-1" onClick={() => { setShowNoSubPopup(false); navigate("/dashboard/billing"); }}>
-                View Plans
+                Subscribe Now
               </Button>
               <Button variant="outline" className="flex-1" onClick={() => setShowNoSubPopup(false)}>
                 Explore First
