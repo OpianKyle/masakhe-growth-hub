@@ -1,0 +1,130 @@
+{
+    "virtualRoute": "/virtual/payments",
+    "virtualConfiguration": {
+        "paymentTypes": [
+            {
+                "id": 5,
+                "paymentTypeName": "Card",
+                "description": "Card",
+                "code": "CARD",
+                "lastModified": "2020-06-28T22:00:00.000+00:00"
+            },
+            {
+                "id": 17,
+                "paymentTypeName": "Click To Pay",
+                "description": "ClickToPay",
+                "code": "CLICK_TO_PAY",
+                "lastModified": "2022-03-18T09:32:35.150+00:00"
+            }
+        ],
+        "jwtPostBackEnabled": true,
+        "oneClickEnabled": true,
+        "autoRedirectEnabled": true,
+        "webhookEnabled": true,
+        "supportedCardSchemas": [
+            {
+                "cardName": "Mastercard",
+                "imageName": "../../../assets/icons/Icons/card-types/mastercard.svg",
+                "code": "mastercard"
+            },
+            {
+                "cardName": "Visa",
+                "imageName": "../../../assets/icons/Icons/card-types/visa.svg",
+                "code": "visa"
+            },
+            {
+                "cardName": "Diners Club",
+                "imageName": "../../../assets/icons/Icons/card-types/diners.svg",
+                "code": "dinersClub"
+            },
+            {
+                "cardName": "Visa Electron (Debit Card)",
+                "imageName": "../../../assets/icons/Icons/card-types/visa-electron.svg",
+                "code": "visaElectron"
+            },
+            {
+                "cardName": "Maestro (Debit Card)",
+                "imageName": "../../../assets/icons/Icons/card-types/maestro.svg",
+                "code": "maestro"
+            },
+            {
+                "cardName": "Unknown",
+                "imageName": "",
+                "code": "unknown"
+            },
+            {
+                "cardName": "American Express",
+                "imageName": "../../../assets/icons/Icons/card-types/amex.svg",
+                "code": "americanExpress"
+            },
+            {
+                "cardName": "Discover",
+                "imageName": null,
+                "code": "discover"
+            },
+            {
+                "cardName": "JCB",
+                "imageName": null,
+                "code": "jcb"
+            },
+            {
+                "cardName": "Laser",
+                "imageName": null,
+                "code": "laser"
+            }
+        ],
+        "visaInstalmentEnabled": false,
+        "cardPaymentEnabled": true,
+        "cardVerificationEnabled": false
+    },
+    "savedCards": [],
+    "sessionDisplayInformation": {
+        "colorScheme": "rgba(193,25,83,0.98);",
+        "currencyCode": "ZAR",
+        "merchantReference": "SUB_6ffdc333",
+        "label": "Adumo Online",
+        "amount": 899.00,
+        "backgroundImageUrl": "https://ao-aws-staging-web-hosted-templates.s3.af-south-1.amazonaws.com/AdumoOnlineNB.png",
+        "defaultBackgroundImageUrl": null,
+        "defaultColorScheme": null,
+        "merchantLogo": "https://ao-aws-staging-web-hosted-templates.s3.af-south-1.amazonaws.com/AdumoOnlineNB.png",
+        "fontDefault": null,
+        "fontGeneral": null,
+        "fontHeader": null,
+        "fontButton": null,
+        "email": "kyle.oraclesystems+21187@gmail.com",
+        "budgetAllowed": "false",
+        "forceTokenization": "true",
+        "hideGooglePay": "false",
+        "hideApplePay": "true",
+        "hidePgLogo": null,
+        "hideCardMethod": "false",
+        "hideZapperMethod": null,
+        "hideOttVoucherMethod": null,
+        "hideMobicredMethod": null,
+        "hideEftOzowMethod": null,
+        "hideMasterPassMethod": null,
+        "rewardsAvailable": null,
+        "availableRewardsProgram": null,
+        "mcpAmounts": null
+    },
+    "orderItems": [
+        {
+            "itemName": "Starter Subscription",
+            "quantity": "1",
+            "amount": "899.00"
+        }
+    ],
+    "shippingDetails": {
+        "recipient": "test",
+        "shippingAddress1": "1 test",
+        "shippingAddress2": "test",
+        "shippingAddress3": "Cape Town",
+        "shippingAddress4": "",
+        "shippingAddress5": ""
+    },
+    "isCardVerification": false,
+    "cvvRequired": true,
+    "flow": "",
+    "cardVerification": false
+}

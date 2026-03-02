@@ -56,12 +56,12 @@ export function generateCheckoutToken(merchantRef: string, amount: string): stri
   );
 }
 
-export function generateSubscriptionToken(merchantRef: string, amount: string): string {
+export function generateSubscriptionToken(merchantRef: string, amount: string, auid?: string): string {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: "Adumo Subscription Portal",
     cuid: process.env.ADUMO_CUID,
-    auid: process.env.ADUMO_AUID,
+    auid: auid || process.env.ADUMO_SUBSCRIPTION_AUID || process.env.ADUMO_AUID,
     amount,
     mref: merchantRef,
     jti: randomBytes(32).toString("base64"),

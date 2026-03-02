@@ -14,6 +14,13 @@ const ADUMO_URL = process.env.ADUMO_ENV === "production"
 
 const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
 
+const SUBSCRIPTION_AUID = process.env.ADUMO_SUBSCRIPTION_AUID || process.env.ADUMO_AUID;
+const isSubscriptionMockMode = !process.env.ADUMO_CUID || !SUBSCRIPTION_AUID;
+
+if (!process.env.ADUMO_SUBSCRIPTION_AUID && process.env.ADUMO_AUID) {
+  console.warn("[Billing] WARNING: ADUMO_SUBSCRIPTION_AUID not set — falling back to ADUMO_AUID. The Adumo Application ID must be configured for 'Card Subscriptions' in the Adumo merchant portal, otherwise the HPP will show 3D Secure (one-off) instead of subscription billing.");
+}
+
 async function ensureDefaultWorkspace(userId: string): Promise<string> {
   const existing = await queryOne(
     "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
@@ -276,12 +283,12 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     );
     const invoiceId = invoiceResult.insertId;
 
-    if (isMockMode) {
+    if (isSubscriptionMockMode) {
       return res.json({ mock: true, invoiceId, merchantRef, planCode, subscriptionId });
     }
 
     const amount = (plan.price_cents / 100).toFixed(2);
-    const token = generateSubscriptionToken(merchantRef, amount);
+    const token = generateSubscriptionToken(merchantRef, amount, SUBSCRIPTION_AUID!);
 
     const puid = randomUUID();
 
@@ -302,7 +309,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     const fields: Record<string, string> = {
       puid,
       MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      ApplicationID: SUBSCRIPTION_AUID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -337,6 +344,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     console.log("[Billing] Adumo subscription checkout:", JSON.stringify({
       MerchantReference: fields.MerchantReference,
       Amount: fields.Amount,
+      ApplicationID: fields.ApplicationID,
       frequency: fields.frequency,
       collectionDay: fields.collectionDay,
       startDate: fields.startDate,
@@ -429,7 +437,8 @@ billingRouter.post("/return", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid response token" });
     }
 
-    if (decoded.cuid !== process.env.ADUMO_CUID || decoded.auid !== process.env.ADUMO_AUID) {
+    const validAUIDs = [process.env.ADUMO_AUID, process.env.ADUMO_SUBSCRIPTION_AUID].filter(Boolean);
+    if (decoded.cuid !== process.env.ADUMO_CUID || !validAUIDs.includes(decoded.auid)) {
       return res.status(400).json({ error: "Token validation failed" });
     }
 
