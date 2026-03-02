@@ -14,6 +14,8 @@ import SocialHub from "./social/SocialHub";
 import SettingsPage from "./SettingsPage";
 import DashboardOverview from "./DashboardOverview";
 import BillingPage from "./BillingPage";
+import TrialBanner from "@/components/TrialBanner";
+import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
@@ -134,7 +136,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto flex flex-col">
         {/* Top Bar */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6">
           <div className="flex items-center gap-4">
@@ -161,17 +163,21 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <Routes>
-          <Route index element={<DashboardOverview />} />
-          <Route path="website" element={<WebsiteBuilder />} />
-          <Route path="finance" element={<FinancePage />} />
-          <Route path="invoices" element={<InvoicesPage />} />
-          <Route path="funding" element={<GrantReadinessPage />} />
-          <Route path="social/*" element={<SocialHub />} />
-          <Route path="billing" element={<BillingPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="*" element={<DashboardOverview />} />
-        </Routes>
+        <TrialBanner />
+        <div className="flex-1 overflow-auto">
+          <Routes>
+            <Route index element={<DashboardOverview />} />
+            <Route path="website" element={<WebsiteBuilder />} />
+            <Route path="finance" element={<FinancePage />} />
+            <Route path="invoices" element={<InvoicesPage />} />
+            <Route path="funding" element={<GrantReadinessPage />} />
+            <Route path="social/*" element={<SocialHub />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="*" element={<DashboardOverview />} />
+          </Routes>
+        </div>
+        <DashboardWalkthrough />
       </main>
     </div>
   );
