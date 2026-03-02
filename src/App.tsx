@@ -15,6 +15,7 @@ import PublishedSite from "./pages/PublishedSite";
 import PricingPage from "./pages/PricingPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import BillingReturnPage from "./pages/BillingReturnPage";
+import PaymentResultPage from "./pages/PaymentResultPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,8 @@ const App = () => (
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
             <Route path="/billing/return" element={<BillingReturnPage />} />
+            <Route path="/payment/success" element={<PaymentResultPage status="success" />} />
+            <Route path="/payment/failed" element={<PaymentResultPage status="failed" />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

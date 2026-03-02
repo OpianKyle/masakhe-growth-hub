@@ -7,11 +7,9 @@ import { isMockMode, generateSubscriptionToken, verifyResponseToken, extractCard
 
 export const billingRouter = Router();
 
-const ADUMO_SUBSCRIPTION_URL = process.env.ADUMO_SUBSCRIPTION_URL || (
-  process.env.ADUMO_ENV === "production"
-    ? "https://apiv3.adumoonline.com/product/debit/v1/initialisevirtual"
-    : "https://staging-apiv3.adumoonline.com/product/debit/v1/initialisevirtual"
-);
+const ADUMO_URL = process.env.ADUMO_ENV === "production"
+  ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
+  : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
 
 const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
 
@@ -137,7 +135,10 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
 
     const workspaceId = await ensureDefaultWorkspace(userId);
 
-    const merchantRef = `MSK-${Date.now()}-${randomUUID().slice(0, 8)}`;
+    const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
+    const merchantRef = `SUB_${refSuffix}`;
+
+    const subscriptionId = randomUUID();
 
     const invoiceResult = await execute(
       "INSERT INTO billing_invoices (workspace_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, 'PENDING', ?)",
@@ -146,7 +147,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     const invoiceId = invoiceResult.insertId;
 
     if (isMockMode) {
-      return res.json({ mock: true, invoiceId, merchantRef, planCode });
+      return res.json({ mock: true, invoiceId, merchantRef, planCode, subscriptionId });
     }
 
     const amount = (plan.price_cents / 100).toFixed(2);
@@ -176,13 +177,13 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       Amount: amount,
       Token: token,
       txtCurrencyCode: plan.currency || "ZAR",
-      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
-      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      RedirectSuccessfulURL: `${APP_URL}/payment/success?ref=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/payment/failed?ref=${merchantRef}`,
       Variable1: "Subscription",
       Variable2: merchantRef,
       Qty1: "1",
-      ItemRef1: plan.code,
-      ItemDescr1: `Masakhe ${plan.name} Plan`,
+      ItemRef1: plan.id,
+      ItemDescr1: `${plan.name} Subscription`,
       ItemAmount1: amount,
       ShippingCost: "0.00",
       Discount: "0.00",
@@ -192,7 +193,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       ShippingAddress3: shippingAddress3 || "",
       frequency: chosenFrequency,
       collectionDay: String(chosenCollectionDay),
-      accountNumber: `ACC-${Date.now()}`,
+      accountNumber: `ACC_${Date.now()}`,
       startDate: startDateStr,
       endDate: endDateStr,
       collectionValue: amount,
@@ -214,8 +215,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       emailAddress: fields.emailAddress,
     }));
 
-    console.log("[Billing] Posting to Adumo subscription URL:", ADUMO_SUBSCRIPTION_URL);
-    res.json({ mock: false, formAction: ADUMO_SUBSCRIPTION_URL, fields });
+    res.json({ formAction: ADUMO_URL, fields, subscriptionId });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
