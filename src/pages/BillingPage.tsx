@@ -154,11 +154,11 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
         } else {
           toast({ title: "Error", description: mockJson.error || "Subscription failed.", variant: "destructive" });
         }
-      } else if (json.formAction && json.formData) {
+      } else if (json.formAction && json.fields) {
         const form = document.createElement("form");
         form.method = "POST";
         form.action = json.formAction;
-        Object.entries(json.formData).forEach(([key, value]) => {
+        Object.entries(json.fields).forEach(([key, value]) => {
           const input = document.createElement("input");
           input.type = "hidden";
           input.name = key;
