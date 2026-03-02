@@ -1,7 +1,7 @@
 # Masakhe - SMME Business Platform
 
 ## Overview
-Masakhe is a Government-as-a-Platform application designed to assist South African SMMEs with comprehensive business management. Its core purpose is to streamline business registration, establish a digital presence, ensure tax compliance, facilitate financial tracking, manage social media, and enhance customer engagement. The platform aims to empower SMMEs by providing essential tools within a single, integrated application, featuring a South African flag-inspired color palette for its UI.
+Masakhe is a digital platform designed to assist South African SMMEs with comprehensive business management. Its core purpose is to streamline business registration, establish a digital presence, ensure tax compliance, facilitate financial tracking, manage social media, and enhance customer engagement. The platform aims to empower SMMEs by providing essential tools within a single, integrated application, featuring a South African flag-inspired color palette for its UI.
 
 ## User Preferences
 - Remote MySQL database on Xneelo (no SQLite, no paid Replit services)

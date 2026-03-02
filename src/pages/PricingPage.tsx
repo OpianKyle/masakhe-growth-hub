@@ -198,7 +198,7 @@ export default function PricingPage() {
 
       <footer className="border-t border-border py-8 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-xs text-muted-foreground">© 2026 Masakhe. A Government-as-a-Platform initiative for South African SMMEs.</p>
+          <p className="text-xs text-muted-foreground">© 2026 Masakhe. A digital platform for South African SMMEs.</p>
         </div>
       </footer>
     </div>

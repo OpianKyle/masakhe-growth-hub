@@ -138,7 +138,7 @@ export default function LandingPage() {
             >
               <motion.div variants={fadeInUp} custom={0}>
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
-                  <Shield className="h-3 w-3" /> Government-as-a-Platform
+                  <Shield className="h-3 w-3" /> Digital Platform for SMMEs
                 </span>
               </motion.div>
               <motion.h1
@@ -526,7 +526,7 @@ export default function LandingPage() {
             <div className="flex-1 bg-sa-blue" />
             <div className="flex-1 bg-sa-black" />
           </div>
-          <p className="text-xs text-muted-foreground text-center">© 2026 Masakhe. A Government-as-a-Platform initiative for South African SMMEs.</p>
+          <p className="text-xs text-muted-foreground text-center">© 2026 Masakhe. A digital platform for South African SMMEs.</p>
         </div>
       </footer>
     </div>
