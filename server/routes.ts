@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
+import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
@@ -42,6 +43,47 @@ router.get("/onboarding/flow", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch flow" });
+  }
+});
+
+router.post("/onboarding/complete", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { bankName, accountType, accountNumber, branchCode, taxNumber, vatNumber, popiaConsent } = req.body;
+    const now = new Date().toISOString();
+
+    const existing = await queryOne("SELECT id FROM business_profiles WHERE user_id = ?", [userId]);
+
+    if (existing) {
+      await execute(
+        `UPDATE business_profiles SET
+          bank_name = COALESCE(?, bank_name),
+          account_type = COALESCE(?, account_type),
+          account_number = COALESCE(?, account_number),
+          branch_code = COALESCE(?, branch_code),
+          tax_number = COALESCE(?, tax_number),
+          vat_number = COALESCE(?, vat_number),
+          popia_consent = COALESCE(?, popia_consent),
+          updated_at = ?
+        WHERE user_id = ?`,
+        [bankName, accountType, accountNumber, branchCode, taxNumber, vatNumber, popiaConsent ? 1 : null, now, userId]
+      );
+    } else {
+      await execute(
+        `INSERT INTO business_profiles (id, user_id, bank_name, account_type, account_number, branch_code, tax_number, vat_number, popia_consent, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [randomUUID(), userId, bankName, accountType, accountNumber, branchCode, taxNumber, vatNumber, popiaConsent ? 1 : 0, now, now]
+      );
+    }
+
+    await execute(
+      "INSERT INTO submissions (id, kind, payload_json, created_at) VALUES (?, ?, ?, ?)",
+      [randomUUID(), "onboarding", JSON.stringify(req.body), now]
+    );
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to complete onboarding" });
   }
 });
 

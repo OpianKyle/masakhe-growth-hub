@@ -1,226 +1,417 @@
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Building2, Landmark, FileCheck, Loader2, ArrowRight, ArrowLeft, CheckCircle2,
+} from "lucide-react";
 
-type Field = {
-  name: string;
-  label: string;
-  type: "text" | "number" | "select" | "radio" | "checkbox" | "textarea";
-  required?: boolean;
-  placeholder?: string;
-  options?: { label: string; value: string }[];
-};
-
-type Step = {
-  step_key: string;
-  title: string;
-  description?: string;
-  order_index: number;
-  condition: any | null;
-  fields: Field[];
-};
-
-function meetsCondition(values: any, condition: any | null) {
-  if (!condition) return true;
-  if (condition.equals) {
-    return condition.equals.every((c: any) => values?.[c.field] === c.value);
-  }
-  return true;
+interface BusinessProfile {
+  business_name: string | null;
+  trading_name: string | null;
+  business_status: string | null;
+  business_type: string | null;
+  industry_sector: string | null;
+  years_operating: string | null;
+  employee_count: string | null;
+  sa_id: string | null;
+  cipc_number: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  physical_address: string | null;
+  bank_name: string | null;
+  account_type: string | null;
+  account_number: string | null;
+  branch_code: string | null;
+  popia_consent: number | null;
+  tax_number: string | null;
+  vat_number: string | null;
 }
 
-// Mock data for the onboarding flow
-const MOCK_FLOW = {
-  steps: [
-    {
-      step_key: "business_type",
-      title: "Business Type",
-      description: "Tell us about the kind of business you're starting.",
-      order_index: 0,
-      condition: null,
-      fields: [
-        {
-          name: "type",
-          label: "What type of business is it?",
-          type: "select" as const,
-          required: true,
-          options: [
-            { label: "Private Company (Pty) Ltd", value: "pty" },
-            { label: "Sole Proprietorship", value: "sole" },
-            { label: "Non-Profit Company (NPC)", value: "npc" },
-          ],
-        },
-      ],
-    },
-    {
-      step_key: "business_details",
-      title: "Business Details",
-      description: "Basic information about your enterprise.",
-      order_index: 1,
-      condition: null,
-      fields: [
-        { name: "name", label: "Proposed Business Name", type: "text" as const, required: true, placeholder: "e.g. Masakhe Tech" },
-        { name: "industry", label: "Industry", type: "text" as const, required: true, placeholder: "e.g. Retail, Tech, Agriculture" },
-      ],
-    },
-    {
-      step_key: "tax_details",
-      title: "Tax Registration",
-      description: "SARS compliance information.",
-      order_index: 2,
-      condition: { equals: [{ field: "type", value: "pty" }] },
-      fields: [
-        { name: "vat_reg", label: "Do you need to register for VAT?", type: "checkbox" as const },
-        { name: "tax_number", label: "Existing Tax Number (if any)", type: "text" as const },
-      ],
-    },
-  ],
-};
+const bankOptions = [
+  { label: "ABSA", value: "absa" },
+  { label: "Capitec", value: "capitec" },
+  { label: "FNB", value: "fnb" },
+  { label: "Nedbank", value: "nedbank" },
+  { label: "Standard Bank", value: "standard_bank" },
+  { label: "TymeBank", value: "tymebank" },
+  { label: "African Bank", value: "african_bank" },
+  { label: "Investec", value: "investec" },
+  { label: "Other", value: "other" },
+];
+
+const accountTypeOptions = [
+  { label: "Cheque / Current", value: "cheque" },
+  { label: "Savings", value: "savings" },
+  { label: "Business", value: "business" },
+  { label: "Transmission", value: "transmission" },
+];
 
 export default function Onboarding() {
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [active, setActive] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, watch, getValues, setValue } = useForm({ defaultValues: {} });
-  const values = watch();
+  const [bankName, setBankName] = useState("");
+  const [accountType, setAccountType] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [branchCode, setBranchCode] = useState("");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [popiaConsent, setPopiaConsent] = useState(false);
 
   useEffect(() => {
-    fetch("/api/onboarding/flow")
-      .then(r => {
-        if (!r.ok) throw new Error("Failed to fetch");
-        return r.json();
-      })
-      .then(data => setSteps(data.steps))
-      .catch(err => {
-        console.error(err);
-        toast({
-          title: "Error",
-          description: "Failed to load onboarding flow.",
-          variant: "destructive",
-        });
-      });
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (!res.ok) {
+          navigate("/login");
+          return;
+        }
+        const profileRes = await fetch("/api/profile", { credentials: "include" });
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          if (data.profile) {
+            setProfile(data.profile);
+            if (data.profile.bank_name) setBankName(data.profile.bank_name);
+            if (data.profile.account_type) setAccountType(data.profile.account_type);
+            if (data.profile.account_number) setAccountNumber(data.profile.account_number);
+            if (data.profile.branch_code) setBranchCode(data.profile.branch_code);
+            if (data.profile.tax_number) setTaxNumber(data.profile.tax_number);
+            if (data.profile.vat_number) setVatNumber(data.profile.vat_number);
+            if (data.profile.popia_consent) setPopiaConsent(true);
+          }
+        }
+      } catch {
+        toast({ title: "Error", description: "Failed to load your profile.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const visibleSteps = useMemo(() => steps.filter(s => meetsCondition(values, s.condition)), [steps, values]);
-  const step = visibleSteps[active];
+  const hasBanking = !!(profile?.bank_name && profile?.account_number);
+  const hasPopia = !!profile?.popia_consent;
 
-  async function submitAll(payload: any) {
-    console.log("Submitting payload:", payload);
-    try {
-      const res = await fetch("/api/submissions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: "onboarding", payload }),
-      });
-      
-      if (!res.ok) throw new Error("Submission failed");
+  const steps = [
+    { key: "welcome", title: "Welcome to Masakhe", icon: Building2 },
+    { key: "banking", title: "Banking Details", icon: Landmark },
+    { key: "confirm", title: "Confirm & Get Started", icon: FileCheck },
+  ];
 
-      toast({
-        title: "Success! ✅",
-        description: "Your business onboarding is complete.",
-      });
-      navigate("/dashboard");
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to submit onboarding.",
-        variant: "destructive",
-      });
+  const currentStep = steps[step];
+
+  const handleSubmit = async () => {
+    if (step === 2) {
+      if (!popiaConsent) {
+        toast({ title: "Consent Required", description: "You must accept the POPIA terms to continue.", variant: "destructive" });
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const res = await fetch("/api/onboarding/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            bankName: bankName || null,
+            accountType: accountType || null,
+            accountNumber: accountNumber || null,
+            branchCode: branchCode || null,
+            taxNumber: taxNumber || null,
+            vatNumber: vatNumber || null,
+            popiaConsent: true,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Submission failed");
+
+        toast({ title: "You're all set!", description: "Your onboarding is complete. Welcome to Masakhe." });
+        navigate("/dashboard");
+      } catch {
+        toast({ title: "Error", description: "Failed to complete onboarding.", variant: "destructive" });
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      setStep(s => s + 1);
     }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  if (!step) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
-
   return (
-    <div className="container max-w-2xl py-20">
-      <Card className="shadow-elevated">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold font-heading">{step.title}</CardTitle>
-          <CardDescription>{step.description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={handleSubmit(async () => {
-              if (active < visibleSteps.length - 1) setActive(a => a + 1);
-              else await submitAll(getValues());
-            })}
-            className="grid gap-6"
-          >
-            {step.fields.map((f) => (
-              <div key={f.name} className="grid gap-2">
-                <Label htmlFor={f.name} className="font-bold">
-                  {f.label}
-                  {f.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-
-                {f.type === "radio" ? (
-                  <RadioGroup onValueChange={(v) => setValue(f.name as any, v)} className="grid gap-4 mt-2">
-                    {(f.options ?? []).map(opt => (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <RadioGroupItem value={opt.value} id={`${f.name}-${opt.value}`} />
-                        <Label htmlFor={`${f.name}-${opt.value}`}>{opt.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                ) : f.type === "select" ? (
-                  <Select onValueChange={(v) => setValue(f.name as any, v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(f.options ?? []).map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : f.type === "checkbox" ? (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id={f.name} onCheckedChange={(checked) => setValue(f.name as any, checked)} />
-                    <Label htmlFor={f.name} className="font-normal opacity-90">{f.label}</Label>
-                  </div>
-                ) : f.type === "textarea" ? (
-                  <Textarea
-                    {...register(f.name as any, { required: f.required })}
-                    placeholder={f.placeholder}
-                    className="min-h-[100px]"
-                  />
-                ) : (
-                  <input
-                    type={f.type === "number" ? "number" : "text"}
-                    {...register(f.name as any, { required: f.required })}
-                    placeholder={f.placeholder}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  />
-                )}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl space-y-6">
+        <div className="flex items-center justify-between px-2">
+          {steps.map((s, i) => (
+            <div key={s.key} className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                i < step ? "bg-primary text-primary-foreground" :
+                i === step ? "bg-primary text-primary-foreground" :
+                "bg-muted text-muted-foreground"
+              }`}>
+                {i < step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
               </div>
-            ))}
+              <span className={`text-xs font-medium hidden sm:inline ${i === step ? "text-foreground" : "text-muted-foreground"}`}>
+                {s.title}
+              </span>
+              {i < steps.length - 1 && (
+                <div className={`w-8 sm:w-16 h-0.5 mx-1 ${i < step ? "bg-primary" : "bg-muted"}`} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Card className="shadow-elevated">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              {currentStep && <currentStep.icon className="h-6 w-6 text-primary" />}
+              <div>
+                <CardTitle className="text-2xl font-bold font-heading">{currentStep?.title}</CardTitle>
+                <CardDescription>
+                  {step === 0 && "Let's finish setting up your account with a few more details."}
+                  {step === 1 && "Add your banking details for invoicing and payments (optional)."}
+                  {step === 2 && "Review and confirm to get started."}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {step === 0 && (
+              <div className="space-y-6">
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-5">
+                  <h4 className="font-semibold text-foreground mb-3">Your Registration Details</h4>
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Full Name</span>
+                      <span className="font-medium text-foreground">{user?.full_name || "—"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email</span>
+                      <span className="font-medium text-foreground">{user?.email || "—"}</span>
+                    </div>
+                    {profile?.business_name && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Business Name</span>
+                        <span className="font-medium text-foreground">{profile.business_name}</span>
+                      </div>
+                    )}
+                    {profile?.trading_name && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Trading Name</span>
+                        <span className="font-medium text-foreground">{profile.trading_name}</span>
+                      </div>
+                    )}
+                    {profile?.business_type && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Business Type</span>
+                        <span className="font-medium text-foreground capitalize">{profile.business_type}</span>
+                      </div>
+                    )}
+                    {profile?.industry_sector && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Industry</span>
+                        <span className="font-medium text-foreground capitalize">{profile.industry_sector}</span>
+                      </div>
+                    )}
+                    {profile?.phone && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Phone</span>
+                        <span className="font-medium text-foreground">{profile.phone}</span>
+                      </div>
+                    )}
+                    {profile?.physical_address && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Address</span>
+                        <span className="font-medium text-foreground">{profile.physical_address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We've got your basic details from registration. Now let's add a few more things to get you fully set up.
+                  You can update any of this later from your Settings page.
+                </p>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-4">
+                {hasBanking && (
+                  <div className="rounded-lg bg-sa-green/5 border border-sa-green/20 p-3 text-sm text-muted-foreground">
+                    Your banking details were provided during registration. You can update them below if needed.
+                  </div>
+                )}
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="bankName" className="font-bold">Bank</Label>
+                    <Select value={bankName} onValueChange={setBankName}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankOptions.map(b => (
+                          <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="accountType" className="font-bold">Account Type</Label>
+                    <Select value={accountType} onValueChange={setAccountType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select account type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypeOptions.map(a => (
+                          <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="accountNumber" className="font-bold">Account Number</Label>
+                      <Input
+                        id="accountNumber"
+                        value={accountNumber}
+                        onChange={e => setAccountNumber(e.target.value)}
+                        placeholder="e.g. 1234567890"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="branchCode" className="font-bold">Branch Code</Label>
+                      <Input
+                        id="branchCode"
+                        value={branchCode}
+                        onChange={e => setBranchCode(e.target.value)}
+                        placeholder="e.g. 250655"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4 mt-2 space-y-4">
+                  <h4 className="font-semibold text-foreground text-sm">Tax Details (Optional)</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="taxNumber" className="font-bold">SARS Tax Number</Label>
+                      <Input
+                        id="taxNumber"
+                        value={taxNumber}
+                        onChange={e => setTaxNumber(e.target.value)}
+                        placeholder="e.g. 1234567890"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="vatNumber" className="font-bold">VAT Number</Label>
+                      <Input
+                        id="vatNumber"
+                        value={vatNumber}
+                        onChange={e => setVatNumber(e.target.value)}
+                        placeholder="e.g. 4123456789"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Banking and tax details are optional but recommended for invoicing and compliance features.
+                  You can always add them later from Settings.
+                </p>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-6">
+                <div className="rounded-lg bg-muted/50 p-5 space-y-3 text-sm">
+                  <h4 className="font-semibold text-foreground">Summary</h4>
+                  <div className="grid gap-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Name</span>
+                      <span className="font-medium">{user?.full_name || "—"}</span>
+                    </div>
+                    {profile?.business_name && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Business</span>
+                        <span className="font-medium">{profile.business_name}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Banking</span>
+                      <span className="font-medium">
+                        {bankName && accountNumber ? `${bankOptions.find(b => b.value === bankName)?.label || bankName} ****${accountNumber.slice(-4)}` : "Not provided"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tax Number</span>
+                      <span className="font-medium">{taxNumber || "Not provided"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-lg border border-border p-4">
+                  <Checkbox
+                    id="popiaConsent"
+                    checked={popiaConsent}
+                    onCheckedChange={(checked) => setPopiaConsent(checked === true)}
+                  />
+                  <Label htmlFor="popiaConsent" className="font-normal text-sm leading-relaxed cursor-pointer">
+                    I consent to the collection, processing, and storage of my personal and business information
+                    in accordance with the Protection of Personal Information Act (POPIA). I understand that my
+                    data will be used to provide Masakhe platform services.
+                  </Label>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                disabled={active === 0}
-                onClick={() => setActive(a => Math.max(0, a - 1))}
+                disabled={step === 0}
+                onClick={() => setStep(s => Math.max(0, s - 1))}
                 className="flex-1"
               >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
-              <Button type="submit" variant="hero" className="flex-1">
-                {active < visibleSteps.length - 1 ? "Continue" : "Submit"}
+              <Button
+                type="button"
+                variant="hero"
+                className="flex-1"
+                disabled={submitting}
+                onClick={handleSubmit}
+              >
+                {submitting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Completing...</>
+                ) : step < steps.length - 1 ? (
+                  <><span>Continue</span><ArrowRight className="h-4 w-4 ml-2" /></>
+                ) : (
+                  <><CheckCircle2 className="h-4 w-4 mr-2" />Get Started</>
+                )}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
