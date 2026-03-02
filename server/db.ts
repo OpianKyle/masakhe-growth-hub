@@ -330,7 +330,6 @@ export async function runMigrations() {
     await addColumnIfMissing("billing_payment_methods", "puid", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "profile_token", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "card_token", "VARCHAR(255) NULL");
-    await addColumnIfMissing("billing_subscriptions", "adumo_subscription_id", "VARCHAR(255) NULL");
 
     const createIndex = async (name: string, table: string, col: string) => {
       try {
@@ -384,7 +383,7 @@ export async function runMigrations() {
       CREATE TABLE IF NOT EXISTS billing_payment_methods (
         id INT AUTO_INCREMENT PRIMARY KEY,
         workspace_id VARCHAR(36) NOT NULL,
-        provider VARCHAR(20) NOT NULL DEFAULT 'ADUMO',
+        provider VARCHAR(20) NOT NULL DEFAULT 'PENDING',
         provider_customer_ref VARCHAR(255) NULL,
         provider_payment_method_ref VARCHAR(255) NULL,
         last4 VARCHAR(4) NULL,
@@ -419,7 +418,7 @@ export async function runMigrations() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS billing_webhook_events (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        provider VARCHAR(20) NOT NULL DEFAULT 'ADUMO',
+        provider VARCHAR(20) NOT NULL DEFAULT 'SYSTEM',
         event_key VARCHAR(255) NOT NULL UNIQUE,
         payload_json TEXT,
         received_at DATETIME DEFAULT CURRENT_TIMESTAMP,

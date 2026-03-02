@@ -59,7 +59,7 @@ export default function PricingPage() {
     if (!user) {
       navigate(`/register?plan=${planCode}`);
     } else {
-      navigate(`/checkout?plan=${planCode}`);
+      navigate(`/dashboard/billing`);
     }
   };
 

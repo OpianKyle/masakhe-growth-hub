@@ -1,28 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
   CreditCard, Calendar, AlertTriangle,
-  Clock, Info, Loader2, Shield, CalendarDays, Wallet,
-  User, Mail, Phone, MapPin, Check,
+  Clock, Info, Loader2, Wallet, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-} from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Plan {
   id: number;
@@ -44,15 +33,6 @@ interface Subscription {
   cancelled_at: string | null;
 }
 
-interface PaymentMethod {
-  id: number;
-  last4: string | null;
-  brand: string | null;
-  exp_month: number | null;
-  exp_year: number | null;
-  status: string;
-}
-
 interface BillingInvoice {
   id: number;
   amount_cents: number;
@@ -66,9 +46,7 @@ interface BillingInvoice {
 interface BillingData {
   subscription: Subscription | null;
   plan: Plan | null;
-  paymentMethod: PaymentMethod | null;
   invoices?: BillingInvoice[];
-  mockMode?: boolean;
 }
 
 const planOptions = [
@@ -121,84 +99,21 @@ function statusBadge(status: string) {
   );
 }
 
-const checkoutSchema = z.object({
-  planCode: z.enum(["starter", "pro"]),
-  frequency: z.enum(["MONTHLY", "QUARTERLY", "BIANNUALLY", "ANNUALLY"]),
-  recipientName: z.string().min(2, "Full name is required"),
-  email: z.string().email("A valid email address is required"),
-  contactNumber: z.string().min(7, "Contact number is required"),
-  mobileNumber: z.string().optional(),
-  collectionDay: z.number().min(1).max(28),
-  startDate: z.string().min(1, "Start date is required"),
-  shippingAddress1: z.string().optional(),
-  shippingAddress2: z.string().optional(),
-  shippingAddress3: z.string().optional(),
-});
-
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
-
-function ordinal(n: number) {
-  return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
-}
-
 function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
-  const { user } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState("starter");
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const defaultStartDate = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(1);
-    return d.toISOString().split("T")[0];
-  })();
+  const plan = planOptions.find((p) => p.code === selectedPlan)!;
 
-  const form = useForm<CheckoutFormData>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      planCode: "starter",
-      frequency: "MONTHLY",
-      recipientName: user?.full_name || "",
-      email: user?.email || "",
-      contactNumber: user?.phone || "",
-      mobileNumber: "",
-      collectionDay: 1,
-      startDate: defaultStartDate,
-      shippingAddress1: "",
-      shippingAddress2: "",
-      shippingAddress3: "",
-    },
-  });
-
-  useEffect(() => {
-    if (paymentData && formRef.current) {
-      formRef.current.submit();
-    }
-  }, [paymentData]);
-
-  const selectedPlanCode = form.watch("planCode");
-  const plan = planOptions.find((p) => p.code === selectedPlanCode)!;
-
-  const onSubmit = async (data: CheckoutFormData) => {
+  const onSubmit = async () => {
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/billing/checkout-session", {
+      const res = await fetch("/api/billing/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          planCode: data.planCode,
-          frequency: data.frequency,
-          collectionDay: String(data.collectionDay),
-          recipientName: data.recipientName,
-          email: data.email,
-          contactNumber: data.contactNumber,
-          mobileNumber: data.mobileNumber || data.contactNumber,
-          startDate: data.startDate,
-          shippingAddress1: data.shippingAddress1 || "",
-          shippingAddress2: data.shippingAddress2 || "",
-          shippingAddress3: data.shippingAddress3 || "",
-        }),
+        body: JSON.stringify({ planCode: selectedPlan }),
       });
       const json = await res.json();
 
@@ -208,337 +123,93 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
           onSuccess();
           return;
         }
-        toast({ title: "Error", description: json.error || "Failed to start checkout.", variant: "destructive" });
+        toast({ title: "Error", description: json.error || "Failed to subscribe.", variant: "destructive" });
         return;
       }
 
-      if (json.mock) {
-        const mockRes = await fetch("/api/billing/return", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ merchantRef: json.merchantRef, status: "success" }),
-        });
-        const mockJson = await mockRes.json();
-        if (mockJson.ok) {
-          toast({ title: "Subscription Activated!", description: "Your 14-day free trial is now active." });
-          onSuccess();
-        } else {
-          toast({ title: "Error", description: mockJson.error || "Subscription failed.", variant: "destructive" });
-        }
-      } else if (json.formAction && json.fields) {
-        setPaymentData(json);
+      if (json.ok) {
+        toast({ title: "Subscription Activated!", description: "Your 14-day free trial is now active." });
+        onSuccess();
+      } else {
+        toast({ title: "Error", description: json.error || "Subscription failed.", variant: "destructive" });
       }
     } catch {
       toast({ title: "Error", description: "Failed to process subscription.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <>
-      {paymentData && (
-        <form
-          ref={formRef}
-          action={paymentData.formAction}
-          method="POST"
-          style={{ display: "none" }}
-        >
-          {Object.entries(paymentData.fields).map(([key, value]) => (
-            <input key={key} type="hidden" name={key} value={String(value)} />
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-primary" />
+          Choose a Plan
+        </h3>
+        <div className="grid gap-3">
+          {planOptions.map((p) => (
+            <label
+              key={p.code}
+              className={`relative flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
+                selectedPlan === p.code
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-primary/30"
+              }`}
+            >
+              <input
+                type="radio"
+                name="plan"
+                value={p.code}
+                checked={selectedPlan === p.code}
+                onChange={() => setSelectedPlan(p.code)}
+                className="mt-1 accent-primary"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground font-heading">{p.name}</span>
+                  {p.popular && (
+                    <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
+                  )}
+                </div>
+                <p className="text-lg font-bold font-heading text-foreground">
+                  {p.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
+              </div>
+            </label>
           ))}
-        </form>
-      )}
+        </div>
+      </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-primary" />
-              Choose a Plan
-            </h3>
-            <FormField
-              control={form.control}
-              name="planCode"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="grid gap-3">
-                    {planOptions.map((p) => (
-                      <label
-                        key={p.code}
-                        className={`relative flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                          field.value === p.code
-                            ? "border-primary bg-primary/5 shadow-sm"
-                            : "border-border hover:border-primary/30"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="plan"
-                          value={p.code}
-                          checked={field.value === p.code}
-                          onChange={() => field.onChange(p.code)}
-                          className="mt-1 accent-primary"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground font-heading">{p.name}</span>
-                            {p.popular && (
-                              <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
-                            )}
-                          </div>
-                          <p className="text-lg font-bold font-heading text-foreground">
-                            {p.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+      <div className="border-t border-border pt-4 space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Plan</span>
+          <span className="font-semibold text-foreground">{plan.name}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Trial Period</span>
+          <span className="text-sa-green font-semibold">14 days free</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Then</span>
+          <span className="font-semibold text-foreground">{plan.price}/month</span>
+        </div>
+      </div>
 
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              Subscriber Details
-            </h3>
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="recipientName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <User className="h-3 w-3" /> Full Name
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Smith" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <Mail className="h-3 w-3" /> Email Address
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="contactNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Phone className="h-3 w-3" /> Contact Number
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="+27211234567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="mobileNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Phone className="h-3 w-3" /> Mobile Number <span className="text-muted-foreground">(optional)</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="+27871234567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              Debit Order Schedule
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="frequency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Billing Frequency</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="MONTHLY">Monthly</SelectItem>
-                        <SelectItem value="QUARTERLY">Quarterly (every 3 months)</SelectItem>
-                        <SelectItem value="BIANNUALLY">Bi-annually (every 6 months)</SelectItem>
-                        <SelectItem value="ANNUALLY">Annually (once a year)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="collectionDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Collection Day</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(parseInt(v))}
-                      defaultValue={String(field.value)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                          <SelectItem key={day} value={String(day)}>
-                            {ordinal(day)} of each month
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <Calendar className="h-3 w-3" /> First Collection Date
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              Address <span className="text-muted-foreground font-normal">(optional)</span>
-            </h3>
-            <div className="space-y-3">
-              <FormField
-                control={form.control}
-                name="shippingAddress1"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Address Line 1</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Street address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="shippingAddress2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Suburb / City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Sandton" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="shippingAddress3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Province / Postal Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Gauteng, 2196" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Plan</span>
-              <span className="font-semibold text-foreground">{plan.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Trial Period</span>
-              <span className="text-sa-green font-semibold">14 days free</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Then</span>
-              <span className="font-semibold text-foreground">{plan.price}/month</span>
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-            Your debit order will be processed via Adumo Payments. The first collection only occurs after your 14-day free trial ends.
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-            ) : (
-              <><Check className="h-4 w-4 mr-2" />Activate Free Trial & Subscribe</>
-            )}
-          </Button>
-        </form>
-      </Form>
-    </>
+      <Button
+        onClick={onSubmit}
+        className="w-full"
+        size="lg"
+        disabled={submitting}
+      >
+        {submitting ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+        ) : (
+          <><Check className="h-4 w-4 mr-2" />Activate Free Trial</>
+        )}
+      </Button>
+    </div>
   );
 }
 
@@ -557,10 +228,10 @@ export default function BillingPage() {
         const json = await res.json();
         setData(json);
       } else {
-        setData({ subscription: null, plan: null, paymentMethod: null });
+        setData({ subscription: null, plan: null });
       }
     } catch {
-      setData({ subscription: null, plan: null, paymentMethod: null });
+      setData({ subscription: null, plan: null });
     } finally {
       setLoading(false);
     }
@@ -572,11 +243,9 @@ export default function BillingPage() {
     const paymentResult = searchParams.get("payment");
     if (paymentResult) {
       if (paymentResult === "success") {
-        toast({ title: "Payment Successful!", description: "Your subscription is now active. Welcome to Masakhe!" });
+        toast({ title: "Subscription Active!", description: "Your subscription is now active. Welcome to Masakhe!" });
       } else if (paymentResult === "failed") {
-        toast({ title: "Payment Failed", description: "Your payment was not processed. Please try again.", variant: "destructive" });
-      } else if (paymentResult === "error") {
-        toast({ title: "Something went wrong", description: "There was an issue processing your payment. Please contact support.", variant: "destructive" });
+        toast({ title: "Subscription Failed", description: "There was an issue. Please try again.", variant: "destructive" });
       }
       setSearchParams({}, { replace: true });
     }
@@ -612,29 +281,14 @@ export default function BillingPage() {
     );
   }
 
-  const { subscription, plan, paymentMethod, invoices, mockMode } = data || {};
+  const { subscription, plan, invoices } = data || {};
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-2xl font-bold font-heading text-foreground">Billing</h2>
-        <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
+        <p className="text-muted-foreground mt-1">Manage your subscription and view billing history.</p>
       </motion.div>
-
-      {mockMode && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-xl border border-[hsl(225,100%,29%)]/20 bg-[hsl(225,100%,29%)]/5 p-4 flex items-start gap-3"
-        >
-          <Info className="h-5 w-5 text-[hsl(225,100%,29%)] shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-[hsl(225,100%,29%)]">Demo Mode</p>
-            <p className="text-sm text-muted-foreground">Running in demo mode — no real charges will be made. Payment processing is simulated.</p>
-          </div>
-        </motion.div>
-      )}
 
       {!subscription ? (
         <motion.div
@@ -649,7 +303,7 @@ export default function BillingPage() {
             </div>
             <h3 className="text-xl font-bold font-heading text-foreground">Subscribe to Masakhe</h3>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Start your 14-day free trial. Your debit order only begins after the trial ends. Cancel anytime.
+              Start your 14-day free trial. Cancel anytime.
             </p>
           </div>
           <InlineSubscribeForm onSuccess={fetchBilling} />
@@ -746,41 +400,6 @@ export default function BillingPage() {
                 <p className="text-sm text-muted-foreground">Your last payment failed. Re-subscribe below to restore access to all features.</p>
               </div>
               <InlineSubscribeForm onSuccess={fetchBilling} />
-            </motion.div>
-          )}
-
-          {subscription.status !== "PAST_DUE" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-xl border border-border bg-card p-6 shadow-card"
-            >
-              <h3 className="text-lg font-bold font-heading text-foreground mb-4 flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                Payment Method
-              </h3>
-              {paymentMethod ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-8 rounded bg-muted flex items-center justify-center">
-                      <CreditCard className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {paymentMethod.brand || "Card"} •••• {paymentMethod.last4 || "****"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {paymentMethod.exp_month && paymentMethod.exp_year
-                          ? `Expires ${String(paymentMethod.exp_month).padStart(2, "0")}/${paymentMethod.exp_year}`
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No payment method on file.</p>
-              )}
             </motion.div>
           )}
 

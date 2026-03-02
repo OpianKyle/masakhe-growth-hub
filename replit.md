@@ -13,7 +13,7 @@ Masakhe utilizes a React 18 frontend with TypeScript and Vite, communicating wit
 Key architectural features include:
 - **Modular Design**: The system is organized into distinct modules for social media, billing, finance, and user management, each with dedicated API routes and logic.
 - **Multi-tenancy**: The Social Media Hub supports a workspace system with roles (Owner, Admin, Editor, Viewer), enabling collaborative management for businesses.
-- **Subscription & Billing**: Implements a trial system (14-day free trial) with two plans (Starter R899/mo, Pro R2500/mo) and integrates with Adumo for payment processing. Uses Adumo Virtual HPP `initialisevirtual` endpoint with subscription fields (`frequency=MONTHLY`, `collectionDay`, `startDate`, `endDate`, `collectionValue`, `accountNumber`) to trigger the subscription/debit order flow (not 3D Secure card payment). Merchant reference format: `SUB_xxxxx`. Response includes `formAction`, `fields`, and `subscriptionId`. Redirect URLs point to frontend `/payment/success?ref=` and `/payment/failed?ref=` routes. Card-on-File API (OAuth2 → initiate → authorise → settle) serves as fallback. Background scheduler handles trial reminders and status sync. Feature gating restricts premium modules based on subscription status. **Subscription checkout is embedded directly in `BillingPage` (no separate `/checkout` redirect for new subscribers).**
+- **Subscription & Billing**: Implements a trial system (14-day free trial) with two plans (Starter R899/mo, Pro R2500/mo). No payment provider is currently integrated — subscriptions are created directly via `POST /api/billing/subscribe` with plan selection. Background scheduler handles trial expiry (TRIAL → ACTIVE transitions) and monthly renewal invoice creation. Feature gating restricts premium modules based on subscription status. Subscription checkout is embedded directly in `BillingPage` (no separate checkout page).
 - **Registration Flow**: Registration (`/register`) is payment-free — 6 steps (Account, Business Status, Identity, Business Details, Contact & Location, Confirmation). After successful registration, users are redirected to `/onboarding`. Subscription is set up from the Billing section inside the dashboard portal.
 - **Trial Banner & Walkthrough**: `TrialBanner` component (in dashboard) shows a dismissible banner with days remaining and a modal popup on first login during trial; locks access modal when trial expires or subscription is past-due. `DashboardWalkthrough` component shows a guided tour card on first login, stepping through all dashboard sections.
 - **Dynamic Dashboard**: The dashboard provides a real-time overview of business KPIs, financial data, and social media activity through dynamic charts and aggregated data.
@@ -22,13 +22,12 @@ Key architectural features include:
 - **Website Builder**: A customizable website builder with multiple templates and dynamic sections allows SMMEs to establish their online presence.
 - **Compliance & Grant Readiness**: Incorporates features for tracking compliance scores and assessing grant readiness.
 - **Data Security**: Employs AES-256-GCM encryption for sensitive data like social account tokens.
-- **PDF Generation**: Uses `pdf-lib` for server-side generation of invoices.
+- **PDF Generation**: Uses `pdf-lib` for server-side generation of invoices and terms PDFs.
 
 ## External Dependencies
 - **Database**: Remote MySQL hosted on Xneelo (`sql16.cpt3.host-h.net`).
-- **Payment Gateway**: Adumo Online — Virtual HPP for 3D Secure card capture with puid tokenization and built-in subscription fields (frequency, collectionDay, startDate, endDate, collectionValue) for Adumo-managed recurring billing; Card-on-File API (OAuth2 + REST) as fallback for server-to-server charges (initiate/authorise/settle); webhook notifications for both initial and recurring transaction confirmations.
+- **Payment Gateway**: None currently integrated. Billing infrastructure (plans, subscriptions, invoices, trial management) is in place and ready for a payment provider to be added.
 - **Social Media APIs**: Integrations with Meta (Facebook/Instagram), LinkedIn, X, TikTok, and YouTube (with a Mock Provider Mode for development).
 - **Session Management**: `express-mysql-session` for storing session data in MySQL.
 - **PDF Generation**: `pdf-lib` for creating PDF documents.
 - **File Uploads**: `multer` for handling media file uploads.
-- **JWT**: `jsonwebtoken` for secure information exchange, particularly with Adumo.
