@@ -63,10 +63,10 @@ export default function DashboardPage() {
           {!collapsed && (
             <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
               {user?.logo_url ? (
-                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+                <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain shrink-0" />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero shrink-0">
-                  <span className="text-sm font-bold text-primary-foreground font-heading">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero shrink-0">
+                  <span className="text-base font-bold text-primary-foreground font-heading">
                     {user?.business_name?.[0] || "M"}
                   </span>
                 </div>
@@ -79,10 +79,10 @@ export default function DashboardPage() {
           {collapsed && (
             <Link to="/dashboard" className="mx-auto">
               {user?.logo_url ? (
-                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+                <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
-                  <span className="text-sm font-bold text-primary-foreground font-heading">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero">
+                  <span className="text-base font-bold text-primary-foreground font-heading">
                     {user?.business_name?.[0] || "M"}
                   </span>
                 </div>
@@ -153,10 +153,10 @@ export default function DashboardPage() {
             <NotificationDropdown />
             <Link to="/dashboard/settings" className="shrink-0">
               {user?.logo_url ? (
-                <img src={user.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+                <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-full object-contain" />
               ) : (
-                <div className="h-8 w-8 rounded-full gradient-hero flex items-center justify-center">
-                  <span className="text-xs font-bold text-primary-foreground">{initials}</span>
+                <div className="h-10 w-10 rounded-full gradient-hero flex items-center justify-center">
+                  <span className="text-sm font-bold text-primary-foreground">{initials}</span>
                 </div>
               )}
             </Link>
