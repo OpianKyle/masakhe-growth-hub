@@ -308,6 +308,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "1000+", label: "Products" },
                 { value: "500+", label: "Happy Customers" },
@@ -351,6 +352,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "masonry",
               title: "Our Store",
               subtitle: "Visit us today",
               images: [
@@ -416,6 +418,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "8+", label: "Years Experience" },
                 { value: "2000+", label: "Happy Clients" },
@@ -429,6 +432,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "bordered",
               title: "Our Treatments",
               subtitle: "Services & Pricing",
               items: [
@@ -446,6 +450,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "featured",
               title: "Our Work",
               subtitle: "See the transformations",
               images: [
@@ -460,6 +465,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "large-quote",
               title: "Client Love",
               subtitle: "What our clients say about us",
               items: [
@@ -473,6 +479,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "light",
               title: "Book Your Visit",
               subtitle: "Walk-ins welcome, but booking guarantees your spot.",
               phone: "+27 63 456 7890",
@@ -512,6 +519,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "12+", label: "Years in Business" },
                 { value: "300+", label: "Projects Done" },
@@ -540,6 +548,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "bordered",
               title: "Our Services",
               subtitle: "What We Do",
               items: [
@@ -571,6 +580,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "minimal",
               title: "Client Testimonials",
               subtitle: "What homeowners say about our work",
               items: [
@@ -584,6 +594,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "gradient",
               title: "Request a Quote",
               subtitle: "Get a free, no-obligation quotation for your project.",
               phone: "+27 72 890 1234",
@@ -623,6 +634,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "6+", label: "Years Creating" },
                 { value: "400+", label: "Projects" },
@@ -650,6 +662,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "compact",
               title: "What I Offer",
               subtitle: "Services & Packages",
               items: [
@@ -665,6 +678,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "masonry",
               title: "Portfolio",
               subtitle: "Selected recent work",
               images: [
@@ -679,6 +693,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "large-quote",
               title: "Kind Words",
               subtitle: "From clients and collaborators",
               items: [
@@ -692,6 +707,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "light",
               title: "Let's Create Together",
               subtitle: "Ready to bring your vision to life? Let's chat.",
               phone: "+27 82 345 6789",
@@ -717,7 +733,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "corporate",
+              heroStyle: "minimal",
               title: "Justice, Integrity, Results",
               subtitle: "Experienced legal professionals providing trusted counsel to individuals and businesses across South Africa.",
               badgeText: "Free Initial Consultation",
@@ -737,6 +753,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
                 { value: "95%", label: "Success Rate" },
                 { value: "24/7", label: "Availability" },
               ],
+              variant: "dark",
             },
           },
           {
@@ -747,6 +764,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               title: "Why Choose Our Firm",
               subtitle: "Our Commitment",
               imagePosition: "right",
+              variant: "icon-grid",
               items: [
                 { title: "Expert Legal Team", desc: "Our attorneys bring decades of combined experience across multiple practice areas." },
                 { title: "Client-Centred Approach", desc: "We tailor our strategy to your unique situation, ensuring the best possible outcome." },
@@ -761,6 +779,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Practice Areas",
               subtitle: "Legal Services",
+              variant: "bordered",
               items: [
                 { title: "Litigation", desc: "Civil and commercial dispute resolution in all courts" },
                 { title: "Family Law", desc: "Divorce, custody, maintenance, and protection orders" },
@@ -778,6 +797,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Firm",
               subtitle: "Professionalism you can trust",
+              variant: "featured",
               images: [
                 { url: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=600", caption: "Our Offices" },
                 { url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=600", caption: "Legal Team" },
@@ -792,6 +812,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Client Testimonials",
               subtitle: "What our clients say about us",
+              variant: "large-quote",
               items: [
                 { name: "Mandla K.", role: "Business Owner", text: "They handled our corporate dispute with professionalism and achieved an excellent outcome. Highly recommended." },
                 { name: "Fatima B.", role: "Private Client", text: "Compassionate and thorough throughout my family law matter. They made a difficult time much easier to navigate." },
@@ -805,6 +826,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Schedule a Consultation",
               subtitle: "Get expert legal advice. Your first consultation is free.",
+              variant: "light",
               phone: "+27 11 783 4567",
               email: "info@lawfirm.co.za",
               address: "15 Fredman Drive, Sandton, 2196",
@@ -848,6 +870,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
                 { value: "100%", label: "SARS Compliant" },
                 { value: "R50M+", label: "Tax Saved" },
               ],
+              variant: "cards",
             },
           },
           {
@@ -858,6 +881,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               title: "Why Choose Us",
               subtitle: "Our Expertise",
               imagePosition: "right",
+              variant: "numbered",
               items: [
                 { title: "SARS Compliant", desc: "We keep your tax affairs in order so you never face penalties or audits." },
                 { title: "Cloud Accounting", desc: "Modern cloud-based systems for real-time financial visibility and reporting." },
@@ -872,6 +896,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Services",
               subtitle: "Accounting & Tax Solutions",
+              variant: "compact",
               items: [
                 { title: "Tax Returns", desc: "Individual and company tax return preparation and submission" },
                 { title: "Bookkeeping", desc: "Monthly bookkeeping, bank reconciliations, and financial statements" },
@@ -903,6 +928,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Client Feedback",
               subtitle: "Trusted by businesses across South Africa",
+              variant: "minimal",
               items: [
                 { name: "Pieter vR.", role: "Restaurant Owner, Pretoria", text: "They sorted out years of backlog tax returns and saved us thousands. Professional and reliable service." },
                 { name: "Nolwazi M.", role: "Freelance Consultant", text: "Finally found an accountant who explains things in plain language. My tax affairs have never been better." },
@@ -939,7 +965,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "bold",
+              heroStyle: "gradient",
               title: "Find Your Dream Property",
               subtitle: "Buy, sell, or rent with confidence. Expert property professionals serving the greater Cape Town area.",
               badgeText: "EAAB Registered Agency",
@@ -959,6 +985,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
                 { value: "R500M+", label: "Total Sales Value" },
                 { value: "98%", label: "Client Satisfaction" },
               ],
+              variant: "cards",
             },
           },
           {
@@ -983,6 +1010,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Services",
               subtitle: "Property Solutions",
+              variant: "bordered",
               items: [
                 { title: "Residential Sales", desc: "Houses, townhouses, and apartments in sought-after areas" },
                 { title: "Commercial Leasing", desc: "Office space, retail, and industrial property rentals" },
@@ -998,6 +1026,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Featured Properties",
               subtitle: "Recently listed and sold",
+              variant: "masonry",
               images: [
                 { url: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600", caption: "Modern Family Home" },
                 { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600", caption: "Luxury Villa" },
@@ -1025,6 +1054,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Get a Free Valuation",
               subtitle: "Find out what your property is worth in today's market.",
+              variant: "light",
               phone: "+27 21 461 7890",
               email: "info@properties.co.za",
               address: "10 Kloof Street, Gardens, Cape Town, 8001",
@@ -1048,7 +1078,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "centered",
+              heroStyle: "minimal",
               title: "Your Health, Our Priority",
               subtitle: "Compassionate, quality healthcare for you and your family. Experienced practitioners in a modern, welcoming facility.",
               badgeText: "HPCSA Registered Practice",
@@ -1078,6 +1108,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               title: "Why Choose Our Practice",
               subtitle: "Patient-Centred Care",
               imagePosition: "right",
+              variant: "icon-grid",
               items: [
                 { title: "Qualified Professionals", desc: "All practitioners are HPCSA registered with years of clinical experience." },
                 { title: "Modern Facilities", desc: "State-of-the-art equipment and a comfortable, hygienic environment." },
@@ -1123,6 +1154,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Patient Reviews",
               subtitle: "What our patients say",
+              variant: "large-quote",
               items: [
                 { name: "Sizwe M.", role: "Patient", text: "The doctors here are thorough and genuinely care. I've been bringing my whole family for years." },
                 { name: "Anita P.", role: "Patient", text: "Short waiting times and excellent service. The physiotherapy department helped me recover from surgery quickly." },
@@ -1136,6 +1168,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Book an Appointment",
               subtitle: "Walk-ins welcome. Medical aid and cash patients accepted.",
+              variant: "gradient",
               phone: "+27 31 566 7890",
               email: "reception@healthpractice.co.za",
               address: "88 Umhlanga Rocks Drive, Durban, 4320",
@@ -1202,6 +1235,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Programmes",
               subtitle: "Courses & Training",
+              variant: "bordered",
               items: [
                 { title: "Matric Tutoring", desc: "All subjects covered for Grade 10-12, aligned with CAPS curriculum" },
                 { title: "University Prep", desc: "NBT preparation, application guidance, and bridging courses" },
@@ -1219,6 +1253,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Learning Environment",
               subtitle: "Where success begins",
+              variant: "featured",
               images: [
                 { url: "https://images.unsplash.com/photo-1523050854058-8df90110c476?auto=format&fit=crop&q=80&w=600", caption: "Classroom Session" },
                 { url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600", caption: "Group Learning" },
@@ -1233,6 +1268,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Student Success Stories",
               subtitle: "From our learners and parents",
+              variant: "minimal",
               items: [
                 { name: "Kagiso L.", role: "Matric Student", text: "My maths marks went from 38% to 74% in just one term. The tutors here really care about your success." },
                 { name: "Mrs Dlamini", role: "Parent", text: "Both my children attend classes here. The improvement in their confidence and results has been remarkable." },
@@ -1283,6 +1319,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "10+", label: "Years on the Road" },
                 { value: "50+", label: "Vehicles" },
@@ -1311,6 +1348,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "compact",
               title: "Our Services",
               subtitle: "Comprehensive Transport Solutions",
               items: [
@@ -1380,7 +1418,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "centered",
+              heroStyle: "gradient",
               title: "Creating Unforgettable Moments",
               subtitle: "From dream weddings to corporate galas, we plan and execute events that leave a lasting impression.",
               badgeText: "Award-Winning Event Planners",
@@ -1394,6 +1432,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "500+", label: "Events Planned" },
                 { value: "8+", label: "Years Experience" },
@@ -1422,6 +1461,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "bordered",
               title: "Our Services",
               subtitle: "Full-Service Event Management",
               items: [
@@ -1439,6 +1479,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "masonry",
               title: "Our Events",
               subtitle: "A glimpse into our work",
               images: [
@@ -1453,6 +1494,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "large-quote",
               title: "Happy Clients",
               subtitle: "What our clients say about their events",
               items: [
@@ -1466,6 +1508,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "light",
               title: "Plan Your Event",
               subtitle: "Let's create something extraordinary together.",
               phone: "+27 11 567 8901",
@@ -1491,7 +1534,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "bold",
+              heroStyle: "corporate",
               title: "Protecting What Matters Most",
               subtitle: "Comprehensive security solutions for homes, businesses, and events. Trusted by thousands across Gauteng.",
               badgeText: "PSIRA Registered",
@@ -1505,6 +1548,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "15+", label: "Years Experience" },
                 { value: "3000+", label: "Clients Protected" },
@@ -1533,6 +1577,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "bordered",
               title: "Our Services",
               subtitle: "Complete Security Solutions",
               items: [
@@ -1564,6 +1609,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "minimal",
               title: "Client Testimonials",
               subtitle: "Trusted by homeowners and businesses",
               items: [
@@ -1616,6 +1662,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "1000+", label: "Trips Booked" },
                 { value: "50+", label: "Destinations" },
@@ -1644,6 +1691,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "bordered",
               title: "Our Packages",
               subtitle: "Curated Travel Experiences",
               items: [
@@ -1661,6 +1709,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "masonry",
               title: "Destinations",
               subtitle: "Explore South Africa with us",
               images: [
@@ -1675,6 +1724,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "large-quote",
               title: "Traveller Reviews",
               subtitle: "What our guests say",
               items: [
@@ -1688,6 +1738,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "light",
               title: "Book Your Adventure",
               subtitle: "Let us plan your perfect South African experience.",
               phone: "+27 21 789 0123",
@@ -1727,6 +1778,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "7+", label: "Years Experience" },
                 { value: "1500+", label: "Members Trained" },
@@ -1742,6 +1794,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Why Train With Us",
               subtitle: "Our Approach",
+              variant: "icon-grid",
               imagePosition: "right",
               items: [
                 { title: "Personalised Plans", desc: "Every program is tailored to your body, goals, and fitness level." },
@@ -1757,6 +1810,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Programs",
               subtitle: "Training & Coaching",
+              variant: "compact",
               items: [
                 { title: "Personal Training", desc: "One-on-one sessions tailored to your goals", price: "R450/session" },
                 { title: "Group Classes", desc: "High-energy group fitness sessions for all levels", price: "R150/class" },
@@ -1774,6 +1828,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Facility",
               subtitle: "Where transformation happens",
+              variant: "masonry",
               images: [
                 { url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600", caption: "Gym Floor" },
                 { url: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&q=80&w=600", caption: "Group Training" },
@@ -1801,6 +1856,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Start Your Journey",
               subtitle: "Book your free assessment session today.",
+              variant: "gradient",
               phone: "+27 11 456 7890",
               email: "info@fitnessgym.co.za",
               address: "88 Rivonia Road, Sandton, Johannesburg, 2196",
@@ -1824,7 +1880,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "bold",
+              heroStyle: "corporate",
               title: "Expert Auto Care",
               subtitle: "Trusted mechanical repairs, servicing, and diagnostics for all vehicle makes and models.",
               badgeText: "RMI Approved Workshop",
@@ -1838,6 +1894,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "15+", label: "Years Experience" },
                 { value: "5000+", label: "Vehicles Serviced" },
@@ -1853,6 +1910,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Why Choose Us",
               subtitle: "Our Workshop Standards",
+              variant: "numbered",
               imagePosition: "right",
               items: [
                 { title: "Qualified Technicians", desc: "Our mechanics are fully certified with years of hands-on experience." },
@@ -1868,6 +1926,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Services",
               subtitle: "Complete Auto Care",
+              variant: "bordered",
               items: [
                 { title: "Engine Service", desc: "Full engine service including oil, filters, and plugs", price: "From R1,200" },
                 { title: "Brakes & Suspension", desc: "Brake pad replacement, disc skimming, and shock absorbers", price: "From R800" },
@@ -1899,6 +1958,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Customer Reviews",
               subtitle: "What our clients say",
+              variant: "minimal",
               items: [
                 { name: "Mandla S.", role: "Fleet Manager", text: "We bring all our company vehicles here. Reliable, honest, and always on time. Wouldn't go anywhere else." },
                 { name: "Karen B.", role: "Regular Customer", text: "Finally found a mechanic I can trust! They explain everything clearly and the prices are fair." },
@@ -1935,7 +1995,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "centered",
+              heroStyle: "gradient",
               title: "Spotless Every Time",
               subtitle: "Professional cleaning services for homes, offices, and commercial spaces across Gauteng.",
               badgeText: "Trusted & Insured",
@@ -1949,6 +2009,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "10+", label: "Years Experience" },
                 { value: "3000+", label: "Spaces Cleaned" },
@@ -1964,6 +2025,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Why Choose Us",
               subtitle: "Our Cleaning Standards",
+              variant: "icon-grid",
               imagePosition: "right",
               items: [
                 { title: "Eco-Friendly Products", desc: "We use biodegradable, non-toxic cleaning products safe for families and pets." },
@@ -1979,6 +2041,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Services",
               subtitle: "Cleaning Solutions",
+              variant: "compact",
               items: [
                 { title: "Office Cleaning", desc: "Daily and weekly commercial office cleaning and sanitisation", price: "From R1,500/month" },
                 { title: "Residential Deep Clean", desc: "Full house deep cleaning including kitchen, bathrooms, and floors", price: "From R800" },
@@ -1996,6 +2059,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Work",
               subtitle: "Before and after transformations",
+              variant: "featured",
               images: [
                 { url: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=600", caption: "Office Cleaning" },
                 { url: "https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&q=80&w=600", caption: "Deep Clean" },
@@ -2010,6 +2074,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Client Feedback",
               subtitle: "What our clients say about us",
+              variant: "large-quote",
               items: [
                 { name: "Lindiwe P.", role: "Office Manager", text: "Our offices have never looked better. The team is punctual, thorough, and always professional." },
                 { name: "Johan V.", role: "Homeowner", text: "Booked a deep clean before our housewarming. They left the place absolutely spotless. Highly recommend!" },
@@ -2023,6 +2088,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Book a Clean",
               subtitle: "Get a free quote for your home or office today.",
+              variant: "light",
               phone: "+27 12 654 3210",
               email: "bookings@cleanpro.co.za",
               address: "Unit 8, Centurion Business Park, Centurion, 0157",
@@ -2046,7 +2112,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "corporate",
+              heroStyle: "minimal",
               title: "Smart Solutions for Modern Business",
               subtitle: "IT support, cloud solutions, and cybersecurity services to keep your business running smoothly and securely.",
               badgeText: "Microsoft & AWS Certified",
@@ -2060,6 +2126,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "8+", label: "Years in Tech" },
                 { value: "200+", label: "Clients Supported" },
@@ -2075,6 +2142,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Why Partner With Us",
               subtitle: "Our IT Advantage",
+              variant: "icon-grid",
               imagePosition: "right",
               items: [
                 { title: "Proactive Monitoring", desc: "We detect and resolve issues before they impact your business." },
@@ -2090,6 +2158,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Solutions",
               subtitle: "Technology Services",
+              variant: "bordered",
               items: [
                 { title: "IT Support", desc: "On-site and remote IT support for businesses of all sizes", price: "From R2,500/month" },
                 { title: "Web Development", desc: "Custom websites, e-commerce platforms, and web applications", price: "From R8,000" },
@@ -2107,6 +2176,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Work",
               subtitle: "Projects and installations",
+              variant: "masonry",
               images: [
                 { url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=600", caption: "Data Centre" },
                 { url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=600", caption: "Network Setup" },
@@ -2121,6 +2191,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Client Testimonials",
               subtitle: "Trusted by businesses across South Africa",
+              variant: "minimal",
               items: [
                 { name: "Thabo N.", role: "CEO, Logistics Company", text: "They migrated our entire operation to the cloud seamlessly. Zero downtime and our team loves the new system." },
                 { name: "Michelle F.", role: "Practice Manager", text: "Reliable IT support that actually responds fast. Our network issues are a thing of the past." },
@@ -2134,6 +2205,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Get IT Support",
               subtitle: "Let's discuss how technology can grow your business.",
+              variant: "gradient",
               phone: "+27 11 784 5678",
               email: "hello@techsolutions.co.za",
               address: "15 Alice Lane, Sandton, 2196",
@@ -2157,7 +2229,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "bold",
+              heroStyle: "centered",
               title: "From Our Land to Your Table",
               subtitle: "Quality crops, livestock, and organic produce grown with care on South African soil.",
               badgeText: "Proudly South African",
@@ -2171,6 +2243,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "20+", label: "Years Farming" },
                 { value: "500", label: "Hectares" },
@@ -2218,6 +2291,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Our Farm",
               subtitle: "Life on the land",
+              variant: "masonry",
               images: [
                 { url: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=600", caption: "Crop Fields" },
                 { url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=600", caption: "Livestock" },
@@ -2232,6 +2306,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "What Our Partners Say",
               subtitle: "Trusted by buyers across South Africa",
+              variant: "large-quote",
               items: [
                 { name: "Vusi K.", role: "Restaurant Owner, Polokwane", text: "The freshest produce we've ever sourced. Consistent quality and reliable delivery every week." },
                 { name: "Annette du P.", role: "Organic Market Vendor", text: "Their organic range is outstanding. Our customers keep coming back for more. A fantastic partnership." },
@@ -2245,6 +2320,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             data: {
               title: "Get In Touch",
               subtitle: "Visit our farm or place a wholesale order today.",
+              variant: "light",
               phone: "+27 15 291 3456",
               email: "info@safarm.co.za",
               address: "Farm 42, R71 Tzaneen Road, Limpopo, 0850",
@@ -2268,7 +2344,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "corporate",
+              heroStyle: "minimal",
               title: "Strategic Guidance for Business Growth",
               subtitle: "Expert consulting and advisory services to help South African businesses scale, optimise, and succeed in competitive markets.",
               badgeText: "Trusted Business Advisors",
@@ -2282,6 +2358,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "cards",
               items: [
                 { value: "15+", label: "Years Experience" },
                 { value: "200+", label: "Clients Served" },
@@ -2295,6 +2372,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "features",
             enabled: true,
             data: {
+              variant: "numbered",
               title: "Our Approach",
               subtitle: "How We Deliver Results",
               imagePosition: "right",
@@ -2310,6 +2388,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "services",
             enabled: true,
             data: {
+              variant: "compact",
               title: "Our Services",
               subtitle: "Advisory & Consulting",
               items: [
@@ -2327,6 +2406,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "gallery",
             enabled: true,
             data: {
+              variant: "featured",
               title: "Our Impact",
               subtitle: "Workshops, sessions, and client engagements",
               images: [
@@ -2341,6 +2421,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "testimonials",
             enabled: true,
             data: {
+              variant: "large-quote",
               title: "Client Success Stories",
               subtitle: "What business leaders say about working with us",
               items: [
@@ -2354,6 +2435,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
+              variant: "gradient",
               title: "Let's Talk Strategy",
               subtitle: "Book a free 30-minute discovery call to discuss your business goals.",
               phone: "+27 11 567 8901",

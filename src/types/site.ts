@@ -19,7 +19,7 @@ export interface SiteSection {
   data: any;
 }
 
-export type HeroStyle = "corporate" | "centered" | "bold";
+export type HeroStyle = "corporate" | "centered" | "bold" | "minimal" | "gradient";
 
 export interface HeroData {
   title: string;
