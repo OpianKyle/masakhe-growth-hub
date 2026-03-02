@@ -15,6 +15,25 @@ async function requireAdmin(req: Request, res: Response, next: Function) {
   next();
 }
 
+function validateTenderFields(body: any) {
+  const { title, budget_min, budget_max, status } = body;
+  if (!title || !title.trim()) return "Title is required";
+  const bMin = budget_min ? Number(budget_min) : null;
+  const bMax = budget_max ? Number(budget_max) : null;
+  if (bMin !== null && isNaN(bMin)) return "Invalid minimum budget";
+  if (bMax !== null && isNaN(bMax)) return "Invalid maximum budget";
+  if (bMin !== null && bMax !== null && bMin > bMax) return "Minimum budget cannot exceed maximum";
+  const validStatuses = ["OPEN", "CLOSED", "AWARDED"];
+  if (status && !validStatuses.includes(status)) return "Invalid status";
+  return null;
+}
+
+function parseBudget(val: any): number | null {
+  if (!val) return null;
+  const n = Number(val);
+  return isNaN(n) ? null : n;
+}
+
 tendersRouter.get("/user/applications", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -29,6 +48,122 @@ tendersRouter.get("/user/applications", requireAuth, async (req, res) => {
   } catch (err: any) {
     console.error("Fetch user applications error:", err);
     res.status(500).json({ error: "Failed to load applications" });
+  }
+});
+
+tendersRouter.get("/user/my-tenders", requireAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT t.*, u.full_name as created_by_name,
+       (SELECT COUNT(*) FROM tender_applications WHERE tender_id = t.id) as application_count
+       FROM tenders t LEFT JOIN users u ON u.id = t.created_by
+       WHERE t.created_by = ?
+       ORDER BY t.created_at DESC`,
+      [req.session.userId]
+    );
+    res.json({ tenders: rows });
+  } catch (err: any) {
+    console.error("Fetch user tenders error:", err);
+    res.status(500).json({ error: "Failed to load your tenders" });
+  }
+});
+
+tendersRouter.post("/user/create", requireAuth, async (req, res) => {
+  try {
+    const { title, description, category, budget_min, budget_max, location, deadline, requirements } = req.body;
+    const err = validateTenderFields(req.body);
+    if (err) return res.status(400).json({ error: err });
+
+    const [result]: any = await pool.execute(
+      `INSERT INTO tenders (title, description, category, budget_min, budget_max, location, deadline, requirements, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title.trim(), description || null, category || null, parseBudget(budget_min), parseBudget(budget_max), location || null, deadline || null, requirements || null, req.session.userId]
+    );
+    res.json({ ok: true, id: result.insertId });
+  } catch (err: any) {
+    console.error("Create tender error:", err);
+    res.status(500).json({ error: "Failed to create tender" });
+  }
+});
+
+tendersRouter.put("/user/:id", requireAuth, async (req, res) => {
+  try {
+    const tender = await queryOne("SELECT * FROM tenders WHERE id = ? AND created_by = ?", [req.params.id, req.session.userId]);
+    if (!tender) return res.status(403).json({ error: "You can only edit your own tenders" });
+
+    const { title, description, category, budget_min, budget_max, location, deadline, requirements, status } = req.body;
+    const err = validateTenderFields(req.body);
+    if (err) return res.status(400).json({ error: err });
+
+    await pool.execute(
+      `UPDATE tenders SET title=?, description=?, category=?, budget_min=?, budget_max=?, location=?, deadline=?, requirements=?, status=?, updated_at=NOW()
+       WHERE id=? AND created_by=?`,
+      [title.trim(), description || null, category || null, parseBudget(budget_min), parseBudget(budget_max), location || null, deadline || null, requirements || null, status || 'OPEN', req.params.id, req.session.userId]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("Update tender error:", err);
+    res.status(500).json({ error: "Failed to update tender" });
+  }
+});
+
+tendersRouter.delete("/user/:id", requireAuth, async (req, res) => {
+  try {
+    const tender = await queryOne("SELECT * FROM tenders WHERE id = ? AND created_by = ?", [req.params.id, req.session.userId]);
+    if (!tender) return res.status(403).json({ error: "You can only delete your own tenders" });
+
+    await pool.execute("DELETE FROM tender_applications WHERE tender_id = ?", [req.params.id]);
+    await pool.execute("DELETE FROM tenders WHERE id = ? AND created_by = ?", [req.params.id, req.session.userId]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("Delete tender error:", err);
+    res.status(500).json({ error: "Failed to delete tender" });
+  }
+});
+
+tendersRouter.get("/user/:id/applications", requireAuth, async (req, res) => {
+  try {
+    const tender = await queryOne("SELECT * FROM tenders WHERE id = ? AND created_by = ?", [req.params.id, req.session.userId]);
+    if (!tender) return res.status(403).json({ error: "You can only view applications for your own tenders" });
+
+    const [rows] = await pool.execute(
+      `SELECT ta.*, u.full_name, u.email, bp.business_name, bp.phone, bp.industry_sector
+       FROM tender_applications ta
+       JOIN users u ON u.id = ta.user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = ta.user_id
+       WHERE ta.tender_id = ?
+       ORDER BY ta.created_at DESC`,
+      [req.params.id]
+    );
+    res.json({ applications: rows });
+  } catch (err: any) {
+    console.error("Fetch tender applications error:", err);
+    res.status(500).json({ error: "Failed to load applications" });
+  }
+});
+
+tendersRouter.put("/user/applications/:id/status", requireAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["PENDING", "SHORTLISTED", "ACCEPTED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const app = await queryOne(
+      `SELECT ta.id, t.created_by FROM tender_applications ta
+       JOIN tenders t ON t.id = ta.tender_id
+       WHERE ta.id = ?`,
+      [req.params.id]
+    );
+    if (!app || app.created_by !== req.session.userId) {
+      return res.status(403).json({ error: "You can only manage applications on your own tenders" });
+    }
+
+    await pool.execute("UPDATE tender_applications SET status = ?, updated_at = NOW() WHERE id = ?", [status, req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("Update application status error:", err);
+    res.status(500).json({ error: "Failed to update application status" });
   }
 });
 
@@ -82,17 +217,13 @@ tendersRouter.put("/admin/applications/:id/status", requireAdmin, async (req, re
 tendersRouter.post("/admin", requireAdmin, async (req, res) => {
   try {
     const { title, description, category, budget_min, budget_max, location, deadline, requirements } = req.body;
-    if (!title || !title.trim()) return res.status(400).json({ error: "Title is required" });
-    const bMin = budget_min ? Number(budget_min) : null;
-    const bMax = budget_max ? Number(budget_max) : null;
-    if (bMin !== null && isNaN(bMin)) return res.status(400).json({ error: "Invalid minimum budget" });
-    if (bMax !== null && isNaN(bMax)) return res.status(400).json({ error: "Invalid maximum budget" });
-    if (bMin !== null && bMax !== null && bMin > bMax) return res.status(400).json({ error: "Minimum budget cannot exceed maximum" });
+    const err = validateTenderFields(req.body);
+    if (err) return res.status(400).json({ error: err });
 
     const [result]: any = await pool.execute(
       `INSERT INTO tenders (title, description, category, budget_min, budget_max, location, deadline, requirements, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title.trim(), description || null, category || null, bMin, bMax, location || null, deadline || null, requirements || null, req.session.userId]
+      [title.trim(), description || null, category || null, parseBudget(budget_min), parseBudget(budget_max), location || null, deadline || null, requirements || null, req.session.userId]
     );
     res.json({ ok: true, id: result.insertId });
   } catch (err: any) {
@@ -104,19 +235,13 @@ tendersRouter.post("/admin", requireAdmin, async (req, res) => {
 tendersRouter.put("/admin/:id", requireAdmin, async (req, res) => {
   try {
     const { title, description, category, budget_min, budget_max, location, deadline, requirements, status } = req.body;
-    if (!title || !title.trim()) return res.status(400).json({ error: "Title is required" });
-    const validStatuses = ["OPEN", "CLOSED", "AWARDED"];
-    if (status && !validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
-    const bMin = budget_min ? Number(budget_min) : null;
-    const bMax = budget_max ? Number(budget_max) : null;
-    if (bMin !== null && isNaN(bMin)) return res.status(400).json({ error: "Invalid minimum budget" });
-    if (bMax !== null && isNaN(bMax)) return res.status(400).json({ error: "Invalid maximum budget" });
-    if (bMin !== null && bMax !== null && bMin > bMax) return res.status(400).json({ error: "Minimum budget cannot exceed maximum" });
+    const err = validateTenderFields(req.body);
+    if (err) return res.status(400).json({ error: err });
 
     await pool.execute(
       `UPDATE tenders SET title=?, description=?, category=?, budget_min=?, budget_max=?, location=?, deadline=?, requirements=?, status=?, updated_at=NOW()
        WHERE id=?`,
-      [title.trim(), description || null, category || null, bMin, bMax, location || null, deadline || null, requirements || null, status || 'OPEN', req.params.id]
+      [title.trim(), description || null, category || null, parseBudget(budget_min), parseBudget(budget_max), location || null, deadline || null, requirements || null, status || 'OPEN', req.params.id]
     );
     res.json({ ok: true });
   } catch (err: any) {
@@ -187,6 +312,7 @@ tendersRouter.get("/:id", requireAuth, async (req, res) => {
       [req.params.id, req.session.userId]
     );
     tender.has_applied = !!hasApplied;
+    tender.is_owner = tender.created_by === req.session.userId;
 
     res.json({ tender });
   } catch (err: any) {
@@ -203,6 +329,10 @@ tendersRouter.post("/:id/apply", requireAuth, async (req, res) => {
 
     const tender = await queryOne("SELECT * FROM tenders WHERE id = ? AND status = 'OPEN'", [tenderId]);
     if (!tender) return res.status(400).json({ error: "Tender is not open for applications" });
+
+    if (tender.created_by === userId) {
+      return res.status(400).json({ error: "You cannot apply to your own tender" });
+    }
 
     const existing = await queryOne(
       "SELECT id FROM tender_applications WHERE tender_id = ? AND user_id = ?",
