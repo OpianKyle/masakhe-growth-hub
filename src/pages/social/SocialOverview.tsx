@@ -36,7 +36,22 @@ export default function SocialOverview({ workspaceId }: Props) {
       .catch(() => {});
   }, [workspaceId]);
 
-  if (!data) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
+  if (!data) return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-5">
+            <div className="h-4 bg-muted rounded w-1/2 mb-3" />
+            <div className="h-8 bg-muted rounded w-1/3" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="h-4 bg-muted rounded w-1/3 mb-4" />
+        <div className="h-48 bg-muted rounded" />
+      </div>
+    </div>
+  );
 
   const { overview } = data;
 

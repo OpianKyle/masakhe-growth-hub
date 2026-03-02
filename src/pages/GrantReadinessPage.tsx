@@ -72,7 +72,39 @@ export default function GrantReadinessPage() {
     setManualChecks((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  if (!data) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
+  if (!data) return (
+    <div className="p-6 space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="h-7 bg-muted rounded w-48 mb-2" />
+          <div className="h-4 bg-muted rounded w-72" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-9 bg-muted rounded w-40" />
+          <div className="h-9 bg-muted rounded w-32" />
+        </div>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-6">
+          <div className="h-24 w-24 rounded-full bg-muted shrink-0" />
+          <div className="space-y-2 flex-1">
+            <div className="h-5 bg-muted rounded w-40" />
+            <div className="h-4 bg-muted rounded w-56" />
+          </div>
+        </div>
+      </div>
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="rounded-xl border border-border bg-card p-5">
+          <div className="h-5 bg-muted rounded w-40 mb-4" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, j) => (
+              <div key={j} className="h-12 bg-muted rounded" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   const sections = ["Identity & Registration", "Tax & Compliance", "Banking", "Records"];
 

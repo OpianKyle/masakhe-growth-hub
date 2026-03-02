@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Calendar, PenSquare, Image, Globe, BarChart3, FileText, Users
+  LayoutDashboard, Calendar, PenSquare, Image, Globe, BarChart3
 } from "lucide-react";
 import SocialOverview from "./SocialOverview";
 import SocialCalendar from "./SocialCalendar";
@@ -19,17 +19,34 @@ const subNav = [
   { icon: BarChart3, label: "Analytics", path: "analytics" },
 ];
 
+function ContentSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-5">
+            <div className="h-4 bg-muted rounded w-1/2 mb-3" />
+            <div className="h-8 bg-muted rounded w-2/3" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="h-4 bg-muted rounded w-1/3 mb-4" />
+        <div className="h-48 bg-muted rounded" />
+      </div>
+    </div>
+  );
+}
+
 export default function SocialHub() {
-  const [workspaceId, setWorkspaceId] = useState("");
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
     fetch("/api/social/workspaces/mine", { credentials: "include" })
       .then(r => r.json())
-      .then(d => {
-        if (d.defaultId) setWorkspaceId(d.defaultId);
-      })
-      .catch(() => {});
+      .then(d => { setWorkspaceId(d.defaultId || ""); })
+      .catch(() => { setWorkspaceId(""); });
   }, []);
 
   const currentPath = location.pathname.replace("/dashboard/social", "").replace(/^\//, "");
@@ -59,8 +76,8 @@ export default function SocialHub() {
       </div>
 
       <div className="p-6">
-        {!workspaceId ? (
-          <div className="text-center text-muted-foreground py-12">Setting up your workspace...</div>
+        {workspaceId === null ? (
+          <ContentSkeleton />
         ) : (
           <Routes>
             <Route index element={<SocialOverview workspaceId={workspaceId} />} />

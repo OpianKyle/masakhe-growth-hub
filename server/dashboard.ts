@@ -14,48 +14,50 @@ dashboardRouter.get("/overview", async (req, res) => {
       ? `${now.getFullYear() - 1}-12`
       : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, "0")}`;
 
-    const incomeThisMonth = (await queryOne(
-      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' AND occurred_at LIKE ?",
-      [userId, `${currentMonth}%`]
-    ))?.total || 0;
+    const [
+      incomeThisMonthRow,
+      expenseThisMonthRow,
+      incomeLastMonthRow,
+      expenseLastMonthRow,
+      totalInvoicesRow,
+      totalInvoiceValueRow,
+      websiteCountRow,
+      publishedWebsite,
+      ledgerCountRow,
+      monthlySummary,
+      expensesByCategory,
+      incomeByCategory,
+      pendingInvoices,
+      wsMember,
+      recentLedger,
+      recentInvoices,
+    ] = await Promise.all([
+      queryOne("SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' AND occurred_at LIKE ?", [userId, `${currentMonth}%`]),
+      queryOne("SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' AND occurred_at LIKE ?", [userId, `${currentMonth}%`]),
+      queryOne("SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' AND occurred_at LIKE ?", [userId, `${prevMonth}%`]),
+      queryOne("SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' AND occurred_at LIKE ?", [userId, `${prevMonth}%`]),
+      queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]),
+      queryOne("SELECT COALESCE(SUM(total_cents), 0) as total FROM invoices WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM websites WHERE owner_id = ?", [userId]),
+      queryOne("SELECT slug, status FROM websites WHERE owner_id = ? AND status = 'published' LIMIT 1", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]),
+      queryAll("SELECT LEFT(occurred_at, 7) as month, type, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? GROUP BY month, type ORDER BY month ASC", [userId]),
+      queryAll("SELECT category, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' GROUP BY category ORDER BY total DESC LIMIT 8", [userId]),
+      queryAll("SELECT category, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' GROUP BY category ORDER BY total DESC LIMIT 8", [userId]),
+      queryAll("SELECT invoice_number, customer_name, total_cents, created_at FROM invoices WHERE user_id = ? AND status = 'final' ORDER BY created_at DESC LIMIT 5", [userId]),
+      queryOne("SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1", [userId]),
+      queryAll("SELECT type, amount_cents, category, description, occurred_at FROM ledger_entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 8", [userId]),
+      queryAll("SELECT invoice_number, customer_name, total_cents, status, created_at FROM invoices WHERE user_id = ? ORDER BY created_at DESC LIMIT 5", [userId]),
+    ]);
 
-    const expenseThisMonth = (await queryOne(
-      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' AND occurred_at LIKE ?",
-      [userId, `${currentMonth}%`]
-    ))?.total || 0;
-
-    const incomeLastMonth = (await queryOne(
-      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' AND occurred_at LIKE ?",
-      [userId, `${prevMonth}%`]
-    ))?.total || 0;
-
-    const expenseLastMonth = (await queryOne(
-      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' AND occurred_at LIKE ?",
-      [userId, `${prevMonth}%`]
-    ))?.total || 0;
-
-    const totalInvoices = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0;
-    const pendingInvoices = await queryAll(
-      "SELECT invoice_number, customer_name, total_cents, created_at FROM invoices WHERE user_id = ? AND status = 'final' ORDER BY created_at DESC LIMIT 5",
-      [userId]
-    );
-    const totalInvoiceValue = (await queryOne(
-      "SELECT COALESCE(SUM(total_cents), 0) as total FROM invoices WHERE user_id = ?",
-      [userId]
-    ))?.total || 0;
-
-    const websiteCount = (await queryOne("SELECT COUNT(*) as c FROM websites WHERE owner_id = ?", [userId]))?.c || 0;
-    const publishedWebsite = await queryOne("SELECT slug, status FROM websites WHERE owner_id = ? AND status = 'published' LIMIT 1", [userId]);
-
-    const ledgerCount = (await queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]))?.c || 0;
-
-    const monthlySummary = await queryAll(
-      `SELECT LEFT(occurred_at, 7) as month, type, SUM(amount_cents) as total
-       FROM ledger_entries WHERE user_id = ?
-       GROUP BY month, type
-       ORDER BY month ASC`,
-      [userId]
-    );
+    const incomeThisMonth = incomeThisMonthRow?.total || 0;
+    const expenseThisMonth = expenseThisMonthRow?.total || 0;
+    const incomeLastMonth = incomeLastMonthRow?.total || 0;
+    const expenseLastMonth = expenseLastMonthRow?.total || 0;
+    const totalInvoices = totalInvoicesRow?.c || 0;
+    const totalInvoiceValue = totalInvoiceValueRow?.total || 0;
+    const websiteCount = websiteCountRow?.c || 0;
+    const ledgerCount = ledgerCountRow?.c || 0;
 
     const monthlyData: Record<string, { month: string; income: number; expense: number }> = {};
     for (const row of monthlySummary) {
@@ -65,50 +67,24 @@ dashboardRouter.get("/overview", async (req, res) => {
     }
     const revenueChart = Object.values(monthlyData).slice(-12);
 
-    const expensesByCategory = await queryAll(
-      `SELECT category, SUM(amount_cents) as total
-       FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE'
-       GROUP BY category ORDER BY total DESC LIMIT 8`,
-      [userId]
-    );
-
-    const incomeByCategory = await queryAll(
-      `SELECT category, SUM(amount_cents) as total
-       FROM ledger_entries WHERE user_id = ? AND type = 'INCOME'
-       GROUP BY category ORDER BY total DESC LIMIT 8`,
-      [userId]
-    );
-
     let socialStats = { totalPosts: 0, publishedPosts: 0, scheduledPosts: 0, connectedAccounts: 0 };
     let socialPostsByDay: any[] = [];
-    try {
-      const wsMember = await queryOne("SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1", [userId]);
-      if (wsMember) {
-        const wsId = wsMember.workspace_id;
-        socialStats.totalPosts = (await queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ?", [wsId]))?.c || 0;
-        socialStats.publishedPosts = (await queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ? AND status = 'PUBLISHED'", [wsId]))?.c || 0;
-        socialStats.scheduledPosts = (await queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ? AND status = 'SCHEDULED'", [wsId]))?.c || 0;
-        socialStats.connectedAccounts = (await queryOne("SELECT COUNT(*) as c FROM social_accounts WHERE workspace_id = ?", [wsId]))?.c || 0;
 
-        socialPostsByDay = await queryAll(
-          `SELECT LEFT(COALESCE(updated_at, created_at), 10) as day, COUNT(*) as count
-           FROM social_posts WHERE workspace_id = ? AND status = 'PUBLISHED'
-           GROUP BY day ORDER BY day DESC LIMIT 14`,
-          [wsId]
-        );
-        socialPostsByDay.reverse();
-      }
-    } catch {}
-
-    const recentLedger = await queryAll(
-      "SELECT type, amount_cents, category, description, occurred_at FROM ledger_entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 8",
-      [userId]
-    );
-
-    const recentInvoices = await queryAll(
-      "SELECT invoice_number, customer_name, total_cents, status, created_at FROM invoices WHERE user_id = ? ORDER BY created_at DESC LIMIT 5",
-      [userId]
-    );
+    if (wsMember) {
+      const wsId = wsMember.workspace_id;
+      const [totalPostsRow, publishedPostsRow, scheduledPostsRow, connectedAccountsRow, postsPerDay] = await Promise.all([
+        queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ?", [wsId]),
+        queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ? AND status = 'PUBLISHED'", [wsId]),
+        queryOne("SELECT COUNT(*) as c FROM social_posts WHERE workspace_id = ? AND status = 'SCHEDULED'", [wsId]),
+        queryOne("SELECT COUNT(*) as c FROM social_accounts WHERE workspace_id = ?", [wsId]),
+        queryAll("SELECT LEFT(COALESCE(updated_at, created_at), 10) as day, COUNT(*) as count FROM social_posts WHERE workspace_id = ? AND status = 'PUBLISHED' GROUP BY day ORDER BY day DESC LIMIT 14", [wsId]),
+      ]);
+      socialStats.totalPosts = totalPostsRow?.c || 0;
+      socialStats.publishedPosts = publishedPostsRow?.c || 0;
+      socialStats.scheduledPosts = scheduledPostsRow?.c || 0;
+      socialStats.connectedAccounts = connectedAccountsRow?.c || 0;
+      socialPostsByDay = [...postsPerDay].reverse();
+    }
 
     const revenueChange = incomeLastMonth > 0
       ? Math.round(((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100)

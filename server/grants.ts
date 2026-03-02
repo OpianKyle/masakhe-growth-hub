@@ -9,10 +9,15 @@ grantsRouter.get("/readiness", async (req, res) => {
   try {
     const userId = req.session.userId!;
 
-    const readiness = await queryOne("SELECT * FROM grant_readiness WHERE user_id = ?", [userId]);
-    const profile = await queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [userId]);
-    const invoiceCount = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0;
-    const ledgerCount = (await queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]))?.c || 0;
+    const [readiness, profile, invoiceCountRow, ledgerCountRow] = await Promise.all([
+      queryOne("SELECT * FROM grant_readiness WHERE user_id = ?", [userId]),
+      queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]),
+    ]);
+
+    const invoiceCount = invoiceCountRow?.c || 0;
+    const ledgerCount = ledgerCountRow?.c || 0;
 
     const autoChecks = {
       profileComplete: profile && profile.business_name && profile.business_type && profile.phone,
