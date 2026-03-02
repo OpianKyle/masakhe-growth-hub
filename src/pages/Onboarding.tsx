@@ -58,7 +58,7 @@ const accountTypeOptions = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [step, setStep] = useState(0);
@@ -193,6 +193,8 @@ export default function Onboarding() {
         });
 
         if (!res.ok) throw new Error("Submission failed");
+
+        await refreshUser();
 
         toast({ title: "You're all set!", description: "Your onboarding is complete. Welcome to Masakhe." });
         navigate("/dashboard");
