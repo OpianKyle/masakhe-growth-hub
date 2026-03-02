@@ -12,7 +12,9 @@ import { toast } from "sonner";
 import {
   Save, Rocket, Copy, Plus, Wand2, Smartphone, Monitor, ArrowLeft,
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
-  Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown
+  Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
+  Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
+  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -22,6 +24,21 @@ const templateIcons: Record<string, React.ElementType> = {
   beauty: Sparkles,
   construction: HardHat,
   creative: Palette,
+  legal: Scale,
+  accounting: Calculator,
+  realestate: Home,
+  healthcare: HeartPulse,
+  education: GraduationCap,
+  fitness: Dumbbell,
+  automotive: Wrench,
+  cleaning: Sparkles,
+  technology: MonitorSmartphone,
+  agriculture: Leaf,
+  transport: Truck,
+  events: PartyPopper,
+  security: Shield,
+  travel: MapPin,
+  consulting: Lightbulb,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {
@@ -48,13 +65,13 @@ const defaultSectionData: Record<SectionType, any> = {
 
 function TemplatePicker({ onSelect }: { onSelect: (templateId: string) => void }) {
   return (
-    <div className="flex h-full items-center justify-center bg-slate-50 p-8">
-      <div className="max-w-4xl w-full">
+    <div className="h-full overflow-y-auto bg-slate-50 p-8">
+      <div className="max-w-5xl mx-auto w-full">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold font-heading mb-2">Choose a Template</h2>
           <p className="text-slate-500">Pick a starting point for your website. You can customize everything afterwards.</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {templateList.map((tmpl) => {
             const Icon = templateIcons[tmpl.id] || Briefcase;
             return (
@@ -63,15 +80,14 @@ function TemplatePicker({ onSelect }: { onSelect: (templateId: string) => void }
                 className="cursor-pointer group hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary"
                 onClick={() => onSelect(tmpl.id)}
               >
-                <CardContent className="p-6 text-center space-y-4">
-                  <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${tmpl.color} text-white`}>
-                    <Icon className="h-8 w-8" />
+                <CardContent className="p-4 text-center space-y-3">
+                  <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${tmpl.color} text-white`}>
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="text-lg font-bold">{tmpl.name}</h3>
-                  <p className="text-sm text-slate-500">{tmpl.description}</p>
-                  <p className="text-xs text-slate-400 italic">{tmpl.preview}</p>
-                  <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-white transition-colors">
-                    Use This Template
+                  <h3 className="text-sm font-bold">{tmpl.name}</h3>
+                  <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
+                  <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
+                    Use Template
                   </Button>
                 </CardContent>
               </Card>
