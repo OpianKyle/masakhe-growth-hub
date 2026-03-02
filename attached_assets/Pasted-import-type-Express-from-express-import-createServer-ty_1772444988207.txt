@@ -1,0 +1,240 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { paymentFormSchema } from "@shared/schema";
+import jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
+import { v4 as uuidv4 } from "uuid";
+
+const ADUMO_MERCHANT_ID = process.env.ADUMO_MERCHANT_ID;
+const ADUMO_APPLICATION_ID = process.env.ADUMO_APPLICATION_ID;
+const ADUMO_JWT_SECRET = process.env.ADUMO_JWT_SECRET;
+const ADUMO_API_URL = process.env.ADUMO_API_URL || "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
+
+if (!ADUMO_MERCHANT_ID || !ADUMO_APPLICATION_ID || !ADUMO_JWT_SECRET) {
+  console.error("FATAL: Missing required Adumo environment variables (ADUMO_MERCHANT_ID, ADUMO_APPLICATION_ID, ADUMO_JWT_SECRET)");
+  process.exit(1);
+}
+
+function generateMerchantReference(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "SUB_";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function generateJwtToken(amount: string, merchantReference: string): string {
+  const payload = {
+    iss: "Adumo Subscription Portal",
+    cuid: ADUMO_MERCHANT_ID,
+    auid: ADUMO_APPLICATION_ID,
+    amount,
+    mref: merchantReference,
+    jti: randomBytes(32).toString("base64"),
+    iat: Math.floor(Date.now() / 1000) - 60,
+    exp: Math.floor(Date.now() / 1000) + 600,
+  };
+
+  return jwt.sign(payload, ADUMO_JWT_SECRET!, { algorithm: "HS256" });
+}
+
+function verifyAdumoResponse(token: string): any | null {
+  try {
+    const decoded = jwt.verify(token, ADUMO_JWT_SECRET!, { algorithms: ["HS256"] });
+    return decoded;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+    return null;
+  }
+}
+
+export async function registerRoutes(
+  httpServer: Server,
+  app: Express
+): Promise<Server> {
+  app.get("/api/plans", async (_req, res) => {
+    try {
+      const plans = await storage.getPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+      res.status(500).json({ message: "Failed to fetch plans" });
+    }
+  });
+
+  app.get("/api/plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getPlan(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+      res.json(plan);
+    } catch (error) {
+      console.error("Error fetching plan:", error);
+      res.status(500).json({ message: "Failed to fetch plan" });
+    }
+  });
+
+  app.post("/api/payment/initiate", async (req, res) => {
+    try {
+      const formData = paymentFormSchema.parse(req.body);
+      const plan = await storage.getPlan(formData.planId);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+
+      const merchantReference = generateMerchantReference();
+      const amount = plan.amount;
+      const token = generateJwtToken(amount, merchantReference);
+      const puid = uuidv4();
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+      const startDate = formData.startDate;
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(startDateObj);
+      endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+      const endDate = endDateObj.toISOString().split("T")[0];
+
+      const subscription = await storage.createSubscription({
+        planId: formData.planId,
+        accountNumber: `ACC_${Date.now()}`,
+        email: formData.email,
+        contactNumber: formData.contactNumber,
+        mobileNumber: formData.mobileNumber || formData.contactNumber,
+        recipientName: formData.recipientName,
+        merchantReference,
+        status: "pending",
+        amount,
+        frequency: plan.frequency,
+        collectionDay: formData.collectionDay,
+        startDate,
+        endDate,
+      });
+
+      const paymentData = {
+        formAction: ADUMO_API_URL,
+        fields: {
+          puid,
+          MerchantID: ADUMO_MERCHANT_ID,
+          ApplicationID: ADUMO_APPLICATION_ID,
+          MerchantReference: merchantReference,
+          Amount: amount,
+          Token: token,
+          txtCurrencyCode: plan.currency,
+          RedirectSuccessfulURL: `${baseUrl}/payment/success?ref=${merchantReference}`,
+          RedirectFailedURL: `${baseUrl}/payment/failed?ref=${merchantReference}`,
+          Variable1: "Subscription",
+          Variable2: merchantReference,
+          Qty1: "1",
+          ItemRef1: plan.id,
+          ItemDescr1: `${plan.name} Subscription`,
+          ItemAmount1: amount,
+          ShippingCost: "0.00",
+          Discount: "0.00",
+          Recipient: formData.recipientName,
+          ShippingAddress1: formData.shippingAddress1 || "",
+          ShippingAddress2: formData.shippingAddress2 || "",
+          ShippingAddress3: formData.shippingAddress3 || "",
+          frequency: plan.frequency,
+          collectionDay: String(formData.collectionDay),
+          accountNumber: subscription.accountNumber,
+          startDate,
+          endDate,
+          collectionValue: amount,
+          contactNumber: formData.contactNumber,
+          mobileNumber: formData.mobileNumber || formData.contactNumber,
+          emailAddress: formData.email,
+          shouldSendSms: "false",
+          shouldSendEmail: "true",
+        },
+        subscriptionId: subscription.id,
+      };
+
+      res.json(paymentData);
+    } catch (error: any) {
+      console.error("Error initiating payment:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid form data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to initiate payment" });
+    }
+  });
+
+  app.post("/api/payment/verify", async (req, res) => {
+    try {
+      const { ref, responseToken, result: paymentResult, transactionIndex } = req.body;
+
+      if (!ref) {
+        return res.status(400).json({ message: "Missing reference" });
+      }
+
+      const subscription = await storage.getSubscriptionByReference(ref);
+      if (!subscription) {
+        return res.status(404).json({ message: "Subscription not found" });
+      }
+
+      let verified = false;
+      let status = "failed";
+
+      if (responseToken) {
+        const decoded = verifyAdumoResponse(responseToken);
+        if (decoded) {
+          if (decoded.mref === ref &&
+              decoded.cuid === ADUMO_MERCHANT_ID &&
+              decoded.amount === subscription.amount) {
+            verified = true;
+            status = decoded.result === 0 || decoded.result === 1 ? "active" : "failed";
+          }
+        }
+      }
+
+      if (!verified) {
+        if (paymentResult === "0" || paymentResult === 0) {
+          status = "active";
+        } else {
+          status = "failed";
+        }
+      }
+
+      const updated = await storage.updateSubscriptionStatus(
+        subscription.id,
+        status,
+        transactionIndex || undefined
+      );
+
+      res.json({ subscription: updated, verified });
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.get("/api/payment/status/:ref", async (req, res) => {
+    try {
+      const subscription = await storage.getSubscriptionByReference(req.params.ref);
+      if (!subscription) {
+        return res.status(404).json({ message: "Subscription not found" });
+      }
+      const plan = await storage.getPlan(subscription.planId);
+      res.json({ subscription, plan });
+    } catch (error) {
+      console.error("Error fetching payment status:", error);
+      res.status(500).json({ message: "Failed to fetch payment status" });
+    }
+  });
+
+  app.get("/api/subscriptions", async (_req, res) => {
+    try {
+      const subs = await storage.getSubscriptions();
+      res.json(subs);
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+      res.status(500).json({ message: "Failed to fetch subscriptions" });
+    }
+  });
+
+  return httpServer;
+}

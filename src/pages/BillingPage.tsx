@@ -1,19 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
-  CreditCard, Calendar, AlertTriangle, CheckCircle,
-  Clock, Info, Loader2, Shield, CalendarDays, Wallet
+  CreditCard, Calendar, AlertTriangle,
+  Clock, Info, Loader2, Shield, CalendarDays, Wallet,
+  User, Mail, Phone, MapPin, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Plan {
   id: number;
@@ -112,21 +121,84 @@ function statusBadge(status: string) {
   );
 }
 
+const checkoutSchema = z.object({
+  planCode: z.enum(["starter", "pro"]),
+  frequency: z.enum(["MONTHLY", "QUARTERLY", "BIANNUALLY", "ANNUALLY"]),
+  recipientName: z.string().min(2, "Full name is required"),
+  email: z.string().email("A valid email address is required"),
+  contactNumber: z.string().min(7, "Contact number is required"),
+  mobileNumber: z.string().optional(),
+  collectionDay: z.number().min(1).max(28),
+  startDate: z.string().min(1, "Start date is required"),
+  shippingAddress1: z.string().optional(),
+  shippingAddress2: z.string().optional(),
+  shippingAddress3: z.string().optional(),
+});
+
+type CheckoutFormData = z.infer<typeof checkoutSchema>;
+
+function ordinal(n: number) {
+  return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
+}
+
 function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
-  const [selectedPlan, setSelectedPlan] = useState("starter");
-  const [frequency, setFrequency] = useState("MONTHLY");
-  const [collectionDay, setCollectionDay] = useState("1");
-  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
   const { toast } = useToast();
 
-  const handleSubscribe = async () => {
-    setSubmitting(true);
+  const defaultStartDate = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  })();
+
+  const form = useForm<CheckoutFormData>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      planCode: "starter",
+      frequency: "MONTHLY",
+      recipientName: user?.full_name || "",
+      email: user?.email || "",
+      contactNumber: user?.phone || "",
+      mobileNumber: "",
+      collectionDay: 1,
+      startDate: defaultStartDate,
+      shippingAddress1: "",
+      shippingAddress2: "",
+      shippingAddress3: "",
+    },
+  });
+
+  useEffect(() => {
+    if (paymentData && formRef.current) {
+      formRef.current.submit();
+    }
+  }, [paymentData]);
+
+  const selectedPlanCode = form.watch("planCode");
+  const plan = planOptions.find((p) => p.code === selectedPlanCode)!;
+
+  const onSubmit = async (data: CheckoutFormData) => {
     try {
       const res = await fetch("/api/billing/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ planCode: selectedPlan, collectionDay, frequency }),
+        body: JSON.stringify({
+          planCode: data.planCode,
+          frequency: data.frequency,
+          collectionDay: String(data.collectionDay),
+          recipientName: data.recipientName,
+          email: data.email,
+          contactNumber: data.contactNumber,
+          mobileNumber: data.mobileNumber || data.contactNumber,
+          startDate: data.startDate,
+          shippingAddress1: data.shippingAddress1 || "",
+          shippingAddress2: data.shippingAddress2 || "",
+          shippingAddress3: data.shippingAddress3 || "",
+        }),
       });
       const json = await res.json();
 
@@ -155,132 +227,318 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
           toast({ title: "Error", description: mockJson.error || "Subscription failed.", variant: "destructive" });
         }
       } else if (json.formAction && json.fields) {
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = json.formAction;
-        Object.entries(json.fields).forEach(([key, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value as string;
-          form.appendChild(input);
-        });
-        document.body.appendChild(form);
-        form.submit();
+        setPaymentData(json);
       }
     } catch {
       toast({ title: "Error", description: "Failed to process subscription.", variant: "destructive" });
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const plan = planOptions.find((p) => p.code === selectedPlan)!;
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-primary" />
-          Choose a Plan
-        </h3>
-        <div className="grid gap-3">
-          {planOptions.map((p) => (
-            <label
-              key={p.code}
-              className={`relative flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                selectedPlan === p.code ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
-              }`}
-            >
-              <input
-                type="radio"
-                name="plan"
-                value={p.code}
-                checked={selectedPlan === p.code}
-                onChange={() => setSelectedPlan(p.code)}
-                className="mt-1 accent-primary"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground font-heading">{p.name}</span>
-                  {p.popular && (
-                    <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
-                  )}
-                </div>
-                <p className="text-lg font-bold font-heading text-foreground">{p.price}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
-              </div>
-            </label>
+    <>
+      {paymentData && (
+        <form
+          ref={formRef}
+          action={paymentData.formAction}
+          method="POST"
+          style={{ display: "none" }}
+        >
+          {Object.entries(paymentData.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={String(value)} />
           ))}
-        </div>
-      </div>
+        </form>
+      )}
 
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-primary" />
-          Debit Order Preferences
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Billing Frequency</label>
-            <Select value={frequency} onValueChange={setFrequency}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MONTHLY">Monthly</SelectItem>
-                <SelectItem value="QUARTERLY">Quarterly (every 3 months)</SelectItem>
-                <SelectItem value="BIANNUALLY">Bi-annually (every 6 months)</SelectItem>
-                <SelectItem value="ANNUALLY">Annually (once a year)</SelectItem>
-              </SelectContent>
-            </Select>
+            <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-primary" />
+              Choose a Plan
+            </h3>
+            <FormField
+              control={form.control}
+              name="planCode"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="grid gap-3">
+                    {planOptions.map((p) => (
+                      <label
+                        key={p.code}
+                        className={`relative flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
+                          field.value === p.code
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/30"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="plan"
+                          value={p.code}
+                          checked={field.value === p.code}
+                          onChange={() => field.onChange(p.code)}
+                          className="mt-1 accent-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground font-heading">{p.name}</span>
+                            {p.popular && (
+                              <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
+                            )}
+                          </div>
+                          <p className="text-lg font-bold font-heading text-foreground">
+                            {p.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
+
+          <Separator />
+
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Collection Day</label>
-            <Select value={collectionDay} onValueChange={setCollectionDay}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                  <SelectItem key={day} value={String(day)}>
-                    {day}{day === 1 ? "st" : day === 2 ? "nd" : day === 3 ? "rd" : "th"} of each month
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Subscriber Details
+            </h3>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="recipientName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1.5 text-xs">
+                      <User className="h-3 w-3" /> Full Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Smith" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1.5 text-xs">
+                      <Mail className="h-3 w-3" /> Email Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="john@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contactNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <Phone className="h-3 w-3" /> Contact Number
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="+27211234567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="mobileNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <Phone className="h-3 w-3" /> Mobile Number <span className="text-muted-foreground">(optional)</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="+27871234567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="border-t border-border pt-4 space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Plan</span>
-          <span className="font-semibold text-foreground">{plan.name}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Trial Period</span>
-          <span className="text-sa-green font-semibold">14 days free</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Then</span>
-          <span className="font-semibold text-foreground">{plan.price}/month</span>
-        </div>
-      </div>
+          <Separator />
 
-      <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-        <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-        Your debit order will be processed via Adumo Payments. The first collection only occurs after your 14-day free trial ends.
-      </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              Debit Order Schedule
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="frequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Billing Frequency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                        <SelectItem value="QUARTERLY">Quarterly (every 3 months)</SelectItem>
+                        <SelectItem value="BIANNUALLY">Bi-annually (every 6 months)</SelectItem>
+                        <SelectItem value="ANNUALLY">Annually (once a year)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <Button className="w-full" size="lg" onClick={handleSubscribe} disabled={submitting}>
-        {submitting ? (
-          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-        ) : (
-          "Activate Free Trial & Subscribe"
-        )}
-      </Button>
-    </div>
+              <FormField
+                control={form.control}
+                name="collectionDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Collection Day</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(parseInt(v))}
+                      defaultValue={String(field.value)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                          <SelectItem key={day} value={String(day)}>
+                            {ordinal(day)} of each month
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="flex items-center gap-1.5 text-xs">
+                      <Calendar className="h-3 w-3" /> First Collection Date
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Address <span className="text-muted-foreground font-normal">(optional)</span>
+            </h3>
+            <div className="space-y-3">
+              <FormField
+                control={form.control}
+                name="shippingAddress1"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Address Line 1</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Street address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="shippingAddress2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Suburb / City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Sandton" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shippingAddress3"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Province / Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Gauteng, 2196" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Plan</span>
+              <span className="font-semibold text-foreground">{plan.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Trial Period</span>
+              <span className="text-sa-green font-semibold">14 days free</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Then</span>
+              <span className="font-semibold text-foreground">{plan.price}/month</span>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+            Your debit order will be processed via Adumo Payments. The first collection only occurs after your 14-day free trial ends.
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+            ) : (
+              <><Check className="h-4 w-4 mr-2" />Activate Free Trial & Subscribe</>
+            )}
+          </Button>
+        </form>
+      </Form>
+    </>
   );
 }
 
