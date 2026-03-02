@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Building2, Landmark, FileCheck, Loader2, ArrowRight, ArrowLeft, CheckCircle2,
+  ImagePlus, X,
 } from "lucide-react";
 
 interface BusinessProfile {
@@ -33,6 +34,7 @@ interface BusinessProfile {
   popia_consent: number | null;
   tax_number: string | null;
   vat_number: string | null;
+  logo_url: string | null;
 }
 
 const bankOptions = [
@@ -70,6 +72,11 @@ export default function Onboarding() {
   const [vatNumber, setVatNumber] = useState("");
   const [popiaConsent, setPopiaConsent] = useState(false);
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     (async () => {
       try {
@@ -90,6 +97,7 @@ export default function Onboarding() {
             if (data.profile.tax_number) setTaxNumber(data.profile.tax_number);
             if (data.profile.vat_number) setVatNumber(data.profile.vat_number);
             if (data.profile.popia_consent) setPopiaConsent(true);
+            if (data.profile.logo_url) setLogoPreview(data.profile.logo_url);
           }
         }
       } catch {
@@ -101,11 +109,57 @@ export default function Onboarding() {
   }, []);
 
   const hasBanking = !!(profile?.bank_name && profile?.account_number);
-  const hasPopia = !!profile?.popia_consent;
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 5MB.", variant: "destructive" });
+      return;
+    }
+
+    if (!/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name)) {
+      toast({ title: "Invalid file type", description: "Use JPG, PNG, GIF, WebP, or SVG.", variant: "destructive" });
+      return;
+    }
+
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(profile?.logo_url || null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadLogo = async (): Promise<boolean> => {
+    if (!logoFile) return true;
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("logo", logoFile);
+      const res = await fetch("/api/profile/logo", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      return true;
+    } catch {
+      toast({ title: "Logo Upload Failed", description: "Could not upload your logo. You can add it later from Settings.", variant: "destructive" });
+      return false;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const steps = [
     { key: "welcome", title: "Welcome to Masakhe", icon: Building2 },
-    { key: "banking", title: "Banking Details", icon: Landmark },
+    { key: "banking", title: "Banking & Tax", icon: Landmark },
     { key: "confirm", title: "Confirm & Get Started", icon: FileCheck },
   ];
 
@@ -119,6 +173,10 @@ export default function Onboarding() {
       }
       setSubmitting(true);
       try {
+        if (logoFile) {
+          await uploadLogo();
+        }
+
         const res = await fetch("/api/onboarding/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -187,7 +245,7 @@ export default function Onboarding() {
                 <CardTitle className="text-2xl font-bold font-heading">{currentStep?.title}</CardTitle>
                 <CardDescription>
                   {step === 0 && "Let's finish setting up your account with a few more details."}
-                  {step === 1 && "Add your banking details for invoicing and payments (optional)."}
+                  {step === 1 && "Add your banking and tax details for invoicing and payments (optional)."}
                   {step === 2 && "Review and confirm to get started."}
                 </CardDescription>
               </div>
@@ -245,6 +303,61 @@ export default function Onboarding() {
                     )}
                   </div>
                 </div>
+
+                <div>
+                  <Label className="font-bold text-sm flex items-center gap-2 mb-3">
+                    <ImagePlus className="h-4 w-4 text-primary" />
+                    Business Logo <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <div className="flex items-start gap-4">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="relative w-24 h-24 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 flex items-center justify-center cursor-pointer transition-colors overflow-hidden group"
+                    >
+                      {logoPreview ? (
+                        <>
+                          <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain p-1" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-medium">Change</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <ImagePlus className="h-6 w-6 mx-auto text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground mt-1 block">Upload</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Upload your business logo. It will appear on your invoices, published website, and dashboard.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        JPG, PNG, GIF, WebP, or SVG. Max 5MB.
+                      </p>
+                      {logoFile && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-foreground font-medium truncate max-w-[150px]">{logoFile.name}</span>
+                          <button
+                            type="button"
+                            onClick={removeLogo}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                    onChange={handleLogoSelect}
+                    className="hidden"
+                  />
+                </div>
+
                 <p className="text-sm text-muted-foreground">
                   We've got your basic details from registration. Now let's add a few more things to get you fully set up.
                   You can update any of this later from your Settings page.
@@ -344,23 +457,31 @@ export default function Onboarding() {
                 <div className="rounded-lg bg-muted/50 p-5 space-y-3 text-sm">
                   <h4 className="font-semibold text-foreground">Summary</h4>
                   <div className="grid gap-2">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Name</span>
                       <span className="font-medium">{user?.full_name || "—"}</span>
                     </div>
                     {profile?.business_name && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Business</span>
                         <span className="font-medium">{profile.business_name}</span>
                       </div>
                     )}
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Logo</span>
+                      <span className="font-medium">
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Logo" className="h-8 w-8 rounded object-contain border border-border" />
+                        ) : "Not provided"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Banking</span>
                       <span className="font-medium">
                         {bankName && accountNumber ? `${bankOptions.find(b => b.value === bankName)?.label || bankName} ****${accountNumber.slice(-4)}` : "Not provided"}
                       </span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Tax Number</span>
                       <span className="font-medium">{taxNumber || "Not provided"}</span>
                     </div>
@@ -397,10 +518,10 @@ export default function Onboarding() {
                 type="button"
                 variant="hero"
                 className="flex-1"
-                disabled={submitting}
+                disabled={submitting || uploadingLogo}
                 onClick={handleSubmit}
               >
-                {submitting ? (
+                {submitting || uploadingLogo ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" />Completing...</>
                 ) : step < steps.length - 1 ? (
                   <><span>Continue</span><ArrowRight className="h-4 w-4 ml-2" /></>
