@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -43,13 +44,13 @@ import {
 } from "lucide-react";
 
 const paymentFormSchema = z.object({
-  planId: z.string(),
+  planCode: z.string(),
   recipientName: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
   contactNumber: z.string().min(10, "Valid contact number is required"),
   mobileNumber: z.string().optional(),
   collectionDay: z.number().min(1).max(28),
-  startDate: z.string(),
+  startDate: z.string().min(1, "Start date is required"),
   shippingAddress1: z.string().optional(),
   shippingAddress2: z.string().optional(),
   shippingAddress3: z.string().optional(),
@@ -58,17 +59,20 @@ const paymentFormSchema = z.object({
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
 
 export default function CheckoutPage() {
-  const [searchParams] = new URLSearchParams(window.location.search);
-  const planId = searchParams.get("plan") || "starter";
+  const [searchParams] = useSearchParams();
+  const planCode = searchParams.get("plan") || "starter";
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
 
-  const { data: plan, isLoading: planLoading } = useQuery({
+  const { data: plansData, isLoading: planLoading } = useQuery({
     queryKey: ["/api/billing/plans"],
-    select: (data: any) => (data.plans || data).find((p: any) => p.code === planId),
+    queryFn: () => fetch("/api/billing/plans").then((r) => r.json()),
   });
+
+  const plan = plansData?.plans?.find((p: any) => p.code === planCode);
 
   const today = new Date();
   const defaultStartDate = new Date(today);
@@ -78,11 +82,11 @@ export default function CheckoutPage() {
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      planId: planId,
-      recipientName: "",
-      email: "",
-      contactNumber: "",
-      mobileNumber: "",
+      planCode,
+      recipientName: user?.full_name || "",
+      email: user?.email || "",
+      contactNumber: user?.phone || "",
+      mobileNumber: user?.phone || "",
       collectionDay: 1,
       startDate: defaultStartDate.toISOString().split("T")[0],
       shippingAddress1: "",
@@ -96,10 +100,19 @@ export default function CheckoutPage() {
       const res = await fetch("/api/billing/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          planCode: data.planId,
+          planCode: data.planCode,
           collectionDay: data.collectionDay,
           frequency: "MONTHLY",
+          recipientName: data.recipientName,
+          email: data.email,
+          contactNumber: data.contactNumber,
+          mobileNumber: data.mobileNumber,
+          startDate: data.startDate,
+          shippingAddress1: data.shippingAddress1,
+          shippingAddress2: data.shippingAddress2,
+          shippingAddress3: data.shippingAddress3,
         }),
       });
       if (!res.ok) {
@@ -121,24 +134,30 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (paymentData && !paymentData.mock && formRef.current) {
+    if (!paymentData) return;
+    if (paymentData.mock) {
+      fetch("/api/billing/return", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ merchantRef: paymentData.merchantRef, status: "success" }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.ok) navigate("/dashboard/billing?payment=success");
+          else toast({ title: "Error", description: json.error || "Payment failed", variant: "destructive" });
+        });
+    } else if (paymentData.formAction && paymentData.fields && formRef.current) {
       formRef.current.submit();
-    } else if (paymentData?.mock) {
-       // Handle mock checkout
-       toast({ title: "Mock Checkout", description: "Redirecting to mock return handler..." });
-       fetch("/api/billing/return", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ merchantRef: paymentData.merchantRef, status: "success" })
-       }).then(r => r.json()).then(json => {
-         if (json.ok) navigate("/dashboard/billing?payment=success");
-       });
     }
   }, [paymentData, navigate, toast]);
 
   const onSubmit = (data: PaymentFormData) => {
     paymentMutation.mutate(data);
   };
+
+  const formatPrice = (cents: number) =>
+    `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 
   if (planLoading) {
     return (
@@ -147,10 +166,10 @@ export default function CheckoutPage() {
           <Skeleton className="h-8 w-48 mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3">
-              <Skeleton className="h-[500px] rounded-md" />
+              <Skeleton className="h-[600px] rounded-xl" />
             </div>
             <div className="lg:col-span-2">
-              <Skeleton className="h-[300px] rounded-md" />
+              <Skeleton className="h-[300px] rounded-xl" />
             </div>
           </div>
         </div>
@@ -164,9 +183,7 @@ export default function CheckoutPage() {
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6 text-center space-y-4">
             <p className="text-muted-foreground">Plan not found</p>
-            <Button onClick={() => navigate("/pricing")} data-testid="button-back-to-plans">
-              Back to Plans
-            </Button>
+            <Button onClick={() => navigate("/pricing")}>Back to Plans</Button>
           </CardContent>
         </Card>
       </div>
@@ -175,14 +192,14 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {paymentData && !paymentData.mock && (
+      {paymentData && !paymentData.mock && paymentData.fields && (
         <form
           ref={formRef}
           action={paymentData.formAction}
           method="POST"
           style={{ display: "none" }}
         >
-          {Object.entries(paymentData.formData).map(([key, value]) => (
+          {Object.entries(paymentData.fields).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={String(value)} />
           ))}
         </form>
@@ -191,18 +208,17 @@ export default function CheckoutPage() {
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         <button
           onClick={() => navigate("/pricing")}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-8 hover-elevate active-elevate-2 rounded-md px-2 py-1 -ml-2"
-          data-testid="button-back"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-8 hover:text-foreground rounded-md px-2 py-1 -ml-2 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to plans
         </button>
 
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2" data-testid="text-checkout-title">
+        <h1 className="text-2xl sm:text-3xl font-bold font-heading mb-2">
           Complete Your Subscription
         </h1>
         <p className="text-muted-foreground mb-8">
-          Fill in your details below to subscribe to the {plan.name} plan.
+          Fill in your details below to subscribe to the <strong>{plan.name}</strong> plan.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -217,7 +233,7 @@ export default function CheckoutPage() {
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                    <input type="hidden" {...form.register("planId")} />
+                    <input type="hidden" {...form.register("planCode")} />
 
                     <FormField
                       control={form.control}
@@ -229,11 +245,7 @@ export default function CheckoutPage() {
                             Full Name
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="John Smith"
-                              {...field}
-                              data-testid="input-name"
-                            />
+                            <Input placeholder="John Smith" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -250,12 +262,7 @@ export default function CheckoutPage() {
                             Email Address
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="john@example.com"
-                              {...field}
-                              data-testid="input-email"
-                            />
+                            <Input type="email" placeholder="john@example.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -273,11 +280,7 @@ export default function CheckoutPage() {
                               Contact Number
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="+27211234567"
-                                {...field}
-                                data-testid="input-contact"
-                              />
+                              <Input placeholder="+27211234567" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -294,11 +297,7 @@ export default function CheckoutPage() {
                               Mobile Number
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="+27871234567"
-                                {...field}
-                                data-testid="input-mobile"
-                              />
+                              <Input placeholder="+27821234567" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -325,14 +324,15 @@ export default function CheckoutPage() {
                               defaultValue={String(field.value)}
                             >
                               <FormControl>
-                                <SelectTrigger data-testid="select-collection-day">
+                                <SelectTrigger>
                                   <SelectValue placeholder="Select day" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                                   <SelectItem key={day} value={String(day)}>
-                                    {day}{day === 1 ? "st" : day === 2 ? "nd" : day === 3 ? "rd" : "th"} of each month
+                                    {day}
+                                    {day === 1 ? "st" : day === 2 ? "nd" : day === 3 ? "rd" : "th"} of each month
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -349,11 +349,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel>Start Date</FormLabel>
                             <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
-                                data-testid="input-start-date"
-                              />
+                              <Input type="date" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -375,32 +371,58 @@ export default function CheckoutPage() {
                         <FormItem>
                           <FormLabel>Address Line 1</FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="Street address"
-                              {...field}
-                              data-testid="input-address1"
-                            />
+                            <Input placeholder="Street address" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="shippingAddress2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City / Suburb</FormLabel>
+                            <FormControl>
+                              <Input placeholder="City" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="shippingAddress3"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Province / State</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Province" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
                       size="lg"
-                      disabled={paymentMutation.isPending}
+                      className="w-full mt-4"
+                      disabled={paymentMutation.isPending || !!paymentData}
                     >
-                      {paymentMutation.isPending ? (
+                      {paymentMutation.isPending || paymentData ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
                         </>
                       ) : (
                         <>
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Subscribe Now
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Subscribe — {formatPrice(plan.price_cents)}/month
                         </>
                       )}
                     </Button>
@@ -410,36 +432,66 @@ export default function CheckoutPage() {
             </Card>
           </div>
 
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <h2 className="text-lg font-semibold">Order Summary</h2>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="font-medium">{plan.name} Plan</div>
-                  <div className="text-lg font-bold text-primary">R{(plan.price_cents / 100).toLocaleString()}</div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Billed monthly. Includes 14-day free trial.
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Due Today</span>
-                    <span className="font-semibold text-green-600">R0.00</span>
+          <div className="lg:col-span-2">
+            <div className="sticky top-8 space-y-6">
+              <Card>
+                <CardHeader>
+                  <h2 className="text-lg font-semibold">Order Summary</h2>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <p className="font-medium">{plan.name} Plan</p>
+                      <p className="text-sm text-muted-foreground">Billed monthly</p>
+                    </div>
+                    <p className="font-semibold text-lg">{formatPrice(plan.price_cents)}</p>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>After Trial</span>
-                    <span className="font-semibold">R{(plan.price_cents / 100).toLocaleString()}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            <div className="flex items-center gap-3 text-sm text-muted-foreground px-2">
-              <Shield className="h-10 w-10 text-primary/40 shrink-0" />
-              <p>Secure payment processed by Adumo. Your data is encrypted and protected.</p>
+                  <Separator />
+
+                  <ul className="space-y-2">
+                    {[
+                      "14-day free trial",
+                      "Cancel anytime",
+                      "Secure debit order",
+                      "Instant activation",
+                    ].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Separator />
+
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Due Today</span>
+                      <span className="font-semibold text-green-600">R0.00</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">After Trial</span>
+                      <span className="font-semibold">{formatPrice(plan.price_cents)}/mo</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-muted/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Secure Debit Order</p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Your subscription is processed securely through Adumo Online. Card details
+                        are never stored on our servers.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

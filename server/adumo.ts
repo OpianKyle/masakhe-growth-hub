@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
 import { queryOne, execute } from "./db";
 
 const BASE_URL = process.env.ADUMO_ENV === "production"
@@ -53,6 +54,21 @@ export function generateCheckoutToken(merchantRef: string, amount: string): stri
     process.env.ADUMO_JWT_SECRET!,
     { algorithm: "HS256", expiresIn: 600 }
   );
+}
+
+export function generateSubscriptionToken(merchantRef: string, amount: string): string {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: "Adumo Subscription Portal",
+    cuid: process.env.ADUMO_CUID,
+    auid: process.env.ADUMO_AUID,
+    amount,
+    mref: merchantRef,
+    jti: randomBytes(32).toString("base64"),
+    iat: now - 60,
+    exp: now + 600,
+  };
+  return jwt.sign(payload, process.env.ADUMO_JWT_SECRET!, { algorithm: "HS256" });
 }
 
 export function verifyResponseToken(token: string): any {

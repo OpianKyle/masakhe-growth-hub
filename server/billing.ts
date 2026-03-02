@@ -3,7 +3,7 @@ import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
-import { isMockMode, generateCheckoutToken, verifyResponseToken, extractCardDetailsFromResponse } from "./adumo";
+import { isMockMode, generateSubscriptionToken, verifyResponseToken, extractCardDetailsFromResponse } from "./adumo";
 
 export const billingRouter = Router();
 
@@ -106,7 +106,19 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { planCode, collectionDay: clientCollectionDay, frequency: clientFrequency } = req.body;
+    const {
+      planCode,
+      collectionDay: clientCollectionDay,
+      frequency: clientFrequency,
+      recipientName,
+      email,
+      contactNumber,
+      mobileNumber,
+      startDate: clientStartDate,
+      shippingAddress1,
+      shippingAddress2,
+      shippingAddress3,
+    } = req.body;
 
     if (!planCode || !['starter', 'pro'].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
@@ -123,11 +135,6 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
 
     const workspaceId = await ensureDefaultWorkspace(userId);
 
-    const existingSub = await queryOne(
-      "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
-      [workspaceId]
-    );
-
     const merchantRef = `MSK-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
     const invoiceResult = await execute(
@@ -141,38 +148,32 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     }
 
     const amount = (plan.price_cents / 100).toFixed(2);
-    const token = generateCheckoutToken(merchantRef, amount);
-
-    const user = await queryOne("SELECT full_name FROM users WHERE id = ?", [userId]);
-    const bp = await queryOne("SELECT business_name, physical_address, phone FROM business_profiles WHERE user_id = ?", [userId]);
+    const token = generateSubscriptionToken(merchantRef, amount);
 
     const puid = `MSK-${workspaceId}`;
 
-    const trialDays = 14;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() + trialDays);
+    const startDateObj = clientStartDate ? new Date(clientStartDate) : (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(chosenCollectionDay);
+      return d;
+    })();
+    const startDateStr = startDateObj.toISOString().split("T")[0];
 
-    const firstCollection = new Date(startDate);
-    firstCollection.setDate(chosenCollectionDay);
-    if (firstCollection <= startDate) {
-      firstCollection.setMonth(firstCollection.getMonth() + 1);
-    }
-    const startDateStr = firstCollection.toISOString().split("T")[0];
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    const endDateStr = endDateObj.toISOString().split("T")[0];
 
-    const endDate = new Date(firstCollection);
-    endDate.setFullYear(endDate.getFullYear() + 5);
-    const endDateStr = endDate.toISOString().split("T")[0];
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
 
-    const userEmail = await queryOne("SELECT email FROM users WHERE id = ?", [userId]);
-
-    const formData: Record<string, string> = {
+    const fields: Record<string, string> = {
+      puid,
       MerchantID: process.env.ADUMO_CUID!,
       ApplicationID: process.env.ADUMO_AUID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
-      puid,
-      txtCurrencyCode: "ZAR",
+      txtCurrencyCode: plan.currency || "ZAR",
       RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
       RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
       NotifyURL: `${APP_URL}/api/billing/webhooks/adumo`,
@@ -184,42 +185,35 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       ItemAmount1: amount,
       ShippingCost: "0.00",
       Discount: "0.00",
-      Recipient: user?.full_name || "Customer",
-      ShippingAddress1: bp?.physical_address || "",
-      ShippingAddress2: "",
-      ShippingAddress3: "",
-      ShippingAddress4: "",
-      ShippingAddress5: "South Africa",
-
+      Recipient: recipientName || userRecord?.full_name || "Customer",
+      ShippingAddress1: shippingAddress1 || "",
+      ShippingAddress2: shippingAddress2 || "",
+      ShippingAddress3: shippingAddress3 || "",
       frequency: chosenFrequency,
       collectionDay: String(chosenCollectionDay),
       accountNumber: `MSK-${workspaceId.slice(0, 12)}`,
       startDate: startDateStr,
       endDate: endDateStr,
       collectionValue: amount,
-      contactNumber: bp?.phone || "",
-      mobileNumber: bp?.phone || "",
-      emailAddress: userEmail?.email || "",
+      contactNumber: contactNumber || "",
+      mobileNumber: mobileNumber || contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
       shouldSendSms: "false",
       shouldSendEmail: "true",
     };
 
-    console.log("[Billing] Checkout form data for Adumo subscription:", JSON.stringify({
-      MerchantReference: formData.MerchantReference,
-      Amount: formData.Amount,
-      frequency: formData.frequency,
-      collectionDay: formData.collectionDay,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      collectionValue: formData.collectionValue,
-      accountNumber: formData.accountNumber,
-      emailAddress: formData.emailAddress,
-      contactNumber: formData.contactNumber,
-      mobileNumber: formData.mobileNumber,
-      puid: formData.puid,
+    console.log("[Billing] Adumo subscription checkout:", JSON.stringify({
+      MerchantReference: fields.MerchantReference,
+      Amount: fields.Amount,
+      frequency: fields.frequency,
+      collectionDay: fields.collectionDay,
+      startDate: fields.startDate,
+      endDate: fields.endDate,
+      Recipient: fields.Recipient,
+      emailAddress: fields.emailAddress,
     }));
 
-    res.json({ mock: false, formAction: ADUMO_URL, formData });
+    res.json({ mock: false, formAction: ADUMO_URL, fields });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
