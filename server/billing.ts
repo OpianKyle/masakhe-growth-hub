@@ -7,9 +7,11 @@ import { isMockMode, generateSubscriptionToken, verifyResponseToken, extractCard
 
 export const billingRouter = Router();
 
-const ADUMO_URL = process.env.ADUMO_ENV === "production"
-  ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
-  : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
+const ADUMO_SUBSCRIPTION_URL = process.env.ADUMO_SUBSCRIPTION_URL || (
+  process.env.ADUMO_ENV === "production"
+    ? "https://apiv3.adumoonline.com/product/debit/v1/initialisevirtual"
+    : "https://staging-apiv3.adumoonline.com/product/debit/v1/initialisevirtual"
+);
 
 const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
 
@@ -150,7 +152,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     const amount = (plan.price_cents / 100).toFixed(2);
     const token = generateSubscriptionToken(merchantRef, amount);
 
-    const puid = `MSK-${workspaceId}`;
+    const puid = randomUUID();
 
     const startDateObj = clientStartDate ? new Date(clientStartDate) : (() => {
       const d = new Date();
@@ -176,7 +178,6 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       txtCurrencyCode: plan.currency || "ZAR",
       RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
       RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
-      NotifyURL: `${APP_URL}/api/billing/webhooks/adumo`,
       Variable1: "Subscription",
       Variable2: merchantRef,
       Qty1: "1",
@@ -191,7 +192,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       ShippingAddress3: shippingAddress3 || "",
       frequency: chosenFrequency,
       collectionDay: String(chosenCollectionDay),
-      accountNumber: `MSK-${workspaceId.slice(0, 12)}`,
+      accountNumber: `ACC-${Date.now()}`,
       startDate: startDateStr,
       endDate: endDateStr,
       collectionValue: amount,
@@ -213,7 +214,8 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       emailAddress: fields.emailAddress,
     }));
 
-    res.json({ mock: false, formAction: ADUMO_URL, fields });
+    console.log("[Billing] Posting to Adumo subscription URL:", ADUMO_SUBSCRIPTION_URL);
+    res.json({ mock: false, formAction: ADUMO_SUBSCRIPTION_URL, fields });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
