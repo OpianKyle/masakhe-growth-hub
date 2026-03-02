@@ -13,7 +13,7 @@ Masakhe utilizes a React 18 frontend with TypeScript and Vite, communicating wit
 Key architectural features include:
 - **Modular Design**: The system is organized into distinct modules for social media, billing, finance, and user management, each with dedicated API routes and logic.
 - **Multi-tenancy**: The Social Media Hub supports a workspace system with roles (Owner, Admin, Editor, Viewer), enabling collaborative management for businesses.
-- **Subscription & Billing**: Implements a trial system (14-day free trial) with two plans (Starter R899/mo, Pro R2500/mo). No payment provider is currently integrated — subscriptions are created directly via `POST /api/billing/subscribe` with plan selection. Background scheduler handles trial expiry (TRIAL → ACTIVE transitions) and monthly renewal invoice creation. Feature gating restricts premium modules based on subscription status. Subscription checkout is embedded directly in `BillingPage` (no separate checkout page).
+- **Subscription & Billing via Adumo Online**: Implements a trial system (14-day free trial) with two plans (Starter R899/mo, Pro R2500/mo). Payment is processed via Adumo Online Virtual HPP (Hidden Form POST) for monthly debit order subscriptions. The checkout flow: user selects plan and fills subscriber details on BillingPage → `POST /api/billing/checkout-session` generates JWT token and returns Adumo form fields → hidden form POST submits to Adumo HPP → Adumo redirects back to `GET /api/billing/return-redirect` which verifies the response token, creates TRIAL subscription, and redirects to `/dashboard/billing?payment=success|failed|error`. Background scheduler handles trial expiry (TRIAL → ACTIVE transitions) and monthly renewal invoice creation. Feature gating restricts premium modules based on subscription status.
 - **Registration Flow**: Registration (`/register`) is payment-free — 6 steps (Account, Business Status, Identity, Business Details, Contact & Location, Confirmation). After successful registration, users are redirected to `/onboarding`. Subscription is set up from the Billing section inside the dashboard portal.
 - **Trial Banner & Walkthrough**: `TrialBanner` component (in dashboard) shows a dismissible banner with days remaining and a modal popup on first login during trial; locks access modal when trial expires or subscription is past-due. `DashboardWalkthrough` component shows a guided tour card on first login, stepping through all dashboard sections.
 - **Dynamic Dashboard**: The dashboard provides a real-time overview of business KPIs, financial data, and social media activity through dynamic charts and aggregated data.
@@ -24,9 +24,17 @@ Key architectural features include:
 - **Data Security**: Employs AES-256-GCM encryption for sensitive data like social account tokens.
 - **PDF Generation**: Uses `pdf-lib` for server-side generation of invoices and terms PDFs.
 
+## Adumo Online Integration
+- **Files**: `server/adumo.ts` (JWT generation/verification), `server/billing.ts` (checkout-session + return-redirect endpoints)
+- **Secrets**: `ADUMO_CUID` (MerchantID), `ADUMO_AUID` (ApplicationID), `ADUMO_JWT_SECRET`, `ADUMO_ENV` (staging/production), `APP_URL`
+- **JWT Token**: HS256 signed, contains `iss`, `cuid`, `auid`, `amount`, `mref`, `jti`, `iat` (now-60s), `exp` (now+600s)
+- **Form Fields**: puid, MerchantID, ApplicationID, MerchantReference, Amount, Token, txtCurrencyCode (ZAR), RedirectSuccessfulURL/RedirectFailedURL, subscription fields (frequency=MONTHLY, collectionDay, startDate, endDate, collectionValue, accountNumber, contactNumber, mobileNumber, emailAddress)
+- **Return Flow**: Adumo redirects to `GET /api/billing/return-redirect?status=success&merchantRef=SUB_xxx`. Server verifies `_RESPONSE_TOKEN` JWT (validates mref + amount match), marks invoice PAID, creates TRIAL subscription with 14-day trial, extracts card details if available, then redirects to `/dashboard/billing?payment=success`
+- **Security**: Response token verification validates merchant reference and amount match before accepting payment. Invoice uses stored `plan_id` for subscription creation (not amount-based lookup). T&C acceptance checkbox required before form submission.
+
 ## External Dependencies
 - **Database**: Remote MySQL hosted on Xneelo (`sql16.cpt3.host-h.net`).
-- **Payment Gateway**: None currently integrated. Billing infrastructure (plans, subscriptions, invoices, trial management) is in place and ready for a payment provider to be added.
+- **Payment Gateway**: Adumo Online (Virtual HPP form POST for debit order subscriptions).
 - **Social Media APIs**: Integrations with Meta (Facebook/Instagram), LinkedIn, X, TikTok, and YouTube (with a Mock Provider Mode for development).
 - **Session Management**: `express-mysql-session` for storing session data in MySQL.
 - **PDF Generation**: `pdf-lib` for creating PDF documents.

@@ -3,8 +3,15 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { generateSubscriptionToken, verifyResponseToken } from "./adumo";
 
 export const billingRouter = Router();
+
+const ADUMO_URL = process.env.ADUMO_ENV === "production"
+  ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
+  : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
+
+const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
 
 async function ensureDefaultWorkspace(userId: string): Promise<string> {
   const existing = await queryOne(
@@ -129,11 +136,11 @@ billingRouter.get("/terms-pdf", async (_req, res) => {
 
     drawText("6. PAYMENT PROCESSING", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("6.1 All payments are processed securely through the Masakhe platform.", { indent: 10 });
+    drawText("6.1 All payments are processed securely through Adumo Online, a registered South African payment gateway.", { indent: 10 });
     spacer(0.5);
     drawText("6.2 Masakhe does not store your banking or card details on its servers.", { indent: 10 });
     spacer(0.5);
-    drawText("6.3 If a scheduled payment fails, Masakhe may reattempt collection. Repeated failures may result in service suspension after written notice.", { indent: 10 });
+    drawText("6.3 If a scheduled debit order fails, Masakhe may reattempt collection. Repeated failures may result in service suspension after written notice.", { indent: 10 });
     spacer();
 
     drawText("7. CONTACT INFORMATION", { font: fontBold, size: headingSize });
@@ -224,13 +231,28 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/subscribe", requireAuth, async (req, res) => {
+billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { planCode } = req.body;
+    const {
+      planCode,
+      recipientName,
+      email,
+      contactNumber,
+      mobileNumber,
+      collectionDay: clientCollectionDay,
+      startDate: clientStartDate,
+      shippingAddress1,
+      shippingAddress2,
+      shippingAddress3,
+    } = req.body;
 
     if (!planCode || !['starter', 'pro'].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
+    }
+
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
     const plan = await queryOne("SELECT * FROM billing_plans WHERE code = ?", [planCode]);
@@ -244,23 +266,207 @@ billingRouter.post("/subscribe", requireAuth, async (req, res) => {
       "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
       [workspaceId]
     );
-
     if (existingSub) {
       return res.status(400).json({ error: "You already have an active subscription" });
     }
 
-    const subResult = await execute(
-      "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY))",
-      [workspaceId, plan.id]
+    const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
+    const merchantRef = `SUB_${refSuffix}`;
+    const amount = (plan.price_cents / 100).toFixed(2);
+    const puid = randomUUID();
+
+    await execute(
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, ?, 'PENDING', ?)",
+      [workspaceId, plan.id, plan.price_cents, plan.currency, merchantRef]
     );
 
-    const subscription = await queryOne("SELECT * FROM billing_subscriptions WHERE id = ?", [subResult.insertId]);
+    const token = generateSubscriptionToken(merchantRef, amount);
 
-    console.log(`[Billing] Subscription created for workspace ${workspaceId}, plan: ${plan.name}, status: TRIAL`);
+    const chosenCollectionDay = Math.max(1, Math.min(28, parseInt(clientCollectionDay) || 1));
 
-    res.json({ ok: true, subscription });
+    const startDateObj = clientStartDate ? new Date(clientStartDate) : (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(chosenCollectionDay);
+      return d;
+    })();
+    const startDateStr = startDateObj.toISOString().split("T")[0];
+
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    const endDateStr = endDateObj.toISOString().split("T")[0];
+
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: plan.currency || "ZAR",
+      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "Subscription",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: plan.code,
+      ItemDescr1: `${plan.name} Plan Subscription`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: recipientName || userRecord?.full_name || "Customer",
+      ShippingAddress1: shippingAddress1 || "",
+      ShippingAddress2: shippingAddress2 || "",
+      ShippingAddress3: shippingAddress3 || "",
+      frequency: "MONTHLY",
+      collectionDay: String(chosenCollectionDay),
+      accountNumber: `ACC_${Date.now()}`,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      collectionValue: amount,
+      contactNumber: contactNumber || "",
+      mobileNumber: mobileNumber || contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Billing] Checkout session created:", JSON.stringify({
+      MerchantReference: fields.MerchantReference,
+      Amount: fields.Amount,
+      ApplicationID: fields.ApplicationID,
+      frequency: fields.frequency,
+      collectionDay: fields.collectionDay,
+      startDate: fields.startDate,
+      endDate: fields.endDate,
+      Recipient: fields.Recipient,
+      emailAddress: fields.emailAddress,
+    }));
+
+    res.json({ formAction: ADUMO_URL, fields });
   } catch (err: any) {
+    console.error("[Billing] Checkout session error:", err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+billingRouter.get("/return-redirect", async (req, res) => {
+  try {
+    const status = req.query.status as string || "";
+    const merchantRef = (req.query.merchantRef || req.query._MERCHANTREFERENCE || req.query.MerchantReference) as string || "";
+    const adumoResult = req.query._RESULT as string || "";
+    const responseToken = req.query._RESPONSE_TOKEN as string || "";
+    const adumoSubId = (req.query.subscriptionId || req.query._SUBSCRIPTIONID) as string || "";
+
+    console.log(`[Billing] Return redirect: status=${status}, merchantRef=${merchantRef}, _RESULT=${adumoResult}, subscriptionId=${adumoSubId}`);
+
+    if (!merchantRef) {
+      console.warn("[Billing] Return redirect without merchantRef");
+      return res.redirect("/dashboard/billing?payment=error");
+    }
+
+    const invoice = await queryOne("SELECT * FROM billing_invoices WHERE merchant_ref = ? AND status = 'PENDING'", [merchantRef]);
+
+    if (!invoice) {
+      console.warn(`[Billing] No pending invoice found for merchantRef=${merchantRef}`);
+      return res.redirect("/dashboard/billing?payment=error");
+    }
+
+    const isStatusSuccess = status === "success" || adumoResult === "0";
+
+    if (!isStatusSuccess) {
+      const errorMsg = (req.query._ERROR_MESSAGE as string) || "Payment declined";
+      await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?", [errorMsg, invoice.id]);
+      console.log(`[Billing] Payment failed for merchantRef=${merchantRef}: ${errorMsg}`);
+      return res.redirect("/dashboard/billing?payment=failed");
+    }
+
+    let decoded: any = null;
+    if (responseToken) {
+      try {
+        decoded = verifyResponseToken(responseToken);
+        if (decoded.mref && decoded.mref !== merchantRef) {
+          console.error(`[Billing] Token mref mismatch: expected ${merchantRef}, got ${decoded.mref}`);
+          await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = 'Token verification failed: mref mismatch' WHERE id = ?", [invoice.id]);
+          return res.redirect("/dashboard/billing?payment=error");
+        }
+        const expectedAmount = (invoice.amount_cents / 100).toFixed(2);
+        if (decoded.amount && decoded.amount !== expectedAmount) {
+          console.error(`[Billing] Token amount mismatch: expected ${expectedAmount}, got ${decoded.amount}`);
+          await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = 'Token verification failed: amount mismatch' WHERE id = ?", [invoice.id]);
+          return res.redirect("/dashboard/billing?payment=error");
+        }
+        console.log(`[Billing] Response token verified successfully for merchantRef=${merchantRef}`);
+      } catch (e: any) {
+        console.error(`[Billing] Response token verification failed for merchantRef=${merchantRef}:`, e.message);
+        await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = ? WHERE id = ?", [`Token verification failed: ${e.message}`, invoice.id]);
+        return res.redirect("/dashboard/billing?payment=error");
+      }
+    } else {
+      console.warn(`[Billing] No response token received for merchantRef=${merchantRef}, proceeding with caution`);
+    }
+
+    await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE id = ?", [invoice.id]);
+
+    const plan = invoice.plan_id
+      ? await queryOne("SELECT * FROM billing_plans WHERE id = ?", [invoice.plan_id])
+      : await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [invoice.amount_cents]);
+
+    if (plan) {
+      const existingSub = await queryOne(
+        "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE','PAST_DUE')",
+        [invoice.workspace_id]
+      );
+
+      let subscriptionId;
+      if (existingSub) {
+        await execute(
+          "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+          [plan.id, adumoSubId || null, existingSub.id]
+        );
+        subscriptionId = existingSub.id;
+      } else {
+        const subResult = await execute(
+          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, adumo_subscription_id) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), ?)",
+          [invoice.workspace_id, plan.id, adumoSubId || null]
+        );
+        subscriptionId = subResult.insertId;
+      }
+
+      await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subscriptionId, invoice.id]);
+
+      if (decoded) {
+        try {
+          const maskedCard = decoded.maskedCardNumber || decoded.masked_card || null;
+          const last4 = maskedCard ? maskedCard.slice(-4) : null;
+          const brand = decoded.cardBrand || decoded.card_brand || null;
+
+          const existingPm = await queryOne("SELECT id FROM billing_payment_methods WHERE workspace_id = ?", [invoice.workspace_id]);
+          if (existingPm) {
+            await execute(
+              "UPDATE billing_payment_methods SET provider = 'ADUMO', last4 = COALESCE(?, last4), brand = COALESCE(?, brand), status = 'ON_FILE', updated_at = NOW() WHERE id = ?",
+              [last4, brand, existingPm.id]
+            );
+          } else {
+            await execute(
+              "INSERT INTO billing_payment_methods (workspace_id, provider, last4, brand, status) VALUES (?, 'ADUMO', ?, ?, 'ON_FILE')",
+              [invoice.workspace_id, last4, brand]
+            );
+          }
+        } catch (e: any) {
+          console.warn("[Billing] Could not extract card details from response token:", e.message);
+        }
+      }
+
+      console.log(`[Billing] Subscription created via redirect for workspace ${invoice.workspace_id}`);
+    }
+
+    return res.redirect("/dashboard/billing?payment=success");
+  } catch (err: any) {
+    console.error("[Billing] Return redirect error:", err.message, err.stack);
+    return res.redirect("/dashboard/billing?payment=error");
   }
 });
 
