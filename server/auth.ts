@@ -2,6 +2,7 @@ import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import { sendWelcomeEmail } from "./email";
 
 export const authRouter = Router();
 
@@ -87,6 +88,7 @@ authRouter.post("/register", async (req, res) => {
     req.session.userId = userId;
     req.session.save(async () => {
       const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [userId]);
+      sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
       res.json({ ok: true, user });
     });
   } catch (err: any) {
