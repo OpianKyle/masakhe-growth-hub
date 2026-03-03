@@ -21,6 +21,13 @@ const steps = [
     color: "bg-sa-green",
   },
   {
+    title: "Social Media Hub",
+    description: "Manage all your social media platforms from one place. Schedule posts, track engagement, and grow your audience.",
+    icon: Smartphone,
+    path: "/dashboard/social",
+    color: "bg-pink-600",
+  },
+  {
     title: "Financial Tracking",
     description: "Track your income, expenses, and cash flow. Get a real-time view of your business finances with visual reports.",
     icon: Wallet,
@@ -40,13 +47,6 @@ const steps = [
     icon: ClipboardCheck,
     path: "/dashboard/funding",
     color: "bg-purple-600",
-  },
-  {
-    title: "Social Media Hub",
-    description: "Manage all your social media platforms from one place. Schedule posts, track engagement, and grow your audience.",
-    icon: Smartphone,
-    path: "/dashboard/social",
-    color: "bg-pink-600",
   },
   {
     title: "Billing & Subscription",
@@ -104,49 +104,49 @@ export default function DashboardWalkthrough() {
   const Icon = current.icon;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end sm:p-6 pointer-events-none">
-      <div className="pointer-events-auto w-full sm:max-w-sm bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
-        <div className={`h-1.5 bg-primary/20`}>
+    <div className="mx-2 mb-2">
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="h-1 bg-primary/20">
           <div
             className="h-full bg-primary transition-all duration-300"
             style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-3 space-y-3">
           <div className="flex items-start justify-between">
-            <div className={`w-10 h-10 rounded-xl ${current.color} flex items-center justify-center shrink-0`}>
-              <Icon className="h-5 w-5 text-white" />
+            <div className={`w-8 h-8 rounded-lg ${current.color} flex items-center justify-center shrink-0`}>
+              <Icon className="h-4 w-4 text-white" />
             </div>
-            <button onClick={dismiss} className="text-muted-foreground hover:text-foreground p-1 rounded">
-              <X className="h-4 w-4" />
+            <button onClick={dismiss} className="text-muted-foreground hover:text-foreground p-0.5 rounded">
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Step {step + 1} of {steps.length}</p>
-            <h3 className="text-base font-bold font-heading text-foreground">{current.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{current.description}</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Step {step + 1} of {steps.length}</p>
+            <h3 className="text-sm font-bold font-heading text-foreground leading-tight">{current.title}</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{current.description}</p>
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-1.5">
             {step > 0 && (
-              <Button variant="outline" size="sm" onClick={prev} className="flex-none">
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+              <Button variant="outline" size="sm" onClick={prev} className="flex-none h-7 text-xs px-2">
+                <ArrowLeft className="h-3 w-3 mr-0.5" />
                 Back
               </Button>
             )}
-            <Button size="sm" onClick={next} className="flex-1">
+            <Button size="sm" onClick={next} className="flex-1 h-7 text-xs">
               {step === steps.length - 1 ? "Get Started" : (
                 <>
                   Next
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  <ArrowRight className="h-3 w-3 ml-0.5" />
                 </>
               )}
             </Button>
           </div>
 
-          <button onClick={dismiss} className="text-xs text-muted-foreground hover:text-foreground block mx-auto">
+          <button onClick={dismiss} className="text-[10px] text-muted-foreground hover:text-foreground block mx-auto">
             Skip tour
           </button>
         </div>

@@ -22,10 +22,10 @@ import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website" },
+  { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
   { icon: Wallet, label: "Finance", path: "/dashboard/finance" },
   { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
   { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
-  { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
@@ -145,6 +145,8 @@ export default function DashboardPage() {
           })}
         </nav>
 
+        {!collapsed && <DashboardWalkthrough />}
+
         <div className="px-2 pb-4 space-y-1">
           {user?.role === "admin" && (
             <Link to="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
@@ -207,7 +209,6 @@ export default function DashboardPage() {
             <Route path="*" element={<DashboardOverview />} />
           </Routes>
         </div>
-        <DashboardWalkthrough />
       </main>
     </div>
   );
