@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
-  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText
+  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -26,9 +26,9 @@ const navItems = [
   { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
   { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
-  { icon: FileText, label: "Tenders", path: "/dashboard/tenders" },
+  { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
-  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
+  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -99,6 +99,35 @@ export default function DashboardPage() {
             const active = item.path === "/dashboard"
               ? location.pathname === "/dashboard"
               : location.pathname.startsWith(item.path);
+
+            if (item.comingSoon) {
+              return (
+                <div
+                  key={item.path}
+                  title="Coming soon to enterprises"
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-not-allowed text-sidebar-foreground/35 select-none"
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1">{item.label}</span>
+                      <Lock className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                    </>
+                  )}
+                  {!collapsed && (
+                    <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      Coming soon to enterprises
+                    </span>
+                  )}
+                  {collapsed && (
+                    <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      {item.label} — Coming soon to enterprises
+                    </span>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.path}

@@ -96,8 +96,8 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      toast.success("Account created! Welcome to Masakhe.");
-      navigate("/onboarding");
+      toast.success("Account created! Please log in with your new credentials.");
+      navigate("/login");
     } else {
       toast.error(result.error || "Registration failed");
     }
