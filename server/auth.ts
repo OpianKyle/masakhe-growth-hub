@@ -114,11 +114,19 @@ authRouter.post("/login", async (req, res) => {
     }
 
     req.session.userId = user.id;
-    req.session.save(() => {
-      res.json({
-        ok: true,
-        user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role, created_at: user.created_at }
-      });
+    req.session.save(async () => {
+      const fullUser = await queryOne(
+        `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
+                bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
+                bp.business_type, bp.years_operating, bp.employee_count, bp.phone, bp.whatsapp,
+                bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
+                bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url
+         FROM users u
+         LEFT JOIN business_profiles bp ON bp.user_id = u.id
+         WHERE u.id = ?`,
+        [user.id]
+      );
+      res.json({ ok: true, user: fullUser });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Login failed" });

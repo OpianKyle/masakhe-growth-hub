@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,26 +14,34 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking">("profile");
 
-  const [form, setForm] = useState({
-    fullName: user?.full_name || "",
-    businessName: user?.business_name || "",
-    tradingName: user?.trading_name || "",
-    businessStatus: user?.business_status || "",
-    businessType: user?.business_type || "",
-    industrySector: user?.industry_sector || "",
-    yearsOperating: user?.years_operating?.toString() || "",
-    employeeCount: user?.employee_count?.toString() || "",
-    phone: user?.phone || "",
-    whatsapp: user?.whatsapp || "",
-    email: user?.bp_email || user?.email || "",
-    physicalAddress: user?.physical_address || "",
-    bankName: user?.bank_name || "",
-    accountType: user?.account_type || "",
-    accountNumber: user?.account_number || "",
-    branchCode: user?.branch_code || "",
-    saId: user?.sa_id || "",
-    cipcNumber: user?.cipc_number || "",
+  const buildForm = (u: typeof user) => ({
+    fullName: u?.full_name || "",
+    businessName: u?.business_name || "",
+    tradingName: u?.trading_name || "",
+    businessStatus: u?.business_status || "",
+    businessType: u?.business_type || "",
+    industrySector: u?.industry_sector || "",
+    yearsOperating: u?.years_operating?.toString() || "",
+    employeeCount: u?.employee_count?.toString() || "",
+    phone: u?.phone || "",
+    whatsapp: u?.whatsapp || "",
+    email: u?.bp_email || u?.email || "",
+    physicalAddress: u?.physical_address || "",
+    bankName: u?.bank_name || "",
+    accountType: u?.account_type || "",
+    accountNumber: u?.account_number || "",
+    branchCode: u?.branch_code || "",
+    saId: u?.sa_id || "",
+    cipcNumber: u?.cipc_number || "",
   });
+
+  const [form, setForm] = useState(buildForm(user));
+
+  useEffect(() => {
+    if (user) {
+      setForm(buildForm(user));
+    }
+  }, [user?.id, user?.business_name, user?.logo_url, user?.full_name]);
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
