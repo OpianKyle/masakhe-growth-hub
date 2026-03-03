@@ -90,7 +90,7 @@ export default function RegisterPage() {
         whatsapp: formData.whatsapp,
         email: formData.contactEmail || formData.email,
         physicalAddress: formData.physicalAddress,
-        popiaConsent: true,
+        popiaConsent: false,
       },
     });
     setLoading(false);
