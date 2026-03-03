@@ -24,12 +24,13 @@ interface User {
   sa_id?: string;
   cipc_number?: string;
   logo_url?: string;
+  popia_consent?: number;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.ok) {
         setUser(data.user);
-        return { ok: true };
+        const needsOnboarding = !data.user.popia_consent;
+        return { ok: true, needsOnboarding };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {

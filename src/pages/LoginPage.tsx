@@ -28,8 +28,13 @@ export default function LoginPage() {
     const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
-      toast.success("Welcome back!");
-      navigate(from, { replace: true });
+      if (result.needsOnboarding) {
+        toast.success("Welcome! Let's finish setting up your account.");
+        navigate("/onboarding", { replace: true });
+      } else {
+        toast.success("Welcome back!");
+        navigate(from, { replace: true });
+      }
     } else {
       toast.error(result.error || "Login failed");
     }

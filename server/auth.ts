@@ -120,7 +120,8 @@ authRouter.post("/login", async (req, res) => {
                 bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
                 bp.business_type, bp.years_operating, bp.employee_count, bp.phone, bp.whatsapp,
                 bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
-                bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url
+                bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
+                bp.popia_consent
          FROM users u
          LEFT JOIN business_profiles bp ON bp.user_id = u.id
          WHERE u.id = ?`,
@@ -149,7 +150,8 @@ authRouter.get("/me", async (req, res) => {
             bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
             bp.business_type, bp.years_operating, bp.employee_count, bp.phone, bp.whatsapp,
             bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
-            bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url
+            bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
+            bp.popia_consent
      FROM users u
      LEFT JOIN business_profiles bp ON bp.user_id = u.id
      WHERE u.id = ?`,
