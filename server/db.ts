@@ -487,6 +487,19 @@ export async function runMigrations() {
     await createIndex("idx_notif_user_read", "notifications", "user_id, is_read");
     await createIndex("idx_notif_created", "notifications", "created_at");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        token VARCHAR(64) NOT NULL UNIQUE,
+        expires_at DATETIME NOT NULL,
+        used TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_prt_token", "password_reset_tokens", "token");
+    await createIndex("idx_prt_user", "password_reset_tokens", "user_id");
+
     await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
 
     console.log("MySQL migrations completed successfully");

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail } from "./email";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "./email";
 
 export const authRouter = Router();
 
@@ -138,6 +138,68 @@ authRouter.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.json({ ok: true });
   });
+});
+
+authRouter.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await queryOne("SELECT id, full_name FROM users WHERE email = ?", [email.toLowerCase()]);
+
+    res.json({ ok: true });
+
+    if (user) {
+      await execute("UPDATE password_reset_tokens SET used = 1 WHERE user_id = ? AND used = 0", [user.id]);
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+
+      await execute(
+        "INSERT INTO password_reset_tokens (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)",
+        [randomUUID(), user.id, token, expiresAt]
+      );
+
+      sendPasswordResetEmail(email.toLowerCase(), user.full_name, token).catch(() => {});
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token and password are required" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const resetToken = await queryOne(
+      "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > NOW()",
+      [token]
+    );
+
+    if (!resetToken) {
+      return res.status(400).json({ error: "This reset link is invalid or has expired. Please request a new one." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await execute("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [
+      passwordHash, new Date().toISOString(), resetToken.user_id
+    ]);
+
+    await execute("UPDATE password_reset_tokens SET used = 1 WHERE id = ?", [resetToken.id]);
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to reset password" });
+  }
 });
 
 authRouter.get("/me", async (req, res) => {
