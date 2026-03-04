@@ -1206,6 +1206,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "stats",
             enabled: true,
             data: {
+              variant: "dark",
               items: [
                 { value: "7+", label: "Years Teaching" },
                 { value: "3000+", label: "Students Helped" },
