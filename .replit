@@ -63,9 +63,8 @@ SMTP_PORT = "465"
 SMTP_USER = "admin@masakhegroup.co.za"
 SMTP_FROM = "admin@masakhegroup.co.za"
 SMTP_SECURE = "true"
+APP_URL = "https://masakhegroup.co.za"
 
 [userenv.development]
-APP_URL = "https://7b9850e7-235a-4f48-8f86-31af5cbbd82b-00-2zawkes3j4uok.picard.replit.dev"
 
 [userenv.production]
-APP_URL = "https://masakhegroup.co.za"

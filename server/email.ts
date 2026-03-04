@@ -18,9 +18,14 @@ if (!transporter) {
   console.warn("SMTP_PASSWORD not set — welcome emails disabled");
 }
 
-export async function sendWelcomeEmail(toEmail: string, fullName: string) {
+export function getBaseUrl(reqOrigin?: string): string {
+  return reqOrigin || process.env.APP_URL || "https://masakhegroup.co.za";
+}
+
+export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUrl?: string) {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];
+  const appUrl = baseUrl || getBaseUrl();
 
   const html = `
 <!DOCTYPE html>
@@ -94,7 +99,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string) {
               <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
                 <tr>
                   <td style="background-color:#007749;border-radius:8px;">
-                    <a href="${process.env.APP_URL || "https://masakhe.co.za"}/dashboard" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Go to Dashboard</a>
+                    <a href="${appUrl}/dashboard" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Go to Dashboard</a>
                   </td>
                 </tr>
               </table>
@@ -138,10 +143,11 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string) {
   }
 }
 
-export async function sendPasswordResetEmail(toEmail: string, fullName: string, resetToken: string) {
+export async function sendPasswordResetEmail(toEmail: string, fullName: string, resetToken: string, baseUrl?: string) {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];
-  const resetUrl = `${process.env.APP_URL || "https://masakhe.co.za"}/reset-password?token=${resetToken}`;
+  const appUrl = baseUrl || getBaseUrl();
+  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
 
   const html = `
 <!DOCTYPE html>
