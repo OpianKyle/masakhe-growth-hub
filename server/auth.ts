@@ -181,7 +181,7 @@ authRouter.post("/reset-password", async (req, res) => {
     }
 
     const resetToken = await queryOne(
-      "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > NOW()",
+      "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > UTC_TIMESTAMP()",
       [token]
     );
 
@@ -190,8 +190,9 @@ authRouter.post("/reset-password", async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
     await execute("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [
-      passwordHash, new Date().toISOString(), resetToken.user_id
+      passwordHash, now, resetToken.user_id
     ]);
 
     await execute("UPDATE password_reset_tokens SET used = 1 WHERE id = ?", [resetToken.id]);
