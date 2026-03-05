@@ -63,8 +63,10 @@ accountsRouter.post("/:workspaceId/accounts/oauth/meta/start", requireWorkspaceR
   if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
     return res.json({ mockMode: true, message: "Meta credentials not configured. Using mock mode." });
   }
-  const redirectUri = `${process.env.APP_URL || "http://localhost:5000"}/api/social/oauth/meta/callback`;
-  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish&state=${req.params.workspaceId}`;
+  const origin = req.headers.origin || `${req.protocol}://${req.get("host")}`;
+  const redirectUri = `${origin}/api/social/oauth/meta/callback`;
+  const statePayload = Buffer.from(JSON.stringify({ workspaceId: req.params.workspaceId, origin })).toString("base64url");
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish&state=${statePayload}`;
   res.json({ authUrl });
 });
 

@@ -8,10 +8,6 @@ export const metaOAuthRouter = Router();
 
 const META_GRAPH_URL = "https://graph.facebook.com/v19.0";
 
-function getRedirectUri() {
-  return `${process.env.APP_URL || "http://localhost:5000"}/api/social/oauth/meta/callback`;
-}
-
 metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) => {
   try {
     const { code, state, error, error_description } = req.query;
@@ -31,7 +27,18 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
       return res.redirect("/login");
     }
 
-    const workspaceId = state as string;
+    let workspaceId: string;
+    let origin: string;
+    try {
+      const parsed = JSON.parse(Buffer.from(state as string, "base64url").toString());
+      workspaceId = parsed.workspaceId;
+      origin = parsed.origin;
+    } catch {
+      workspaceId = state as string;
+      origin = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+    }
+
+    const redirectUri = `${origin}/api/social/oauth/meta/callback`;
 
     const membership = await queryOne(
       "SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?",
@@ -41,7 +48,7 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
       return res.redirect("/dashboard/social?error=Workspace+access+denied");
     }
 
-    const tokenUrl = `${META_GRAPH_URL}/oauth/access_token?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(getRedirectUri())}&client_secret=${process.env.META_APP_SECRET}&code=${code}`;
+    const tokenUrl = `${META_GRAPH_URL}/oauth/access_token?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${process.env.META_APP_SECRET}&code=${code}`;
     const tokenRes = await fetch(tokenUrl);
     const tokenData = await tokenRes.json();
 
