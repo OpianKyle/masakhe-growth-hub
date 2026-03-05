@@ -97,7 +97,7 @@ export default function SocialOverview({ workspaceId }: Props) {
           <Globe className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
           <h3 className="font-bold text-lg mb-1">Connect Your Accounts First</h3>
           <p className="text-muted-foreground text-sm mb-4">Link your Facebook, Instagram, or LinkedIn accounts to start posting.</p>
-          <Link to="/dashboard/social/accounts">
+          <Link to="/dashboard/social">
             <Button className="gradient-hero text-white">Connect Accounts</Button>
           </Link>
         </Card>

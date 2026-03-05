@@ -172,7 +172,7 @@ export default function SocialCreate({ workspaceId }: Props) {
           <Card className="p-5">
             <Label className="text-sm font-medium mb-2 block">Select Accounts</Label>
             {accounts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No accounts connected. <a href="/dashboard/social/accounts" className="text-primary underline">Connect one first</a>.</p>
+              <p className="text-sm text-muted-foreground">No accounts connected. Use the "Link Account" button above to connect one first.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {accounts.map(acc => {
