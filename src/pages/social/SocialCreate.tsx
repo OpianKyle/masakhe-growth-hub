@@ -257,23 +257,44 @@ export default function SocialCreate({ workspaceId }: Props) {
                 );
               })}
             </div>
-            <div className="rounded-lg border p-4 bg-white min-h-[200px]">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><span className="text-xs font-bold text-primary">B</span></div>
-                <div>
-                  <p className="text-xs font-bold">Your Business</p>
-                  <p className="text-[10px] text-muted-foreground">Just now</p>
+            <div className="rounded-lg border bg-white overflow-hidden min-h-[200px]">
+              {selectedMedia.length > 0 && (() => {
+                const selected = mediaAssets.filter(a => selectedMedia.includes(a.id));
+                const images = selected.filter(a => a.type === "IMAGE");
+                const videos = selected.filter(a => a.type !== "IMAGE");
+                return (
+                  <div className={`w-full ${images.length === 1 ? "" : "grid grid-cols-2 gap-0.5"}`}>
+                    {images.slice(0, 4).map((asset, i) => (
+                      <div key={asset.id} className={`relative bg-muted ${images.length === 1 ? "aspect-[4/3]" : "aspect-square"} ${images.length === 3 && i === 0 ? "col-span-2" : ""}`}>
+                        <img src={asset.url} alt={asset.file_name} className="w-full h-full object-cover" />
+                        {images.length > 4 && i === 3 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-lg">
+                            +{images.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {videos.map(asset => (
+                      <div key={asset.id} className="aspect-video bg-muted flex items-center justify-center text-xs text-muted-foreground col-span-2">
+                        <Image className="h-4 w-4 mr-1" /> Video attached
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0"><span className="text-xs font-bold text-primary">B</span></div>
+                  <div>
+                    <p className="text-xs font-bold">Your Business</p>
+                    <p className="text-[10px] text-muted-foreground">Just now</p>
+                  </div>
                 </div>
+                <p className="text-sm whitespace-pre-wrap">{contentText || "Your post content will appear here..."}</p>
+                {contentText.length > (PLATFORM_LIMITS[previewPlatform] || 5000) && (
+                  <p className="text-xs text-red-600 mt-2">⚠ Exceeds {previewPlatform.replace("META_", "")} character limit</p>
+                )}
               </div>
-              <p className="text-sm whitespace-pre-wrap">{contentText || "Your post content will appear here..."}</p>
-              {selectedMedia.length > 0 && (
-                <div className="mt-3 rounded-lg bg-muted h-32 flex items-center justify-center text-xs text-muted-foreground">
-                  <Image className="h-5 w-5 mr-1" /> {selectedMedia.length} media attached
-                </div>
-              )}
-              {contentText.length > (PLATFORM_LIMITS[previewPlatform] || 5000) && (
-                <p className="text-xs text-red-600 mt-2">⚠ Exceeds {previewPlatform.replace("META_", "")} character limit</p>
-              )}
             </div>
           </Card>
 
