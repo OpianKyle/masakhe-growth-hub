@@ -133,7 +133,7 @@ export default function FinancePage() {
       });
       if (!res.ok) throw new Error("Import failed");
       const data = await res.json();
-      toast.success(`Imported ${data.count} entries`);
+      toast.success(`Imported ${data.imported} entries`);
       loadEntries();
       loadSummary();
     } catch {

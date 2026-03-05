@@ -48,25 +48,59 @@ financeRouter.post("/import", upload.single("file"), async (req, res) => {
 
     if (lines.length < 2) return res.status(400).json({ error: "CSV must have a header and at least one data row" });
 
+    // Determine delimiter (comma or semicolon)
+    const headerLine = lines[0];
+    const delimiter = headerLine.includes(";") ? ";" : ",";
+
     let imported = 0;
     const now = new Date().toISOString();
 
     for (let i = 1; i < lines.length; i++) {
-      const parts = parseCSVLine(lines[i]);
-      if (parts.length < 4) continue;
+      const parts = parseCSVLine(lines[i], delimiter);
+      
+      // Standard Format: Date,Type,Category,Amount,Description
+      // User Format: Date;Description;Payments;Deposits;Balance
+      
+      let date, type, category, amountCents, description;
 
-      const [date, type, category, amountStr, description] = parts;
-      if (!date || !type || !category || !amountStr) continue;
-      if (!["INCOME", "EXPENSE"].includes(type.toUpperCase())) continue;
+      if (delimiter === ";") {
+        if (parts.length < 4) continue;
+        const [rawDate, rawDesc, payments, deposits] = parts;
+        date = rawDate.replace(/\//g, "-"); // Convert YYYY/MM/DD to YYYY-MM-DD
+        description = rawDesc;
+        
+        const paymentVal = parseFloat(payments.replace(/,/g, "")) || 0;
+        const depositVal = parseFloat(deposits.replace(/,/g, "")) || 0;
+        
+        if (depositVal !== 0) {
+          type = "INCOME";
+          amountCents = Math.round(depositVal * 100);
+          category = "Other Income";
+        } else if (paymentVal !== 0) {
+          type = "EXPENSE";
+          amountCents = Math.round(Math.abs(paymentVal) * 100);
+          category = "Other Expense";
+        } else {
+          continue;
+        }
+      } else {
+        if (parts.length < 4) continue;
+        const [rawDate, rawType, rawCat, amountStr, rawDesc] = parts;
+        date = rawDate;
+        type = rawType.toUpperCase();
+        category = rawCat;
+        description = rawDesc;
+        amountCents = Math.round(parseFloat(amountStr) * 100);
+      }
 
-      const amountCents = Math.round(parseFloat(amountStr) * 100);
-      if (isNaN(amountCents)) continue;
+      if (!date || !type || isNaN(amountCents)) continue;
+      if (!["INCOME", "EXPENSE"].includes(type)) continue;
 
       const id = randomUUID();
       await execute(
         `INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, userId, type.toUpperCase(), amountCents, category, description || null, date, now]
+        [id, userId, type, amountCents, category || "Other", description || null, date, now]
       );
       imported++;
     }
@@ -77,7 +111,7 @@ financeRouter.post("/import", upload.single("file"), async (req, res) => {
   }
 });
 
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, delimiter: string = ","): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -95,7 +129,7 @@ function parseCSVLine(line: string): string[] {
     } else {
       if (ch === '"') {
         inQuotes = true;
-      } else if (ch === ",") {
+      } else if (ch === delimiter) {
         result.push(current.trim());
         current = "";
       } else {
