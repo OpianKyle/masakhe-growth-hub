@@ -5,9 +5,143 @@ import { randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fs from "fs";
 import path from "path";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export const invoiceRouter = Router();
 invoiceRouter.use(requireAuth);
+
+invoiceRouter.get("/export", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const invoices = await queryAll(
+      "SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC",
+      [userId]
+    );
+
+    const header = "Invoice Number,Customer Name,Customer Email,Items,Total,Status,Date";
+    const rows = invoices.map((inv: any) => {
+      const items = JSON.parse(inv.items_json || "[]");
+      const itemsSummary = items
+        .map((item: any) => {
+          const qty = item.qty || 1;
+          const unitPrice = (item.unitPrice || 0).toFixed(2);
+          return `${qty}x ${item.name || "Item"} @ R${unitPrice}`;
+        })
+        .join("; ");
+      const total = (inv.total_cents / 100).toFixed(2);
+      const date = inv.created_at ? inv.created_at.split("T")[0] : "";
+      const custName = (inv.customer_name || "").replace(/"/g, '""');
+      const custEmail = (inv.customer_email || "").replace(/"/g, '""');
+      return `${inv.invoice_number},"${custName}","${custEmail}","${itemsSummary.replace(/"/g, '""')}",${total},${inv.status || "final"},${date}`;
+    });
+
+    const csv = [header, ...rows].join("\n");
+    const today = new Date().toISOString().split("T")[0];
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="invoices-export-${today}.csv"`);
+    res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+invoiceRouter.post("/import", upload.single("file"), async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+    const content = file.buffer.toString("utf-8");
+    const lines = content.split(/\r?\n/).filter((l) => l.trim());
+
+    if (lines.length < 2) return res.status(400).json({ error: "CSV must have a header and at least one data row" });
+
+    let imported = 0;
+    const now = new Date().toISOString();
+
+    const existingCount = ((await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0) as number;
+
+    for (let i = 1; i < lines.length; i++) {
+      const parts = parseCSVLine(lines[i]);
+      if (parts.length < 3) continue;
+
+      const [customerName, customerEmail, itemsStr, totalStr] = parts;
+      if (!customerName) continue;
+
+      const items: { name: string; qty: number; unitPrice: number }[] = [];
+      if (itemsStr) {
+        const itemParts = itemsStr.split(";").map((s) => s.trim()).filter(Boolean);
+        for (const part of itemParts) {
+          const match = part.match(/^(\d+)\s*x\s+(.+?)\s+@\s+(\d+(?:\.\d+)?)$/i);
+          if (match) {
+            items.push({
+              qty: parseInt(match[1]),
+              name: match[2].trim(),
+              unitPrice: parseFloat(match[3]),
+            });
+          }
+        }
+      }
+
+      let totalCents: number;
+      if (totalStr && totalStr.trim()) {
+        totalCents = Math.round(parseFloat(totalStr) * 100);
+        if (isNaN(totalCents)) {
+          totalCents = items.reduce((sum, item) => sum + Math.round(item.qty * item.unitPrice * 100), 0);
+        }
+      } else {
+        totalCents = items.reduce((sum, item) => sum + Math.round(item.qty * item.unitPrice * 100), 0);
+      }
+
+      const invoiceNumber = `INV-${new Date().getFullYear()}-${String(existingCount + imported + 1).padStart(3, "0")}`;
+      const id = randomUUID();
+
+      await execute(
+        `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, items_json, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
+        [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
+      );
+      imported++;
+    }
+
+    res.json({ ok: true, imported });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to import" });
+  }
+});
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
 
 invoiceRouter.post("/", async (req, res) => {
   try {

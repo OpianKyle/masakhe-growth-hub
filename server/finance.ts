@@ -2,9 +2,110 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export const financeRouter = Router();
 financeRouter.use(requireAuth);
+
+financeRouter.get("/export", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const entries = await queryAll(
+      "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at DESC",
+      [userId]
+    );
+
+    const header = "Date,Type,Category,Amount,Description";
+    const rows = entries.map((e: any) => {
+      const date = e.occurred_at ? e.occurred_at.split("T")[0] : "";
+      const amount = (e.amount_cents / 100).toFixed(2);
+      const desc = (e.description || "").replace(/"/g, '""');
+      const cat = (e.category || "").replace(/"/g, '""');
+      return `${date},${e.type},"${cat}",${amount},"${desc}"`;
+    });
+
+    const csv = [header, ...rows].join("\n");
+    const today = new Date().toISOString().split("T")[0];
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-export-${today}.csv"`);
+    res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+financeRouter.post("/import", upload.single("file"), async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+    const content = file.buffer.toString("utf-8");
+    const lines = content.split(/\r?\n/).filter((l) => l.trim());
+
+    if (lines.length < 2) return res.status(400).json({ error: "CSV must have a header and at least one data row" });
+
+    let imported = 0;
+    const now = new Date().toISOString();
+
+    for (let i = 1; i < lines.length; i++) {
+      const parts = parseCSVLine(lines[i]);
+      if (parts.length < 4) continue;
+
+      const [date, type, category, amountStr, description] = parts;
+      if (!date || !type || !category || !amountStr) continue;
+      if (!["INCOME", "EXPENSE"].includes(type.toUpperCase())) continue;
+
+      const amountCents = Math.round(parseFloat(amountStr) * 100);
+      if (isNaN(amountCents)) continue;
+
+      const id = randomUUID();
+      await execute(
+        `INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, userId, type.toUpperCase(), amountCents, category, description || null, date, now]
+      );
+      imported++;
+    }
+
+    res.json({ ok: true, imported });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to import" });
+  }
+});
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
 
 financeRouter.post("/entries", async (req, res) => {
   try {

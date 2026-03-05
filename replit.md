@@ -44,3 +44,4 @@ Key architectural features include:
 - **Session Management**: `express-mysql-session` for storing session data in MySQL.
 - **PDF Generation**: `pdf-lib` for creating PDF documents.
 - **File Uploads**: `multer` for handling media file uploads.
+- **CSV Import/Export**: Finance ledger entries and invoices support CSV export (download) and CSV import (upload). Finance export: Date, Type, Category, Amount (Rands), Description. Invoice export: Invoice Number, Customer Name, Customer Email, Items (semicolon-separated), Total, Status, Date. Import endpoints accept CSV uploads via multer, validate rows, and insert records. Server: `GET/POST /api/finance/export|import`, `GET/POST /api/invoices/export|import`. Frontend: Export/Import CSV buttons on FinancePage and InvoicesPage.

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
-  Plus, Trash2, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight
+  Plus, Trash2, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight, Download, Upload
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -43,6 +43,7 @@ export default function FinancePage() {
   const [summary, setSummary] = useState<MonthlySummary[]>([]);
   const [month, setMonth] = useState(currentMonth());
   const [showForm, setShowForm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formType, setFormType] = useState<"INCOME" | "EXPENSE">("INCOME");
   const [formAmount, setFormAmount] = useState("");
@@ -101,6 +102,46 @@ export default function FinancePage() {
     if (res.ok) { toast.success("Deleted"); loadEntries(); loadSummary(); }
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/finance/export", { credentials: "include" });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `finance-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to export CSV");
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/finance/import", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Import failed");
+      const data = await res.json();
+      toast.success(`Imported ${data.count} entries`);
+      loadEntries();
+      loadSummary();
+    } catch {
+      toast.error("Failed to import CSV");
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const filtered = entries.filter((e) =>
     tab === "income" ? e.type === "INCOME" : tab === "expenses" ? e.type === "EXPENSE" : true
   );
@@ -124,10 +165,19 @@ export default function FinancePage() {
           <h2 className="text-2xl font-bold font-heading">Finance</h2>
           <p className="text-muted-foreground">Track your income and expenses</p>
         </div>
-        <Button onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setShowForm(true); }} className="gradient-hero text-white">
-          <Plus className="h-4 w-4 mr-2" /> Add Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" /> Import CSV
+          </Button>
+          <Button onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setShowForm(true); }} className="gradient-hero text-white">
+            <Plus className="h-4 w-4 mr-2" /> Add Entry
+          </Button>
+        </div>
       </div>
+      <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

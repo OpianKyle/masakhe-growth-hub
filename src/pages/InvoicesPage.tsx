@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, FileText, X } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X } from "lucide-react";
 
 interface InvoiceItem {
   name: string;
@@ -30,6 +30,40 @@ export default function InvoicesPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    const res = await fetch("/api/invoices/export", { credentials: "include" });
+    if (!res.ok) { toast.error("Failed to export invoices"); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `invoices-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/invoices/import", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      toast.success(`Imported ${data.count} invoice${data.count !== 1 ? "s" : ""}`);
+      loadInvoices();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || "Failed to import invoices");
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const loadInvoices = async () => {
     const res = await fetch("/api/invoices", { credentials: "include" });
@@ -92,9 +126,18 @@ export default function InvoicesPage() {
           <h2 className="text-2xl font-bold font-heading">Invoices</h2>
           <p className="text-muted-foreground">Create and manage your invoices</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gradient-hero text-white">
-          <Plus className="h-4 w-4 mr-2" /> New Invoice
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" /> Import CSV
+          </Button>
+          <Button onClick={() => setShowCreate(true)} className="gradient-hero text-white">
+            <Plus className="h-4 w-4 mr-2" /> New Invoice
+          </Button>
+        </div>
+        <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
       </div>
 
       {/* Create Invoice Form */}
