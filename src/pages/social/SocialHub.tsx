@@ -413,28 +413,40 @@ export default function SocialHub() {
               ) : null}
             </div>
 
-            <div className="p-6 border-t bg-slate-50 flex gap-2">
+            <div className="p-6 border-t bg-slate-50 space-y-2">
               {platform && !mockMode && isMetaPlatform(platform) ? (
-                <Button
-                  onClick={handleMetaOAuth}
-                  disabled={oauthLoading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Facebook className="h-4 w-4 mr-2" />
-                  {oauthLoading ? "Redirecting to Facebook..." : "Connect with Facebook"}
-                </Button>
+                <>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleMetaOAuth}
+                      disabled={oauthLoading}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Facebook className="h-4 w-4 mr-2" />
+                      {oauthLoading ? "Redirecting..." : "Connect with Facebook"}
+                    </Button>
+                    <Button variant="ghost" onClick={closeConnectDialog}>Cancel</Button>
+                  </div>
+                  <button
+                    onClick={() => { handleQuickConnect(platform); closeConnectDialog(); }}
+                    disabled={connecting}
+                    className="w-full text-xs text-muted-foreground hover:text-primary py-1 transition-colors"
+                  >
+                    {connecting ? "Connecting..." : "or connect as demo account instead"}
+                  </button>
+                </>
               ) : (
-                <Button
-                  onClick={handleConnect}
-                  disabled={connecting || !platform || !accountName.trim()}
-                  className="flex-1 gradient-hero text-white"
-                >
-                  {connecting ? "Linking..." : "Link Account"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleConnect}
+                    disabled={connecting || !platform || !accountName.trim()}
+                    className="flex-1 gradient-hero text-white"
+                  >
+                    {connecting ? "Linking..." : "Link Account"}
+                  </Button>
+                  <Button variant="ghost" onClick={closeConnectDialog}>Cancel</Button>
+                </div>
               )}
-              <Button variant="ghost" onClick={closeConnectDialog}>
-                Cancel
-              </Button>
             </div>
           </Card>
         </div>

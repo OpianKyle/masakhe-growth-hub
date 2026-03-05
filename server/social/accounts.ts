@@ -47,7 +47,7 @@ accountsRouter.post("/:workspaceId/accounts/connect", requireActiveSubscription,
         id, req.params.workspaceId, platform, accountName, profileUrl || null,
         `mock_${platform.toLowerCase()}_${Date.now()}`,
         mockToken, null, null,
-        req.session.userId!, MOCK_MODE ? 1 : 0, now, now
+        req.session.userId!, 1, now, now
       ]
     );
 
