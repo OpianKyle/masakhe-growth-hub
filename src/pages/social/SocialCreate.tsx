@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe
+  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe, Sparkles, Loader2
 } from "lucide-react";
 
 interface Account {
@@ -63,6 +63,9 @@ export default function SocialCreate({ workspaceId }: Props) {
   const [scheduledAt, setScheduledAt] = useState("");
   const [previewPlatform, setPreviewPlatform] = useState("META_FACEBOOK");
   const [saving, setSaving] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [showGeneratePanel, setShowGeneratePanel] = useState(false);
+  const [generatePrompt, setGeneratePrompt] = useState("");
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -104,6 +107,33 @@ export default function SocialCreate({ workspaceId }: Props) {
 
   const addHashtag = (tag: string) => {
     setContentText(prev => (prev + " " + tag).trim());
+  };
+
+  const generateAdImage = async () => {
+    setGeneratingImage(true);
+    try {
+      const res = await fetch(`/api/social/ws/${workspaceId}/media/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: generatePrompt || undefined,
+          postContent: contentText,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate image");
+      const newAsset: MediaAsset = { id: data.id, url: data.url, type: "IMAGE", file_name: data.fileName };
+      setMediaAssets(prev => [newAsset, ...prev]);
+      setSelectedMedia(prev => [...prev, data.id]);
+      setShowGeneratePanel(false);
+      setGeneratePrompt("");
+      toast.success("Ad image generated and added to your post!");
+    } catch (err: any) {
+      toast.error(err.message || "Image generation failed");
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const handleSubmit = async (action: "draft" | "schedule" | "publish") => {
@@ -216,9 +246,53 @@ export default function SocialCreate({ workspaceId }: Props) {
           </Card>
 
           <Card className="p-5">
-            <Label className="text-sm font-medium mb-2 block">Attach Media</Label>
-            {mediaAssets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No media uploaded yet. <a href="/dashboard/social/media" className="text-primary underline">Upload media</a> first.</p>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-medium">Attach Media</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                onClick={() => setShowGeneratePanel(p => !p)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Generate with AI
+              </Button>
+            </div>
+
+            {showGeneratePanel && (
+              <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" /> AI Ad Image Generator
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to auto-generate based on your post content, or describe what you want.
+                </p>
+                <textarea
+                  value={generatePrompt}
+                  onChange={e => setGeneratePrompt(e.target.value)}
+                  placeholder="e.g. A vibrant South African market scene with colourful textiles and smiling people..."
+                  className="w-full rounded-lg border bg-white p-2.5 text-xs min-h-[72px] resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={generateAdImage}
+                    disabled={generatingImage}
+                    size="sm"
+                    className="gradient-hero text-white gap-1.5"
+                  >
+                    {generatingImage ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="h-3.5 w-3.5" /> Generate Image</>
+                    )}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowGeneratePanel(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {mediaAssets.length === 0 && !showGeneratePanel ? (
+              <p className="text-sm text-muted-foreground">No media uploaded yet. <a href="/dashboard/social/media" className="text-primary underline">Upload media</a> first, or use AI to generate one above.</p>
             ) : (
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {mediaAssets.slice(0, 24).map(asset => {

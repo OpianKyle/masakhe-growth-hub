@@ -8,6 +8,12 @@ import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 const uploadDir = path.join(process.cwd(), "public", "uploads", "media");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -69,6 +75,49 @@ mediaRouter.post("/:workspaceId/media/upload", requireActiveSubscription, requir
     await writeAuditLog(req.params.workspaceId, req.session.userId!, "UPLOADED_MEDIA", "media_asset", id, { fileName: req.file.originalname, size: req.file.size });
 
     res.json({ ok: true, id, url, type: isVideo ? "VIDEO" : "IMAGE", fileName: req.file.originalname });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+mediaRouter.post("/:workspaceId/media/generate", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+  try {
+    const { prompt, postContent, businessName } = req.body;
+
+    const finalPrompt = prompt || [
+      `Create a professional, eye-catching social media ad image for a South African small business`,
+      businessName ? `called "${businessName}"` : "",
+      postContent ? `promoting: ${postContent.slice(0, 300)}` : "",
+      `Style: modern, vibrant, clean layout, suitable for Facebook and Instagram. No text overlays.`,
+    ].filter(Boolean).join(" ");
+
+    const response = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt: finalPrompt,
+      n: 1,
+      size: "1024x1024",
+    });
+
+    const base64 = response.data[0]?.b64_json;
+    if (!base64) return res.status(500).json({ error: "No image returned from generator" });
+
+    const filename = `${randomUUID()}.png`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, Buffer.from(base64, "base64"));
+
+    const id = randomUUID();
+    const url = `/uploads/media/${filename}`;
+    const fileSize = fs.statSync(filePath).size;
+
+    await execute(
+      `INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [id, req.params.workspaceId, url, "IMAGE", `ai-generated-${filename}`, fileSize, req.session.userId!, new Date().toISOString()]
+    );
+
+    await writeAuditLog(req.params.workspaceId, req.session.userId!, "GENERATED_MEDIA", "media_asset", id, { prompt: finalPrompt });
+
+    res.json({ ok: true, id, url, type: "IMAGE", fileName: `ai-generated-${filename}` });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
