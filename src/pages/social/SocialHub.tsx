@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import SocialPostTemplates from "./SocialPostTemplates";
+import type { SiteConfig } from "@/types/site";
 import SocialCalendar from "./SocialCalendar";
 import SocialCreate from "./SocialCreate";
 import SocialMediaLibrary from "./SocialMedia";
@@ -61,6 +62,8 @@ function ContentSkeleton() {
   );
 }
 
+const SITE_CACHE_KEY = "masakhe_site_cache";
+
 export default function SocialHub() {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -72,13 +75,31 @@ export default function SocialHub() {
   const [connecting, setConnecting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [showManageAccounts, setShowManageAccounts] = useState(false);
+  const [site, setSite] = useState<SiteConfig | null>(() => {
+    try {
+      const cached = localStorage.getItem(SITE_CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
   const location = useLocation();
 
   useEffect(() => {
+    // Fetch workspace and site data in parallel
     fetch("/api/social/workspaces/mine", { credentials: "include" })
       .then(r => r.json())
       .then(d => { setWorkspaceId(d.defaultId || ""); })
       .catch(() => { setWorkspaceId(""); });
+
+    fetch("/api/websites/mine", { credentials: "include" })
+      .then(r => r.json())
+      .then((data: any[]) => {
+        if (data?.length > 0) {
+          const siteData = data[0].content || data[0];
+          setSite(siteData);
+          try { localStorage.setItem(SITE_CACHE_KEY, JSON.stringify(siteData)); } catch {}
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const loadAccounts = useCallback(() => {
@@ -411,12 +432,12 @@ export default function SocialHub() {
           <ContentSkeleton />
         ) : (
           <Routes>
-            <Route index element={<SocialPostTemplates workspaceId={workspaceId} />} />
+            <Route index element={<SocialPostTemplates workspaceId={workspaceId} site={site} />} />
             <Route path="calendar" element={<SocialCalendar workspaceId={workspaceId} />} />
             <Route path="create" element={<SocialCreate workspaceId={workspaceId} />} />
             <Route path="media" element={<SocialMediaLibrary workspaceId={workspaceId} />} />
             <Route path="analytics" element={<SocialAnalytics workspaceId={workspaceId} />} />
-            <Route path="*" element={<SocialPostTemplates workspaceId={workspaceId} />} />
+            <Route path="*" element={<SocialPostTemplates workspaceId={workspaceId} site={site} />} />
           </Routes>
         )}
       </div>

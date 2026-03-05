@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, S
 
 interface Props {
   workspaceId: string;
+  site: SiteConfig | null;
 }
 
 interface PostTemplate {
@@ -215,24 +216,10 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
 
 const CATEGORY_ORDER = ["Introduction", "Services", "Our Story", "Features", "Testimonials", "Milestones", "Contact", "Engagement"];
 
-export default function SocialPostTemplates({ workspaceId }: Props) {
+export default function SocialPostTemplates({ workspaceId, site }: Props) {
   const navigate = useNavigate();
-  const [site, setSite] = useState<SiteConfig | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/websites/mine", { credentials: "include" })
-      .then(r => r.json())
-      .then((data: any[]) => {
-        if (data?.length > 0) {
-          setSite(data[0].content || data[0]);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   const templates = site ? generateTemplates(site) : [];
   const categories = ["All", ...CATEGORY_ORDER.filter(c => templates.some(t => t.category === c))];
@@ -248,20 +235,6 @@ export default function SocialPostTemplates({ workspaceId }: Props) {
     toast.success("Post copied to clipboard!");
     setTimeout(() => setCopiedId(null), 2000);
   };
-
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 bg-muted rounded w-1/3" />
-        <div className="flex gap-2">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-8 bg-muted rounded-full w-24" />)}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-48 bg-muted rounded-xl" />)}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
