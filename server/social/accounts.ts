@@ -66,7 +66,7 @@ accountsRouter.post("/:workspaceId/accounts/oauth/meta/start", requireWorkspaceR
   const origin = req.headers.origin || `${req.protocol}://${req.get("host")}`;
   const redirectUri = `${origin}/api/social/oauth/meta/callback`;
   const statePayload = Buffer.from(JSON.stringify({ workspaceId: req.params.workspaceId, origin })).toString("base64url");
-  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish&state=${statePayload}`;
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=pages_show_list,pages_read_engagement,pages_manage_metadata,instagram_basic,instagram_content_publish&state=${statePayload}`;
   res.json({ authUrl });
 });
 
