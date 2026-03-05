@@ -131,6 +131,39 @@ export default function SocialHub() {
   const selectedPlatform = PLATFORMS.find(p => p.id === platform);
   const isMetaPlatform = (pid: string) => pid === "META_FACEBOOK" || pid === "META_INSTAGRAM";
 
+  const DEMO_NAMES: Record<string, string> = {
+    META_FACEBOOK: "My Facebook Page",
+    META_INSTAGRAM: "My Instagram",
+    LINKEDIN: "My LinkedIn",
+    X: "My Twitter/X",
+    TIKTOK: "My TikTok",
+    YOUTUBE: "My YouTube Channel",
+  };
+
+  const handleQuickConnect = async (pid: string) => {
+    if (!workspaceId) return;
+    setConnecting(true);
+    try {
+      const res = await fetch(`/api/social/ws/${workspaceId}/accounts/connect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ platform: pid, accountName: DEMO_NAMES[pid] || pid }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`${DEMO_NAMES[pid] || pid} connected in demo mode!`);
+        loadAccounts();
+      } else {
+        toast.error(data.error || "Failed to connect");
+      }
+    } catch {
+      toast.error("Failed to connect");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   const handleMetaOAuth = async () => {
     setOauthLoading(true);
     try {
@@ -241,6 +274,7 @@ export default function SocialHub() {
                   <Button
                     variant={acc ? "outline" : "default"}
                     size="sm"
+                    disabled={connecting && !acc}
                     className={`h-7 text-[10px] px-3 font-semibold rounded-full min-w-[85px] transition-all ${
                       acc 
                         ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 shadow-sm" 
@@ -249,14 +283,15 @@ export default function SocialHub() {
                     onClick={() => {
                       if (acc) {
                         setShowManageAccounts(true);
-                        // Scroll to managed accounts or similar
+                      } else if (mockMode) {
+                        handleQuickConnect(p.id);
                       } else {
                         setPlatform(p.id);
                         setShowConnect(true);
                       }
                     }}
                   >
-                    {acc ? "Connected" : "Connect"}
+                    {acc ? "Connected" : mockMode ? "Connect Demo" : "Connect"}
                   </Button>
                 </div>
               </div>
