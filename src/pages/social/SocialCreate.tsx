@@ -53,10 +53,11 @@ export default function SocialCreate({ workspaceId }: Props) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
+  const templateParam = searchParams.get("template");
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
-  const [contentText, setContentText] = useState("");
+  const [contentText, setContentText] = useState(templateParam ? decodeURIComponent(templateParam) : "");
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
   const [scheduledAt, setScheduledAt] = useState("");

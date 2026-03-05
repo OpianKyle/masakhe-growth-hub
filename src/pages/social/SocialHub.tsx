@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import SocialOverview from "./SocialOverview";
+import SocialPostTemplates from "./SocialPostTemplates";
 import SocialCalendar from "./SocialCalendar";
 import SocialCreate from "./SocialCreate";
 import SocialMediaLibrary from "./SocialMedia";
@@ -35,7 +35,7 @@ const PLATFORMS = [
 ];
 
 const subNav = [
-  { icon: LayoutDashboard, label: "Overview", path: "" },
+  { icon: LayoutDashboard, label: "Templates", path: "" },
   { icon: Calendar, label: "Calendar", path: "calendar" },
   { icon: PenSquare, label: "Create Post", path: "create" },
   { icon: Image, label: "Media Library", path: "media" },
@@ -411,12 +411,12 @@ export default function SocialHub() {
           <ContentSkeleton />
         ) : (
           <Routes>
-            <Route index element={<SocialOverview workspaceId={workspaceId} />} />
+            <Route index element={<SocialPostTemplates workspaceId={workspaceId} />} />
             <Route path="calendar" element={<SocialCalendar workspaceId={workspaceId} />} />
             <Route path="create" element={<SocialCreate workspaceId={workspaceId} />} />
             <Route path="media" element={<SocialMediaLibrary workspaceId={workspaceId} />} />
             <Route path="analytics" element={<SocialAnalytics workspaceId={workspaceId} />} />
-            <Route path="*" element={<SocialOverview workspaceId={workspaceId} />} />
+            <Route path="*" element={<SocialPostTemplates workspaceId={workspaceId} />} />
           </Routes>
         )}
       </div>
