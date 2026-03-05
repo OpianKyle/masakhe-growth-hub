@@ -182,7 +182,7 @@ export default function SocialHub() {
   return (
     <div>
       <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Connected Accounts</h3>
             {mockMode && (
@@ -192,47 +192,83 @@ export default function SocialHub() {
           <div className="flex items-center gap-2">
             {accounts.length > 0 && (
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setShowManageAccounts(!showManageAccounts)}>
-                {showManageAccounts ? "Hide" : "Manage"}
+                {showManageAccounts ? "Hide Details" : "Manage Accounts"}
               </Button>
             )}
-            <Button size="sm" onClick={() => setShowConnect(true)} className="gradient-hero text-white h-7 text-xs px-3">
-              <Plus className="h-3 w-3 mr-1" /> Link Account
+            <Button size="sm" onClick={() => { setPlatform(""); setShowConnect(true); }} className="gradient-hero text-white h-7 text-xs px-3">
+              <Plus className="h-3 w-3 mr-1" /> Add Account
             </Button>
           </div>
         </div>
 
-        {accounts.length === 0 ? (
-          <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-slate-50 border border-dashed border-slate-200 mb-2">
-            <Link2 className="h-4 w-4 text-muted-foreground/40" />
-            <p className="text-xs text-muted-foreground">No accounts linked yet. Click "Link Account" to connect your social media profiles.</p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {accounts.map(acc => {
-              const plat = PLATFORMS.find(p => p.id === acc.platform);
-              const Icon = plat?.icon || Globe;
-              return (
-                <div key={acc.id} className="flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 shadow-sm">
-                  <div className={`w-6 h-6 rounded-full ${plat?.color || "bg-gray-500"} flex items-center justify-center`}>
-                    <Icon className="h-3 w-3 text-white" />
-                  </div>
-                  <span className="text-xs font-medium">{acc.account_name}</span>
-                  {acc.is_mock ? (
-                    <span className="text-[9px] bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5 font-medium">DEMO</span>
-                  ) : (
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+        <div className="flex flex-wrap gap-6 py-2">
+          {PLATFORMS.map(p => {
+            const acc = accounts.find(a => a.platform === p.id);
+            const Icon = p.icon;
+            return (
+              <div key={p.id} className="flex flex-col items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl ${p.color} flex items-center justify-center shadow-md relative transition-transform hover:scale-105`}>
+                  <Icon className="h-6 w-6 text-white" />
+                  {acc && (
+                    <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow-md border border-green-100">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 fill-white" />
+                    </div>
                   )}
-                  {showManageAccounts && (
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">{p.label}</span>
+                  <Button
+                    variant={acc ? "outline" : "default"}
+                    size="sm"
+                    className={`h-7 text-[10px] px-3 font-semibold rounded-full min-w-[85px] transition-all ${
+                      acc 
+                        ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 shadow-sm" 
+                        : "gradient-hero text-white shadow-md hover:shadow-lg active:scale-95"
+                    }`}
+                    onClick={() => {
+                      if (acc) {
+                        setShowManageAccounts(true);
+                        // Scroll to managed accounts or similar
+                      } else {
+                        setPlatform(p.id);
+                        setShowConnect(true);
+                      }
+                    }}
+                  >
+                    {acc ? "Connected" : "Connect"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {showManageAccounts && accounts.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex flex-wrap gap-2">
+              {accounts.map(acc => {
+                const plat = PLATFORMS.find(p => p.id === acc.platform);
+                const Icon = plat?.icon || Globe;
+                return (
+                  <div key={acc.id} className="flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 shadow-sm">
+                    <div className={`w-6 h-6 rounded-full ${plat?.color || "bg-gray-500"} flex items-center justify-center`}>
+                      <Icon className="h-3 w-3 text-white" />
+                    </div>
+                    <span className="text-xs font-medium">{acc.account_name}</span>
+                    {acc.is_mock ? (
+                      <span className="text-[9px] bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5 font-medium">DEMO</span>
+                    ) : (
+                      <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    )}
                     <button
                       onClick={() => handleDisconnect(acc.id, acc.account_name)}
                       className="text-red-400 hover:text-red-600 ml-0.5"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
