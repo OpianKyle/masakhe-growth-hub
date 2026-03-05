@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,18 +87,59 @@ export default function SocialAccounts({ workspaceId }: Props) {
   const [accountName, setAccountName] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!workspaceId) return;
     fetch(`/api/social/ws/${workspaceId}/accounts`, { credentials: "include" })
       .then(r => r.json())
       .then(d => { setAccounts(d.accounts || []); setMockMode(d.mockMode); })
       .catch(() => {});
-  };
+  }, [workspaceId]);
 
-  useEffect(() => { load(); }, [workspaceId]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "meta") {
+      const count = params.get("count") || "0";
+      toast.success(`Successfully connected ${count} Meta account(s)!`);
+      load();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    if (params.get("error")) {
+      toast.error(params.get("error") || "Connection failed");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [load]);
 
   const selectedPlatform = PLATFORMS.find(p => p.id === platform);
+
+  const isMetaPlatform = (platformId: string) =>
+    platformId === "META_FACEBOOK" || platformId === "META_INSTAGRAM";
+
+  const handleMetaOAuth = async () => {
+    setOauthLoading(true);
+    try {
+      const res = await fetch(`/api/social/ws/${workspaceId}/accounts/oauth/meta/start`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else if (data.mockMode) {
+        toast.info("Meta API not configured. Use manual linking instead.");
+        setOauthLoading(false);
+      } else {
+        toast.error("Could not start Meta connection");
+        setOauthLoading(false);
+      }
+    } catch {
+      toast.error("Failed to start Meta connection");
+      setOauthLoading(false);
+    }
+  };
 
   const handleConnect = async () => {
     if (!platform || !accountName.trim()) {
@@ -213,7 +254,20 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 </div>
               </div>
 
-              {platform && (
+              {platform && !mockMode && isMetaPlatform(platform) ? (
+                <Card className="p-4 border-blue-200 bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-900 text-sm">Connect via Facebook</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Click below to sign in with Facebook. This will automatically connect your Facebook Page
+                        {platform === "META_INSTAGRAM" ? " and linked Instagram business account" : ""}.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : platform ? (
                 <>
                   <div>
                     <Label className="text-sm font-medium mb-1.5 block">Account Name / Handle</Label>
@@ -240,17 +294,28 @@ export default function SocialAccounts({ workspaceId }: Props) {
                     </p>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
 
             <div className="p-6 border-t bg-slate-50 flex gap-2">
-              <Button
-                onClick={handleConnect}
-                disabled={connecting || !platform || !accountName.trim()}
-                className="flex-1 gradient-hero text-white"
-              >
-                {connecting ? "Linking..." : "Link Account"}
-              </Button>
+              {platform && !mockMode && isMetaPlatform(platform) ? (
+                <Button
+                  onClick={handleMetaOAuth}
+                  disabled={oauthLoading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Facebook className="h-4 w-4 mr-2" />
+                  {oauthLoading ? "Redirecting to Facebook..." : "Connect with Facebook"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting || !platform || !accountName.trim()}
+                  className="flex-1 gradient-hero text-white"
+                >
+                  {connecting ? "Linking..." : "Link Account"}
+                </Button>
+              )}
               <Button variant="ghost" onClick={() => { setShowConnect(false); setPlatform(""); setAccountName(""); setProfileUrl(""); }}>
                 Cancel
               </Button>

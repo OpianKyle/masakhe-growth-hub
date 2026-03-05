@@ -5,6 +5,7 @@ import { requireWorkspaceRole } from "./workspace";
 import { requireActiveSubscription } from "../feature-gate";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
+import { publishToFacebook, publishToInstagram } from "./meta-oauth";
 
 export const postsRouter = Router();
 postsRouter.use(requireAuth);
@@ -171,17 +172,100 @@ postsRouter.delete("/:workspaceId/posts/:postId", requireActiveSubscription, req
 
 export async function publishPostNow(postId: string, workspaceId: string, userId: string) {
   const targets = await queryAll(
-    `SELECT spt.*, sa.is_mock, sa.platform, sa.account_name
+    `SELECT spt.*, sa.is_mock, sa.platform, sa.account_name, sa.platform_account_id, sa.access_token_enc
      FROM social_post_targets spt
      JOIN social_accounts sa ON sa.id = spt.social_account_id
      WHERE spt.social_post_id = ?`,
     [postId]
   );
 
+  const post = await queryOne("SELECT content_text, media_asset_ids FROM social_posts WHERE id = ?", [postId]);
+  const contentText = post?.content_text || "";
+  const mediaAssetIds = JSON.parse(post?.media_asset_ids || "[]");
+
+  let mediaUrl: string | undefined;
+  if (mediaAssetIds.length > 0) {
+    const asset = await queryOne("SELECT file_url FROM social_media_assets WHERE id = ?", [mediaAssetIds[0]]);
+    if (asset?.file_url) {
+      mediaUrl = asset.file_url.startsWith("http")
+        ? asset.file_url
+        : `${process.env.APP_URL || "http://localhost:5000"}${asset.file_url}`;
+    }
+  }
+
   let allSuccess = true;
   const now = new Date().toISOString();
 
   for (const target of targets) {
+    if (target.is_mock) {
+      const success = Math.random() > 0.1;
+      if (success) {
+        await execute(
+          "UPDATE social_post_targets SET status = 'PUBLISHED', platform_post_id = ?, published_at = ? WHERE id = ?",
+          [`mock_${Date.now()}_${target.id.slice(0, 8)}`, now, target.id]
+        );
+      } else {
+        allSuccess = false;
+        await execute(
+          "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+          ["Simulated transient error (mock mode)", target.id]
+        );
+      }
+      continue;
+    }
+
+    if (target.platform === "META_FACEBOOK" && target.access_token_enc) {
+      const result = await publishToFacebook(
+        target.platform_account_id,
+        target.access_token_enc,
+        contentText,
+        mediaUrl
+      );
+      if (result.success) {
+        await execute(
+          "UPDATE social_post_targets SET status = 'PUBLISHED', platform_post_id = ?, published_at = ? WHERE id = ?",
+          [result.postId || "", now, target.id]
+        );
+      } else {
+        allSuccess = false;
+        await execute(
+          "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+          [result.error || "Facebook publish failed", target.id]
+        );
+      }
+      continue;
+    }
+
+    if (target.platform === "META_INSTAGRAM" && target.access_token_enc) {
+      if (!mediaUrl) {
+        allSuccess = false;
+        await execute(
+          "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+          ["Instagram requires an image to publish", target.id]
+        );
+        continue;
+      }
+      const result = await publishToInstagram(
+        target.platform_account_id,
+        target.access_token_enc,
+        contentText,
+        mediaUrl
+      );
+      if (result.success) {
+        await execute(
+          "UPDATE social_post_targets SET status = 'PUBLISHED', platform_post_id = ?, published_at = ? WHERE id = ?",
+          [result.postId || "", now, target.id]
+        );
+      } else {
+        allSuccess = false;
+        await execute(
+          "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+          [result.error || "Instagram publish failed", target.id]
+        );
+      }
+      continue;
+    }
+
     const success = Math.random() > 0.1;
     if (success) {
       await execute(

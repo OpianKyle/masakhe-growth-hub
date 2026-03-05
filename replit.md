@@ -40,7 +40,7 @@ Key architectural features include:
 ## External Dependencies
 - **Database**: Remote MySQL hosted on Xneelo (`sql16.cpt3.host-h.net`).
 - **Payment Gateway**: Adumo Online (Virtual HPP form POST for debit order subscriptions).
-- **Social Media APIs**: Integrations with Meta (Facebook/Instagram), LinkedIn, X, TikTok, and YouTube (with a Mock Provider Mode for development).
+- **Social Media APIs**: Meta (Facebook/Instagram) with full OAuth connection and real Graph API publishing via `server/social/meta-oauth.ts`. LinkedIn, X, TikTok, YouTube remain in Mock Mode. Meta OAuth flow: start → redirect to Facebook → callback at `/api/social/oauth/meta/callback` → exchanges code for long-lived token → fetches user's Pages + Instagram business accounts → stores encrypted page access tokens. Publishing: `publishToFacebook` posts to `/{page-id}/feed`, `publishToInstagram` uses container-based publishing (`/{ig-user-id}/media` → poll status → `/{ig-user-id}/media_publish`). Instagram requires an image. Secrets: `META_APP_ID`, `META_APP_SECRET`. Redirect URI must be registered in Meta developer portal: `{APP_URL}/api/social/oauth/meta/callback`.
 - **Session Management**: `express-mysql-session` for storing session data in MySQL.
 - **PDF Generation**: `pdf-lib` for creating PDF documents.
 - **File Uploads**: `multer` for handling media file uploads.
