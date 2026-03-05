@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { queryOne } from "./db";
 
+const TRIAL_DAYS = 14;
+
 export async function getSubscriptionStatus(workspaceId: string) {
   const sub = await queryOne(
     `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
@@ -13,6 +15,12 @@ export async function getSubscriptionStatus(workspaceId: string) {
   return sub || null;
 }
 
+function isWithinTrial(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const trialEnd = new Date(created.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  return new Date() < trialEnd;
+}
+
 export async function requireActiveSubscription(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.session?.userId;
@@ -21,7 +29,7 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
     }
 
     const member = await queryOne(
-      "SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1",
+      "SELECT wm.workspace_id, w.created_at as workspace_created_at FROM workspace_members wm JOIN workspaces w ON w.id = wm.workspace_id WHERE wm.user_id = ? LIMIT 1",
       [userId]
     );
 
@@ -30,6 +38,11 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
         error: "subscription_required",
         message: "Active subscription required"
       });
+    }
+
+    // Allow if within the 14-day workspace trial window
+    if (member.workspace_created_at && isWithinTrial(member.workspace_created_at)) {
+      return next();
     }
 
     const sub = await getSubscriptionStatus(member.workspace_id);
@@ -44,7 +57,7 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
 
     return res.status(403).json({
       error: "subscription_required",
-      message: "Active subscription required"
+      message: "Your 14-day free trial has ended. Please subscribe to continue."
     });
   } catch (err: any) {
     console.error("Feature gate error:", err.message);

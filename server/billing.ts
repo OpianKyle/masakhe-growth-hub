@@ -173,14 +173,14 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
       [userId]
     );
     if (!workspace) {
       return res.json({ subscription: null, plan: null, invoices: [] });
     }
 
-    const subscription = await queryOne(
+    let subscription = await queryOne(
       `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
@@ -188,6 +188,24 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
        ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
+
+    // If no billing subscription exists, synthesize a TRIAL based on workspace creation date
+    if (!subscription && workspace.created_at) {
+      const created = new Date(workspace.created_at);
+      const trialEnd = new Date(created.getTime() + 14 * 24 * 60 * 60 * 1000);
+      if (new Date() < trialEnd) {
+        subscription = {
+          status: "TRIAL",
+          trial_end_at: trialEnd.toISOString(),
+          plan_code: null,
+          plan_name: "Free Trial",
+          price_cents: 0,
+          currency: "ZAR",
+          bill_interval: null,
+          synthetic: true,
+        };
+      }
+    }
 
     const invoices = await queryAll(
       "SELECT * FROM billing_invoices WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 20",
@@ -208,7 +226,7 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
       [userId]
     );
     if (!workspace) {
@@ -221,6 +239,13 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     );
 
     if (!subscription) {
+      // Fall back to workspace-based 14-day trial
+      if (workspace.created_at) {
+        const trialEnd = new Date(new Date(workspace.created_at).getTime() + 14 * 24 * 60 * 60 * 1000);
+        if (new Date() < trialEnd) {
+          return res.json({ active: true, status: "TRIAL" });
+        }
+      }
       return res.json({ active: false, status: null });
     }
 
