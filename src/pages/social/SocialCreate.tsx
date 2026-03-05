@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe, Sparkles, Loader2
+  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe, Sparkles, Loader2, Maximize2, XCircle, Heart, MessageCircle, Share2, Repeat2, ThumbsUp, Bookmark
 } from "lucide-react";
 
 interface Account {
@@ -66,6 +66,7 @@ export default function SocialCreate({ workspaceId }: Props) {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState("");
+  const [showFullPreview, setShowFullPreview] = useState(false);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -320,7 +321,12 @@ export default function SocialCreate({ workspaceId }: Props) {
 
         <div className="space-y-4">
           <Card className="p-5">
-            <h3 className="font-bold font-heading text-sm mb-3">Preview</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold font-heading text-sm">Preview</h3>
+              <button onClick={() => setShowFullPreview(true)} className="text-muted-foreground hover:text-primary transition-colors" title="Fullscreen preview">
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            </div>
             <div className="flex gap-1 mb-3">
               {["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN"].map(p => {
                 const Icon = PLATFORM_ICONS[p] || Globe;
@@ -331,45 +337,7 @@ export default function SocialCreate({ workspaceId }: Props) {
                 );
               })}
             </div>
-            <div className="rounded-lg border bg-white overflow-hidden min-h-[200px]">
-              {selectedMedia.length > 0 && (() => {
-                const selected = mediaAssets.filter(a => selectedMedia.includes(a.id));
-                const images = selected.filter(a => a.type === "IMAGE");
-                const videos = selected.filter(a => a.type !== "IMAGE");
-                return (
-                  <div className={`w-full ${images.length === 1 ? "" : "grid grid-cols-2 gap-0.5"}`}>
-                    {images.slice(0, 4).map((asset, i) => (
-                      <div key={asset.id} className={`relative bg-muted ${images.length === 1 ? "aspect-[4/3]" : "aspect-square"} ${images.length === 3 && i === 0 ? "col-span-2" : ""}`}>
-                        <img src={asset.url} alt={asset.file_name} className="w-full h-full object-cover" />
-                        {images.length > 4 && i === 3 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-lg">
-                            +{images.length - 4}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {videos.map(asset => (
-                      <div key={asset.id} className="aspect-video bg-muted flex items-center justify-center text-xs text-muted-foreground col-span-2">
-                        <Image className="h-4 w-4 mr-1" /> Video attached
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0"><span className="text-xs font-bold text-primary">B</span></div>
-                  <div>
-                    <p className="text-xs font-bold">Your Business</p>
-                    <p className="text-[10px] text-muted-foreground">Just now</p>
-                  </div>
-                </div>
-                <p className="text-sm whitespace-pre-wrap">{contentText || "Your post content will appear here..."}</p>
-                {contentText.length > (PLATFORM_LIMITS[previewPlatform] || 5000) && (
-                  <p className="text-xs text-red-600 mt-2">⚠ Exceeds {previewPlatform.replace("META_", "")} character limit</p>
-                )}
-              </div>
-            </div>
+            <PostPreviewCard platform={previewPlatform} contentText={contentText} mediaAssets={mediaAssets} selectedMedia={selectedMedia} compact />
           </Card>
 
           <Card className="p-5 space-y-3">
@@ -384,6 +352,130 @@ export default function SocialCreate({ workspaceId }: Props) {
             </Button>
           </Card>
         </div>
+      </div>
+
+      {showFullPreview && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowFullPreview(false)}>
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+                <div>
+                  <h3 className="font-bold font-heading text-base">Post Preview</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">How your post will look on each platform</p>
+                </div>
+                <button onClick={() => setShowFullPreview(false)} className="text-muted-foreground hover:text-foreground">
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="flex gap-1.5">
+                  {["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN"].map(p => {
+                    const Icon = PLATFORM_ICONS[p] || Globe;
+                    return (
+                      <button key={p} onClick={() => setPreviewPlatform(p)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${previewPlatform === p ? "bg-primary text-white" : "bg-muted hover:bg-muted/80"}`}>
+                        <Icon className="h-3.5 w-3.5" /> {p.replace("META_", "")}
+                      </button>
+                    );
+                  })}
+                </div>
+                <PostPreviewCard platform={previewPlatform} contentText={contentText} mediaAssets={mediaAssets} selectedMedia={selectedMedia} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PostPreviewCardProps {
+  platform: string;
+  contentText: string;
+  mediaAssets: MediaAsset[];
+  selectedMedia: string[];
+  compact?: boolean;
+}
+
+function PostPreviewCard({ platform, contentText, mediaAssets, selectedMedia, compact }: PostPreviewCardProps) {
+  const selected = mediaAssets.filter(a => selectedMedia.includes(a.id));
+  const images = selected.filter(a => a.type === "IMAGE");
+  const videos = selected.filter(a => a.type !== "IMAGE");
+  const overLimit = contentText.length > (PLATFORM_LIMITS[platform] || 5000);
+
+  const isInstagram = platform === "META_INSTAGRAM";
+  const isLinkedIn = platform === "LINKEDIN";
+  const isX = platform === "X";
+
+  return (
+    <div className={`rounded-xl border bg-white overflow-hidden shadow-sm ${compact ? "min-h-[180px]" : ""}`}>
+      {selected.length > 0 && (
+        <div className={`w-full ${images.length === 1 ? "" : "grid grid-cols-2 gap-0.5"}`}>
+          {images.slice(0, 4).map((asset, i) => (
+            <div key={asset.id} className={`relative bg-muted ${images.length === 1 ? (isInstagram ? "aspect-square" : "aspect-[4/3]") : "aspect-square"} ${images.length === 3 && i === 0 ? "col-span-2" : ""}`}>
+              <img src={asset.url} alt={asset.file_name} className="w-full h-full object-cover" />
+              {images.length > 4 && i === 3 && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-lg">+{images.length - 4}</div>
+              )}
+            </div>
+          ))}
+          {videos.map(asset => (
+            <div key={asset.id} className="aspect-video bg-muted flex items-center justify-center text-xs text-muted-foreground col-span-2">
+              <Image className="h-4 w-4 mr-1" /> Video attached
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={compact ? "p-3" : "p-4"}>
+        <div className={`flex items-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
+          <div className={`${compact ? "w-7 h-7" : "w-9 h-9"} rounded-full bg-primary/20 flex items-center justify-center shrink-0`}>
+            <span className={`${compact ? "text-[10px]" : "text-xs"} font-bold text-primary`}>B</span>
+          </div>
+          <div>
+            <p className={`${compact ? "text-[11px]" : "text-sm"} font-bold leading-tight`}>Your Business</p>
+            <p className={`${compact ? "text-[9px]" : "text-[11px]"} text-muted-foreground`}>
+              {isLinkedIn ? "1st · Just now" : isInstagram ? "Just now" : "Just now · Public"}
+            </p>
+          </div>
+        </div>
+
+        <p className={`${compact ? "text-xs" : "text-sm"} whitespace-pre-wrap leading-relaxed`}>
+          {contentText || <span className="text-muted-foreground italic">Your post content will appear here...</span>}
+        </p>
+
+        {overLimit && (
+          <p className="text-xs text-red-600 mt-2">⚠ Exceeds {platform.replace("META_", "")} character limit</p>
+        )}
+
+        {!compact && (
+          <div className={`mt-4 pt-3 border-t flex items-center gap-4 text-muted-foreground`}>
+            {isInstagram ? (
+              <>
+                <button className="flex items-center gap-1 hover:text-red-500 transition-colors"><Heart className="h-4 w-4" /> <span className="text-xs">Like</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><MessageCircle className="h-4 w-4" /> <span className="text-xs">Comment</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors ml-auto"><Bookmark className="h-4 w-4" /></button>
+              </>
+            ) : isX ? (
+              <>
+                <button className="flex items-center gap-1 hover:text-red-500 transition-colors"><Heart className="h-4 w-4" /> <span className="text-xs">Like</span></button>
+                <button className="flex items-center gap-1 hover:text-green-500 transition-colors"><Repeat2 className="h-4 w-4" /> <span className="text-xs">Repost</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><MessageCircle className="h-4 w-4" /> <span className="text-xs">Reply</span></button>
+              </>
+            ) : isLinkedIn ? (
+              <>
+                <button className="flex items-center gap-1 hover:text-blue-600 transition-colors"><ThumbsUp className="h-4 w-4" /> <span className="text-xs">Like</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><MessageCircle className="h-4 w-4" /> <span className="text-xs">Comment</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><Share2 className="h-4 w-4" /> <span className="text-xs">Share</span></button>
+              </>
+            ) : (
+              <>
+                <button className="flex items-center gap-1 hover:text-blue-600 transition-colors"><ThumbsUp className="h-4 w-4" /> <span className="text-xs">Like</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><MessageCircle className="h-4 w-4" /> <span className="text-xs">Comment</span></button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><Share2 className="h-4 w-4" /> <span className="text-xs">Share</span></button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
