@@ -43,6 +43,7 @@ async function main() {
   }, pool as any);
 
   const app = express();
+  app.set("trust proxy", 1);
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
 
@@ -53,6 +54,7 @@ async function main() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      secure: false,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
