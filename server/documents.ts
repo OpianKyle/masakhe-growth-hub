@@ -335,10 +335,109 @@ documentsRouter.put("/companies/:id", requireAuth, async (req, res) => {
 
 documentsRouter.post("/companies/:id/verify", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT id FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
-    await execute("UPDATE companies SET is_verified=1, updated_at=? WHERE id=?", [new Date().toISOString(), req.params.id]);
-    res.json({ ok: true });
+
+    if (!row.registration_number) {
+      return res.status(400).json({ error: "A CIPC registration number is required before verification. Please edit the company and add it." });
+    }
+
+    const cipcRegex = /^(\d{4})\/(\d{6})\/(\d{2})$/;
+    const match = (row.registration_number as string).trim().match(cipcRegex);
+    if (!match) {
+      return res.status(400).json({ error: `Invalid CIPC registration number format. Expected format: YYYY/NNNNNN/NN (e.g. 2024/123456/07). Got: "${row.registration_number}"` });
+    }
+
+    const [, yearStr, , suffix] = match;
+    const year = parseInt(yearStr);
+    const currentYear = new Date().getFullYear();
+    if (year < 1910 || year > currentYear) {
+      return res.status(400).json({ error: `Registration year ${year} is invalid. Must be between 1910 and ${currentYear}.` });
+    }
+
+    const formatChecks: string[] = [`Registration number format valid: ${row.registration_number}`, `Registration year ${year} is within valid range`];
+    const formatIssues: string[] = [];
+
+    const suffixTypeMap: Record<string, string> = {
+      "07": "Private Company (Pty) Ltd", "06": "Public Company (Ltd)",
+      "08": "Non-Profit Company (NPC)", "10": "Personal Liability Company",
+      "21": "Close Corporation (CC)", "23": "External Company",
+    };
+    if (suffixTypeMap[suffix]) {
+      const expectedType = suffixTypeMap[suffix];
+      const companyType: string = row.company_type || "";
+      if (companyType && !companyType.toLowerCase().includes(expectedType.split(" ")[0].toLowerCase())) {
+        formatIssues.push(`Registration suffix /${suffix} is for ${expectedType}, but company type is listed as "${companyType}"`);
+      } else {
+        formatChecks.push(`Registration suffix /${suffix} matches company type`);
+      }
+    }
+    if (row.status !== "Active") {
+      formatIssues.push(`Company status is "${row.status}" — only Active companies are in good standing`);
+    } else {
+      formatChecks.push("Company status is Active");
+    }
+    if (row.registration_date) {
+      const regYear = new Date(row.registration_date).getFullYear();
+      if (regYear === year) {
+        formatChecks.push(`Registration date year (${regYear}) matches registration number year`);
+      } else if (Math.abs(regYear - year) > 1) {
+        formatIssues.push(`Registration date year (${regYear}) does not match registration number year (${year})`);
+      }
+    }
+
+    const aiPrompt = `You are a South African CIPC company verification assistant performing a consistency check (NOT a live CIPC database lookup).
+
+Company Name: ${row.company_name}
+Registration Number: ${row.registration_number}
+Company Type: ${row.company_type || "Not specified"}
+Registration Date: ${row.registration_date || "Not specified"}
+Status: ${row.status || "Not specified"}
+Directors/Members: ${row.directors || "Not specified"}
+Registered Address: ${row.address || "Not specified"}
+
+Check for consistency issues only. Examples:
+- Does "(Pty) Ltd" or "(Pty)(Ltd)" appear in the name for a private company?
+- Do director names appear plausible (no obvious placeholder text like "John Doe")?
+- Does the address seem like a real South African address?
+- Any other obvious inconsistencies?
+
+Important: Do NOT fabricate checks against a real database. Only check what is provided.
+
+Respond ONLY in JSON:
+{
+  "passed": true or false,
+  "checks": ["list of things that look correct"],
+  "issues": ["list of inconsistencies or concerns — empty array if none"],
+  "summary": "1-2 sentence plain English summary of verification result"
+}`;
+
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [{ role: "user", content: aiPrompt }],
+      response_format: { type: "json_object" },
+    });
+    const aiResult = JSON.parse(aiRes.choices[0].message.content || "{}");
+
+    const allIssues = [...formatIssues, ...(aiResult.issues || [])];
+    const allChecks = [...formatChecks, ...(aiResult.checks || [])];
+    const verified = formatIssues.length === 0 && aiResult.passed !== false;
+
+    const verificationDetails = {
+      verified,
+      registrationNumber: row.registration_number,
+      checks: allChecks,
+      issues: allIssues,
+      summary: aiResult.summary || (verified ? "Company details are consistent and well-formed." : "Verification failed due to inconsistencies."),
+      verifiedAt: new Date().toISOString(),
+      disclaimer: "This is a format and consistency check only. It is not an official live CIPC database lookup.",
+    };
+
+    await execute(
+      "UPDATE companies SET is_verified=?, verification_details=?, updated_at=? WHERE id=?",
+      [verified ? 1 : 0, JSON.stringify(verificationDetails), new Date().toISOString(), req.params.id]
+    );
+    res.json({ ok: true, verified, verificationDetails });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 

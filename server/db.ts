@@ -589,6 +589,10 @@ export async function runMigrations() {
       await conn.query(`ALTER TABLE funding_proposals ADD COLUMN company_id VARCHAR(36) DEFAULT NULL`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 
+    try {
+      await conn.query(`ALTER TABLE companies ADD COLUMN verification_details TEXT DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

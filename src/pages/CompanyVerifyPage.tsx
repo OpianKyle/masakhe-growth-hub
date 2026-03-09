@@ -6,13 +6,20 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   Building2, Plus, Trash2, ChevronLeft, Edit, ShieldCheck,
-  BadgeCheck, Calendar, User, MapPin, Briefcase, Clock
+  BadgeCheck, Calendar, User, MapPin, Briefcase, Clock,
+  CheckCircle2, XCircle, AlertTriangle, Info
 } from "lucide-react";
+
+interface VerificationDetails {
+  verified: boolean; registrationNumber: string; checks: string[]; issues: string[];
+  summary: string; verifiedAt: string; disclaimer: string;
+}
 
 interface Company {
   id: string; company_name: string; registration_number: string; company_type: string;
   registration_date: string; status: string; directors: string; address: string;
-  financial_year_end: string; is_verified: number; created_at: string; updated_at: string;
+  financial_year_end: string; is_verified: number; verification_details: string | null;
+  created_at: string; updated_at: string;
 }
 
 const empty = {
@@ -81,15 +88,25 @@ export default function CompanyVerifyPage() {
 
   const verify = async (id: string) => {
     setVerifying(true);
-    const res = await fetch(`/api/documents/companies/${id}/verify`, { method: "POST", credentials: "include" });
-    const d = await res.json();
-    if (res.ok) {
-      toast.success("Company verified successfully!");
-      load();
-      const updated = await fetch(`/api/documents/companies/${id}`, { credentials: "include" });
-      const co = await updated.json();
-      setDetailCompany(co);
-    } else toast.error(d.error);
+    try {
+      const res = await fetch(`/api/documents/companies/${id}/verify`, { method: "POST", credentials: "include" });
+      const d = await res.json();
+      if (res.ok) {
+        if (d.verified) {
+          toast.success("Verification passed — company details are consistent.");
+        } else {
+          toast.error("Verification found issues — review the details below.");
+        }
+        load();
+        const updated = await fetch(`/api/documents/companies/${id}`, { credentials: "include" });
+        const co = await updated.json();
+        setDetailCompany(co);
+      } else {
+        toast.error(d.error);
+      }
+    } catch {
+      toast.error("Verification failed — please try again.");
+    }
     setVerifying(false);
   };
 
@@ -149,11 +166,15 @@ export default function CompanyVerifyPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-semibold">{c.company_name}</p>
-                    {c.is_verified && (
+                    {c.is_verified ? (
                       <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-medium">
-                        <ShieldCheck className="h-3 w-3" /> Verified by CIPC
+                        <ShieldCheck className="h-3 w-3" /> Verified
                       </span>
-                    )}
+                    ) : c.verification_details ? (
+                      <span className="flex items-center gap-1 text-xs bg-red-100 text-red-700 rounded-full px-2 py-0.5 font-medium">
+                        <XCircle className="h-3 w-3" /> Verification Failed
+                      </span>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                     {c.registration_number && <span>Reg: {c.registration_number}</span>}
@@ -181,7 +202,7 @@ export default function CompanyVerifyPage() {
           <Button variant="outline" size="sm" onClick={() => openEdit(detailCompany)} className="gap-1.5"><Edit className="h-3.5 w-3.5" /> Edit</Button>
           {!detailCompany.is_verified && (
             <Button onClick={() => verify(detailCompany.id)} disabled={verifying} className="gradient-hero text-white gap-2">
-              {verifying ? "Verifying..." : <><ShieldCheck className="h-4 w-4" /> Verify Company</>}
+              {verifying ? "Verifying..." : <><ShieldCheck className="h-4 w-4" /> {detailCompany.verification_details ? "Re-verify Company" : "Verify Company"}</>}
             </Button>
           )}
         </div>
@@ -194,11 +215,16 @@ export default function CompanyVerifyPage() {
             {detailCompany.is_verified ? (
               <div className="flex items-center gap-2 mt-2">
                 <ShieldCheck className="h-5 w-5 text-green-600" />
-                <span className="text-green-700 font-semibold text-sm">Verified by CIPC</span>
+                <span className="text-green-700 font-semibold text-sm">Verification Passed</span>
+              </div>
+            ) : detailCompany.verification_details ? (
+              <div className="flex items-center gap-2 mt-2">
+                <XCircle className="h-5 w-5 text-red-500" />
+                <span className="text-red-600 font-semibold text-sm">Verification Failed</span>
               </div>
             ) : (
               <p className="text-amber-600 text-sm mt-1 flex items-center gap-1">
-                <BadgeCheck className="h-4 w-4" /> Not yet verified — click "Verify Company" to confirm
+                <BadgeCheck className="h-4 w-4" /> Not yet verified — click "Verify Company" to run a check
               </p>
             )}
           </div>
@@ -248,6 +274,60 @@ export default function CompanyVerifyPage() {
           )}
         </div>
       </Card>
+
+      {(() => {
+        if (!detailCompany.verification_details) return null;
+        let vd: VerificationDetails | null = null;
+        try { vd = JSON.parse(detailCompany.verification_details); } catch { return null; }
+        if (!vd) return null;
+        return (
+          <Card className="p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              {vd.verified
+                ? <CheckCircle2 className="h-5 w-5 text-green-600" />
+                : <XCircle className="h-5 w-5 text-red-500" />}
+              <h3 className="font-semibold text-base">Verification Report</h3>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {new Date(vd.verifiedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{vd.summary}</p>
+
+            {vd.checks.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Checks Passed</p>
+                <ul className="space-y-1">
+                  {vd.checks.map((c, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-green-800">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {vd.issues.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">Issues Found</p>
+                <ul className="space-y-1">
+                  {vd.issues.map((issue, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-red-800">
+                      <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                      {issue}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{vd.disclaimer}</span>
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 
@@ -262,7 +342,7 @@ export default function CompanyVerifyPage() {
 
       <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-sm">
         <p className="font-medium text-primary flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> CIPC Company Registration</p>
-        <p className="text-muted-foreground mt-1">Enter your company's CIPC registration details. After saving, click "Verify Company" to mark it as officially registered.</p>
+        <p className="text-muted-foreground mt-1">Enter your company's CIPC registration details. After saving, click "Verify Company" to run a format and consistency check against your details.</p>
       </div>
 
       <Card className="p-6 space-y-5">
