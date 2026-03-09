@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Clock, X, Lock, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ function daysRemaining(dateStr: string | null): number {
 
 export default function TrialBanner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [billingData, setBillingData] = useState<BillingStatus | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -26,7 +27,7 @@ export default function TrialBanner() {
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [showNoSubPopup, setShowNoSubPopup] = useState(false);
 
-  useEffect(() => {
+  const fetchSubscription = () => {
     fetch("/api/billing/subscription", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
@@ -34,7 +35,18 @@ export default function TrialBanner() {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
+  };
+
+  useEffect(() => {
+    fetchSubscription();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("payment") === "success") {
+      fetchSubscription();
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!loaded) return;
