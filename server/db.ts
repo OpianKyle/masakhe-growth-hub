@@ -544,6 +544,51 @@ export async function runMigrations() {
     `);
     await createIndex("idx_fs_user", "financial_statements", "user_id");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id INT NOT NULL,
+        company_name VARCHAR(255) NOT NULL,
+        registration_number VARCHAR(100),
+        company_type VARCHAR(100),
+        registration_date VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'Active',
+        directors TEXT,
+        address TEXT,
+        financial_year_end VARCHAR(20),
+        is_verified TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_companies_user", "companies", "user_id");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS funding_applications (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id INT NOT NULL,
+        program ENUM('SEFA','NEF','NYDA','IDC') NOT NULL,
+        company_id VARCHAR(36),
+        business_plan_id VARCHAR(36),
+        financial_statement_id VARCHAR(36),
+        funding_proposal_id VARCHAR(36),
+        form_data JSON,
+        generated_content JSON,
+        status ENUM('draft','submitted') DEFAULT 'draft',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_fa_user", "funding_applications", "user_id");
+
+    try {
+      await conn.query(`ALTER TABLE business_plans ADD COLUMN company_id VARCHAR(36) DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
+    try {
+      await conn.query(`ALTER TABLE funding_proposals ADD COLUMN company_id VARCHAR(36) DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

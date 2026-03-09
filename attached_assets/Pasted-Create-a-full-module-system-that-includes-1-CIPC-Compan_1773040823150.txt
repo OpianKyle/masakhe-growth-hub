@@ -1,0 +1,290 @@
+Create a full module system that includes:
+
+1) CIPC Company Verification
+2) Business Plan Builder
+3) Funding Proposal Generator
+4) Annual Financial Statements Generator
+5) Government Grant Readiness Score
+6) Funding Application Generator
+
+All modules must integrate with each other and share company data.
+
+-------------------------------------
+
+FEATURE 1: CIPC COMPANY VERIFICATION
+
+Create a page called "Verify Company".
+
+User inputs:
+- CIPC Registration Number
+
+System will call the CIPC Companies API and retrieve:
+
+- Business Name
+- Registration Number
+- Company Type
+- Registration Date
+- Company Status
+- Directors
+- Registered Address
+- Financial Year End
+
+Display the data in a company profile card.
+
+Add:
+"Verified by CIPC" badge if the company exists.
+
+Save the company profile to database table:
+companies
+
+Fields:
+
+id
+user_id
+company_name
+registration_number
+company_type
+registration_date
+status
+directors
+address
+financial_year_end
+created_at
+
+Allow users to select this company profile when creating documents.
+
+-------------------------------------
+
+FEATURE 2: BUSINESS PLAN BUILDER
+
+Create a multi-step form called "Business Plan Builder".
+
+Steps:
+
+1 Business Overview
+- Company (select from verified companies)
+- Industry
+- Founder Name
+- Business Description
+
+2 Market Analysis
+- Problem being solved
+- Target market
+- Competitors
+
+3 Products and Services
+- Product description
+- Pricing model
+- Revenue model
+
+4 Operations
+- Team
+- Location
+- Operational structure
+
+5 Marketing
+- Marketing strategy
+- Customer acquisition channels
+
+6 Financials
+- Startup costs
+- Projected revenue year 1
+- Projected revenue year 2
+- Projected revenue year 3
+
+Generate a formatted Business Plan with sections:
+
+Executive Summary
+Company Overview
+Market Analysis
+Products & Services
+Operations Plan
+Marketing Strategy
+Financial Plan
+Funding Requirements
+
+Add buttons:
+
+Download PDF
+Edit
+Save
+
+Store in table:
+business_plans
+
+-------------------------------------
+
+FEATURE 3: FUNDING PROPOSAL GENERATOR
+
+Create a page called "Funding Proposal Builder".
+
+Form inputs:
+
+- Company
+- Funding amount requested
+- Purpose of funding
+- Use of funds
+- Expected impact
+- Jobs to be created
+- Business stage
+- Monthly revenue
+- Monthly expenses
+- Growth plan
+- Funding organization
+
+Generate proposal sections:
+
+Cover Page
+Executive Summary
+Business Overview
+Problem & Opportunity
+Funding Request
+Use of Funds
+Economic Impact
+Financial Summary
+Closing Statement
+
+Allow export as PDF.
+
+Store in table:
+funding_proposals
+
+-------------------------------------
+
+FEATURE 4: ANNUAL FINANCIAL STATEMENTS
+
+Create page called "Financial Statements".
+
+Inputs:
+
+- Financial Year
+- Revenue
+- Cost of Sales
+- Operating Expenses
+- Salaries
+- Taxes
+- Assets
+- Liabilities
+- Equity
+
+Automatically generate:
+
+Income Statement
+Balance Sheet
+Profit/Loss Summary
+
+Display in tables.
+
+Add:
+
+Download PDF
+Export CSV
+
+Add simple charts for:
+
+Revenue
+Expenses
+Profit
+
+Store in table:
+financial_statements
+
+-------------------------------------
+
+FEATURE 5: GRANT READINESS SCORE
+
+Create a system that evaluates whether a business is ready for funding.
+
+Calculate score based on:
+
+Company verified
+Business plan completed
+Financial statements available
+Funding proposal created
+Years in operation
+Revenue entered
+
+Display score:
+
+0–40% Not Ready
+40–70% Moderate Readiness
+70–100% Funding Ready
+
+Show checklist:
+
+✔ Verified Company
+✔ Business Plan
+✔ Financial Statements
+✔ Funding Proposal
+
+-------------------------------------
+
+FEATURE 6: FUNDING APPLICATION GENERATOR
+
+Create a page called "Apply for Funding".
+
+User selects funding program:
+
+SEFA
+NEF
+NYDA
+IDC
+
+System automatically fills the application form using stored data from:
+
+company profile
+business plan
+financial statements
+funding proposal
+
+Generate a formatted funding application document.
+
+Add:
+
+Download application PDF
+Save application
+
+-------------------------------------
+
+DATABASE TABLES
+
+companies
+business_plans
+funding_proposals
+financial_statements
+funding_applications
+
+Each table must include:
+
+id
+user_id
+created_at
+updated_at
+
+-------------------------------------
+
+DASHBOARD
+
+Add a new section:
+
+Business Funding Toolkit
+
+Cards:
+
+Verify Company
+Business Plan Builder
+Funding Proposal Generator
+Financial Statements
+Grant Readiness Score
+Funding Applications
+
+-------------------------------------
+
+USER EXPERIENCE
+
+- Multi-step forms
+- Autosave form progress
+- Ability to edit previous documents
+- Professional PDF exports
+- Clean dashboard UI
+- Mobile responsive

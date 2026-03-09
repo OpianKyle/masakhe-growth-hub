@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
-  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock, BookOpen, HandCoins, BarChart2
+  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock, BookOpen, HandCoins, BarChart2, Building2, Send
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -19,6 +19,8 @@ import TendersPage from "./TendersPage";
 import BusinessPlanPage from "./BusinessPlanPage";
 import FundingProposalPage from "./FundingProposalPage";
 import FinancialStatementsPage from "./FinancialStatementsPage";
+import CompanyVerifyPage from "./CompanyVerifyPage";
+import FundingApplicationPage from "./FundingApplicationPage";
 import TrialBanner from "@/components/TrialBanner";
 import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
@@ -33,6 +35,8 @@ const navItems = [
   { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
   { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
   { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
+  { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify" },
+  { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
@@ -213,6 +217,8 @@ export default function DashboardPage() {
             <Route path="business-plan" element={<BusinessPlanPage />} />
             <Route path="funding-proposal" element={<FundingProposalPage />} />
             <Route path="annual-statements" element={<FinancialStatementsPage />} />
+            <Route path="company-verify" element={<CompanyVerifyPage />} />
+            <Route path="funding-applications" element={<FundingApplicationPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />

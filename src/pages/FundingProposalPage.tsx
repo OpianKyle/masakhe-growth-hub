@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { HandCoins, Plus, Trash2, ChevronLeft, ChevronRight, Sparkles, Loader2, Download, Edit, Eye } from "lucide-react";
+import { HandCoins, Plus, Trash2, ChevronLeft, ChevronRight, Sparkles, Loader2, Download, Edit, Eye, Building2 } from "lucide-react";
+
+interface Company { id: string; company_name: string; registration_number: string; is_verified: number; }
 
 interface FormData {
-  businessName: string; ownerName: string; fundingAmount: string;
+  companyId: string; businessName: string; ownerName: string; fundingAmount: string;
   purposeOfFunding: string; expectedImpact: string; businessStage: string;
   jobsToCreate: string; monthlyRevenue: string; monthlyExpenses: string;
   growthPlan: string; governmentProgram: string;
@@ -37,7 +39,7 @@ const BUSINESS_STAGES = ["Startup (0-2 years)", "Growth (2-5 years)", "Expansion
 const GOV_PROGRAMS = ["SEFA", "IDC", "NEF", "SEDA", "NYDA", "DTI/dtic", "NSFAS", "Other"];
 
 const empty: FormData = {
-  businessName: "", ownerName: "", fundingAmount: "", purposeOfFunding: "",
+  companyId: "", businessName: "", ownerName: "", fundingAmount: "", purposeOfFunding: "",
   expectedImpact: "", businessStage: "", jobsToCreate: "", monthlyRevenue: "",
   monthlyExpenses: "", growthPlan: "", governmentProgram: "",
 };
@@ -45,6 +47,7 @@ const empty: FormData = {
 export default function FundingProposalPage() {
   const [view, setView] = useState<"list" | "form" | "document">("list");
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(empty);
@@ -58,9 +61,19 @@ export default function FundingProposalPage() {
       .then(r => r.json()).then(d => setProposals(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
-  useEffect(() => { loadProposals(); }, [loadProposals]);
+  useEffect(() => {
+    loadProposals();
+    fetch("/api/documents/companies", { credentials: "include" })
+      .then(r => r.json()).then(d => setCompanies(Array.isArray(d) ? d : [])).catch(() => {});
+  }, [loadProposals]);
 
   const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const onCompanySelect = (id: string) => {
+    set("companyId", id);
+    const c = companies.find(co => co.id === id);
+    if (c) set("businessName", c.company_name);
+  };
 
   const startNew = async () => {
     const res = await fetch("/api/documents/funding-proposals", {
@@ -261,6 +274,16 @@ export default function FundingProposalPage() {
         {step === 0 && <>
           <h3 className="font-semibold text-base">Business & Owner Information</h3>
           <div className="space-y-4">
+            {companies.length > 0 && (
+              <div>
+                <Label>Link Company Profile (optional)</Label>
+                <select value={form.companyId} onChange={e => onCompanySelect(e.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">— Enter details manually —</option>
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}{c.is_verified ? " ✓" : ""}</option>)}
+                </select>
+                {form.companyId && <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><Building2 className="h-3 w-3" /> Business name pre-filled from your company profile</p>}
+              </div>
+            )}
             <div><Label>Business Name *</Label><Input value={form.businessName} onChange={e => set("businessName", e.target.value)} placeholder="My Business (Pty) Ltd" className="mt-1" /></div>
             <div><Label>Owner / Director Name</Label><Input value={form.ownerName} onChange={e => set("ownerName", e.target.value)} placeholder="Full name" className="mt-1" /></div>
             <div>
