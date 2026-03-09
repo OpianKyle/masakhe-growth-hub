@@ -3,7 +3,7 @@ import { Routes, Route, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, PenSquare, Image, BarChart3,
   Facebook, Instagram, Linkedin, X as XIcon, Video, Globe,
-  Plus, Trash2, CheckCircle2, Info, Link2
+  Plus, Trash2, CheckCircle2, Info, Link2, Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -235,7 +235,7 @@ export default function SocialHub() {
 
   return (
     <div>
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-2 relative overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Connected Accounts</h3>
@@ -327,6 +327,19 @@ export default function SocialHub() {
             </div>
           </div>
         )}
+
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg"
+          style={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.75)" }}>
+          <div className="flex flex-col items-center gap-2 text-center px-4">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <p className="font-bold text-base font-heading text-foreground">Coming Soon</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Direct social media account connections are in development. Use the Post Templates and Create Post tools in the meantime.
+            </p>
+          </div>
+        </div>
       </div>
 
       {showConnect && (
