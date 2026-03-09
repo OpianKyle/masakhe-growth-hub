@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   TrendingUp, TrendingDown, DollarSign, Receipt, Globe, Smartphone,
   ArrowUpRight, ArrowDownRight, Wallet, ClipboardCheck, CheckCircle2,
-  AlertCircle, FileText, BarChart3
+  AlertCircle, FileText, BarChart3, BookOpen, HandCoins, BarChart2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -325,6 +325,9 @@ export default function DashboardOverview() {
                 { icon: Receipt, label: "Invoice", color: "gradient-gold", path: "/dashboard/invoices" },
                 { icon: Wallet, label: "Finance", color: "gradient-warm", path: "/dashboard/finance" },
                 { icon: ClipboardCheck, label: "Funding", color: "gradient-hero", path: "/dashboard/funding" },
+                { icon: BookOpen, label: "Biz Plan", color: "gradient-warm", path: "/dashboard/business-plan" },
+                { icon: HandCoins, label: "Proposal", color: "gradient-gold", path: "/dashboard/funding-proposal" },
+                { icon: BarChart2, label: "Statements", color: "gradient-hero", path: "/dashboard/annual-statements" },
               ].map((action) => (
                 <Link key={action.label} to={action.path}
                   className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-3 text-primary-foreground hover:opacity-90 transition-opacity`}>

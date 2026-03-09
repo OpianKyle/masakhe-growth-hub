@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
-  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock
+  Settings, ChevronLeft, ChevronRight, Search, LogOut, Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock, BookOpen, HandCoins, BarChart2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -16,6 +16,9 @@ import SettingsPage from "./SettingsPage";
 import DashboardOverview from "./DashboardOverview";
 import BillingPage from "./BillingPage";
 import TendersPage from "./TendersPage";
+import BusinessPlanPage from "./BusinessPlanPage";
+import FundingProposalPage from "./FundingProposalPage";
+import FinancialStatementsPage from "./FinancialStatementsPage";
 import TrialBanner from "@/components/TrialBanner";
 import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
@@ -27,6 +30,9 @@ const navItems = [
   { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
   { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
+  { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
+  { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
+  { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
@@ -204,6 +210,9 @@ export default function DashboardPage() {
             <Route path="funding" element={<GrantReadinessPage />} />
             <Route path="social/*" element={<SocialHub />} />
             <Route path="tenders" element={<TendersPage />} />
+            <Route path="business-plan" element={<BusinessPlanPage />} />
+            <Route path="funding-proposal" element={<FundingProposalPage />} />
+            <Route path="annual-statements" element={<FinancialStatementsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />

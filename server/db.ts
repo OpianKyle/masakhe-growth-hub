@@ -502,6 +502,48 @@ export async function runMigrations() {
 
     await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS business_plans (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL DEFAULT 'Untitled Business Plan',
+        form_data JSON,
+        generated_content JSON,
+        status ENUM('draft','generated') DEFAULT 'draft',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_bp_user", "business_plans", "user_id");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS funding_proposals (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL DEFAULT 'Untitled Funding Proposal',
+        form_data JSON,
+        generated_content JSON,
+        status ENUM('draft','generated') DEFAULT 'draft',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_fp_user", "funding_proposals", "user_id");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS financial_statements (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id INT NOT NULL,
+        financial_year INT NOT NULL,
+        title VARCHAR(255) NOT NULL DEFAULT 'Annual Financial Statement',
+        form_data JSON,
+        computed JSON,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_fs_user", "financial_statements", "user_id");
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

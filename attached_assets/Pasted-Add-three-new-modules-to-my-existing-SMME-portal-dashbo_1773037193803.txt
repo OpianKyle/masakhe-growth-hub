@@ -1,0 +1,153 @@
+Add three new modules to my existing SMME portal dashboard: 
+1) Business Plan Generator
+2) Funding Proposal Generator
+3) Annual Financial Statement Generator
+
+The system should be built using the same tech stack as the current project (Node.js + Express backend, React frontend, and PostgreSQL/Prisma database).
+
+-----------------------------------
+
+FEATURE 1: BUSINESS PLAN GENERATOR
+
+Create a dashboard page called "Business Plan Builder".
+
+The form should collect:
+- Business Name
+- Registration Number
+- Industry
+- Founder / Owner Name
+- Business Description
+- Problem the Business Solves
+- Target Market
+- Products / Services
+- Revenue Model
+- Competitors
+- Marketing Strategy
+- Operations Plan
+- Team Members
+- Funding Required
+- Financial Projections (Year 1, Year 2, Year 3)
+
+After submission:
+- Generate a structured business plan.
+- Display it in sections:
+  1 Executive Summary
+  2 Company Overview
+  3 Market Analysis
+  4 Products & Services
+  5 Marketing Strategy
+  6 Operations Plan
+  7 Financial Plan
+  8 Funding Requirements
+
+Add a button to:
+- Download the Business Plan as a PDF.
+
+-----------------------------------
+
+FEATURE 2: FUNDING PROPOSAL GENERATOR
+
+Create another page called "Funding Proposal Builder".
+
+The form should collect:
+- Business Name
+- Owner Name
+- Funding Amount Requested
+- Purpose of Funding
+- Expected Impact
+- Business Stage (Startup / Growth / Expansion)
+- Jobs to be Created
+- Monthly Revenue
+- Expenses
+- Growth Plan
+- Government Program Applying For
+
+Generate a formatted funding proposal with sections:
+
+1 Cover Page
+2 Executive Summary
+3 Business Overview
+4 Problem & Opportunity
+5 Funding Request
+6 Use of Funds
+7 Economic Impact
+8 Financial Summary
+9 Closing Statement
+
+Add a feature to:
+- Export the proposal as a PDF.
+
+-----------------------------------
+
+FEATURE 3: ANNUAL FINANCIAL STATEMENTS
+
+Create a page called "Annual Statements".
+
+Users should input:
+- Financial Year
+- Total Revenue
+- Cost of Sales
+- Operating Expenses
+- Salaries
+- Taxes
+- Assets
+- Liabilities
+- Equity
+
+Automatically generate:
+
+1 Income Statement
+2 Balance Sheet
+3 Profit/Loss Summary
+
+Show results in a clean table format.
+
+Add buttons to:
+- Export statements as PDF
+- Export statements as CSV
+
+-----------------------------------
+
+DATABASE
+
+Create tables:
+
+business_plans
+funding_proposals
+financial_statements
+
+Each table should include:
+- id
+- user_id
+- created_at
+- updated_at
+- JSON field for form data
+
+-----------------------------------
+
+DASHBOARD
+
+Add three cards to the dashboard:
+
+Business Plan Builder
+Funding Proposal Builder
+Annual Financial Statements
+
+Each card should link to its tool page.
+
+-----------------------------------
+
+BONUS FEATURES
+
+Add:
+- Progress saving for forms
+- Ability to edit previously created documents
+- Download PDF formatting that looks professional
+- Simple charts for financial statements
+
+-----------------------------------
+
+UI
+
+Use clean dashboard components similar to the existing UI.
+Forms should be multi-step and mobile responsive.
