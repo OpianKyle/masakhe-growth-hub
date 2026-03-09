@@ -451,13 +451,13 @@ async function handleReturnRedirect(req: any, res: any) {
       let subscriptionId;
       if (existingSub) {
         await execute(
-          "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = NOW(), trial_end_at = DATE_ADD(NOW(), INTERVAL 14 DAY), adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+          "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
           [plan.id, adumoSubId || null, existingSub.id]
         );
         subscriptionId = existingSub.id;
       } else {
         const subResult = await execute(
-          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, adumo_subscription_id) VALUES (?, ?, 'TRIAL', NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), ?)",
+          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, adumo_subscription_id) VALUES (?, ?, 'ACTIVE', ?)",
           [invoice.workspace_id, plan.id, adumoSubId || null]
         );
         subscriptionId = subResult.insertId;
