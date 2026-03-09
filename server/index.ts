@@ -46,6 +46,7 @@ async function main() {
   app.set("trust proxy", 1);
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
   app.use(session({
     store: sessionStore,

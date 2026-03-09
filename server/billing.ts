@@ -377,13 +377,14 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.get("/return-redirect", async (req, res) => {
+async function handleReturnRedirect(req: any, res: any) {
   try {
-    const status = req.query.status as string || "";
-    const merchantRef = (req.query.merchantRef || req.query._MERCHANTREFERENCE || req.query.MerchantReference) as string || "";
-    const adumoResult = req.query._RESULT as string || "";
-    const responseToken = req.query._RESPONSE_TOKEN as string || "";
-    const adumoSubId = (req.query.subscriptionId || req.query._SUBSCRIPTIONID) as string || "";
+    const q = { ...req.body, ...req.query };
+    const status = (q.status || q._STATUS || "") as string;
+    const merchantRef = (q.merchantRef || q._MERCHANTREFERENCE || q.MerchantReference || "") as string;
+    const adumoResult = (q._RESULT || "") as string;
+    const responseToken = (q._RESPONSE_TOKEN || "") as string;
+    const adumoSubId = (q.subscriptionId || q._SUBSCRIPTIONID || "") as string;
 
     console.log(`[Billing] Return redirect: status=${status}, merchantRef=${merchantRef}, _RESULT=${adumoResult}, subscriptionId=${adumoSubId}`);
 
@@ -493,7 +494,10 @@ billingRouter.get("/return-redirect", async (req, res) => {
     console.error("[Billing] Return redirect error:", err.message, err.stack);
     return res.redirect("/dashboard/billing?payment=error");
   }
-});
+}
+
+billingRouter.get("/return-redirect", handleReturnRedirect);
+billingRouter.post("/return-redirect", handleReturnRedirect);
 
 billingRouter.post("/cancel", requireAuth, async (req, res) => {
   try {
