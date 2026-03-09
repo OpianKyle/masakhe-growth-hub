@@ -66,7 +66,7 @@ export default function ComplianceScoreCard() {
 
       {/* Checklist */}
       <div className="space-y-2 mb-4">
-        {data.items.map((item) => (
+        {data.items && data.items.map((item) => (
           <div key={item.key} className="flex items-center gap-2 text-sm">
             {item.completed ? (
               <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
@@ -80,7 +80,7 @@ export default function ComplianceScoreCard() {
       </div>
 
       {/* Next Steps */}
-      {data.nextSteps.length > 0 && (
+      {data.nextSteps && data.nextSteps.length > 0 && (
         <div className="border-t pt-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Next Best Actions</p>
           <div className="space-y-2">
