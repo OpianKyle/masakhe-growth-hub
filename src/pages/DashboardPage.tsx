@@ -30,9 +30,9 @@ const navItems = [
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
   { icon: Wallet, label: "Finance", path: "/dashboard/finance" },
   { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
-  { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
   { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
+  { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
   { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
   { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify" },
   { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
@@ -44,6 +44,7 @@ const navItems = [
 
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -61,12 +62,18 @@ export default function DashboardPage() {
 
   const initials = user?.full_name?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U";
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside
-        className={`flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ${
-          collapsed ? "w-16" : "w-64"
+        className={`fixed left-0 top-0 bottom-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto ${
+          mobileMenuOpen || collapsed ? "w-16" : "w-64"
+        } ${
+          mobileMenuOpen ? "md:flex" : "hidden md:flex"
         }`}
       >
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
@@ -184,6 +191,9 @@ export default function DashboardPage() {
         {/* Top Bar */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6">
           <div className="flex items-center gap-4">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-foreground/70 hover:text-foreground">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
             <h1 className="text-xl font-bold font-heading text-foreground">{getPageTitle()}</h1>
           </div>
           <div className="flex items-center gap-4">
