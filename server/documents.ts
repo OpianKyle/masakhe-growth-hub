@@ -1,6 +1,5 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import OpenAI from "openai";
 
@@ -9,12 +8,16 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+function requireAuth(req: any, res: any, next: Function) {
+  if (!req.session?.userId) return res.status(401).json({ error: "Not authenticated" });
+  next();
+}
+
 export const documentsRouter = Router();
-documentsRouter.use(requireAuth);
 
 // ─── BUSINESS PLANS ─────────────────────────────────────────────────────────
 
-documentsRouter.get("/business-plans", async (req, res) => {
+documentsRouter.get("/business-plans", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, status, created_at, updated_at FROM business_plans WHERE user_id = ? ORDER BY updated_at DESC",
@@ -24,7 +27,7 @@ documentsRouter.get("/business-plans", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.post("/business-plans", async (req, res) => {
+documentsRouter.post("/business-plans", requireAuth, async (req, res) => {
   try {
     const { title, formData } = req.body;
     const id = randomUUID();
@@ -37,7 +40,7 @@ documentsRouter.post("/business-plans", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.get("/business-plans/:id", async (req, res) => {
+documentsRouter.get("/business-plans/:id", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -45,7 +48,7 @@ documentsRouter.get("/business-plans/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.put("/business-plans/:id", async (req, res) => {
+documentsRouter.put("/business-plans/:id", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT id FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -58,14 +61,14 @@ documentsRouter.put("/business-plans/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.delete("/business-plans/:id", async (req, res) => {
+documentsRouter.delete("/business-plans/:id", requireAuth, async (req, res) => {
   try {
     await execute("DELETE FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.post("/business-plans/:id/generate", async (req, res) => {
+documentsRouter.post("/business-plans/:id/generate", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -111,7 +114,7 @@ Return ONLY valid JSON.`;
 
 // ─── FUNDING PROPOSALS ───────────────────────────────────────────────────────
 
-documentsRouter.get("/funding-proposals", async (req, res) => {
+documentsRouter.get("/funding-proposals", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, status, created_at, updated_at FROM funding_proposals WHERE user_id = ? ORDER BY updated_at DESC",
@@ -121,7 +124,7 @@ documentsRouter.get("/funding-proposals", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.post("/funding-proposals", async (req, res) => {
+documentsRouter.post("/funding-proposals", requireAuth, async (req, res) => {
   try {
     const { title, formData } = req.body;
     const id = randomUUID();
@@ -134,7 +137,7 @@ documentsRouter.post("/funding-proposals", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.get("/funding-proposals/:id", async (req, res) => {
+documentsRouter.get("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -142,7 +145,7 @@ documentsRouter.get("/funding-proposals/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.put("/funding-proposals/:id", async (req, res) => {
+documentsRouter.put("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT id FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -155,14 +158,14 @@ documentsRouter.put("/funding-proposals/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.delete("/funding-proposals/:id", async (req, res) => {
+documentsRouter.delete("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
     await execute("DELETE FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.post("/funding-proposals/:id/generate", async (req, res) => {
+documentsRouter.post("/funding-proposals/:id/generate", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -202,7 +205,7 @@ Return ONLY valid JSON.`;
 
 // ─── FINANCIAL STATEMENTS ────────────────────────────────────────────────────
 
-documentsRouter.get("/financial-statements", async (req, res) => {
+documentsRouter.get("/financial-statements", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, financial_year, created_at, updated_at FROM financial_statements WHERE user_id = ? ORDER BY financial_year DESC",
@@ -212,7 +215,7 @@ documentsRouter.get("/financial-statements", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.post("/financial-statements", async (req, res) => {
+documentsRouter.post("/financial-statements", requireAuth, async (req, res) => {
   try {
     const { formData } = req.body;
     const fd = formData || {};
@@ -245,7 +248,7 @@ documentsRouter.post("/financial-statements", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.get("/financial-statements/:id", async (req, res) => {
+documentsRouter.get("/financial-statements/:id", requireAuth, async (req, res) => {
   try {
     const row = await queryOne("SELECT * FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -253,7 +256,7 @@ documentsRouter.get("/financial-statements/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.put("/financial-statements/:id", async (req, res) => {
+documentsRouter.put("/financial-statements/:id", requireAuth, async (req, res) => {
   try {
     const { formData } = req.body;
     const fd = formData || {};
@@ -279,7 +282,7 @@ documentsRouter.put("/financial-statements/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-documentsRouter.delete("/financial-statements/:id", async (req, res) => {
+documentsRouter.delete("/financial-statements/:id", requireAuth, async (req, res) => {
   try {
     await execute("DELETE FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     res.json({ ok: true });
