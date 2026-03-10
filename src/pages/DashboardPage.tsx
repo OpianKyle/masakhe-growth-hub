@@ -105,7 +105,7 @@ export default function DashboardPage() {
         setHasVehicleSite(found);
       })
       .catch(() => {});
-  }, []);
+  }, [location.pathname]);
 
   const navItems: NavItem[] = hasVehicleSite
     ? [

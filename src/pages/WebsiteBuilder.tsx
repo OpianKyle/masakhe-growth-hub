@@ -126,6 +126,7 @@ function TemplatePicker({ onSelect, isProPlan }: { onSelect: (templateId: string
 
 export default function WebsiteBuilder() {
   const [site, setSite] = useState<SiteConfig | null>(null);
+  const [loadingExisting, setLoadingExisting] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
@@ -133,14 +134,23 @@ export default function WebsiteBuilder() {
   const [isProPlan, setIsProPlan] = useState(false);
 
   useEffect(() => {
-    fetch("/api/billing/status", { credentials: "include" })
-      .then(r => r.json())
-      .then(d => {
-        if (d.plan === "pro" && (d.status === "ACTIVE" || d.status === "TRIAL")) {
-          setIsProPlan(true);
+    Promise.all([
+      fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
+      fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []),
+    ]).then(([billing, sites]) => {
+      if (billing.plan === "pro" && (billing.status === "ACTIVE" || billing.status === "TRIAL")) {
+        setIsProPlan(true);
+      }
+      const list = Array.isArray(sites) ? sites : [];
+      if (list.length > 0) {
+        const existing = list[0];
+        setSite({ ...(existing.content as SiteConfig), id: existing.id });
+        if (existing.status === "published") {
+          setPublishedUrl(`${window.location.origin}/site/${existing.slug}`);
         }
-      })
-      .catch(() => {});
+        setLastSaved(new Date(existing.updated_at || existing.created_at).toLocaleTimeString());
+      }
+    }).finally(() => setLoadingExisting(false));
   }, []);
 
   const handleTemplateSelect = (templateId: string) => {
@@ -240,6 +250,15 @@ export default function WebsiteBuilder() {
       toast.error("Failed to publish");
     }
   };
+
+  if (loadingExisting) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
+        <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        Loading your website...
+      </div>
+    );
+  }
 
   if (!site) {
     return <TemplatePicker onSelect={handleTemplateSelect} isProPlan={isProPlan} />;
