@@ -505,16 +505,30 @@ export default function LandingPage() {
             {[
               { title: "Platform", links: ["AI Registration", "Website Builder", "Social Media", "Campaigns"] },
               { title: "Resources", links: ["Documentation", "API Reference", "SARS Guide", "Support"] },
-              { title: "Legal", links: ["Privacy (POPIA)", "Terms of Service", "Security", "Contact"] },
+              { title: "Legal", links: [
+                { label: "Privacy Policy (POPIA)", href: "/privacy" },
+                { label: "Terms of Service", href: "#" },
+                { label: "Security", href: "#" },
+                { label: "Contact", href: "#" },
+              ]},
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="font-bold font-heading text-foreground mb-3">{col.title}</h4>
                 <ul className="space-y-2">
-                  {col.links.map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{link}</a>
-                    </li>
-                  ))}
+                  {col.links.map((link) => {
+                    const label = typeof link === "string" ? link : link.label;
+                    const href = typeof link === "string" ? "#" : link.href;
+                    const isInternal = href.startsWith("/");
+                    return (
+                      <li key={label}>
+                        {isInternal ? (
+                          <Link to={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</Link>
+                        ) : (
+                          <a href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</a>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
