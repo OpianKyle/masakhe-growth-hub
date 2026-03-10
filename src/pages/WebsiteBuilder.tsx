@@ -53,6 +53,7 @@ const sectionTypeIcons: Record<SectionType, React.ElementType> = {
   gallery: ImageIcon,
   testimonials: Star,
   contact: Phone,
+  contact_form: FileText,
   vehicle_listings: Car,
 };
 
@@ -65,6 +66,7 @@ const defaultSectionData: Record<SectionType, any> = {
   gallery: { title: "Gallery", subtitle: "Our Work", images: [{ url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=80&w=600", caption: "Image 1" }] },
   testimonials: { title: "Testimonials", subtitle: "What Customers Say", items: [{ name: "Customer", role: "Client", text: "Great service!" }] },
   contact: { title: "Contact Us", subtitle: "Get in touch today", phone: "", email: "", address: "", whatsapp: "", enableWhatsApp: false },
+  contact_form: { title: "Get in Touch", subtitle: "Fill out the form below and we'll get back to you shortly.", buttonText: "Submit Enquiry", successMessage: "Thank you! We'll be in touch shortly." },
   vehicle_listings: { title: "Our Vehicles", subtitle: "Browse our current inventory" },
 };
 
@@ -265,8 +267,10 @@ export default function WebsiteBuilder() {
   }
 
   const availableSections: SectionType[] = site.templateId === "showroom"
-    ? ["hero", "stats", "vehicle_listings", "features", "about", "services", "gallery", "testimonials", "contact"]
-    : ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact"];
+    ? ["hero", "stats", "vehicle_listings", "features", "about", "services", "gallery", "testimonials", "contact", "contact_form"]
+    : site.templateId === "brokerage"
+    ? ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact", "contact_form", "vehicle_listings"]
+    : ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact", "contact_form"];
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">

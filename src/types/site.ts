@@ -10,7 +10,7 @@ export interface SiteConfig {
   sections: SiteSection[];
 }
 
-export type SectionType = "hero" | "stats" | "features" | "about" | "services" | "gallery" | "testimonials" | "contact" | "vehicle_listings";
+export type SectionType = "hero" | "stats" | "features" | "about" | "services" | "gallery" | "testimonials" | "contact" | "contact_form" | "vehicle_listings";
 
 export interface SiteSection {
   id: string;
@@ -19,7 +19,7 @@ export interface SiteSection {
   data: any;
 }
 
-export type HeroStyle = "corporate" | "centered" | "bold" | "minimal" | "gradient";
+export type HeroStyle = "corporate" | "centered" | "bold" | "minimal" | "gradient" | "cinematic";
 
 export interface HeroData {
   title: string;
@@ -95,6 +95,7 @@ export const SECTION_LABELS: Record<SectionType, string> = {
   gallery: "Image Gallery",
   testimonials: "Testimonials",
   contact: "Contact Info",
+  contact_form: "Contact Form (Lead Gen)",
   vehicle_listings: "Vehicle Listings",
 };
 

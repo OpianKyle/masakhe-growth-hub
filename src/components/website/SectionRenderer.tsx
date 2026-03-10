@@ -310,6 +310,53 @@ function HeroGradient({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function HeroCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  const bgImage = data.backgroundImageUrl || site.photoUrl || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80";
+  return (
+    <section className="relative min-h-[100vh] overflow-hidden text-white bg-black">
+      <div className="absolute inset-0">
+        <img src={bgImage} alt={site.businessName} className="h-full w-full object-cover opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20" />
+      </div>
+      <div className="container relative z-10 mx-auto flex min-h-[100vh] flex-col px-4">
+        <nav className="flex items-center justify-between py-8">
+          <div className="flex items-center gap-3">
+            {site.logoUrl ? (
+              <img src={site.logoUrl} alt={site.businessName} className="h-10 max-w-[140px] object-contain" />
+            ) : (
+              <span className="text-2xl font-light tracking-[0.3em] uppercase">{site.businessName}</span>
+            )}
+          </div>
+          {data.badgeText && (
+            <span className="text-xs tracking-widest uppercase text-white/50">{data.badgeText}</span>
+          )}
+        </nav>
+        <div className="flex flex-1 flex-col justify-end pb-24">
+          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <h1 className="mb-6 text-6xl font-light leading-[1.05] tracking-tight md:text-8xl lg:text-9xl max-w-5xl">
+              {data.title}
+            </h1>
+            <p className="mb-10 max-w-xl text-lg text-white/60 font-light leading-relaxed">{data.subtitle}</p>
+            <div className="flex flex-wrap gap-4">
+              {data.ctaPrimaryText && (
+                <Button size="lg" className="text-black font-medium px-10 py-6 text-sm tracking-widest uppercase bg-white hover:bg-white/90 rounded-none">
+                  {data.ctaPrimaryText}
+                  <ArrowRight className="ml-3 h-4 w-4" />
+                </Button>
+              )}
+              {data.ctaSecondaryText && (
+                <Button size="lg" className="border border-white/30 bg-transparent text-white px-10 py-6 text-sm tracking-widest uppercase hover:bg-white/10 rounded-none">
+                  {data.ctaSecondaryText}
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HeroSection({ data, site }: { data: any; site: SiteConfig }) {
   const style: HeroStyle = data.heroStyle || "corporate";
   switch (style) {
@@ -317,6 +364,7 @@ function HeroSection({ data, site }: { data: any; site: SiteConfig }) {
     case "bold": return <HeroBold data={data} site={site} />;
     case "minimal": return <HeroMinimal data={data} site={site} />;
     case "gradient": return <HeroGradient data={data} site={site} />;
+    case "cinematic": return <HeroCinematic data={data} site={site} />;
     default: return <HeroCorporate data={data} site={site} />;
   }
 }
@@ -1067,6 +1115,154 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
   );
 }
 
+function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", service: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email) return;
+    if (!site.id) { setError("Unable to submit — site not configured."); return; }
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/leads/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          websiteId: site.id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          message: form.service ? `[${form.service}] ${form.message}` : form.message,
+          source: "contact_form",
+        }),
+      });
+      if (!res.ok) throw new Error("Submission failed");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please try again or contact us directly.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <section className="py-24" style={{ backgroundColor: `${site.theme.primary}08` }}>
+        <div className="container mx-auto px-4 text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: `${site.theme.primary}15` }}>
+              <CheckCircle2 className="h-10 w-10" style={{ color: site.theme.primary }} />
+            </div>
+            <h3 className="text-2xl font-bold mb-2">{data.successMessage || "Thank you! We'll be in touch shortly."}</h3>
+            <p className="text-slate-500">We've received your enquiry and will respond within 24 hours.</p>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-24" style={{ backgroundColor: `${site.theme.primary}06` }}>
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
+              <p className="text-slate-500 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-slate-600">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
+                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
+                  </div>
+                  <span className="text-sm">No-obligation consultation</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
+                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
+                  </div>
+                  <span className="text-sm">Response within 24 hours</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
+                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
+                  </div>
+                  <span className="text-sm">Expert advice tailored to you</span>
+                </div>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name *</label>
+                <input
+                  type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow" style={{ focusRingColor: site.theme.primary } as any}
+                  placeholder="e.g. John Mokoena"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email *</label>
+                  <input
+                    type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
+                    placeholder="john@example.co.za"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                  <input
+                    type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
+                    placeholder="+27 82 123 4567"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Service of Interest</label>
+                <select
+                  value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow bg-white"
+                >
+                  <option value="">Select a service...</option>
+                  <option value="Insurance">Insurance</option>
+                  <option value="Financial Planning">Financial Planning</option>
+                  <option value="Employee Benefits">Employee Benefits</option>
+                  <option value="Medical Aid">Medical Aid</option>
+                  <option value="Life Cover">Life Cover</option>
+                  <option value="Vehicle Finance">Vehicle Finance</option>
+                  <option value="General Enquiry">General Enquiry</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
+                <textarea
+                  rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow resize-none"
+                  placeholder="Tell us how we can help..."
+                />
+              </div>
+              <button
+                type="submit" disabled={submitting}
+                className="w-full rounded-lg py-3.5 text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: site.theme.primary }}
+              >
+                {submitting ? "Submitting..." : (data.buttonText || "Submit Enquiry")}
+              </button>
+              {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+              <p className="text-xs text-slate-400 text-center">Your information is secure and will never be shared.</p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const sectionComponents: Record<string, React.ComponentType<{ data: any; site: SiteConfig }>> = {
   hero: HeroSection,
   stats: StatsSection,
@@ -1076,6 +1272,7 @@ const sectionComponents: Record<string, React.ComponentType<{ data: any; site: S
   gallery: GallerySection,
   testimonials: TestimonialsSection,
   contact: ContactSection,
+  contact_form: ContactFormSection,
   vehicle_listings: VehicleListingsSection,
 };
 

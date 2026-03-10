@@ -8,7 +8,7 @@ import { ImageUploadField } from "./ImageUploadField";
 import { SiteSection, SectionType, SECTION_LABELS } from "@/types/site";
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical,
-  Briefcase, UtensilsCrossed, ShoppingBag, Layout, BarChart3, Star, Image, Phone, FileText, MessageSquare, Car
+  Briefcase, UtensilsCrossed, ShoppingBag, Layout, BarChart3, Star, Image, Phone, FileText, MessageSquare, Car, ClipboardList
 } from "lucide-react";
 
 const sectionIcons: Record<SectionType, React.ElementType> = {
@@ -20,6 +20,7 @@ const sectionIcons: Record<SectionType, React.ElementType> = {
   gallery: Image,
   testimonials: Star,
   contact: Phone,
+  contact_form: ClipboardList,
   vehicle_listings: Car,
 };
 
@@ -92,6 +93,9 @@ const heroStyleOptions = [
   { value: "corporate", label: "Corporate", desc: "Dark split layout with image" },
   { value: "centered", label: "Centered", desc: "Full background image overlay" },
   { value: "bold", label: "Bold", desc: "Vibrant gradient with shapes" },
+  { value: "gradient", label: "Gradient", desc: "Diagonal gradient with accents" },
+  { value: "cinematic", label: "Cinematic", desc: "Full-bleed dark editorial" },
+  { value: "minimal", label: "Minimal", desc: "Clean white minimal layout" },
 ] as const;
 
 function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
@@ -332,6 +336,21 @@ function VehicleListingsEditor({ data, onChange }: { data: any; onChange: (d: an
   );
 }
 
+function ContactFormEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const update = (key: string, val: any) => onChange({ ...data, [key]: val });
+  return (
+    <div className="space-y-3">
+      <div><Label className="text-xs">Section Title</Label><Input value={data.title || ""} onChange={(e) => update("title", e.target.value)} className="mt-1 h-8 text-sm" /></div>
+      <div><Label className="text-xs">Subtitle</Label><Input value={data.subtitle || ""} onChange={(e) => update("subtitle", e.target.value)} className="mt-1 h-8 text-sm" /></div>
+      <div><Label className="text-xs">Button Text</Label><Input value={data.buttonText || ""} onChange={(e) => update("buttonText", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Submit Enquiry" /></div>
+      <div><Label className="text-xs">Success Message</Label><Input value={data.successMessage || ""} onChange={(e) => update("successMessage", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Thank you! We'll be in touch." /></div>
+      <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+        Leads submitted via this form will appear in your <strong>Leads</strong> dashboard. Each submission captures the visitor's name, email, phone, and message.
+      </p>
+    </div>
+  );
+}
+
 const editorComponents: Record<SectionType, React.ComponentType<{ data: any; onChange: (d: any) => void }>> = {
   hero: HeroEditor,
   stats: StatsEditor,
@@ -341,6 +360,7 @@ const editorComponents: Record<SectionType, React.ComponentType<{ data: any; onC
   gallery: GalleryEditor,
   testimonials: TestimonialsEditor,
   contact: ContactEditor,
+  contact_form: ContactFormEditor,
   vehicle_listings: VehicleListingsEditor,
 };
 
