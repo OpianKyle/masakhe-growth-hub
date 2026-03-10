@@ -507,7 +507,7 @@ export default function LandingPage() {
               { title: "Resources", links: ["Documentation", "API Reference", "SARS Guide", "Support"] },
               { title: "Legal", links: [
                 { label: "Privacy Policy (POPIA)", href: "/privacy" },
-                { label: "Terms of Service", href: "#" },
+                { label: "Terms of Service", href: "/terms" },
                 { label: "Security", href: "#" },
                 { label: "Contact", href: "#" },
               ]},

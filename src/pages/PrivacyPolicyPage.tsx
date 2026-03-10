@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-1">
             <p><strong className="text-foreground">Information Officer:</strong> Masakhe Compliance Team</p>
-            <p><strong className="text-foreground">Email:</strong> privacy@masakhe.co.za</p>
+            <p><strong className="text-foreground">Email:</strong> privacy@masakheportal.co.za</p>
             <p><strong className="text-foreground">Country of Operation:</strong> Republic of South Africa</p>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function PrivacyPolicyPage() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            To exercise any of these rights, email us at <strong className="text-foreground">privacy@masakhe.co.za</strong>.
+            To exercise any of these rights, email us at <strong className="text-foreground">privacy@masakheportal.co.za</strong>.
             We will respond within 30 days as required by POPIA.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -267,7 +267,7 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p className="text-sm text-muted-foreground mt-4">
             If you discover a security vulnerability, please report it responsibly to{" "}
-            <strong className="text-foreground">security@masakhe.co.za</strong>.
+            <strong className="text-foreground">security@masakheportal.co.za</strong>.
           </p>
         </div>
 
@@ -290,7 +290,7 @@ export default function PrivacyPolicyPage() {
           <p className="text-muted-foreground leading-relaxed">
             Masakhe is a business platform intended for use by individuals 18 years and older. We do not knowingly collect
             personal information from anyone under the age of 18. If you believe a minor has provided us with personal
-            information, please contact us immediately at <strong className="text-foreground">privacy@masakhe.co.za</strong>.
+            information, please contact us immediately at <strong className="text-foreground">privacy@masakheportal.co.za</strong>.
           </p>
         </div>
 
@@ -317,7 +317,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="rounded-xl border border-border bg-muted/30 p-5 space-y-2 text-sm">
             <p><strong className="text-foreground">Company:</strong> <span className="text-muted-foreground">Masakhe Digital Platform</span></p>
-            <p><strong className="text-foreground">Email:</strong> <a href="mailto:privacy@masakhe.co.za" className="text-primary hover:underline">privacy@masakhe.co.za</a></p>
+            <p><strong className="text-foreground">Email:</strong> <a href="mailto:privacy@masakheportal.co.za" className="text-primary hover:underline">privacy@masakheportal.co.za</a></p>
             <p><strong className="text-foreground">Jurisdiction:</strong> <span className="text-muted-foreground">Republic of South Africa</span></p>
           </div>
         </div>
