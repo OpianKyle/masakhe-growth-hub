@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { compressImage, dataUrlToBlob } from "@/lib/imageCompression";
 
 interface Vehicle {
   id: string;
@@ -189,29 +190,29 @@ export default function VehicleManagementPage() {
       return;
     }
 
-    if (editingId) {
-      setUploading(true);
-      try {
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file, 1200, 1200, 0.75);
+
+      if (editingId) {
+        const blob = dataUrlToBlob(compressed);
         const fd = new FormData();
-        fd.append("image", file);
+        fd.append("image", blob, "photo.jpg");
         const res = await fetch(`/api/vehicles/${editingId}/images`, { method: "POST", credentials: "include", body: fd });
         const data = await res.json();
-        if (data.ok) {
+        if (res.ok && data.ok) {
           setEditImages(data.images);
           toast({ title: "Image uploaded" });
+        } else {
+          toast({ title: "Error", description: data.error || "Upload failed.", variant: "destructive" });
         }
-      } catch {
-        toast({ title: "Error", description: "Upload failed.", variant: "destructive" });
-      } finally {
-        setUploading(false);
-        if (fileRef.current) fileRef.current.value = "";
+      } else {
+        setEditImages((prev) => [...prev, compressed]);
       }
-    } else {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (reader.result) setEditImages((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
+    } catch {
+      toast({ title: "Error", description: "Upload failed.", variant: "destructive" });
+    } finally {
+      setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   };

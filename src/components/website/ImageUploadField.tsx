@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageCompression";
 
 interface ImageUploadFieldProps {
   value?: string;
@@ -18,22 +19,11 @@ export const ImageUploadField = ({ value, onChange, label }: ImageUploadFieldPro
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
-
     setUploading(true);
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.ok) {
-        onChange(data.url);
-        toast.success("Image uploaded successfully");
-      } else {
-        toast.error(data.error || "Upload failed");
-      }
+      const compressed = await compressImage(file, 800, 800, 0.75);
+      onChange(compressed);
+      toast.success("Image uploaded successfully");
     } catch (err) {
       toast.error("Error uploading image");
     } finally {
