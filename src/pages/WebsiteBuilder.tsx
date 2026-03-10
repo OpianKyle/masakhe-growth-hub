@@ -15,7 +15,7 @@ import {
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
-  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock
+  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -70,7 +70,7 @@ const defaultSectionData: Record<SectionType, any> = {
   vehicle_listings: { title: "Our Vehicles", subtitle: "Browse our current inventory" },
 };
 
-function TemplatePicker({ onSelect, isProPlan }: { onSelect: (templateId: string) => void; isProPlan: boolean }) {
+function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templateId: string) => void; onPreview: (templateId: string) => void; isProPlan: boolean }) {
   return (
     <div className="h-full overflow-y-auto bg-slate-50 p-8">
       <div className="max-w-5xl mx-auto w-full">
@@ -85,13 +85,11 @@ function TemplatePicker({ onSelect, isProPlan }: { onSelect: (templateId: string
             return (
               <Card
                 key={tmpl.id}
-                className={`group transition-all border-2 ${isPremiumLocked ? "opacity-80 border-transparent hover:border-amber-400 cursor-pointer" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
+                className={`group transition-all border-2 ${isPremiumLocked ? "border-transparent hover:border-amber-400" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
                 onClick={() => {
-                  if (isPremiumLocked) {
-                    toast.error("This premium template requires the Pro plan (R2,500/month). Upgrade on the Billing page.");
-                    return;
+                  if (!isPremiumLocked) {
+                    onSelect(tmpl.id);
                   }
-                  onSelect(tmpl.id);
                 }}
               >
                 <CardContent className="p-4 text-center space-y-3 relative">
@@ -108,9 +106,14 @@ function TemplatePicker({ onSelect, isProPlan }: { onSelect: (templateId: string
                   <h3 className="text-sm font-bold">{tmpl.name}</h3>
                   <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
                   {isPremiumLocked ? (
-                    <Button variant="outline" size="sm" className="w-full text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1">
-                      <Lock className="h-3 w-3" /> Pro Plan Required
-                    </Button>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" className="flex-1 text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1" onClick={(e) => { e.stopPropagation(); onPreview(tmpl.id); }}>
+                        <Eye className="h-3 w-3" /> Preview
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs border-slate-200 text-slate-400 gap-1 cursor-default">
+                        <Lock className="h-3 w-3" /> Pro Only
+                      </Button>
+                    </div>
                   ) : (
                     <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
                       Use Template
@@ -134,6 +137,7 @@ export default function WebsiteBuilder() {
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [isProPlan, setIsProPlan] = useState(false);
+  const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -157,6 +161,10 @@ export default function WebsiteBuilder() {
 
   const handleTemplateSelect = (templateId: string) => {
     setSite(buildTemplate(templateId));
+  };
+
+  const handlePreview = (templateId: string) => {
+    setPreviewSite(buildTemplate(templateId));
   };
 
   const updateSite = useCallback((updater: (prev: SiteConfig) => SiteConfig) => {
@@ -262,8 +270,45 @@ export default function WebsiteBuilder() {
     );
   }
 
+  if (previewSite) {
+    const previewTemplateName = templateList.find(t => t.id === previewSite.templateId)?.name || previewSite.templateId;
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-slate-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => setPreviewSite(null)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4" />
+                <span className="text-sm font-bold">Previewing: {previewTemplateName}</span>
+              </div>
+              <p className="text-xs text-white/80">This is a read-only preview. Upgrade to Pro to use this template.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" className="h-8 text-xs bg-white text-amber-600 hover:bg-white/90 font-bold" onClick={() => { window.location.href = "/dashboard/billing"; }}>
+              <Crown className="h-3.5 w-3.5 mr-1" /> Upgrade to Pro
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => setPreviewSite(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-4 flex justify-center">
+          <div className="bg-white shadow-2xl rounded-xl overflow-hidden w-full max-w-[1200px]">
+            <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 10rem)" }}>
+              <SectionRenderer site={previewSite} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!site) {
-    return <TemplatePicker onSelect={handleTemplateSelect} isProPlan={isProPlan} />;
+    return <TemplatePicker onSelect={handleTemplateSelect} onPreview={handlePreview} isProPlan={isProPlan} />;
   }
 
   const availableSections: SectionType[] = site.templateId === "showroom"
