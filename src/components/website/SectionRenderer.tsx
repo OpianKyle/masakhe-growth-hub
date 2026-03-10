@@ -421,7 +421,45 @@ function StatsDark({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function StatsCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-0 bg-black border-y border-white/10">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 gap-0 md:grid-cols-4 divide-x divide-white/10">
+          {(data.items || []).map((stat: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="text-center px-6 py-10">
+              <div className="text-4xl font-light tracking-tight mb-2" style={{ color: site.theme.primary }}>{stat.value}</div>
+              <div className="text-[11px] font-medium text-white/35 uppercase tracking-[0.25em]">{stat.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatsProfessional({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-16" style={{ backgroundColor: site.theme.primary }}>
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          {(data.items || []).map((stat: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="text-center p-6 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
+              <div className="text-3xl font-extrabold text-white mb-1" style={{ textShadow: `0 0 30px ${site.theme.accent}40` }}>{stat.value}</div>
+              <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{stat.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function StatsSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <StatsCinematic data={data} site={site} />;
+  if (site.templateId === "brokerage") return <StatsProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "cards": return <StatsCards data={data} site={site} />;
@@ -516,7 +554,66 @@ function FeaturesNumbered({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function FeaturesCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-black text-white">
+      <div className="container mx-auto px-4">
+        <div className="mb-16">
+          <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          <p className="text-white/40 text-lg font-light">{data.subtitle}</p>
+        </div>
+        <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 bg-white/[0.08] border border-white/[0.08]">
+          {(data.items || []).map((item: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+              className="bg-black p-10 group hover:bg-white/[0.03] transition-colors duration-500">
+              <div className="text-xs font-medium tracking-[0.3em] uppercase mb-6" style={{ color: site.theme.primary }}>
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <h3 className="text-lg font-medium mb-3 tracking-tight">{item.title}</h3>
+              <p className="text-sm text-white/40 leading-relaxed font-light">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturesProfessional({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-white">
+      <div className="container mx-auto px-4">
+        <div className="max-w-3xl mb-16">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
+            <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+        </div>
+        <div className="grid gap-8 md:grid-cols-2">
+          {(data.items || []).map((item: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="flex gap-6 p-6 rounded-xl border border-slate-100 bg-white hover:shadow-lg transition-shadow group">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white font-bold text-sm"
+                style={{ backgroundColor: site.theme.primary }}>
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg mb-2" style={{ color: site.theme.primary }}>{item.title}</h3>
+                <p className="text-slate-500 leading-relaxed">{item.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeaturesSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <FeaturesCinematic data={data} site={site} />;
+  if (site.templateId === "brokerage") return <FeaturesProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "icon-grid": return <FeaturesIconGrid data={data} site={site} />;
@@ -525,7 +622,7 @@ function FeaturesSection({ data, site }: { data: any; site: SiteConfig }) {
   }
 }
 
-function AboutSection({ data, site }: { data: any; site: SiteConfig }) {
+function AboutDefault({ data, site }: { data: any; site: SiteConfig }) {
   return (
     <section className="bg-slate-50 py-24">
       <div className="container mx-auto px-4">
@@ -558,6 +655,93 @@ function AboutSection({ data, site }: { data: any; site: SiteConfig }) {
       </div>
     </section>
   );
+}
+
+function AboutCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-slate-950 text-white">
+      <div className="container mx-auto px-4">
+        <div className="grid items-center gap-16 lg:grid-cols-2">
+          <div className={`relative overflow-hidden ${data.imagePosition === "left" ? "order-1" : "order-2"}`}>
+            <img src={data.imageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80"} className="aspect-[4/5] w-full object-cover" alt="About" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+          </div>
+          <div className={data.imagePosition === "left" ? "order-2" : "order-1"}>
+            <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+            <h2 className="mb-8 text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
+            {data.quote && (
+              <div className="mb-10 border-l-2 pl-6 text-xl font-light text-white/60 italic leading-relaxed" style={{ borderColor: site.theme.primary }}>
+                "{data.quote}"
+              </div>
+            )}
+            <div className="grid gap-6">
+              {(data.items || []).map((item: any, i: number) => (
+                <motion.div key={i} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                  className="group">
+                  <div className="flex gap-4">
+                    <div className="text-xs font-medium tracking-[0.3em] uppercase pt-1 shrink-0" style={{ color: site.theme.primary }}>
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div>
+                      <h3 className="font-medium mb-1 tracking-tight">{item.title}</h3>
+                      <p className="text-sm text-white/40 font-light leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AboutProfessional({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24" style={{ backgroundColor: site.theme.primary }}>
+      <div className="container mx-auto px-4">
+        <div className="grid items-center gap-16 lg:grid-cols-2">
+          <div className={`relative overflow-hidden rounded-xl shadow-2xl ${data.imagePosition === "left" ? "order-1" : "order-2"}`}>
+            <img src={data.imageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80"} className="aspect-video w-full object-cover" alt="About" />
+            <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: site.theme.accent }} />
+          </div>
+          <div className={`text-white ${data.imagePosition === "left" ? "order-2" : "order-1"}`}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
+              <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>About Us</span>
+            </div>
+            <h2 className="mb-6 text-4xl font-bold tracking-tight">{data.title}</h2>
+            {data.quote && (
+              <div className="mb-8 border-l-4 pl-6 text-xl italic text-white/70 leading-relaxed" style={{ borderColor: site.theme.accent }}>
+                "{data.quote}"
+              </div>
+            )}
+            <div className="grid gap-5">
+              {(data.items || []).map((item: any, i: number) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                  className="flex gap-4 p-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5" style={{ backgroundColor: site.theme.accent }}>
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-bold">{item.title}</span>
+                    <p className="text-sm text-white/60 mt-1">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AboutSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <AboutCinematic data={data} site={site} />;
+  if (site.templateId === "brokerage") return <AboutProfessional data={data} site={site} />;
+  return <AboutDefault data={data} site={site} />;
 }
 
 function ServicesDefault({ data, site }: { data: any; site: SiteConfig }) {
@@ -635,7 +819,74 @@ function ServicesCompact({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function ServicesCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-black text-white">
+      <div className="container mx-auto px-4">
+        <div className="mb-16">
+          <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          <p className="text-white/40 text-lg font-light">{data.subtitle}</p>
+        </div>
+        <div className="grid gap-0 divide-y divide-white/[0.08]">
+          {(data.items || []).map((service: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+              className="group flex items-center justify-between py-8 hover:pl-4 transition-all duration-300">
+              <div className="flex items-center gap-6">
+                <span className="text-xs font-medium tracking-[0.3em] uppercase shrink-0" style={{ color: site.theme.primary }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="text-lg font-medium tracking-tight group-hover:text-white/90 transition-colors">{service.title}</h3>
+                  <p className="text-sm text-white/35 font-light mt-1 max-w-lg">{service.desc}</p>
+                </div>
+              </div>
+              {service.price && (
+                <span className="text-lg font-light shrink-0 ml-8 tracking-tight" style={{ color: site.theme.primary }}>{service.price}</span>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ServicesProfessional({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-slate-50">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
+            <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
+            <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {(data.items || []).map((service: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+              className="bg-white rounded-xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-t-[3px] group hover:-translate-y-1"
+              style={{ borderTopColor: site.theme.accent }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full mb-5 text-white text-sm font-bold"
+                style={{ backgroundColor: site.theme.primary }}>
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <h3 className="text-lg font-bold mb-3" style={{ color: site.theme.primary }}>{service.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{service.desc}</p>
+              {service.price && <p className="mt-4 text-lg font-bold" style={{ color: site.theme.accent }}>{service.price}</p>}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ServicesSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <ServicesCinematic data={data} site={site} />;
+  if (site.templateId === "brokerage") return <ServicesProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "bordered": return <ServicesBordered data={data} site={site} />;
@@ -736,7 +987,37 @@ function GalleryFeatured({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function GalleryCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  const images = data.images || [];
+  return (
+    <section className="py-24 bg-black text-white">
+      <div className="container mx-auto px-4">
+        <div className="mb-16">
+          <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          {data.subtitle && <p className="text-white/40 text-lg font-light">{data.subtitle}</p>}
+        </div>
+        <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+          {images.map((img: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="group relative overflow-hidden aspect-[4/3]">
+              <img src={img.url} alt={img.caption || ""} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-500" />
+              {img.caption && (
+                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                  <p className="text-sm font-light tracking-wide text-white">{img.caption}</p>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function GallerySection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <GalleryCinematic data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "masonry": return <GalleryMasonry data={data} site={site} />;
@@ -838,7 +1119,75 @@ function TestimonialsMinimal({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function TestimonialsCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-slate-950 text-white">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-4">{data.title}</h2>
+          {data.subtitle && <p className="text-white/40 text-lg font-light mb-16">{data.subtitle}</p>}
+          <div className="space-y-0 divide-y divide-white/[0.08]">
+            {(data.items || []).map((item: any, i: number) => (
+              <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
+                className="py-12 first:pt-0">
+                <p className="text-2xl md:text-3xl font-light leading-relaxed text-white/70 mb-8">"{item.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 max-w-[40px]" style={{ backgroundColor: site.theme.primary }} />
+                  <span className="text-sm font-medium tracking-wide">{item.name}</span>
+                  <span className="text-sm text-white/30">{item.role}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialsProfessional({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24" style={{ backgroundColor: `${site.theme.primary}08` }}>
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
+            <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
+            <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+        </div>
+        <div className="grid gap-8 md:grid-cols-3">
+          {(data.items || []).map((item: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="bg-white rounded-xl p-8 shadow-sm border border-slate-100 relative">
+              <Quote className="absolute top-6 right-6 h-8 w-8" style={{ color: `${site.theme.accent}30` }} />
+              <div className="flex gap-1 mb-5">
+                {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="h-4 w-4" style={{ fill: site.theme.accent, color: site.theme.accent }} />)}
+              </div>
+              <p className="text-slate-600 mb-6 leading-relaxed">"{item.text}"</p>
+              <div className="pt-5 border-t border-slate-100 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-bold"
+                  style={{ backgroundColor: site.theme.primary }}>
+                  {item.name?.[0] || "?"}
+                </div>
+                <div>
+                  <p className="font-bold text-sm" style={{ color: site.theme.primary }}>{item.name}</p>
+                  <p className="text-xs text-slate-400">{item.role}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TestimonialsSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <TestimonialsCinematic data={data} site={site} />;
+  if (site.templateId === "brokerage") return <TestimonialsProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "large-quote": return <TestimonialsLargeQuote data={data} site={site} />;
@@ -1016,7 +1365,49 @@ function ContactGradient({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function ContactCinematic({ data, site }: { data: any; site: SiteConfig }) {
+  return (
+    <section className="py-24 bg-black text-white">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl">
+          <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+          <h2 className="mb-4 text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
+          <p className="mb-16 text-lg text-white/40 font-light max-w-2xl">{data.subtitle}</p>
+          <div className="grid gap-0 divide-y divide-white/[0.08]">
+            {data.phone && (
+              <div className="flex items-center gap-6 py-6 group">
+                <span className="text-xs font-medium tracking-[0.3em] uppercase shrink-0" style={{ color: site.theme.primary }}>Phone</span>
+                <span className="font-light text-lg">{data.phone}</span>
+              </div>
+            )}
+            {data.email && (
+              <div className="flex items-center gap-6 py-6 group">
+                <span className="text-xs font-medium tracking-[0.3em] uppercase shrink-0" style={{ color: site.theme.primary }}>Email</span>
+                <span className="font-light text-lg">{data.email}</span>
+              </div>
+            )}
+            {data.address && (
+              <div className="flex items-center gap-6 py-6 group">
+                <span className="text-xs font-medium tracking-[0.3em] uppercase shrink-0" style={{ color: site.theme.primary }}>Visit</span>
+                <span className="font-light text-lg">{data.address}</span>
+              </div>
+            )}
+            {data.enableWhatsApp && data.whatsapp && (
+              <div className="flex items-center gap-6 py-6 group">
+                <span className="text-xs font-medium tracking-[0.3em] uppercase shrink-0 text-green-500">WhatsApp</span>
+                <a href={`https://wa.me/${data.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                  className="font-light text-lg hover:text-green-400 transition-colors">Chat with us</a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ContactSection({ data, site }: { data: any; site: SiteConfig }) {
+  if (site.templateId === "showroom") return <ContactCinematic data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "light": return <ContactLight data={data} site={site} />;
@@ -1044,12 +1435,19 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
     return `R${(cents / 100).toLocaleString("en-ZA")}`;
   };
 
+  const isCinematic = site.templateId === "showroom";
+
   return (
-    <section className="py-20 bg-slate-950 text-white">
+    <section className={`py-24 text-white ${isCinematic ? "bg-black" : "bg-slate-950"}`}>
       <div className="container mx-auto px-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: site.theme.primary }}>{data.title || "Our Vehicles"}</h2>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">{data.subtitle}</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className={isCinematic ? "mb-16" : "text-center mb-12"}>
+          {isCinematic && <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />}
+          <h2 className={isCinematic ? "text-4xl md:text-5xl font-light tracking-tight mb-3" : "text-3xl md:text-4xl font-bold mb-3"}
+            style={!isCinematic ? { color: site.theme.primary } : undefined}>
+            {data.title || "Our Vehicles"}
+          </h2>
+          <p className={isCinematic ? "text-white/40 text-lg font-light" : "text-slate-400 text-lg max-w-2xl mx-auto"}>{data.subtitle}</p>
         </motion.div>
 
         {loading ? (
@@ -1063,7 +1461,7 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
             <p className="text-slate-400 text-lg">Our inventory is being updated. Check back soon!</p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={`grid sm:grid-cols-2 lg:grid-cols-3 ${isCinematic ? "gap-1" : "gap-6"}`}>
             {vehicles.map((v: any, i: number) => {
               const imgs = v.images || [];
               const mainImg = imgs[0] || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=600";
@@ -1075,22 +1473,28 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group block rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-slate-600 transition-all hover:shadow-2xl hover:-translate-y-1"
+                  className={isCinematic
+                    ? "group block overflow-hidden bg-black border border-white/[0.08] hover:border-white/20 transition-all"
+                    : "group block rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-slate-600 transition-all hover:shadow-2xl hover:-translate-y-1"}
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    <img src={mainImg} alt={`${v.year} ${v.make} ${v.model}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className={`relative ${isCinematic ? "aspect-[16/9]" : "aspect-[16/10]"} overflow-hidden`}>
+                    <img src={mainImg} alt={`${v.year} ${v.make} ${v.model}`} className={`w-full h-full object-cover group-hover:scale-105 transition-transform ${isCinematic ? "duration-700" : "duration-500"}`} />
+                    {isCinematic && <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />}
                     {v.featured ? (
-                      <Badge className="absolute top-3 left-3 text-white text-xs" style={{ backgroundColor: site.theme.primary }}>Featured</Badge>
+                      <span className={`absolute top-3 left-3 text-xs px-3 py-1 ${isCinematic ? "bg-white/10 backdrop-blur-sm text-white tracking-widest uppercase border border-white/20" : "rounded-full text-white font-medium"}`}
+                        style={!isCinematic ? { backgroundColor: site.theme.primary } : undefined}>
+                        {isCinematic ? "Featured" : "Featured"}
+                      </span>
                     ) : null}
                     {v.status === "reserved" && (
-                      <Badge className="absolute top-3 right-3 bg-orange-500 text-white text-xs">Reserved</Badge>
+                      <span className="absolute top-3 right-3 bg-orange-500 text-white text-xs px-3 py-1 rounded-full">Reserved</span>
                     )}
                   </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold mb-1">{v.year} {v.make} {v.model}</h3>
-                    {v.variant && <p className="text-sm text-slate-400 mb-3">{v.variant}</p>}
-                    <p className="text-2xl font-bold mb-4" style={{ color: site.theme.primary }}>{formatPrice(v.price)}</p>
-                    <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                  <div className={isCinematic ? "p-6" : "p-5"}>
+                    <h3 className={`mb-1 ${isCinematic ? "text-lg font-medium tracking-tight" : "text-lg font-bold"}`}>{v.year} {v.make} {v.model}</h3>
+                    {v.variant && <p className={`text-sm mb-3 ${isCinematic ? "text-white/35 font-light" : "text-slate-400"}`}>{v.variant}</p>}
+                    <p className={`mb-4 ${isCinematic ? "text-xl font-light" : "text-2xl font-bold"}`} style={{ color: site.theme.primary }}>{formatPrice(v.price)}</p>
+                    <div className={`flex flex-wrap gap-3 text-xs ${isCinematic ? "text-white/30" : "text-slate-400"}`}>
                       {v.mileage && (
                         <span className="flex items-center gap-1"><Gauge className="h-3.5 w-3.5" /> {v.mileage.toLocaleString()} km</span>
                       )}
@@ -1150,17 +1554,133 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
     }
   };
 
+  const isCinematic = site.templateId === "showroom";
+  const isProfessional = site.templateId === "brokerage";
+
   if (submitted) {
     return (
-      <section className="py-24" style={{ backgroundColor: `${site.theme.primary}08` }}>
+      <section className={`py-24 ${isCinematic ? "bg-slate-950 text-white" : isProfessional ? "text-white" : ""}`}
+        style={isProfessional ? { backgroundColor: site.theme.primary } : !isCinematic ? { backgroundColor: `${site.theme.primary}08` } : undefined}>
         <div className="container mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: `${site.theme.primary}15` }}>
-              <CheckCircle2 className="h-10 w-10" style={{ color: site.theme.primary }} />
+            <div className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center ${isCinematic ? "" : "rounded-full"}`}
+              style={{ backgroundColor: isCinematic ? "transparent" : isProfessional ? `${site.theme.accent}30` : `${site.theme.primary}15` }}>
+              <CheckCircle2 className="h-10 w-10" style={{ color: isCinematic ? site.theme.primary : isProfessional ? site.theme.accent : site.theme.primary }} />
             </div>
-            <h3 className="text-2xl font-bold mb-2">{data.successMessage || "Thank you! We'll be in touch shortly."}</h3>
-            <p className="text-slate-500">We've received your enquiry and will respond within 24 hours.</p>
+            <h3 className={`text-2xl mb-2 ${isCinematic ? "font-light" : "font-bold"}`}>{data.successMessage || "Thank you! We'll be in touch shortly."}</h3>
+            <p className={isCinematic ? "text-white/40 font-light" : isProfessional ? "text-white/60" : "text-slate-500"}>We've received your enquiry and will respond within 24 hours.</p>
           </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  const formFields = (
+    <>
+      <div>
+        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Full Name *</label>
+        <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+          placeholder="e.g. John Mokoena" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Email *</label>
+          <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+            className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+            placeholder="john@example.co.za" />
+        </div>
+        <div>
+          <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Phone</label>
+          <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+            className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+            placeholder="+27 82 123 4567" />
+        </div>
+      </div>
+      <div>
+        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Service of Interest</label>
+        <select value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
+          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none" : "rounded-lg border border-slate-200 bg-white"}`}>
+          <option value="">Select a service...</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Financial Planning">Financial Planning</option>
+          <option value="Employee Benefits">Employee Benefits</option>
+          <option value="Medical Aid">Medical Aid</option>
+          <option value="Life Cover">Life Cover</option>
+          <option value="Vehicle Finance">Vehicle Finance</option>
+          <option value="General Enquiry">General Enquiry</option>
+        </select>
+      </div>
+      <div>
+        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Message</label>
+        <textarea rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow resize-none ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+          placeholder="Tell us how we can help..." />
+      </div>
+      <button type="submit" disabled={submitting}
+        className={`w-full py-3.5 font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50 ${isCinematic ? "rounded-none text-black bg-white tracking-widest uppercase" : "rounded-lg text-white"}`}
+        style={!isCinematic ? { backgroundColor: isProfessional ? site.theme.accent : site.theme.primary } : undefined}>
+        {submitting ? "Submitting..." : (data.buttonText || "Submit Enquiry")}
+      </button>
+      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+      <p className={`text-xs text-center ${isCinematic ? "text-white/25" : "text-slate-400"}`}>Your information is secure and will never be shared.</p>
+    </>
+  );
+
+  if (isCinematic) {
+    return (
+      <section className="py-24 bg-black text-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              <div>
+                <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
+                <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-6">{data.title || "Get in Touch"}</h2>
+                <p className="text-white/40 text-lg font-light leading-relaxed mb-10">{data.subtitle}</p>
+                <div className="space-y-6">
+                  {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="h-px w-6" style={{ backgroundColor: site.theme.primary }} />
+                      <span className="text-sm text-white/50 font-light">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-5">{formFields}</form>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isProfessional) {
+    return (
+      <section className="py-24" style={{ backgroundColor: site.theme.primary }}>
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-start">
+              <div className="text-white">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
+                  <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>Contact</span>
+                </div>
+                <h2 className="text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
+                <p className="text-white/60 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
+                <div className="space-y-4">
+                  {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${site.theme.accent}30` }}>
+                        <CheckCircle2 className="h-4 w-4" style={{ color: site.theme.accent }} />
+                      </div>
+                      <span className="text-sm text-white/70">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-2xl p-8 space-y-5">{formFields}</form>
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -1175,87 +1695,17 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
               <h2 className="text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
               <p className="text-slate-500 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
               <div className="space-y-4">
-                <div className="flex items-center gap-3 text-slate-600">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
-                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
+                {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
+                      <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
+                    </div>
+                    <span className="text-sm">{text}</span>
                   </div>
-                  <span className="text-sm">No-obligation consultation</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-600">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
-                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
-                  </div>
-                  <span className="text-sm">Response within 24 hours</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-600">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
-                    <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
-                  </div>
-                  <span className="text-sm">Expert advice tailored to you</span>
-                </div>
+                ))}
               </div>
             </div>
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name *</label>
-                <input
-                  type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow" style={{ focusRingColor: site.theme.primary } as any}
-                  placeholder="e.g. John Mokoena"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email *</label>
-                  <input
-                    type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
-                    placeholder="john@example.co.za"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-                  <input
-                    type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
-                    placeholder="+27 82 123 4567"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Service of Interest</label>
-                <select
-                  value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow bg-white"
-                >
-                  <option value="">Select a service...</option>
-                  <option value="Insurance">Insurance</option>
-                  <option value="Financial Planning">Financial Planning</option>
-                  <option value="Employee Benefits">Employee Benefits</option>
-                  <option value="Medical Aid">Medical Aid</option>
-                  <option value="Life Cover">Life Cover</option>
-                  <option value="Vehicle Finance">Vehicle Finance</option>
-                  <option value="General Enquiry">General Enquiry</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
-                <textarea
-                  rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow resize-none"
-                  placeholder="Tell us how we can help..."
-                />
-              </div>
-              <button
-                type="submit" disabled={submitting}
-                className="w-full rounded-lg py-3.5 text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: site.theme.primary }}
-              >
-                {submitting ? "Submitting..." : (data.buttonText || "Submit Enquiry")}
-              </button>
-              {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-              <p className="text-xs text-slate-400 text-center">Your information is secure and will never be shared.</p>
-            </form>
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 space-y-5">{formFields}</form>
           </div>
         </div>
       </div>
@@ -1279,21 +1729,45 @@ const sectionComponents: Record<string, React.ComponentType<{ data: any; site: S
 export function SectionRenderer({ site }: { site: SiteConfig }) {
   const enabledSections = site.sections.filter((s) => s.enabled);
 
+  const isCinematic = site.templateId === "showroom";
+  const isProfessional = site.templateId === "brokerage";
+
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900">
+    <div className={`min-h-screen font-sans ${isCinematic ? "bg-black text-white" : isProfessional ? "bg-white text-slate-900" : "bg-white text-slate-900"}`}>
       {enabledSections.map((section) => {
         const Component = sectionComponents[section.type];
         if (!Component) return null;
         return <Component key={section.id} data={section.data} site={site} />;
       })}
-      <footer className="border-t border-slate-100 py-8 text-center text-slate-400">
-        <div className="container mx-auto px-4 flex flex-col items-center gap-2">
-          {site.logoUrl && (
-            <img src={site.logoUrl} alt={site.businessName} className="h-10 max-w-[140px] rounded object-contain" />
-          )}
-          <p>&copy; {new Date().getFullYear()} {site.businessName}. Built with Masakhe Growth Hub.</p>
-        </div>
-      </footer>
+      {isCinematic ? (
+        <footer className="border-t border-white/[0.08] py-10 text-center bg-black">
+          <div className="container mx-auto px-4 flex flex-col items-center gap-3">
+            {site.logoUrl && (
+              <img src={site.logoUrl} alt={site.businessName} className="h-8 max-w-[120px] object-contain opacity-60" />
+            )}
+            <p className="text-xs text-white/25 tracking-widest uppercase">&copy; {new Date().getFullYear()} {site.businessName}</p>
+          </div>
+        </footer>
+      ) : isProfessional ? (
+        <footer className="py-10 text-center text-white" style={{ backgroundColor: site.theme.primary }}>
+          <div className="container mx-auto px-4 flex flex-col items-center gap-3">
+            {site.logoUrl && (
+              <img src={site.logoUrl} alt={site.businessName} className="h-10 max-w-[140px] object-contain" />
+            )}
+            <div className="h-px w-16 opacity-20" style={{ backgroundColor: site.theme.accent }} />
+            <p className="text-sm text-white/50">&copy; {new Date().getFullYear()} {site.businessName}. All rights reserved.</p>
+          </div>
+        </footer>
+      ) : (
+        <footer className="border-t border-slate-100 py-8 text-center text-slate-400">
+          <div className="container mx-auto px-4 flex flex-col items-center gap-2">
+            {site.logoUrl && (
+              <img src={site.logoUrl} alt={site.businessName} className="h-10 max-w-[140px] rounded object-contain" />
+            )}
+            <p>&copy; {new Date().getFullYear()} {site.businessName}. Built with Masakhe Growth Hub.</p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
