@@ -90,7 +90,7 @@ const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["funding", "finance"]));
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
