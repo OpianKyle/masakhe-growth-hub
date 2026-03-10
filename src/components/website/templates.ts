@@ -2592,13 +2592,29 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "hero",
             enabled: true,
             data: {
-              heroStyle: "gradient",
+              heroStyle: "carousel",
               title: "Your Partner in Financial Success",
               subtitle: "Building wealth, protecting futures, securing legacies. Independent financial and insurance advice backed by 15+ years of market expertise.",
               badgeText: "FSP Licensed · FSCA Compliant",
               ctaPrimaryText: "Get a Free Quote",
               ctaSecondaryText: "Speak to an Advisor",
-              backgroundImageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80",
+              carouselSlides: [
+                {
+                  image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80",
+                  headline: "Protect What Matters Most",
+                  subtext: "Comprehensive Insurance Solutions",
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80",
+                  headline: "Grow Your Wealth",
+                  subtext: "Expert Financial Planning",
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80",
+                  headline: "Secure Your Legacy",
+                  subtext: "Estate & Retirement Solutions",
+                },
+              ],
             },
           },
           {

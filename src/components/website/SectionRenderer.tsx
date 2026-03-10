@@ -357,6 +357,150 @@ function HeroCinematic({ data, site }: { data: any; site: SiteConfig }) {
   );
 }
 
+function HeroCarousel({ data, site }: { data: any; site: SiteConfig }) {
+  const defaultSlides = [
+    {
+      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80",
+      headline: "Protect What Matters Most",
+      subtext: "Comprehensive insurance solutions for individuals and businesses",
+    },
+    {
+      image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80",
+      headline: "Grow Your Wealth",
+      subtext: "Expert financial planning and investment strategies",
+    },
+    {
+      image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80",
+      headline: "Secure Your Legacy",
+      subtext: "Estate planning, life cover, and retirement solutions",
+    },
+  ];
+  const rawSlides = data.carouselSlides;
+  const slides = Array.isArray(rawSlides) && rawSlides.length > 0 ? rawSlides : defaultSlides;
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const goToSlide = (idx: number) => {
+    setCurrent(idx);
+  };
+
+  const slide = slides[current];
+
+  return (
+    <section className="relative min-h-[650px] overflow-hidden text-white" style={{ backgroundColor: site.theme.primary }}>
+      {slides.map((s: any, i: number) => (
+        <motion.div
+          key={i}
+          className="absolute inset-0"
+          initial={false}
+          animate={{
+            opacity: i === current ? 1 : 0,
+            scale: i === current ? 1 : 1.1,
+          }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+        >
+          <img src={s.image} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(135deg, ${site.theme.primary}ee 0%, ${site.theme.primary}bb 40%, ${site.theme.primary}60 100%)`
+          }} />
+        </motion.div>
+      ))}
+
+      <div className="absolute inset-0 z-[1]">
+        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="carousel-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#carousel-grid)" />
+        </svg>
+      </div>
+
+      <div className="container relative z-10 mx-auto flex min-h-[650px] flex-col px-4">
+        <nav className="flex items-center justify-between py-8">
+          <div className="flex items-center gap-3">
+            {site.logoUrl ? (
+              <img src={site.logoUrl} alt={site.businessName} className="h-12 max-w-[160px] rounded-xl object-contain bg-white/10 backdrop-blur-sm p-1.5" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg font-bold text-lg" style={{ backgroundColor: site.theme.accent }}>
+                  {site.businessName[0]}
+                </div>
+                <span className="text-xl font-bold tracking-tight">{site.businessName}</span>
+              </div>
+            )}
+          </div>
+          {data.badgeText && (
+            <div className="hidden sm:flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest border border-white/20 bg-white/10 backdrop-blur-sm">
+              <CheckCircle2 className="h-3.5 w-3.5" style={{ color: site.theme.accent }} />
+              {data.badgeText}
+            </div>
+          )}
+        </nav>
+
+        <div className="flex flex-1 flex-col justify-center pb-24 pt-8">
+          <motion.div
+            key={current}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl"
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-0.5 w-10" style={{ backgroundColor: site.theme.accent }} />
+              <span className="text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: site.theme.accent }}>
+                {slide.subtext || data.subtitle}
+              </span>
+            </div>
+            <h1 className="mb-6 text-5xl font-extrabold leading-[1.1] tracking-tight md:text-7xl">
+              {slide.headline || data.title}
+            </h1>
+            <p className="mb-10 max-w-xl text-lg text-white/70 leading-relaxed">
+              {data.subtitle}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {data.ctaPrimaryText && (
+                <Button size="lg" className="font-bold px-10 py-6 text-base shadow-xl hover:opacity-90 rounded-lg"
+                  style={{ backgroundColor: site.theme.accent, color: "white" }}>
+                  {data.ctaPrimaryText}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              )}
+              {data.ctaSecondaryText && (
+                <Button size="lg" className="border-2 border-white/30 bg-white/10 text-white backdrop-blur-sm px-10 py-6 text-base hover:bg-white/20 rounded-lg">
+                  {data.ctaSecondaryText}
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+          {slides.map((_: any, i: number) => (
+            <button
+              key={i}
+              onClick={() => goToSlide(i)}
+              className={`transition-all duration-500 rounded-full ${i === current ? "w-10 h-2" : "w-2 h-2 opacity-40 hover:opacity-70"}`}
+              style={{ backgroundColor: i === current ? site.theme.accent : "white" }}
+            />
+          ))}
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      </div>
+    </section>
+  );
+}
+
 function HeroSection({ data, site }: { data: any; site: SiteConfig }) {
   const style: HeroStyle = data.heroStyle || "corporate";
   switch (style) {
@@ -365,6 +509,7 @@ function HeroSection({ data, site }: { data: any; site: SiteConfig }) {
     case "minimal": return <HeroMinimal data={data} site={site} />;
     case "gradient": return <HeroGradient data={data} site={site} />;
     case "cinematic": return <HeroCinematic data={data} site={site} />;
+    case "carousel": return <HeroCarousel data={data} site={site} />;
     default: return <HeroCorporate data={data} site={site} />;
   }
 }

@@ -96,6 +96,7 @@ const heroStyleOptions = [
   { value: "gradient", label: "Gradient", desc: "Diagonal gradient with accents" },
   { value: "cinematic", label: "Cinematic", desc: "Full-bleed dark editorial" },
   { value: "minimal", label: "Minimal", desc: "Clean white minimal layout" },
+  { value: "carousel", label: "Carousel", desc: "Auto-rotating slideshow banner" },
 ] as const;
 
 function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
@@ -109,7 +110,17 @@ function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void 
             <button
               key={opt.value}
               type="button"
-              onClick={() => onChange({ ...data, heroStyle: opt.value })}
+              onClick={() => {
+                const updated: any = { ...data, heroStyle: opt.value };
+                if (opt.value === "carousel" && (!data.carouselSlides || data.carouselSlides.length === 0)) {
+                  updated.carouselSlides = [
+                    { headline: "Protect What Matters Most", subtext: "Comprehensive Insurance Solutions", image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80" },
+                    { headline: "Grow Your Wealth", subtext: "Expert Financial Planning", image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80" },
+                    { headline: "Secure Your Legacy", subtext: "Estate & Retirement Solutions", image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80" },
+                  ];
+                }
+                onChange(updated);
+              }}
               className={`rounded-lg border-2 p-2 text-left transition-all ${
                 (data.heroStyle || "corporate") === opt.value
                   ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200"
@@ -129,7 +140,52 @@ function HeroEditor({ data, onChange }: { data: any; onChange: (d: any) => void 
         <div><Label className="text-xs">Primary Button</Label><Input value={data.ctaPrimaryText || ""} onChange={(e) => update("ctaPrimaryText", e.target.value)} className="mt-1 h-8 text-sm" /></div>
         <div><Label className="text-xs">Secondary Button</Label><Input value={data.ctaSecondaryText || ""} onChange={(e) => update("ctaSecondaryText", e.target.value)} className="mt-1 h-8 text-sm" /></div>
       </div>
-      <div><Label className="text-xs">Background Image URL</Label><Input value={data.backgroundImageUrl || ""} onChange={(e) => update("backgroundImageUrl", e.target.value)} placeholder="https://..." className="mt-1 h-8 text-sm" /></div>
+      {data.heroStyle !== "carousel" && (
+        <div><Label className="text-xs">Background Image URL</Label><Input value={data.backgroundImageUrl || ""} onChange={(e) => update("backgroundImageUrl", e.target.value)} placeholder="https://..." className="mt-1 h-8 text-sm" /></div>
+      )}
+      {data.heroStyle === "carousel" && (
+        <div className="space-y-3 mt-2">
+          <Label className="text-xs font-semibold">Carousel Slides</Label>
+          {(data.carouselSlides || []).map((slide: any, i: number) => (
+            <div key={i} className="space-y-2 p-3 rounded-lg bg-slate-50 border border-slate-200 relative">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400">Slide {i + 1}</span>
+                {(data.carouselSlides || []).length > 2 && (
+                  <button type="button" className="text-xs text-red-400 hover:text-red-600" onClick={() => {
+                    const slides = [...(data.carouselSlides || [])];
+                    slides.splice(i, 1);
+                    onChange({ ...data, carouselSlides: slides });
+                  }}>Remove</button>
+                )}
+              </div>
+              <Input value={slide.headline || ""} onChange={(e) => {
+                const slides = [...(data.carouselSlides || [])];
+                slides[i] = { ...slides[i], headline: e.target.value };
+                onChange({ ...data, carouselSlides: slides });
+              }} placeholder="Slide headline" className="h-8 text-sm" />
+              <Input value={slide.subtext || ""} onChange={(e) => {
+                const slides = [...(data.carouselSlides || [])];
+                slides[i] = { ...slides[i], subtext: e.target.value };
+                onChange({ ...data, carouselSlides: slides });
+              }} placeholder="Slide subtext" className="h-8 text-sm" />
+              <Input value={slide.image || ""} onChange={(e) => {
+                const slides = [...(data.carouselSlides || [])];
+                slides[i] = { ...slides[i], image: e.target.value };
+                onChange({ ...data, carouselSlides: slides });
+              }} placeholder="Image URL" className="h-8 text-sm" />
+            </div>
+          ))}
+          {(data.carouselSlides || []).length < 5 && (
+            <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={() => {
+              const slides = [...(data.carouselSlides || [])];
+              slides.push({ headline: "New Slide", subtext: "Description", image: "" });
+              onChange({ ...data, carouselSlides: slides });
+            }}>
+              <Plus className="h-3 w-3 mr-1" /> Add Slide
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
