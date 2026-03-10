@@ -33,17 +33,22 @@ interface Vehicle {
 
 interface Website {
   id: string;
-  business_name: string;
   slug: string;
-  template_id: string;
+  content: {
+    templateId?: string;
+    businessName?: string;
+    name?: string;
+  };
 }
+
+const VEHICLE_TEMPLATES = ["showroom", "brokerage"];
 
 const emptyForm = {
   make: "",
   model: "",
   variant: "",
   year: new Date().getFullYear(),
-  price: 0,
+  priceRands: 0,
   mileage: 0,
   fuelType: "petrol",
   transmission: "manual",
@@ -75,11 +80,16 @@ export default function VehicleManagementPage() {
     fetch("/api/websites/mine", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
-        const sites = Array.isArray(data) ? data : data.websites || [];
-        setWebsites(sites);
-        if (sites.length > 0) setSelectedWebsite(sites[0].id);
+        const all = Array.isArray(data) ? data : data.websites || [];
+        const compatible = all.filter((s: any) => VEHICLE_TEMPLATES.includes(s.content?.templateId));
+        setWebsites(compatible);
+        if (compatible.length > 0) {
+          setSelectedWebsite(compatible[0].id);
+        } else {
+          setLoading(false);
+        }
       })
-      .catch(() => {});
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -108,7 +118,7 @@ export default function VehicleManagementPage() {
       model: v.model,
       variant: v.variant || "",
       year: v.year,
-      price: v.price,
+      priceRands: Math.round(v.price / 100),
       mileage: v.mileage || 0,
       fuelType: v.fuel_type || "petrol",
       transmission: v.transmission || "manual",
@@ -124,13 +134,14 @@ export default function VehicleManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!form.make || !form.model || !form.year || form.price === undefined) {
+    if (!form.make || !form.model || !form.year) {
       toast({ title: "Missing fields", description: "Make, model, year and price are required.", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      const body = { ...form, websiteId: selectedWebsite, images: editImages };
+      const { priceRands, ...rest } = form;
+      const body = { ...rest, price: Math.round(priceRands * 100), websiteId: selectedWebsite, images: editImages };
       const url = editingId ? `/api/vehicles/${editingId}` : "/api/vehicles";
       const method = editingId ? "PUT" : "POST";
       const res = await fetch(url, {
@@ -228,6 +239,30 @@ export default function VehicleManagementPage() {
 
   const formatPrice = (cents: number) => `R${(cents / 100).toLocaleString("en-ZA")}`;
 
+  if (websites.length === 0 && !loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2 mb-6">
+            <Car className="h-6 w-6 text-primary" />
+            Vehicle Inventory
+          </h2>
+          <div className="rounded-xl border border-border bg-card p-12 text-center space-y-4">
+            <Car className="h-14 w-14 mx-auto text-muted-foreground/30" />
+            <h3 className="text-lg font-bold text-foreground">No compatible website found</h3>
+            <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+              Vehicle inventory requires a <strong>Car Showroom</strong> or <strong>Financial Brokerage</strong> website. Create one in the Website Builder first.
+            </p>
+            <a href="/dashboard/website" className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary hover:underline">
+              <Plus className="h-4 w-4" />
+              Go to Website Builder
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -254,7 +289,9 @@ export default function VehicleManagementPage() {
             className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {websites.map((w) => (
-              <option key={w.id} value={w.id}>{w.business_name}</option>
+              <option key={w.id} value={w.id}>
+                {w.content?.businessName || w.content?.name || w.slug}
+              </option>
             ))}
           </select>
         )}
@@ -356,8 +393,8 @@ export default function VehicleManagementPage() {
                 <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) || 0 })} />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Price (cents) *</label>
-                <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })} />
+                <label className="text-sm font-medium">Price (R) *</label>
+                <Input type="number" value={form.priceRands} min={0} placeholder="e.g. 250000" onChange={(e) => setForm({ ...form, priceRands: parseFloat(e.target.value) || 0 })} />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">Mileage (km)</label>

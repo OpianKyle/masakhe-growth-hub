@@ -53,7 +53,9 @@ type NavItem = NavSingle | NavGroup;
 
 const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 
-const navItems: NavItem[] = [
+const VEHICLE_TEMPLATES = ["showroom", "brokerage"];
+
+const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website" },
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
@@ -79,25 +81,44 @@ const navItems: NavItem[] = [
       { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
     ],
   },
-  { icon: Car, label: "Vehicles", path: "/dashboard/vehicles" },
-  { icon: Users, label: "Leads", path: "/dashboard/leads" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
-const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
-  isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]
-);
-
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [hasVehicleSite, setHasVehicleSite] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    fetch("/api/websites/mine", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        const sites = Array.isArray(data) ? data : [];
+        const found = sites.some((s: any) => VEHICLE_TEMPLATES.includes(s.content?.templateId));
+        setHasVehicleSite(found);
+      })
+      .catch(() => {});
+  }, []);
+
+  const navItems: NavItem[] = hasVehicleSite
+    ? [
+        ...baseNavItems.slice(0, 5),
+        { icon: Car, label: "Vehicles", path: "/dashboard/vehicles" },
+        { icon: Users, label: "Leads", path: "/dashboard/leads" },
+        ...baseNavItems.slice(5),
+      ]
+    : baseNavItems;
+
+  const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
+    isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]
+  );
 
   const getPageTitle = () => {
     if (location.pathname.startsWith("/dashboard/social")) return "Social Media Hub";
