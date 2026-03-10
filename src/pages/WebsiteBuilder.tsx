@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ImageUploadField } from "@/components/website/ImageUploadField";
 import { SectionRenderer } from "@/components/website/SectionRenderer";
 import { SectionEditor } from "@/components/website/SectionEditor";
@@ -14,7 +15,7 @@ import {
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
-  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp
+  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -52,6 +53,7 @@ const sectionTypeIcons: Record<SectionType, React.ElementType> = {
   gallery: ImageIcon,
   testimonials: Star,
   contact: Phone,
+  vehicle_listings: Car,
 };
 
 const defaultSectionData: Record<SectionType, any> = {
@@ -63,9 +65,10 @@ const defaultSectionData: Record<SectionType, any> = {
   gallery: { title: "Gallery", subtitle: "Our Work", images: [{ url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=80&w=600", caption: "Image 1" }] },
   testimonials: { title: "Testimonials", subtitle: "What Customers Say", items: [{ name: "Customer", role: "Client", text: "Great service!" }] },
   contact: { title: "Contact Us", subtitle: "Get in touch today", phone: "", email: "", address: "", whatsapp: "", enableWhatsApp: false },
+  vehicle_listings: { title: "Our Vehicles", subtitle: "Browse our current inventory" },
 };
 
-function TemplatePicker({ onSelect }: { onSelect: (templateId: string) => void }) {
+function TemplatePicker({ onSelect, isProPlan }: { onSelect: (templateId: string) => void; isProPlan: boolean }) {
   return (
     <div className="h-full overflow-y-auto bg-slate-50 p-8">
       <div className="max-w-5xl mx-auto w-full">
@@ -76,21 +79,41 @@ function TemplatePicker({ onSelect }: { onSelect: (templateId: string) => void }
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {templateList.map((tmpl) => {
             const Icon = templateIcons[tmpl.id] || Briefcase;
+            const isPremiumLocked = tmpl.premium && !isProPlan;
             return (
               <Card
                 key={tmpl.id}
-                className="cursor-pointer group hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary"
-                onClick={() => onSelect(tmpl.id)}
+                className={`group transition-all border-2 ${isPremiumLocked ? "opacity-80 border-transparent hover:border-amber-400 cursor-pointer" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
+                onClick={() => {
+                  if (isPremiumLocked) {
+                    toast.error("This premium template requires the Pro plan (R2,500/month). Upgrade on the Billing page.");
+                    return;
+                  }
+                  onSelect(tmpl.id);
+                }}
               >
-                <CardContent className="p-4 text-center space-y-3">
+                <CardContent className="p-4 text-center space-y-3 relative">
+                  {tmpl.premium && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] px-1.5 py-0.5 gap-1">
+                        <Crown className="h-2.5 w-2.5" /> PREMIUM
+                      </Badge>
+                    </div>
+                  )}
                   <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${tmpl.color} text-white`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="text-sm font-bold">{tmpl.name}</h3>
                   <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
-                  <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
-                    Use Template
-                  </Button>
+                  {isPremiumLocked ? (
+                    <Button variant="outline" size="sm" className="w-full text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1">
+                      <Lock className="h-3 w-3" /> Pro Plan Required
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
+                      Use Template
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -107,6 +130,18 @@ export default function WebsiteBuilder() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
+  const [isProPlan, setIsProPlan] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (d.plan === "pro" && (d.status === "ACTIVE" || d.status === "TRIAL")) {
+          setIsProPlan(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleTemplateSelect = (templateId: string) => {
     setSite(buildTemplate(templateId));
@@ -207,10 +242,12 @@ export default function WebsiteBuilder() {
   };
 
   if (!site) {
-    return <TemplatePicker onSelect={handleTemplateSelect} />;
+    return <TemplatePicker onSelect={handleTemplateSelect} isProPlan={isProPlan} />;
   }
 
-  const availableSections: SectionType[] = ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact"];
+  const availableSections: SectionType[] = site.templateId === "showroom"
+    ? ["hero", "stats", "vehicle_listings", "features", "about", "services", "gallery", "testimonials", "contact"]
+    : ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact"];
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">

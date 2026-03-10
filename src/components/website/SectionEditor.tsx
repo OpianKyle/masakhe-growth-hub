@@ -8,7 +8,7 @@ import { ImageUploadField } from "./ImageUploadField";
 import { SiteSection, SectionType, SECTION_LABELS } from "@/types/site";
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical,
-  Briefcase, UtensilsCrossed, ShoppingBag, Layout, BarChart3, Star, Image, Phone, FileText, MessageSquare
+  Briefcase, UtensilsCrossed, ShoppingBag, Layout, BarChart3, Star, Image, Phone, FileText, MessageSquare, Car
 } from "lucide-react";
 
 const sectionIcons: Record<SectionType, React.ElementType> = {
@@ -20,6 +20,7 @@ const sectionIcons: Record<SectionType, React.ElementType> = {
   gallery: Image,
   testimonials: Star,
   contact: Phone,
+  vehicle_listings: Car,
 };
 
 interface SectionEditorProps {
@@ -313,6 +314,24 @@ function ContactEditor({ data, onChange }: { data: any; onChange: (d: any) => vo
   );
 }
 
+function VehicleListingsEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Section Title</Label>
+        <Input value={data.title || ""} onChange={e => onChange({ ...data, title: e.target.value })} placeholder="Our Vehicles" />
+      </div>
+      <div>
+        <Label className="text-xs">Subtitle</Label>
+        <Input value={data.subtitle || ""} onChange={e => onChange({ ...data, subtitle: e.target.value })} placeholder="Browse our inventory" />
+      </div>
+      <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+        Vehicles are managed from the <strong>Vehicle Inventory</strong> page in your dashboard. This section will automatically display your listed vehicles on the published site.
+      </p>
+    </div>
+  );
+}
+
 const editorComponents: Record<SectionType, React.ComponentType<{ data: any; onChange: (d: any) => void }>> = {
   hero: HeroEditor,
   stats: StatsEditor,
@@ -322,6 +341,7 @@ const editorComponents: Record<SectionType, React.ComponentType<{ data: any; onC
   gallery: GalleryEditor,
   testimonials: TestimonialsEditor,
   contact: ContactEditor,
+  vehicle_listings: VehicleListingsEditor,
 };
 
 export function SectionEditor({ section, index, totalSections, onChange, onToggle, onRemove, onMoveUp, onMoveDown }: SectionEditorProps) {

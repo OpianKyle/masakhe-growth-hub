@@ -10,7 +10,7 @@ export interface SiteConfig {
   sections: SiteSection[];
 }
 
-export type SectionType = "hero" | "stats" | "features" | "about" | "services" | "gallery" | "testimonials" | "contact";
+export type SectionType = "hero" | "stats" | "features" | "about" | "services" | "gallery" | "testimonials" | "contact" | "vehicle_listings";
 
 export interface SiteSection {
   id: string;
@@ -80,6 +80,12 @@ export interface ContactData {
   enableWhatsApp?: boolean;
 }
 
+export interface VehicleListingsData {
+  title: string;
+  subtitle: string;
+  websiteId?: string;
+}
+
 export const SECTION_LABELS: Record<SectionType, string> = {
   hero: "Hero Banner",
   stats: "Statistics Bar",
@@ -89,6 +95,7 @@ export const SECTION_LABELS: Record<SectionType, string> = {
   gallery: "Image Gallery",
   testimonials: "Testimonials",
   contact: "Contact Info",
+  vehicle_listings: "Vehicle Listings",
 };
 
 let sectionCounter = 0;

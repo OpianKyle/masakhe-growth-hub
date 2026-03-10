@@ -126,6 +126,8 @@ router.post("/websites", async (req, res) => {
     }
     
     if (existing) {
+      const owned = await queryOne("SELECT id FROM websites WHERE id = ? AND owner_id = ?", [id, ownerId]);
+      if (!owned) return res.status(403).json({ error: "Not authorized to update this website" });
       await execute(
         "UPDATE websites SET slug = ?, content_json = ?, updated_at = ? WHERE id = ?",
         [slug, JSON.stringify(content), now, id]
@@ -166,6 +168,9 @@ router.get("/websites/:slug", async (req, res) => {
 
 router.post("/websites/:id/publish", async (req, res) => {
   try {
+    const ownerId = req.session?.userId || "local";
+    const owned = await queryOne("SELECT id FROM websites WHERE id = ? AND owner_id = ?", [req.params.id, ownerId]);
+    if (!owned) return res.status(403).json({ error: "Not authorized to publish this website" });
     const now = new Date().toISOString();
     await execute("UPDATE websites SET status = 'published', updated_at = ? WHERE id = ?", [now, req.params.id]);
     res.json({ ok: true });

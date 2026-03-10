@@ -232,27 +232,30 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
       [userId]
     );
     if (!workspace) {
-      return res.json({ active: false, status: null });
+      return res.json({ active: false, status: null, plan: null });
     }
 
     const subscription = await queryOne(
-      "SELECT status, trial_end_at FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE') ORDER BY created_at DESC LIMIT 1",
+      `SELECT bs.status, bs.trial_end_at, bs.plan_id, bp.code as plan_code
+       FROM billing_subscriptions bs
+       LEFT JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.workspace_id = ? AND bs.status IN ('TRIAL','ACTIVE')
+       ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
 
     if (!subscription) {
-      // Fall back to workspace-based 14-day trial
       if (workspace.created_at) {
         const trialEnd = new Date(new Date(workspace.created_at).getTime() + 14 * 24 * 60 * 60 * 1000);
         if (new Date() < trialEnd) {
-          return res.json({ active: true, status: "TRIAL" });
+          return res.json({ active: true, status: "TRIAL", plan: null });
         }
       }
-      return res.json({ active: false, status: null });
+      return res.json({ active: false, status: null, plan: null });
     }
 
     const active = subscription.status === 'ACTIVE' || (subscription.status === 'TRIAL' && new Date(subscription.trial_end_at) > new Date());
-    res.json({ active, status: subscription.status });
+    res.json({ active, status: subscription.status, plan: subscription.plan_code || null });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

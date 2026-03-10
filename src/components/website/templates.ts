@@ -7,6 +7,7 @@ export interface TemplateInfo {
   icon: string;
   color: string;
   preview: string;
+  premium?: boolean;
 }
 
 export const templateList: TemplateInfo[] = [
@@ -181,18 +182,20 @@ export const templateList: TemplateInfo[] = [
   {
     id: "showroom",
     name: "Car Showroom",
-    description: "For luxury and used car dealerships and vehicle showrooms",
+    description: "Premium template for luxury and used car dealerships with vehicle inventory",
     icon: "car",
     color: "bg-zinc-900",
-    preview: "Sleek dark luxury layout with vehicle showcase, finance options, and test drive CTA",
+    preview: "Sleek dark luxury layout with live vehicle listings, gallery, finance options, and lead capture",
+    premium: true,
   },
   {
     id: "brokerage",
     name: "Financial Brokerage",
-    description: "For insurance brokers, financial advisors, and FSP-licensed businesses",
+    description: "Premium template for insurance brokers and FSP-licensed financial advisors",
     icon: "trending-up",
     color: "bg-blue-950",
-    preview: "Professional navy layout with services, credentials, and client consultation booking",
+    preview: "Professional navy layout with services, team profiles, credentials, and quote request forms",
+    premium: true,
   },
 ];
 
@@ -2470,7 +2473,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
         businessName: name,
         slug,
         templateId: "showroom",
-        theme: { primary: "#c9a84c", accent: "#a07830" },
+        theme: { primary: "#c9a84c", accent: "#1a1a1a" },
         social: {},
         sections: [
           {
@@ -2481,8 +2484,8 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               heroStyle: "centered",
               title: "Drive the Extraordinary",
               subtitle: "Discover our curated collection of premium and pre-owned vehicles. Unmatched quality, flexible finance, and a buying experience like no other.",
-              badgeText: "Authorised Dealer · Finance Available",
-              ctaPrimaryText: "View Our Vehicles",
+              badgeText: "Authorised Dealer · Finance Available · Trade-Ins Welcome",
+              ctaPrimaryText: "Browse Inventory",
               ctaSecondaryText: "Book a Test Drive",
               backgroundImageUrl: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80",
             },
@@ -2499,6 +2502,15 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
                 { value: "15+", label: "Years in Business" },
                 { value: "Same Day", label: "Finance Approval" },
               ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "vehicle_listings",
+            enabled: true,
+            data: {
+              title: "Our Current Inventory",
+              subtitle: "Browse our latest arrivals and find your perfect vehicle",
             },
           },
           {
@@ -2538,12 +2550,28 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
           },
           {
             id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "About Our Dealership",
+              quote: "We believe buying a car should be exciting, not stressful. Every customer is treated like family.",
+              imagePosition: "left",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Multi-Brand Dealer", desc: "We stock vehicles from every major manufacturer — giving you the widest selection under one roof." },
+                { title: "Full Workshop", desc: "Our on-site service centre handles everything from routine maintenance to major repairs." },
+                { title: "RMI Accredited", desc: "We are a registered member of the Retail Motor Industry Organisation, guaranteeing ethical standards." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
             type: "gallery",
             enabled: true,
             data: {
               variant: "featured",
-              title: "Current Stock Highlights",
-              subtitle: "Freshly arrived on our floor",
+              title: "Featured Vehicles",
+              subtitle: "Handpicked highlights from our showroom floor",
               images: [
                 { url: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=600", caption: "Premium Sedan" },
                 { url: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600", caption: "Luxury SUV" },
@@ -2563,6 +2591,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               items: [
                 { name: "Kagiso M.", role: "First-Time Buyer", text: "I was nervous buying my first car but the team made it effortless. Got finance approved in under 2 hours and drove home the same day. Absolutely phenomenal service." },
                 { name: "Priya N.", role: "Repeat Customer", text: "This is my third car from this dealership. The trade-in process was smooth, no haggling, and I got a fair deal every single time. Won't go anywhere else." },
+                { name: "David S.", role: "Business Fleet Manager", text: "We've been sourcing our entire company fleet through this dealership for 5 years. The commercial team understands business needs and delivery is always on time." },
               ],
             },
           },
@@ -2599,7 +2628,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               heroStyle: "corporate",
               title: "Expert Financial & Insurance Brokerage",
               subtitle: "Independent advice you can trust. We search the market so you don't have to — finding you the best cover and financial solutions at the right price.",
-              badgeText: "FSP Licensed · FSCA Compliant",
+              badgeText: "FSP Licensed · FSCA Compliant · Independent",
               ctaPrimaryText: "Get a Free Quote",
               ctaSecondaryText: "Speak to an Advisor",
               backgroundImageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80",
@@ -2672,6 +2701,22 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
           },
           {
             id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              variant: "featured",
+              title: "Our Team & Offices",
+              subtitle: "Professional environment, professional people",
+              images: [
+                { url: "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&q=80&w=600", caption: "Our Advisory Team" },
+                { url: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600", caption: "Sandton Offices" },
+                { url: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600", caption: "Client Consultation" },
+                { url: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=600", caption: "Claims Processing Centre" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
             type: "testimonials",
             enabled: true,
             data: {
@@ -2681,6 +2726,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               items: [
                 { name: "Adele van R.", role: "Business Owner", text: "Our broker reviewed our entire commercial portfolio and saved us over R180,000 in premiums annually — without reducing our cover. The best financial decision we made this year." },
                 { name: "Thabo M.", role: "Personal Client", text: "When I had a major claim after the floods, my broker handled everything with the insurer. I didn't stress once. That's what a real broker looks like." },
+                { name: "Sarah K.", role: "CFO, Manufacturing", text: "The employee benefits restructuring saved our company over R2M per year while improving our staff medical aid cover. Exceptional strategic advice." },
               ],
             },
           },

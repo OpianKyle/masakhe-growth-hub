@@ -593,6 +593,64 @@ export async function runMigrations() {
       await conn.query(`ALTER TABLE companies ADD COLUMN verification_details TEXT DEFAULT NULL`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS vehicle_listings (
+        id VARCHAR(36) PRIMARY KEY,
+        website_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        make VARCHAR(100) NOT NULL,
+        model VARCHAR(100) NOT NULL,
+        variant VARCHAR(150),
+        year INT NOT NULL,
+        price INT NOT NULL,
+        mileage INT,
+        fuel_type VARCHAR(50),
+        transmission VARCHAR(50),
+        color VARCHAR(50),
+        body_type VARCHAR(50),
+        description TEXT,
+        features JSON,
+        images JSON,
+        status ENUM('available','sold','reserved') DEFAULT 'available',
+        featured TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_vl_website", "vehicle_listings", "website_id");
+    await createIndex("idx_vl_user", "vehicle_listings", "user_id");
+    await createIndex("idx_vl_status", "vehicle_listings", "status");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS website_leads (
+        id VARCHAR(36) PRIMARY KEY,
+        website_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        vehicle_id VARCHAR(36),
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(50),
+        message TEXT,
+        source VARCHAR(50) DEFAULT 'contact_form',
+        status ENUM('new','contacted','qualified','converted','closed') DEFAULT 'new',
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_wl_website", "website_leads", "website_id");
+    await createIndex("idx_wl_user", "website_leads", "user_id");
+    await createIndex("idx_wl_status", "website_leads", "status");
+    await createIndex("idx_wl_vehicle", "website_leads", "vehicle_id");
+
+    try {
+      await conn.query(`ALTER TABLE vehicle_listings MODIFY COLUMN user_id VARCHAR(36) NOT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Unknown column")) throw e; }
+
+    try {
+      await conn.query(`ALTER TABLE website_leads MODIFY COLUMN user_id VARCHAR(36) NOT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Unknown column")) throw e; }
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

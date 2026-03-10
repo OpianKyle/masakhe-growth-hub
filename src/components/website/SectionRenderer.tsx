@@ -2,8 +2,9 @@ import { SiteConfig, SiteSection, HeroStyle } from "@/types/site";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, MapPin, MessageSquare, CheckCircle2, Globe, Star, Quote, Sparkles, ArrowRight } from "lucide-react";
+import { Phone, Mail, MapPin, MessageSquare, CheckCircle2, Globe, Star, Quote, Sparkles, ArrowRight, Fuel, Gauge, Calendar, Car } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 function HeroCorporate({ data, site }: { data: any; site: SiteConfig }) {
   return (
@@ -976,6 +977,96 @@ function ContactSection({ data, site }: { data: any; site: SiteConfig }) {
   }
 }
 
+function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig }) {
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!site.id) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/vehicles/public/by-website/${site.id}`)
+      .then(r => r.json())
+      .then(d => { setVehicles(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [site.id]);
+
+  const formatPrice = (cents: number) => {
+    return `R${(cents / 100).toLocaleString("en-ZA")}`;
+  };
+
+  return (
+    <section className="py-20 bg-slate-950 text-white">
+      <div className="container mx-auto px-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: site.theme.primary }}>{data.title || "Our Vehicles"}</h2>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">{data.subtitle}</p>
+        </motion.div>
+
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-t-transparent mx-auto mb-4" style={{ borderColor: `${site.theme.primary}40`, borderTopColor: "transparent" }} />
+            <p className="text-slate-500">Loading vehicles...</p>
+          </div>
+        ) : vehicles.length === 0 ? (
+          <div className="text-center py-16">
+            <Car className="h-16 w-16 mx-auto mb-4 text-slate-600" />
+            <p className="text-slate-400 text-lg">Our inventory is being updated. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {vehicles.map((v: any, i: number) => {
+              const imgs = v.images || [];
+              const mainImg = imgs[0] || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=600";
+              return (
+                <motion.a
+                  key={v.id}
+                  href={`/site/${site.slug}/vehicle/${v.id}`}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group block rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-slate-600 transition-all hover:shadow-2xl hover:-translate-y-1"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <img src={mainImg} alt={`${v.year} ${v.make} ${v.model}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {v.featured ? (
+                      <Badge className="absolute top-3 left-3 text-white text-xs" style={{ backgroundColor: site.theme.primary }}>Featured</Badge>
+                    ) : null}
+                    {v.status === "reserved" && (
+                      <Badge className="absolute top-3 right-3 bg-orange-500 text-white text-xs">Reserved</Badge>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold mb-1">{v.year} {v.make} {v.model}</h3>
+                    {v.variant && <p className="text-sm text-slate-400 mb-3">{v.variant}</p>}
+                    <p className="text-2xl font-bold mb-4" style={{ color: site.theme.primary }}>{formatPrice(v.price)}</p>
+                    <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                      {v.mileage && (
+                        <span className="flex items-center gap-1"><Gauge className="h-3.5 w-3.5" /> {v.mileage.toLocaleString()} km</span>
+                      )}
+                      {v.fuel_type && (
+                        <span className="flex items-center gap-1"><Fuel className="h-3.5 w-3.5" /> {v.fuel_type}</span>
+                      )}
+                      {v.transmission && (
+                        <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5" /> {v.transmission}</span>
+                      )}
+                      {v.year && (
+                        <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {v.year}</span>
+                      )}
+                    </div>
+                  </div>
+                </motion.a>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 const sectionComponents: Record<string, React.ComponentType<{ data: any; site: SiteConfig }>> = {
   hero: HeroSection,
   stats: StatsSection,
@@ -985,6 +1076,7 @@ const sectionComponents: Record<string, React.ComponentType<{ data: any; site: S
   gallery: GallerySection,
   testimonials: TestimonialsSection,
   contact: ContactSection,
+  vehicle_listings: VehicleListingsSection,
 };
 
 export function SectionRenderer({ site }: { site: SiteConfig }) {
