@@ -178,6 +178,22 @@ export const templateList: TemplateInfo[] = [
     color: "bg-yellow-600",
     preview: "Strategic layout with expertise areas, methodology, and client success stories",
   },
+  {
+    id: "showroom",
+    name: "Car Showroom",
+    description: "For luxury and used car dealerships and vehicle showrooms",
+    icon: "car",
+    color: "bg-zinc-900",
+    preview: "Sleek dark luxury layout with vehicle showcase, finance options, and test drive CTA",
+  },
+  {
+    id: "brokerage",
+    name: "Financial Brokerage",
+    description: "For insurance brokers, financial advisors, and FSP-licensed businesses",
+    icon: "trending-up",
+    color: "bg-blue-950",
+    preview: "Professional navy layout with services, credentials, and client consultation booking",
+  },
 ];
 
 export function buildTemplate(templateId: string, businessName?: string): SiteConfig {
@@ -2443,6 +2459,242 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               email: "hello@strategicadvisors.co.za",
               address: "Floor 12, Sandton City Office Tower, Sandton, 2196",
               whatsapp: "+27 11 567 8901",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "showroom":
+      return {
+        businessName: name,
+        slug,
+        templateId: "showroom",
+        theme: { primary: "#c9a84c", accent: "#a07830" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Drive the Extraordinary",
+              subtitle: "Discover our curated collection of premium and pre-owned vehicles. Unmatched quality, flexible finance, and a buying experience like no other.",
+              badgeText: "Authorised Dealer · Finance Available",
+              ctaPrimaryText: "View Our Vehicles",
+              ctaSecondaryText: "Book a Test Drive",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "dark",
+              items: [
+                { value: "500+", label: "Vehicles in Stock" },
+                { value: "98%", label: "Customer Satisfaction" },
+                { value: "15+", label: "Years in Business" },
+                { value: "Same Day", label: "Finance Approval" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "The Showroom Experience",
+              subtitle: "Why Buyers Choose Us",
+              imagePosition: "right",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Handpicked Inventory", desc: "Every vehicle on our floor passes a rigorous 150-point inspection before it reaches you." },
+                { title: "Flexible Finance", desc: "In-house finance options tailored to your budget — from balloon payments to full structured deals." },
+                { title: "Certified Pre-Owned", desc: "Our CPO programme means you drive away with full confidence and a 12-month mechanical warranty." },
+                { title: "Trade-In Welcome", desc: "We offer top trade-in valuations, making your upgrade seamless and stress-free." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Vehicle Range",
+              subtitle: "Find Your Perfect Drive",
+              variant: "bordered",
+              items: [
+                { title: "New Vehicles", desc: "Latest models direct from manufacturer with full factory warranty", price: "From R299,000" },
+                { title: "Certified Pre-Owned", desc: "Inspected and warrantied used vehicles across all categories", price: "From R89,000" },
+                { title: "Luxury & Performance", desc: "High-end performance and prestige vehicles for discerning buyers", price: "From R750,000" },
+                { title: "Commercial Vehicles", desc: "Bakkies, vans, and light commercial vehicles for business use", price: "From R199,000" },
+                { title: "Finance & Insurance", desc: "Complete vehicle finance, warranty, and insurance packages" },
+                { title: "Parts & Accessories", desc: "Genuine OEM parts, accessories, and aftermarket upgrades" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              variant: "featured",
+              title: "Current Stock Highlights",
+              subtitle: "Freshly arrived on our floor",
+              images: [
+                { url: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=600", caption: "Premium Sedan" },
+                { url: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600", caption: "Luxury SUV" },
+                { url: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=600", caption: "Sports Coupe" },
+                { url: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=600", caption: "Classic Style" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "What Our Buyers Say",
+              subtitle: "Real experiences from our customers",
+              variant: "large-quote",
+              items: [
+                { name: "Kagiso M.", role: "First-Time Buyer", text: "I was nervous buying my first car but the team made it effortless. Got finance approved in under 2 hours and drove home the same day. Absolutely phenomenal service." },
+                { name: "Priya N.", role: "Repeat Customer", text: "This is my third car from this dealership. The trade-in process was smooth, no haggling, and I got a fair deal every single time. Won't go anywhere else." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Visit Our Showroom",
+              subtitle: "Book a test drive or come in to browse our full inventory. Our sales consultants are ready to help.",
+              phone: "+27 11 555 0100",
+              email: "sales@showroom.co.za",
+              address: "1 Motor City Boulevard, Midrand, 1685",
+              whatsapp: "+27 11 555 0100",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "brokerage":
+      return {
+        businessName: name,
+        slug,
+        templateId: "brokerage",
+        theme: { primary: "#0f2952", accent: "#b8860b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Expert Financial & Insurance Brokerage",
+              subtitle: "Independent advice you can trust. We search the market so you don't have to — finding you the best cover and financial solutions at the right price.",
+              badgeText: "FSP Licensed · FSCA Compliant",
+              ctaPrimaryText: "Get a Free Quote",
+              ctaSecondaryText: "Speak to an Advisor",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "dark",
+              items: [
+                { value: "R500M+", label: "Cover Placed" },
+                { value: "1,200+", label: "Clients Served" },
+                { value: "20+", label: "Insurer Partners" },
+                { value: "15+", label: "Years in Industry" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Use an Independent Broker",
+              subtitle: "The Brokerage Advantage",
+              imagePosition: "right",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Truly Independent Advice", desc: "We are not tied to any single insurer, so every recommendation is in your best interest — always." },
+                { title: "Market-Wide Access", desc: "We compare dozens of underwriters and product houses to source you the most competitive rates and terms." },
+                { title: "Claims Advocacy", desc: "When you claim, we go to bat for you. Our dedicated claims team handles the process start to finish." },
+                { title: "Annual Policy Reviews", desc: "Your circumstances change — we review your portfolio every year to ensure you're never over or under-insured." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Comprehensive Financial Solutions",
+              variant: "bordered",
+              items: [
+                { title: "Personal Short-Term Insurance", desc: "Home contents, vehicle, and portable possessions cover tailored to your lifestyle" },
+                { title: "Commercial & Business Insurance", desc: "Business interruption, commercial property, liability, and fleet policies" },
+                { title: "Life & Disability Cover", desc: "Risk planning for income protection, life cover, and critical illness" },
+                { title: "Medical Aid Consulting", desc: "Independent comparison and placement of medical aid options across major schemes" },
+                { title: "Employee Benefits", desc: "Group life, retirement fund administration, and staff benefit structuring" },
+                { title: "Financial Planning", desc: "Retirement planning, tax-efficient investments, and estate planning guidance" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "About Our Firm",
+              quote: "We believe every client deserves honest, expert financial guidance — not just a policy sold.",
+              imagePosition: "left",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80",
+              items: [
+                { title: "FSCA Licensed", desc: "We hold a full FSP licence and comply with the Financial Advisory and Intermediary Services Act." },
+                { title: "Independent & Unbiased", desc: "Our advisors earn no product-linked commissions — your outcome is our only motivation." },
+                { title: "Qualified Advisors", desc: "All our brokers hold the relevant NQF qualifications and maintain CPD accreditation." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Client Testimonials",
+              subtitle: "Trusted by individuals and businesses across South Africa",
+              variant: "large-quote",
+              items: [
+                { name: "Adele van R.", role: "Business Owner", text: "Our broker reviewed our entire commercial portfolio and saved us over R180,000 in premiums annually — without reducing our cover. The best financial decision we made this year." },
+                { name: "Thabo M.", role: "Personal Client", text: "When I had a major claim after the floods, my broker handled everything with the insurer. I didn't stress once. That's what a real broker looks like." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Get Independent Advice",
+              subtitle: "Book a no-obligation consultation with one of our qualified advisors. We'll review your current cover and identify gaps or savings.",
+              phone: "+27 11 234 5678",
+              email: "advice@brokerage.co.za",
+              address: "Suite 14, Sandton Corporate Park, Sandton, 2196",
+              whatsapp: "+27 11 234 5678",
               enableWhatsApp: true,
             },
           },

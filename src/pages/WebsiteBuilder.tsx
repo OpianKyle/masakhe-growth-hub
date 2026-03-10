@@ -14,7 +14,7 @@ import {
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
-  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb
+  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -39,6 +39,8 @@ const templateIcons: Record<string, React.ElementType> = {
   security: Shield,
   travel: MapPin,
   consulting: Lightbulb,
+  showroom: Car,
+  brokerage: TrendingUp,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {
