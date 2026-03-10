@@ -4,27 +4,20 @@ import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 
 export const router = Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = "public/uploads";
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
-
-const upload = multer({ storage });
 
 router.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ ok: true, url: `/uploads/${req.file.filename}` });
+  const mimeType = req.file.mimetype || "image/jpeg";
+  const base64 = req.file.buffer.toString("base64");
+  const url = `data:${mimeType};base64,${base64}`;
+  res.json({ ok: true, url });
 });
 
 router.get("/onboarding/flow", async (req, res) => {

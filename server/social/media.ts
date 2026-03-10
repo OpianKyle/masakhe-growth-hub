@@ -7,7 +7,6 @@ import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -15,19 +14,8 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-const uploadDir = path.join(process.cwd(), "public", "uploads", "media");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${randomUUID()}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /\.(jpg|jpeg|png|gif|webp|mp4|mov|avi)$/i;
@@ -64,7 +52,9 @@ mediaRouter.post("/:workspaceId/media/upload", requireActiveSubscription, requir
 
     const id = randomUUID();
     const isVideo = /\.(mp4|mov|avi)$/i.test(req.file.originalname);
-    const url = `/uploads/media/${req.file.filename}`;
+    const mimeType = req.file.mimetype || (isVideo ? "video/mp4" : "image/jpeg");
+    const base64 = req.file.buffer.toString("base64");
+    const url = `data:${mimeType};base64,${base64}`;
 
     await execute(
       `INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
@@ -101,23 +91,21 @@ mediaRouter.post("/:workspaceId/media/generate", requireActiveSubscription, requ
     const base64 = response.data[0]?.b64_json;
     if (!base64) return res.status(500).json({ error: "No image returned from generator" });
 
-    const filename = `${randomUUID()}.png`;
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, Buffer.from(base64, "base64"));
+    const filename = `ai-generated-${randomUUID()}.png`;
+    const url = `data:image/png;base64,${base64}`;
+    const fileSize = Buffer.from(base64, "base64").length;
 
     const id = randomUUID();
-    const url = `/uploads/media/${filename}`;
-    const fileSize = fs.statSync(filePath).size;
 
     await execute(
       `INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
        VALUES (?,?,?,?,?,?,?,?)`,
-      [id, req.params.workspaceId, url, "IMAGE", `ai-generated-${filename}`, fileSize, req.session.userId!, new Date().toISOString()]
+      [id, req.params.workspaceId, url, "IMAGE", filename, fileSize, req.session.userId!, new Date().toISOString()]
     );
 
     await writeAuditLog(req.params.workspaceId, req.session.userId!, "GENERATED_MEDIA", "media_asset", id, { prompt: finalPrompt });
 
-    res.json({ ok: true, id, url, type: "IMAGE", fileName: `ai-generated-${filename}` });
+    res.json({ ok: true, id, url, type: "IMAGE", fileName: filename });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -127,9 +115,6 @@ mediaRouter.delete("/:workspaceId/media/:assetId", requireActiveSubscription, re
   try {
     const asset = await queryOne("SELECT * FROM media_assets WHERE id = ? AND workspace_id = ?", [req.params.assetId, req.params.workspaceId]);
     if (!asset) return res.status(404).json({ error: "Asset not found" });
-
-    const filePath = path.join(process.cwd(), "public", asset.url);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await execute("DELETE FROM media_assets WHERE id = ?", [req.params.assetId]);
     res.json({ ok: true });

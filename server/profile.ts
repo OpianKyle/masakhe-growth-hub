@@ -3,24 +3,12 @@ import { queryOne, execute } from "./db";
 import { requireAuth } from "./auth";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 
 export const profileRouter = Router();
 profileRouter.use(requireAuth);
 
-const logoDir = path.join(process.cwd(), "public", "uploads", "logos");
-if (!fs.existsSync(logoDir)) fs.mkdirSync(logoDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, logoDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `logo-${req.session.userId}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
@@ -104,7 +92,9 @@ profileRouter.post("/logo", upload.single("logo"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const userId = req.session.userId!;
-    const logoUrl = `/uploads/logos/${req.file.filename}`;
+    const mimeType = req.file.mimetype || "image/png";
+    const base64 = req.file.buffer.toString("base64");
+    const logoUrl = `data:${mimeType};base64,${base64}`;
     const now = new Date().toISOString();
 
     const existing = await queryOne("SELECT id FROM business_profiles WHERE user_id = ?", [userId]);
@@ -129,16 +119,10 @@ profileRouter.post("/logo", upload.single("logo"), async (req, res) => {
 profileRouter.delete("/logo", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const profile = await queryOne("SELECT logo_url FROM business_profiles WHERE user_id = ?", [userId]);
-    
-    if (profile?.logo_url) {
-      const filePath = path.join(process.cwd(), "public", profile.logo_url);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      await execute("UPDATE business_profiles SET logo_url = NULL, updated_at = ? WHERE user_id = ?", [new Date().toISOString(), userId]);
-    }
-
+    const now = new Date().toISOString();
+    await execute("UPDATE business_profiles SET logo_url = NULL, updated_at = ? WHERE user_id = ?", [now, userId]);
     res.json({ ok: true });
   } catch (err: any) {
-    res.status(500).json({ error: "Failed to remove logo" });
+    res.status(500).json({ error: err.message || "Failed to remove logo" });
   }
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe, Sparkles, Loader2, Maximize2, XCircle, Heart, MessageCircle, Share2, Repeat2, ThumbsUp, Bookmark
+  Send, Clock, FileText, Image, Hash, Facebook, Linkedin, Instagram, X, ChevronLeft, Globe, Sparkles, Loader2, Maximize2, XCircle, Heart, MessageCircle, Share2, Repeat2, ThumbsUp, Bookmark, Upload
 } from "lucide-react";
 
 interface Account {
@@ -67,6 +67,8 @@ export default function SocialCreate({ workspaceId }: Props) {
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState("");
   const [showFullPreview, setShowFullPreview] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const mediaFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -134,6 +136,32 @@ export default function SocialCreate({ workspaceId }: Props) {
       toast.error(err.message || "Image generation failed");
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const uploadMediaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/social/ws/${workspaceId}/media/upload`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      const newAsset: MediaAsset = { id: data.id, url: data.url, type: data.type, file_name: data.fileName };
+      setMediaAssets(prev => [newAsset, ...prev]);
+      setSelectedMedia(prev => [...prev, data.id]);
+      toast.success("Image uploaded and added to your post!");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploadingMedia(false);
+      if (mediaFileInputRef.current) mediaFileInputRef.current.value = "";
     }
   };
 
@@ -249,15 +277,37 @@ export default function SocialCreate({ workspaceId }: Props) {
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <Label className="text-sm font-medium">Attach Media</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/5"
-                onClick={() => setShowGeneratePanel(p => !p)}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Generate with AI
-              </Button>
+              <div className="flex gap-2">
+                <input
+                  ref={mediaFileInputRef}
+                  type="file"
+                  accept="image/*,video/mp4,video/quicktime"
+                  className="hidden"
+                  onChange={uploadMediaFile}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => mediaFileInputRef.current?.click()}
+                  disabled={uploadingMedia}
+                >
+                  {uploadingMedia ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload className="h-3.5 w-3.5" /> Add Media</>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                  onClick={() => setShowGeneratePanel(p => !p)}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate with AI
+                </Button>
+              </div>
             </div>
 
             {showGeneratePanel && (
@@ -293,7 +343,7 @@ export default function SocialCreate({ workspaceId }: Props) {
             )}
 
             {mediaAssets.length === 0 && !showGeneratePanel ? (
-              <p className="text-sm text-muted-foreground">No media uploaded yet. <a href="/dashboard/social/media" className="text-primary underline">Upload media</a> first, or use AI to generate one above.</p>
+              <p className="text-sm text-muted-foreground">No media yet. Click <strong>Add Media</strong> to upload an image, or use <strong>Generate with AI</strong> above.</p>
             ) : (
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {mediaAssets.slice(0, 24).map(asset => {
