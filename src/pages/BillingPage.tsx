@@ -34,14 +34,15 @@ interface Plan {
 }
 
 interface Subscription {
-  id: number;
-  workspace_id: string;
-  plan_id: number;
+  id?: number;
+  workspace_id?: string;
+  plan_id?: number;
   status: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELLED";
-  trial_start_at: string | null;
-  trial_end_at: string | null;
-  next_billing_at: string | null;
-  cancelled_at: string | null;
+  trial_start_at?: string | null;
+  trial_end_at?: string | null;
+  next_billing_at?: string | null;
+  cancelled_at?: string | null;
+  synthetic?: boolean;
 }
 
 interface PaymentMethod {
@@ -934,24 +935,52 @@ export default function BillingPage() {
         <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
       </motion.div>
 
-      {!subscription ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-xl border border-border bg-card p-8 shadow-card space-y-6"
-        >
-          <div className="text-center space-y-2">
-            <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
-              <CreditCard className="h-7 w-7 text-white" />
+      {(!subscription || subscription.synthetic) ? (
+        <>
+          {subscription?.synthetic && subscription.trial_end_at && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="rounded-xl border border-[hsl(41,100%,54%)]/30 bg-[hsl(41,100%,54%)]/5 p-6 shadow-card"
+            >
+              <h3 className="text-lg font-bold font-heading text-foreground mb-3 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-[hsl(41,100%,54%)]" />
+                Free Trial Active
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Days Remaining</p>
+                  <p className="text-2xl font-bold text-foreground">{daysRemaining(subscription.trial_end_at)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Trial Ends</p>
+                  <p className="text-lg font-semibold text-foreground">{formatDate(subscription.trial_end_at)}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                Subscribe to a paid plan below. Your debit order only starts after your trial ends.
+              </p>
+            </motion.div>
+          )}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-xl border border-border bg-card p-8 shadow-card space-y-6"
+          >
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
+                <CreditCard className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold font-heading text-foreground">Choose Your Plan</h3>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                Select a plan to activate your subscription. Your debit order only begins after your trial ends. Cancel anytime.
+              </p>
             </div>
-            <h3 className="text-xl font-bold font-heading text-foreground">Subscribe to Masakhe</h3>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Choose a plan to subscribe. Your debit order only begins after your trial ends. Cancel anytime.
-            </p>
-          </div>
-          <InlineSubscribeForm onSuccess={fetchBilling} />
-        </motion.div>
+            <InlineSubscribeForm onSuccess={fetchBilling} />
+          </motion.div>
+        </>
       ) : (
         <>
           <motion.div
