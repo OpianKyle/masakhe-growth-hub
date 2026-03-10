@@ -436,7 +436,11 @@ async function handleReturnRedirect(req: any, res: any) {
         return res.redirect("/dashboard/billing?payment=error");
       }
     } else {
-      console.warn(`[Billing] No response token received for merchantRef=${merchantRef}, proceeding with caution`);
+      console.warn(`[Billing] No response token received for merchantRef=${merchantRef}`);
+      if (process.env.ADUMO_ENV === "production") {
+        await execute("UPDATE billing_invoices SET status = 'FAILED', failure_reason = 'No response token received' WHERE id = ?", [invoice.id]);
+        return res.redirect("/dashboard/billing?payment=error");
+      }
     }
 
     await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE id = ?", [invoice.id]);
@@ -503,6 +507,118 @@ async function handleReturnRedirect(req: any, res: any) {
 
 billingRouter.get("/return-redirect", handleReturnRedirect);
 billingRouter.post("/return-redirect", handleReturnRedirect);
+
+billingRouter.post("/change-plan", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { newPlanCode, recipientName, email, contactNumber, mobileNumber, collectionDay: clientCollectionDay, startDate: clientStartDate, shippingAddress1, shippingAddress2, shippingAddress3 } = req.body;
+
+    if (!newPlanCode || !['starter', 'pro'].includes(newPlanCode)) {
+      return res.status(400).json({ error: "Invalid plan code" });
+    }
+
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const newPlan = await queryOne("SELECT * FROM billing_plans WHERE code = ?", [newPlanCode]);
+    if (!newPlan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+
+    const workspaceId = await ensureDefaultWorkspace(userId);
+
+    const existingSub = await queryOne(
+      `SELECT bs.id, bs.plan_id, bp.code as plan_code FROM billing_subscriptions bs
+       JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.workspace_id = ? AND bs.status IN ('TRIAL','ACTIVE')`,
+      [workspaceId]
+    );
+
+    if (!existingSub) {
+      return res.status(400).json({ error: "No active subscription found. Please subscribe first." });
+    }
+
+    if (existingSub.plan_code === newPlanCode) {
+      return res.status(400).json({ error: `You are already on the ${newPlanCode === 'pro' ? 'Pro' : 'Starter'} plan.` });
+    }
+
+    const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
+    const merchantRef = `UPG_${refSuffix}`;
+    const amount = (newPlan.price_cents / 100).toFixed(2);
+    const puid = randomUUID();
+
+    await execute(
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, ?, 'PENDING', ?)",
+      [workspaceId, newPlan.id, newPlan.price_cents, newPlan.currency, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+
+    const chosenCollectionDay = Math.max(1, Math.min(28, parseInt(clientCollectionDay) || 1));
+
+    const startDateObj = clientStartDate ? new Date(clientStartDate) : (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(chosenCollectionDay);
+      return d;
+    })();
+    const startDateStr = startDateObj.toISOString().split("T")[0];
+
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    const endDateStr = endDateObj.toISOString().split("T")[0];
+
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: newPlan.currency || "ZAR",
+      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "PlanChange",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: newPlan.code,
+      ItemDescr1: `${newPlan.name} Plan Subscription (Upgrade)`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: recipientName || userRecord?.full_name || "Customer",
+      ShippingAddress1: shippingAddress1 || "",
+      ShippingAddress2: shippingAddress2 || "",
+      ShippingAddress3: shippingAddress3 || "",
+      frequency: "MONTHLY",
+      collectionDay: String(chosenCollectionDay),
+      accountNumber: `ACC_${Date.now()}`,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      collectionValue: amount,
+      contactNumber: contactNumber || "",
+      mobileNumber: mobileNumber || contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Billing] Plan change session created:", JSON.stringify({
+      MerchantReference: fields.MerchantReference,
+      Amount: fields.Amount,
+      oldPlan: existingSub.plan_code,
+      newPlan: newPlanCode,
+    }));
+
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Billing] Plan change error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 billingRouter.post("/cancel", requireAuth, async (req, res) => {
   try {

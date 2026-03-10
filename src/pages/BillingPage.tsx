@@ -7,7 +7,7 @@ import * as z from "zod";
 import {
   CreditCard, Calendar, AlertTriangle,
   Clock, Loader2, Shield, CalendarDays, Wallet,
-  User, Mail, Phone, MapPin, Check,
+  User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -536,6 +536,325 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+const changePlanSchema = z.object({
+  recipientName: z.string().min(2, "Full name is required"),
+  email: z.string().email("A valid email address is required"),
+  contactNumber: z.string().min(7, "Contact number is required"),
+  mobileNumber: z.string().optional(),
+  collectionDay: z.number().min(1).max(28),
+  startDate: z.string().min(1, "Start date is required"),
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: "You must accept the Terms and Conditions" }) }),
+});
+
+type ChangePlanFormData = z.infer<typeof changePlanSchema>;
+
+function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: string; onSuccess: () => void }) {
+  const { user } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [showForm, setShowForm] = useState(false);
+  const { toast } = useToast();
+
+  const targetPlan = currentPlanCode === "starter"
+    ? planOptions.find((p) => p.code === "pro")!
+    : planOptions.find((p) => p.code === "starter")!;
+
+  const isUpgrade = currentPlanCode === "starter";
+
+  const defaultStartDate = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  })();
+
+  const form = useForm<ChangePlanFormData>({
+    resolver: zodResolver(changePlanSchema),
+    defaultValues: {
+      recipientName: user?.full_name || "",
+      email: user?.email || "",
+      contactNumber: user?.phone || "",
+      mobileNumber: "",
+      collectionDay: 1,
+      startDate: defaultStartDate,
+      acceptTerms: false as any,
+    },
+  });
+
+  useEffect(() => {
+    if (paymentData && formRef.current) {
+      formRef.current.submit();
+    }
+  }, [paymentData]);
+
+  const onSubmit = async (data: ChangePlanFormData) => {
+    try {
+      const res = await fetch("/api/billing/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          newPlanCode: targetPlan.code,
+          recipientName: data.recipientName,
+          email: data.email,
+          contactNumber: data.contactNumber,
+          mobileNumber: data.mobileNumber || data.contactNumber,
+          collectionDay: String(data.collectionDay),
+          startDate: data.startDate,
+        }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        toast({ title: "Error", description: json.error || "Failed to change plan.", variant: "destructive" });
+        return;
+      }
+
+      if (json.formAction && json.fields) {
+        setPaymentData(json);
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to process plan change.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="rounded-xl border border-border bg-card p-6 shadow-card"
+    >
+      {paymentData && (
+        <form
+          ref={formRef}
+          action={paymentData.formAction}
+          method="POST"
+          style={{ display: "none" }}
+        >
+          {Object.entries(paymentData.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={String(value)} />
+          ))}
+        </form>
+      )}
+
+      <h3 className="text-lg font-bold font-heading text-foreground mb-2 flex items-center gap-2">
+        {isUpgrade ? (
+          <ArrowUpCircle className="h-5 w-5 text-sa-green" />
+        ) : (
+          <ArrowDownCircle className="h-5 w-5 text-muted-foreground" />
+        )}
+        {isUpgrade ? "Upgrade Your Plan" : "Change Plan"}
+      </h3>
+
+      {!showForm ? (
+        <div className="space-y-4">
+          <div className={`rounded-xl border p-4 ${isUpgrade ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-foreground font-heading">{targetPlan.name}</span>
+                  {isUpgrade && (
+                    <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Crown className="h-2.5 w-2.5" /> Recommended
+                    </span>
+                  )}
+                </div>
+                <p className="text-lg font-bold font-heading text-foreground">
+                  {targetPlan.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">{targetPlan.description}</p>
+                {isUpgrade && (
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground">Unlocks with Pro:</p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Premium website templates</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Vehicle inventory management</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Website leads tracking</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Social Media Hub with analytics</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Content calendar and media library</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => setShowForm(true)}
+            className={isUpgrade ? "w-full" : "w-full"}
+            variant={isUpgrade ? "default" : "outline"}
+            size="lg"
+          >
+            {isUpgrade ? (
+              <><ArrowUpCircle className="h-4 w-4 mr-2" />Upgrade to {targetPlan.name} — {targetPlan.price}/month</>
+            ) : (
+              <><ArrowDownCircle className="h-4 w-4 mr-2" />Switch to {targetPlan.name} — {targetPlan.price}/month</>
+            )}
+          </Button>
+
+          {!isUpgrade && (
+            <p className="text-xs text-muted-foreground text-center">
+              Downgrading will remove access to premium features including premium templates, vehicle inventory, and lead tracking.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4 mt-4">
+          <div className="rounded-lg bg-muted/50 p-3 text-sm flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUpgrade ? "bg-sa-green/10" : "bg-muted"}`}>
+              {isUpgrade ? <ArrowUpCircle className="h-4 w-4 text-sa-green" /> : <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />}
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">
+                {isUpgrade ? "Upgrading" : "Switching"} to {targetPlan.name} — {targetPlan.price}/month
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your current subscription will be cancelled and replaced with the new plan. A new debit order will be set up via Adumo.
+              </p>
+            </div>
+          </div>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="recipientName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <User className="h-3 w-3" /> Full Name
+                      </FormLabel>
+                      <FormControl><Input placeholder="John Smith" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <Mail className="h-3 w-3" /> Email
+                      </FormLabel>
+                      <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contactNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <Phone className="h-3 w-3" /> Contact Number
+                      </FormLabel>
+                      <FormControl><Input placeholder="+27211234567" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="collectionDay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-xs">
+                        <CalendarDays className="h-3 w-3" /> Collection Day
+                      </FormLabel>
+                      <Select
+                        value={String(field.value)}
+                        onValueChange={(v) => field.onChange(parseInt(v))}
+                      >
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Day of month" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                            <SelectItem key={d} value={String(d)}>{ordinal(d)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1.5 text-xs">
+                      <Calendar className="h-3 w-3" /> Debit Order Start Date
+                    </FormLabel>
+                    <FormControl><Input type="date" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="acceptTerms"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="mt-1 accent-primary"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        I accept the{" "}
+                        <a href="/api/billing/terms-pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">
+                          Terms and Conditions
+                        </a>
+                        , and authorise a new monthly debit order via Adumo Online for the {targetPlan.name} plan.
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                Your new debit order will be processed securely via Adumo Online.
+              </div>
+
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="flex-1">
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={form.formState.isSubmitting || !!paymentData}
+                >
+                  {form.formState.isSubmitting || paymentData ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
+                  ) : (
+                    <><Check className="h-4 w-4 mr-2" />Confirm {isUpgrade ? "Upgrade" : "Plan Change"}</>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function BillingPage() {
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -726,6 +1045,10 @@ export default function BillingPage() {
               </div>
               <InlineSubscribeForm onSuccess={fetchBilling} />
             </motion.div>
+          )}
+
+          {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && plan?.code && (
+            <ChangePlanSection currentPlanCode={plan.code} onSuccess={fetchBilling} />
           )}
 
           {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && (
