@@ -110,7 +110,7 @@ export default function PayrollPage() {
     loadEmployees();
     loadRuns();
     fetch("/api/profile", { credentials: "include" })
-      .then(r => r.json()).then(d => setProfile(d)).catch(() => {});
+      .then(r => r.json()).then(d => setProfile({ ...d.user, ...d.profile })).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -226,7 +226,149 @@ export default function PayrollPage() {
     if (res.ok) setPrintSlip(await res.json());
   };
 
-  const printPayslip = () => window.print();
+  const printPayslip = () => {
+    if (!printSlip) return;
+    const biz = profile?.business_name || profile?.trading_name || profile?.full_name || "Your Business";
+    const address = profile?.physical_address || "";
+    const logo = profile?.logo_url || "";
+    const allTotal = printSlip.allowances.reduce((s: number, a: any) => s + a.amount_cents, 0);
+    const dedTotal = printSlip.deductions.reduce((s: number, d: any) => s + d.amount_cents, 0);
+    const totalDeductions = printSlip.paye_cents + printSlip.uif_employee_cents + dedTotal;
+    const fmt = (cents: number) => `R ${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const periodLabel = (p: string) => { const [y, m] = p.split("-"); return `${MONTHS[parseInt(m) - 1]} ${y}`; };
+    const payDate = new Date(printSlip.pay_date).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+
+    const allowanceRows = printSlip.allowances.map((a: any) =>
+      `<tr><td>${a.label}</td><td style="text-align:right">${fmt(a.amount_cents)}</td></tr>`).join("");
+    const deductionRows = printSlip.deductions.map((d: any) =>
+      `<tr><td>${d.label}</td><td style="text-align:right">${fmt(d.amount_cents)}</td></tr>`).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payslip – ${printSlip.employee_name}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #111; background: #fff; }
+  .page { width: 100%; max-width: 720px; margin: 0 auto; padding: 0; }
+  .header { background: #0f172a; color: #fff; padding: 28px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; }
+  .logo-placeholder { width: 52px; height: 52px; border-radius: 6px; background: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: #fff; }
+  .biz-name { font-size: 20px; font-weight: bold; }
+  .biz-addr { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .slip-label { color: #94a3b8; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+  .slip-period { color: #f59e0b; font-size: 18px; font-weight: bold; margin-top: 2px; }
+  .slip-date { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+  .body { padding: 28px 32px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+  .info-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; }
+  .info-name { font-size: 16px; font-weight: bold; }
+  .info-sub { color: #4b5563; margin-top: 2px; }
+  .info-detail { color: #6b7280; font-size: 12px; margin-top: 2px; }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 7px 0; border-bottom: 1px solid #e5e7eb; }
+  td:last-child { text-align: right; font-weight: 500; }
+  tfoot td { padding: 8px 4px; font-weight: bold; border-bottom: none; }
+  .gross-row td { background: #f0fdf4; color: #15803d; }
+  .ded-row td { background: #fef2f2; color: #dc2626; }
+  .net-bar { background: #0f172a; color: #fff; border-radius: 8px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .net-label { color: #94a3b8; font-size: 12px; margin-bottom: 4px; }
+  .net-amount { color: #f59e0b; font-size: 28px; font-weight: bold; }
+  .net-right { text-align: right; color: #94a3b8; font-size: 12px; line-height: 1.6; }
+  .notes { background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #92400e; margin-bottom: 20px; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  .sig-line { border-top: 1px solid #9ca3af; padding-top: 4px; margin-top: 32px; color: #9ca3af; font-size: 12px; }
+  .footer { text-align: center; font-size: 11px; color: #d1d5db; margin-top: 20px; }
+  @media print { @page { margin: 0; size: A4; } body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      ${logo ? `<img class="logo" src="${logo}" alt="Logo" />` : `<div class="logo-placeholder">${biz[0]}</div>`}
+      <div>
+        <div class="biz-name">${biz}</div>
+        ${address ? `<div class="biz-addr">${address}</div>` : ""}
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="slip-label">PAYSLIP</div>
+      <div class="slip-period">${periodLabel(printSlip.pay_period)}</div>
+      <div class="slip-date">Pay date: ${payDate}</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="info-grid">
+      <div>
+        <div class="info-label">Employee Details</div>
+        <div class="info-name">${printSlip.employee_name}</div>
+        ${printSlip.position ? `<div class="info-sub">${printSlip.position}</div>` : ""}
+        ${printSlip.department ? `<div class="info-detail">${printSlip.department}</div>` : ""}
+        ${printSlip.id_number ? `<div class="info-detail">ID: ${printSlip.id_number}</div>` : ""}
+        ${printSlip.tax_number ? `<div class="info-detail">Tax Ref: ${printSlip.tax_number}</div>` : ""}
+      </div>
+      <div>
+        <div class="info-label">Banking Details</div>
+        ${printSlip.bank_name ? `
+          <div class="info-name" style="font-size:14px">${printSlip.bank_name}</div>
+          ${printSlip.account_type ? `<div class="info-sub" style="text-transform:capitalize">${printSlip.account_type}</div>` : ""}
+          ${printSlip.account_number ? `<div class="info-detail">Acc: ${printSlip.account_number}</div>` : ""}
+          ${printSlip.branch_code ? `<div class="info-detail">Branch: ${printSlip.branch_code}</div>` : ""}
+        ` : `<div class="info-detail" style="font-style:italic">Not provided</div>`}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Earnings</div>
+      <table>
+        <tbody>
+          <tr><td>Basic Salary</td><td style="text-align:right;font-weight:600">${fmt(printSlip.basic_salary_cents)}</td></tr>
+          ${allowanceRows}
+        </tbody>
+        <tfoot><tr class="gross-row"><td>Gross Pay</td><td style="text-align:right">${fmt(printSlip.gross_pay_cents)}</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Deductions</div>
+      <table>
+        <tbody>
+          <tr><td>PAYE (Income Tax)</td><td style="text-align:right;font-weight:600">${fmt(printSlip.paye_cents)}</td></tr>
+          <tr><td>UIF (Employee 1%)</td><td style="text-align:right">${fmt(printSlip.uif_employee_cents)}</td></tr>
+          ${deductionRows}
+        </tbody>
+        <tfoot><tr class="ded-row"><td>Total Deductions</td><td style="text-align:right">${fmt(totalDeductions)}</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="net-bar">
+      <div>
+        <div class="net-label">NET PAY</div>
+        <div class="net-amount">${fmt(printSlip.net_pay_cents)}</div>
+      </div>
+      <div class="net-right">
+        <div>Employer UIF: ${fmt(printSlip.uif_employer_cents)}</div>
+        <div style="margin-top:4px;font-size:11px">Total Cost to Company: ${fmt(printSlip.gross_pay_cents + printSlip.uif_employer_cents)}</div>
+      </div>
+    </div>
+
+    ${printSlip.notes ? `<div class="notes"><strong>Notes:</strong> ${printSlip.notes}</div>` : ""}
+
+    <div class="sigs">
+      <div><div class="sig-line">Employee Signature</div></div>
+      <div><div class="sig-line">Authorised by</div></div>
+    </div>
+    <div class="footer">This is a computer-generated payslip. PAYE calculated per SARS 2025/2026 tax tables.</div>
+  </div>
+</div>
+<script>window.onload = function() { window.print(); };<\/script>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+  };
 
   const filteredEmployees = employees.filter(e =>
     `${e.first_name} ${e.last_name} ${e.position || ""} ${e.department || ""}`.toLowerCase().includes(search.toLowerCase())
@@ -249,24 +391,27 @@ export default function PayrollPage() {
   const years = Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - 1 + i));
 
   if (printSlip) {
-    const biz = profile?.business_name || profile?.trading_name || "Your Business";
+    const biz = profile?.business_name || profile?.trading_name || profile?.full_name || "Your Business";
     const address = profile?.physical_address || "";
     const logo = profile?.logo_url;
-    const allTotal = printSlip.allowances.reduce((s, a) => s + a.amount_cents, 0);
-    const dedTotal = printSlip.deductions.reduce((s, d) => s + d.amount_cents, 0);
+    const dedTotal = printSlip.deductions.reduce((s: number, d: any) => s + d.amount_cents, 0);
+    const totalDeductions = printSlip.paye_cents + printSlip.uif_employee_cents + dedTotal;
 
     return (
       <div className="min-h-screen bg-gray-100 p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="flex gap-3 mb-6 print:hidden">
+          <div className="flex gap-3 mb-6">
             <Button variant="outline" onClick={() => setPrintSlip(null)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
             <Button onClick={printPayslip}><Printer className="h-4 w-4 mr-2" />Print Payslip</Button>
           </div>
 
-          <div ref={printRef} className="bg-white shadow-xl rounded-xl overflow-hidden print:shadow-none print:rounded-none">
+          <div className="bg-white shadow-xl rounded-xl overflow-hidden">
+            {/* Header */}
             <div className="bg-slate-900 text-white px-8 py-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                {logo ? <img src={logo} alt="Logo" className="h-12 w-12 rounded object-cover" /> : <div className="h-12 w-12 rounded bg-amber-500 flex items-center justify-center font-bold text-xl">{biz[0]}</div>}
+                {logo
+                  ? <img src={logo} alt="Logo" className="h-12 w-12 rounded object-cover" />
+                  : <div className="h-12 w-12 rounded bg-amber-500 flex items-center justify-center font-bold text-xl">{biz[0]}</div>}
                 <div>
                   <h1 className="text-xl font-bold">{biz}</h1>
                   {address && <p className="text-slate-400 text-sm">{address}</p>}
@@ -279,8 +424,9 @@ export default function PayrollPage() {
               </div>
             </div>
 
-            <div className="p-8">
-              <div className="grid grid-cols-2 gap-6 mb-8 p-4 bg-gray-50 rounded-lg">
+            <div className="p-8 space-y-6">
+              {/* Employee / Banking info */}
+              <div className="grid grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Employee Details</p>
                   <p className="font-bold text-lg">{printSlip.employee_name}</p>
@@ -300,39 +446,40 @@ export default function PayrollPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Earnings</p>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      <tr className="border-b"><td className="py-1.5">Basic Salary</td><td className="text-right py-1.5 font-medium">{R(printSlip.basic_salary_cents)}</td></tr>
-                      {printSlip.allowances.map((a, i) => (
-                        <tr key={i} className="border-b"><td className="py-1.5 text-gray-600">{a.label}</td><td className="text-right py-1.5">{R(a.amount_cents)}</td></tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-green-50"><td className="py-2 font-bold">Gross Pay</td><td className="text-right py-2 font-bold text-green-700">{R(printSlip.gross_pay_cents)}</td></tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Deductions</p>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      <tr className="border-b"><td className="py-1.5">PAYE (Income Tax)</td><td className="text-right py-1.5 font-medium">{R(printSlip.paye_cents)}</td></tr>
-                      <tr className="border-b"><td className="py-1.5">UIF (Employee 1%)</td><td className="text-right py-1.5">{R(printSlip.uif_employee_cents)}</td></tr>
-                      {printSlip.deductions.map((d, i) => (
-                        <tr key={i} className="border-b"><td className="py-1.5 text-gray-600">{d.label}</td><td className="text-right py-1.5">{R(d.amount_cents)}</td></tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-red-50"><td className="py-2 font-bold">Total Deductions</td><td className="text-right py-2 font-bold text-red-600">{R(printSlip.paye_cents + printSlip.uif_employee_cents + dedTotal)}</td></tr>
-                    </tfoot>
-                  </table>
-                </div>
+              {/* Earnings */}
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Earnings</p>
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b"><td className="py-1.5">Basic Salary</td><td className="text-right py-1.5 font-medium">{R(printSlip.basic_salary_cents)}</td></tr>
+                    {printSlip.allowances.map((a: any, i: number) => (
+                      <tr key={i} className="border-b"><td className="py-1.5 text-gray-600">{a.label}</td><td className="text-right py-1.5">{R(a.amount_cents)}</td></tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-green-50"><td className="py-2 pl-1 font-bold">Gross Pay</td><td className="text-right py-2 pr-1 font-bold text-green-700">{R(printSlip.gross_pay_cents)}</td></tr>
+                  </tfoot>
+                </table>
               </div>
 
+              {/* Deductions */}
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Deductions</p>
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b"><td className="py-1.5">PAYE (Income Tax)</td><td className="text-right py-1.5 font-medium">{R(printSlip.paye_cents)}</td></tr>
+                    <tr className="border-b"><td className="py-1.5">UIF (Employee 1%)</td><td className="text-right py-1.5">{R(printSlip.uif_employee_cents)}</td></tr>
+                    {printSlip.deductions.map((d: any, i: number) => (
+                      <tr key={i} className="border-b"><td className="py-1.5 text-gray-600">{d.label}</td><td className="text-right py-1.5">{R(d.amount_cents)}</td></tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-red-50"><td className="py-2 pl-1 font-bold">Total Deductions</td><td className="text-right py-2 pr-1 font-bold text-red-600">{R(totalDeductions)}</td></tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* Net pay bar */}
               <div className="bg-slate-900 text-white rounded-lg p-5 flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">NET PAY</p>
@@ -345,20 +492,16 @@ export default function PayrollPage() {
               </div>
 
               {printSlip.notes && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
                   <strong>Notes:</strong> {printSlip.notes}
                 </div>
               )}
 
-              <div className="mt-8 pt-4 border-t grid grid-cols-2 gap-8 text-sm text-gray-400">
-                <div>
-                  <p className="border-t border-gray-300 pt-2 mt-8">Employee Signature</p>
-                </div>
-                <div>
-                  <p className="border-t border-gray-300 pt-2 mt-8">Authorised by</p>
-                </div>
+              <div className="pt-4 border-t grid grid-cols-2 gap-8 text-sm text-gray-400">
+                <div><p className="border-t border-gray-300 pt-2 mt-8">Employee Signature</p></div>
+                <div><p className="border-t border-gray-300 pt-2 mt-8">Authorised by</p></div>
               </div>
-              <p className="text-center text-xs text-gray-300 mt-6">This is a computer-generated payslip. PAYE calculated per SARS 2025/2026 tax tables.</p>
+              <p className="text-center text-xs text-gray-300">This is a computer-generated payslip. PAYE calculated per SARS 2025/2026 tax tables.</p>
             </div>
           </div>
         </div>
