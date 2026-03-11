@@ -651,6 +651,62 @@ export async function runMigrations() {
       await conn.query(`ALTER TABLE website_leads MODIFY COLUMN user_id VARCHAR(36) NOT NULL`);
     } catch (e: any) { if (!e.message?.includes("Unknown column")) throw e; }
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS employees (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
+        id_number VARCHAR(20),
+        tax_number VARCHAR(30),
+        position VARCHAR(100),
+        department VARCHAR(100),
+        start_date DATE,
+        employment_type ENUM('full_time','part_time','contract') NOT NULL DEFAULT 'full_time',
+        basic_salary INT NOT NULL DEFAULT 0,
+        age INT NOT NULL DEFAULT 30,
+        uif_exempt TINYINT(1) NOT NULL DEFAULT 0,
+        phone VARCHAR(30),
+        email VARCHAR(255),
+        address TEXT,
+        bank_name VARCHAR(100),
+        account_type VARCHAR(50),
+        account_number VARCHAR(50),
+        branch_code VARCHAR(20),
+        status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_emp_user", "employees", "user_id");
+    await createIndex("idx_emp_status", "employees", "status");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS payroll_runs (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        employee_id VARCHAR(36) NOT NULL,
+        pay_period VARCHAR(7) NOT NULL,
+        pay_date DATE NOT NULL,
+        basic_salary_cents INT NOT NULL DEFAULT 0,
+        allowances_json TEXT NOT NULL DEFAULT '[]',
+        deductions_json TEXT NOT NULL DEFAULT '[]',
+        paye_cents INT NOT NULL DEFAULT 0,
+        uif_employee_cents INT NOT NULL DEFAULT 0,
+        uif_employer_cents INT NOT NULL DEFAULT 0,
+        gross_pay_cents INT NOT NULL DEFAULT 0,
+        net_pay_cents INT NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(employee_id) REFERENCES employees(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_pr_user", "payroll_runs", "user_id");
+    await createIndex("idx_pr_employee", "payroll_runs", "employee_id");
+    await createIndex("idx_pr_period", "payroll_runs", "pay_period");
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

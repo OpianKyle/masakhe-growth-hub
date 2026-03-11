@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -25,6 +25,7 @@ import CompanyVerifyPage from "./CompanyVerifyPage";
 import FundingApplicationPage from "./FundingApplicationPage";
 import VehicleManagementPage from "./VehicleManagementPage";
 import LeadsPage from "./LeadsPage";
+import PayrollPage from "./PayrollPage";
 import TrialBanner from "@/components/TrialBanner";
 import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
@@ -81,6 +82,7 @@ const baseNavItems: NavItem[] = [
       { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
     ],
   },
+  { icon: Banknote, label: "Payroll", path: "/dashboard/payroll" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
@@ -437,6 +439,7 @@ export default function DashboardPage() {
             <Route path="funding-applications" element={<FundingApplicationPage />} />
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="leads" element={<LeadsPage />} />
+            <Route path="payroll" element={<PayrollPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
