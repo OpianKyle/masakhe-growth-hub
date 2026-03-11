@@ -156,7 +156,7 @@ export default function TrialBanner() {
                 "Website Builder",
                 "Financial Tracking & Invoicing",
                 "Social Media Hub",
-                "Funding Readiness Tools",
+                "Funding Scoring Tools",
                 "Business Tenders",
               ].map((f) => (
                 <div key={f} className="flex items-center gap-2 text-sm">
@@ -193,7 +193,7 @@ export default function TrialBanner() {
                 "Website Builder",
                 "Financial Tracking & Invoicing",
                 "Social Media Hub",
-                "Funding Readiness Tools",
+                "Funding Scoring Tools",
               ].map((f) => (
                 <div key={f} className="flex items-center gap-2 text-sm">
                   <div className="h-1.5 w-1.5 rounded-full bg-primary" />

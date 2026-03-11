@@ -77,7 +77,7 @@ const planOptions = [
     name: "Starter",
     price: "R899",
     priceCents: 89900,
-    description: "Website Builder, Financial Tracking, Invoices, Compliance Score, Grant Readiness",
+    description: "Website Builder, Financial Tracking, Invoices, Compliance Score, Funding Scoring",
   },
   {
     code: "pro",

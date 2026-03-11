@@ -75,7 +75,7 @@ const baseNavItems: NavItem[] = [
     children: [
       { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
       { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
-      { icon: ClipboardCheck, label: "Funding Readiness", path: "/dashboard/funding" },
+      { icon: ClipboardCheck, label: "Funding Scoring", path: "/dashboard/funding" },
       { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
       { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify" },
       { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },

@@ -51,7 +51,7 @@ export default function GrantReadinessPage() {
 
   const getStatusLabel = (score: number) => {
     if (score >= 70) return { label: "Funding Ready", color: "text-green-700", bg: "bg-green-100", ring: "#16a34a" };
-    if (score >= 40) return { label: "Moderate Readiness", color: "text-amber-700", bg: "bg-amber-100", ring: "#d97706" };
+    if (score >= 40) return { label: "Moderate Score", color: "text-amber-700", bg: "bg-amber-100", ring: "#d97706" };
     return { label: "Not Yet Ready", color: "text-red-700", bg: "bg-red-100", ring: "#dc2626" };
   };
 
@@ -69,8 +69,8 @@ export default function GrantReadinessPage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-heading">Grant Readiness Score</h2>
-          <p className="text-muted-foreground text-sm mt-1">Track your readiness to apply for South African funding programmes</p>
+          <h2 className="text-2xl font-bold font-heading">Funding Scoring</h2>
+          <p className="text-muted-foreground text-sm mt-1">Track your score to apply for South African funding programmes</p>
         </div>
         <Button variant="outline" onClick={() => window.print()} className="gap-2"><Download className="h-4 w-4" /> Download</Button>
       </div>
@@ -131,7 +131,7 @@ export default function GrantReadinessPage() {
       </Card>
 
       <Card className="p-6 space-y-4">
-        <h3 className="font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Full Readiness Checklist</h3>
+        <h3 className="font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Scoring Criteria</h3>
         <div className="space-y-2">
           {data.items.map(item => (
             <div key={item.key}

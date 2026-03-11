@@ -73,7 +73,7 @@ const pricingPlans = [
       { icon: Wallet, label: "Financial Tracking" },
       { icon: FileText, label: "Invoice Generation" },
       { icon: Shield, label: "Compliance Score" },
-      { icon: ClipboardCheck, label: "Grant Readiness" },
+      { icon: ClipboardCheck, label: "Funding Scoring" },
       { icon: Headphones, label: "Basic Support" },
     ],
     popular: false,

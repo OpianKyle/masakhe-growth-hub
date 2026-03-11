@@ -42,7 +42,7 @@ const steps = [
     color: "bg-sa-gold",
   },
   {
-    title: "Funding Readiness",
+    title: "Funding Scoring",
     description: "Track your compliance score and see how ready your business is to apply for grants and government funding opportunities.",
     icon: ClipboardCheck,
     path: "/dashboard/funding",

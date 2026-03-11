@@ -136,7 +136,7 @@ export default function DashboardOverview() {
         </div>
         <div className="flex gap-3 mt-4">
           <Link to="/dashboard/funding">
-            <Button variant="gold" size="sm">Funding Readiness</Button>
+            <Button variant="gold" size="sm">Funding Scoring</Button>
           </Link>
           <Link to="/dashboard/settings">
             <Button variant="ghost" size="sm" className="text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
@@ -370,7 +370,7 @@ export default function DashboardOverview() {
             { icon: BookOpen, label: "Business Plan", description: "AI-generated 8-section business plan", path: "/dashboard/business-plan", color: "text-blue-600", bg: "bg-blue-50" },
             { icon: HandCoins, label: "Funding Proposal", description: "Professional funding proposal document", path: "/dashboard/funding-proposal", color: "text-amber-600", bg: "bg-amber-50" },
             { icon: BarChart2, label: "Financial Statements", description: "Annual income & balance sheet statements", path: "/dashboard/annual-statements", color: "text-purple-600", bg: "bg-purple-50" },
-            { icon: ClipboardCheck, label: "Grant Readiness", description: "Track your readiness score for funding", path: "/dashboard/funding", color: "text-primary", bg: "bg-primary/10" },
+            { icon: ClipboardCheck, label: "Funding Scoring", description: "Track your score for funding", path: "/dashboard/funding", color: "text-primary", bg: "bg-primary/10" },
             { icon: Send, label: "Funding Applications", description: "Apply to SEFA, NEF, NYDA and IDC", path: "/dashboard/funding-applications", color: "text-rose-600", bg: "bg-rose-50" },
           ].map((item) => (
             <Link key={item.label} to={item.path}
