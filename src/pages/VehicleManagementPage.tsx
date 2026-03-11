@@ -112,7 +112,7 @@ export default function VehicleManagementPage() {
     setDialogOpen(true);
   };
 
-  const openEdit = (v: Vehicle) => {
+  const openEdit = async (v: Vehicle) => {
     setEditingId(v.id);
     setForm({
       make: v.make,
@@ -130,8 +130,15 @@ export default function VehicleManagementPage() {
       status: v.status,
       featured: !!v.featured,
     });
-    setEditImages(v.images || []);
+    setEditImages([]);
     setDialogOpen(true);
+    try {
+      const res = await fetch(`/api/vehicles/${v.id}`, { credentials: "include" });
+      const full = await res.json();
+      setEditImages(full.images || []);
+    } catch {
+      // images stay empty if fetch fails
+    }
   };
 
   const handleSave = async () => {
@@ -327,12 +334,17 @@ export default function VehicleManagementPage() {
               className="rounded-xl border border-border bg-card shadow-card overflow-hidden"
             >
               <div className="aspect-video bg-muted relative">
-                {v.images && v.images.length > 0 ? (
-                  <img src={v.images[0]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
+                {v.thumbnail ? (
+                  <img src={v.thumbnail} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
                   </div>
+                )}
+                {v.image_count > 0 && (
+                  <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                    <ImageIcon className="h-3 w-3" /> {v.image_count}
+                  </span>
                 )}
                 {v.featured ? (
                   <Badge className="absolute top-2 left-2 bg-amber-500 text-white">

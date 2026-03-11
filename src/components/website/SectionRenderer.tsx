@@ -1608,8 +1608,7 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
         ) : (
           <div className={`grid sm:grid-cols-2 lg:grid-cols-3 ${isCinematic ? "gap-1" : "gap-6"}`}>
             {vehicles.map((v: any, i: number) => {
-              const imgs = v.images || [];
-              const mainImg = imgs[0] || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=600";
+              const mainImg = v.thumbnail || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=600";
               return (
                 <motion.a
                   key={v.id}

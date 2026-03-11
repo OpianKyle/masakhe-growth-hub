@@ -23,14 +23,19 @@ const upload = multer({
 vehicleRouter.get("/public/by-website/:websiteId", async (req, res) => {
   try {
     const vehicles = await queryAll(
-      "SELECT * FROM vehicle_listings WHERE website_id = ? AND status = 'available' ORDER BY featured DESC, created_at DESC",
+      "SELECT id, website_id, make, model, variant, year, price, mileage, fuel_type, transmission, color, body_type, description, features, images, status, featured, created_at FROM vehicle_listings WHERE website_id = ? AND status = 'available' ORDER BY featured DESC, created_at DESC",
       [req.params.websiteId]
     );
-    res.json(vehicles.map((v: any) => ({
-      ...v,
-      features: typeof v.features === "string" ? JSON.parse(v.features) : v.features,
-      images: typeof v.images === "string" ? JSON.parse(v.images) : v.images,
-    })));
+    res.json(vehicles.map((v: any) => {
+      const images = typeof v.images === "string" ? JSON.parse(v.images) : (v.images || []);
+      return {
+        ...v,
+        features: typeof v.features === "string" ? JSON.parse(v.features) : v.features,
+        thumbnail: images[0] || null,
+        image_count: images.length,
+        images: undefined,
+      };
+    }));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -52,23 +57,29 @@ vehicleRouter.get("/", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const websiteId = req.query.websiteId as string;
+    const cols = "id, website_id, user_id, make, model, variant, year, price, mileage, fuel_type, transmission, color, body_type, description, features, images, status, featured, created_at, updated_at";
     let vehicles;
     if (websiteId) {
       vehicles = await queryAll(
-        "SELECT * FROM vehicle_listings WHERE user_id = ? AND website_id = ? ORDER BY featured DESC, created_at DESC",
+        `SELECT ${cols} FROM vehicle_listings WHERE user_id = ? AND website_id = ? ORDER BY featured DESC, created_at DESC`,
         [userId, websiteId]
       );
     } else {
       vehicles = await queryAll(
-        "SELECT * FROM vehicle_listings WHERE user_id = ? ORDER BY featured DESC, created_at DESC",
+        `SELECT ${cols} FROM vehicle_listings WHERE user_id = ? ORDER BY featured DESC, created_at DESC`,
         [userId]
       );
     }
-    res.json(vehicles.map((v: any) => ({
-      ...v,
-      features: typeof v.features === "string" ? JSON.parse(v.features) : v.features,
-      images: typeof v.images === "string" ? JSON.parse(v.images) : v.images,
-    })));
+    res.json(vehicles.map((v: any) => {
+      const images = typeof v.images === "string" ? JSON.parse(v.images) : (v.images || []);
+      return {
+        ...v,
+        features: typeof v.features === "string" ? JSON.parse(v.features) : v.features,
+        thumbnail: images[0] || null,
+        image_count: images.length,
+        images: undefined,
+      };
+    }));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
