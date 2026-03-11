@@ -25,7 +25,7 @@ const modules = [
   {
     icon: Globe,
     title: "AI Website Builder",
-    description: "Generate a professional website in 60 seconds with AI-powered content and design.",
+    description: "Generate a professional website in minutes with AI-powered content and design.",
     color: "bg-accent",
   },
   {
@@ -302,7 +302,7 @@ export default function LandingPage() {
               className="space-y-6"
             >
               <h2 className="text-3xl font-bold font-heading text-foreground">
-                Build Your Website in <span className="text-gradient-gold">60 Seconds</span>
+                Build Your Website in <span className="text-gradient-gold">Minutes</span>
               </h2>
               <p className="text-muted-foreground leading-relaxed">
                 Answer five simple questions and our AI generates a professional, mobile-first website complete with SEO optimization, WhatsApp integration, and Google Maps.
@@ -338,10 +338,10 @@ export default function LandingPage() {
               className="space-y-6 order-2 md:order-1"
             >
               <h2 className="text-3xl font-bold font-heading text-foreground">
-                The <span className="text-sa-red">Killer Feature:</span> Automated Tax Compliance
+                <span className="text-sa-red">Generate</span> Compliant Reports
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                Connect to SARS eFiling, auto-generate VAT201 returns, provisional tax estimates, and monitor your compliance status—all powered by AI.
+                Generate your own financial records and access accounting functionality from our simplified dashboard and be in control of your own financial information!
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {[
