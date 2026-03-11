@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -94,7 +94,7 @@ export default function DashboardPage() {
   const [hasVehicleSite, setHasVehicleSite] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isImpersonating, originalAdminName, stopImpersonating } = useAuth();
 
   useEffect(() => {
     fetch("/api/websites/mine", { credentials: "include" })
@@ -399,6 +399,27 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {isImpersonating && (
+          <div className="shrink-0 flex items-center justify-between gap-4 bg-amber-500 px-4 py-2.5 text-white text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 shrink-0" />
+              <span>
+                You are logged in as <strong>{user?.full_name}</strong> ({user?.email}).
+                {originalAdminName && <> Session started by <strong>{originalAdminName}</strong>.</>}
+              </span>
+            </div>
+            <button
+              onClick={async () => {
+                await stopImpersonating();
+                window.location.href = "/admin/clients";
+              }}
+              className="shrink-0 flex items-center gap-1.5 rounded-lg bg-white/20 hover:bg-white/30 px-3 py-1.5 text-xs font-bold transition-colors"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Return to Admin Account
+            </button>
+          </div>
+        )}
         <TrialBanner />
         <div className="flex-1 overflow-auto min-h-0">
           <Routes>

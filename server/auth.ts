@@ -9,6 +9,7 @@ export const authRouter = Router();
 declare module "express-session" {
   interface SessionData {
     userId?: string;
+    originalAdminId?: string;
   }
 }
 
@@ -224,5 +225,35 @@ authRouter.get("/me", async (req, res) => {
   if (!user) {
     return res.json({ user: null });
   }
-  res.json({ user });
+
+  const isImpersonating = !!req.session.originalAdminId;
+  let originalAdminName: string | null = null;
+  if (isImpersonating) {
+    const adminUser = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.session.originalAdminId]);
+    originalAdminName = adminUser?.full_name || null;
+  }
+
+  res.json({ user, isImpersonating, originalAdminName });
+});
+
+authRouter.post("/impersonate/end", async (req, res) => {
+  try {
+    const originalAdminId = req.session.originalAdminId;
+    if (!originalAdminId) {
+      return res.status(400).json({ error: "Not currently impersonating" });
+    }
+
+    const admin = await queryOne("SELECT id, role FROM users WHERE id = ?", [originalAdminId]);
+    if (!admin || admin.role !== "admin") {
+      return res.status(403).json({ error: "Original session is no longer an admin" });
+    }
+
+    req.session.userId = originalAdminId;
+    req.session.originalAdminId = undefined;
+    req.session.save(() => {
+      res.json({ ok: true });
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to end impersonation" });
+  }
 });

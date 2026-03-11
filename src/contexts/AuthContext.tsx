@@ -30,10 +30,13 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isImpersonating: boolean;
+  originalAdminName: string | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  stopImpersonating: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -48,14 +51,20 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [originalAdminName, setOriginalAdminName] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       const data = await res.json();
       setUser(data.user || null);
+      setIsImpersonating(!!data.isImpersonating);
+      setOriginalAdminName(data.originalAdminName || null);
     } catch {
       setUser(null);
+      setIsImpersonating(false);
+      setOriginalAdminName(null);
     } finally {
       setLoading(false);
     }
@@ -107,10 +116,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
+    setIsImpersonating(false);
+    setOriginalAdminName(null);
+  };
+
+  const stopImpersonating = async () => {
+    const res = await fetch("/api/auth/impersonate/end", { method: "POST", credentials: "include" });
+    if (res.ok) {
+      await refreshUser();
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, isImpersonating, originalAdminName, login, register, logout, refreshUser, stopImpersonating }}>
       {children}
     </AuthContext.Provider>
   );

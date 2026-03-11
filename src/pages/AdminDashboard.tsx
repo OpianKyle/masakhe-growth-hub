@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, Routes, Route } from "react-router-dom";
+import { Link, useLocation, Routes, Route, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
-  Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star
+  Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -126,6 +126,7 @@ function AdminOverview() {
 function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const loadClients = () => {
     fetch("/api/admin/clients", { credentials: "include" })
@@ -135,6 +136,22 @@ function ClientList() {
   };
 
   useEffect(() => { loadClients(); }, []);
+
+  const impersonateUser = async (id: string, name: string) => {
+    if (!confirm(`Log in as ${name}? You'll be able to view and act as this user. Click "Return to Admin" to switch back.`)) return;
+    const res = await fetch(`/api/admin/impersonate/${id}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.ok) {
+      toast.success(`Now logged in as ${name}`);
+      navigate("/dashboard");
+      window.location.reload();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to impersonate user");
+    }
+  };
 
   const toggleRole = async (id: string, currentRole: string) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
@@ -224,6 +241,11 @@ function ClientList() {
                 <td className="p-4 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString()}</td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-1">
+                    {client.role !== "admin" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Login as user" onClick={() => impersonateUser(client.id, client.full_name)}>
+                        <LogIn className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Toggle role" onClick={() => toggleRole(client.id, client.role)}>
                       <Shield className="h-4 w-4" />
                     </Button>

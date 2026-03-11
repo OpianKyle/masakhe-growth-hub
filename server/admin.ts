@@ -113,6 +113,33 @@ adminRouter.patch("/clients/:id/role", async (req, res) => {
   }
 });
 
+adminRouter.post("/impersonate/:userId", async (req, res) => {
+  try {
+    const targetId = req.params.userId;
+    const adminId = req.session.userId!;
+
+    if (targetId === adminId) {
+      return res.status(400).json({ error: "Cannot impersonate yourself" });
+    }
+
+    const target = await queryOne("SELECT id, full_name, email, role FROM users WHERE id = ?", [targetId]);
+    if (!target) return res.status(404).json({ error: "User not found" });
+
+    if (target.role === "admin") {
+      return res.status(400).json({ error: "Cannot impersonate another admin" });
+    }
+
+    req.session.originalAdminId = adminId;
+    req.session.userId = targetId;
+    req.session.save(() => {
+      res.json({ ok: true, targetName: target.full_name });
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to impersonate user" });
+  }
+});
+
+
 adminRouter.delete("/clients/:id", async (req, res) => {
   try {
     const userId = req.params.id;
