@@ -326,7 +326,10 @@ export async function runMigrations() {
 
     await addColumnIfMissing("social_post_targets", "created_at", "VARCHAR(30)");
     await addColumnIfMissing("social_post_targets", "updated_at", "VARCHAR(30)");
-    await addColumnIfMissing("business_profiles", "logo_url", "VARCHAR(500)");
+    await addColumnIfMissing("business_profiles", "logo_url", "LONGTEXT");
+    try {
+      await conn.query("ALTER TABLE business_profiles MODIFY COLUMN logo_url LONGTEXT");
+    } catch (_) {}
     await addColumnIfMissing("business_profiles", "tax_number", "VARCHAR(50) NULL");
     await addColumnIfMissing("business_profiles", "vat_number", "VARCHAR(50) NULL");
     await addColumnIfMissing("billing_subscriptions", "adumo_subscription_id", "VARCHAR(255) NULL");
