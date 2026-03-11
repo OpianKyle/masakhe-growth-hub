@@ -140,6 +140,23 @@ adminRouter.post("/impersonate/:userId", async (req, res) => {
 });
 
 
+adminRouter.get("/websites", async (req, res) => {
+  try {
+    const websites = await queryAll(
+      `SELECT w.id, w.slug, w.status, w.created_at, w.updated_at,
+              u.id as owner_id, u.full_name, u.email,
+              bp.business_name, bp.trading_name
+       FROM websites w
+       JOIN users u ON u.id = w.owner_id
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       ORDER BY w.updated_at DESC`
+    );
+    res.json(websites);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch websites" });
+  }
+});
+
 adminRouter.delete("/clients/:id", async (req, res) => {
   try {
     const userId = req.params.id;

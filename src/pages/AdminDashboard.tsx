@@ -592,6 +592,105 @@ function AdminTenders() {
   );
 }
 
+function WebsiteList() {
+  const [sites, setSites] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/websites", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => { setSites(data); setLoading(false); })
+      .catch(() => { toast.error("Failed to load websites"); setLoading(false); });
+  }, []);
+
+  const filtered = sites.filter((s) =>
+    (s.slug || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.business_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const siteUrl = (slug: string) => `${window.location.origin}/site/${slug}`;
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold font-heading">Websites</h2>
+          <p className="text-muted-foreground">{sites.length} site{sites.length !== 1 ? "s" : ""} across all businesses</p>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search sites..." className="pl-9 w-64" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-4 font-semibold">Business</th>
+              <th className="text-left p-4 font-semibold">Owner</th>
+              <th className="text-left p-4 font-semibold">Status</th>
+              <th className="text-left p-4 font-semibold">Website URL</th>
+              <th className="text-left p-4 font-semibold">Last Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Loading...</td></tr>
+            )}
+            {!loading && filtered.map((site) => (
+              <tr key={site.id} className="border-b hover:bg-muted/30 transition-colors">
+                <td className="p-4">
+                  <div className="font-medium">{site.business_name || site.trading_name || <span className="italic text-muted-foreground">Unnamed</span>}</div>
+                  <div className="text-xs text-muted-foreground font-mono">slug: {site.slug}</div>
+                </td>
+                <td className="p-4">
+                  <div>{site.full_name}</div>
+                  <div className="text-xs text-muted-foreground">{site.email}</div>
+                </td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    site.status === "published"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${site.status === "published" ? "bg-emerald-500" : "bg-gray-400"}`} />
+                    {site.status === "published" ? "Published" : "Draft"}
+                  </span>
+                </td>
+                <td className="p-4">
+                  {site.status === "published" ? (
+                    <a
+                      href={siteUrl(site.slug)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-primary hover:underline font-mono text-xs"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                      {siteUrl(site.slug)}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground text-xs italic">Not published</span>
+                  )}
+                </td>
+                <td className="p-4 text-muted-foreground text-xs">
+                  {new Date(site.updated_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                </td>
+              </tr>
+            ))}
+            {!loading && filtered.length === 0 && (
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No websites found.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -664,6 +763,7 @@ export default function AdminDashboard() {
           <Route index element={<AdminOverview />} />
           <Route path="clients" element={<ClientList />} />
           <Route path="tenders" element={<AdminTenders />} />
+          <Route path="websites" element={<WebsiteList />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </main>
