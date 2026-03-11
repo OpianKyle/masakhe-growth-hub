@@ -104,9 +104,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-hero">
-              <span className="text-lg font-bold text-primary-foreground font-heading">M</span>
-            </div>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain" />
             <span className="text-xl font-bold font-heading text-foreground">Masakhe</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
