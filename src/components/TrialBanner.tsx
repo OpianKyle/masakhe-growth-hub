@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Clock, X, Lock, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BillingStatus {
   subscription: {
@@ -20,6 +21,7 @@ function daysRemaining(dateStr: string | null): number {
 export default function TrialBanner() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [billingData, setBillingData] = useState<BillingStatus | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -79,6 +81,8 @@ export default function TrialBanner() {
       setShowExpiredModal(true);
     }
   }, [loaded, billingData]);
+
+  if (user?.role === "admin") return null;
 
   if (!loaded) return null;
 

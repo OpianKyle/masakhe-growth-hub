@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,6 +131,7 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
 }
 
 export default function WebsiteBuilder() {
+  const { user } = useAuth();
   const [site, setSite] = useState<SiteConfig | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -140,11 +142,14 @@ export default function WebsiteBuilder() {
   const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
 
   useEffect(() => {
+    if (user?.role === "admin") {
+      setIsProPlan(true);
+    }
     Promise.all([
       fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
       fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []),
     ]).then(([billing, sites]) => {
-      if (billing.plan === "pro" && (billing.status === "ACTIVE" || billing.status === "TRIAL")) {
+      if (user?.role === "admin" || (billing.plan === "pro" && (billing.status === "ACTIVE" || billing.status === "TRIAL"))) {
         setIsProPlan(true);
       }
       const list = Array.isArray(sites) ? sites : [];
