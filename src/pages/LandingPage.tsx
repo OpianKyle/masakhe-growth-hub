@@ -124,7 +124,7 @@ export default function LandingPage() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">together</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-lg md:text-xl text-white/60 max-w-xl leading-relaxed">
-              From registration to digital presence, tax compliance to customer engagement — everything your SMME needs to thrive in the digital economy.
+              From registration to digital presence, invoicing, payroll and social media to business plans — everything your SMME needs to thrive in the digital economy.
             </motion.p>
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 pt-2">
               <Link to="/register">
