@@ -197,6 +197,15 @@ export const templateList: TemplateInfo[] = [
     preview: "Professional navy layout with services, team profiles, credentials, and quote request forms",
     premium: true,
   },
+  {
+    id: "luxury_estate",
+    name: "Luxury Real Estate",
+    description: "Premium template for high-end property agents, estate agencies, and property developers",
+    icon: "building-2",
+    color: "bg-stone-900",
+    preview: "Sophisticated dark charcoal & gold layout with carousel hero, featured listings, agent profile, and lead capture",
+    premium: true,
+  },
 ];
 
 export function buildTemplate(templateId: string, businessName?: string): SiteConfig {
@@ -2719,6 +2728,170 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               email: "advice@brokerage.co.za",
               address: "Suite 14, Sandton Corporate Park, Sandton, 2196",
               whatsapp: "+27 11 234 5678",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "luxury_estate":
+      return {
+        businessName: name,
+        slug,
+        templateId: "luxury_estate",
+        theme: { primary: "#1c1917", accent: "#c9a84c" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "carousel",
+              title: "Extraordinary Properties. Exceptional Service.",
+              subtitle: "South Africa's finest homes deserve an agent who understands their true value. Discreet, expert, and dedicated to achieving the best possible outcome for every client.",
+              badgeText: "Luxury Property Specialists · EAAB Registered",
+              ctaPrimaryText: "View Our Listings",
+              ctaSecondaryText: "Book a Private Viewing",
+              carouselSlides: [
+                {
+                  image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80",
+                  headline: "Clifton & Atlantic Seaboard",
+                  subtext: "Iconic oceanfront estates from R12M",
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80",
+                  headline: "Constantia & Southern Suburbs",
+                  subtext: "Vineyard estates and grand family homes",
+                },
+                {
+                  image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80",
+                  headline: "Sandton & Waterfall Estate",
+                  subtext: "Contemporary luxury in prime Gauteng locations",
+                },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "R2.4B+", label: "Property Sold" },
+                { value: "650+", label: "Luxury Homes Placed" },
+                { value: "18+", label: "Years of Excellence" },
+                { value: "R18M", label: "Average Sale Price" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Property Specialisations",
+              subtitle: "Premium Services",
+              variant: "default",
+              items: [
+                { title: "Residential Sales", desc: "Luxury homes, estates, and high-value apartments in Cape Town, Johannesburg, and the Garden Route's most sought-after addresses." },
+                { title: "Private Off-Market Listings", desc: "Exclusive access to discreet off-market properties — high-value homes not publicly advertised, matched to qualified buyers only." },
+                { title: "Buy-to-Let Investment", desc: "Strategic investment property acquisition with rental yield analysis, tenant placement, and portfolio growth advisory." },
+                { title: "Development Sales", desc: "Marketing and sales of new luxury residential developments, sectional title launches, and preconstruction off-plans." },
+                { title: "Property Valuations", desc: "Independent market valuations for sale, insurance, estate planning, and divorce proceedings — accurate, fast, and bank-ready." },
+                { title: "Relocation Services", desc: "A seamless relocation experience for executives and families moving to South Africa or between cities — from area tours to school placements." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "The Difference an Exceptional Agent Makes",
+              subtitle: "Our Approach",
+              variant: "numbered",
+              items: [
+                { title: "Precision Pricing Strategy", desc: "We use advanced comparable data, absorption rate analysis, and current buyer demand to price your property for maximum value — not just a quick sale." },
+                { title: "Luxury Marketing Campaigns", desc: "Professional photography, architectural video tours, lifestyle staging, and targeted digital campaigns that present your home at its finest." },
+                { title: "Qualified Buyer Network", desc: "Our private database of vetted, pre-qualified buyers means your property is shown to serious purchasers — saving you time and protecting your privacy." },
+                { title: "Seamless Transfer Coordination", desc: "From offer to keys, we coordinate with attorneys, banks, and surveyors to ensure a smooth, on-time transfer every time." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Featured Listings",
+              subtitle: "Handpicked properties currently on the market",
+              variant: "masonry",
+              images: [
+                { url: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=800", caption: "Atlantic Seaboard Villa — R24.5M" },
+                { url: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800", caption: "Constantia Wine Estate — R18.9M" },
+                { url: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800", caption: "Waterfall Eco Estate — R12.2M" },
+                { url: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&q=80&w=800", caption: "Fresnaye Contemporary — R9.8M" },
+                { url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=800", caption: "De Waterkant Penthouse — R7.5M" },
+                { url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800", caption: "Camps Bay Family Home — R22.0M" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Meet Your Agent",
+              quote: "Every property has a story. My role is to tell that story to the right buyer at the right price — with complete integrity.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80",
+              items: [
+                { title: "EAAB Registered", desc: "Fully registered with the Estate Agency Affairs Board and compliant with the Property Practitioners Act (PPA)." },
+                { title: "18 Years in Luxury Property", desc: "Specialising exclusively in the R5M+ segment — residential estates, coastal properties, and urban luxury apartments." },
+                { title: "Award-Winning Performance", desc: "Consistent top 5 performer nationally by sales volume, recognised by Seeff, Pam Golding, and Chas Everitt network awards." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "What Clients Say",
+              subtitle: "Trusted by discerning buyers and sellers across South Africa",
+              variant: "large-quote",
+              items: [
+                { name: "Catherine B.", role: "Seller — Clifton", text: "We had two previous agents fail to sell our home. Within six weeks of listing with this agency, we had a full-price offer from a cash buyer. The marketing was on another level — professional, elegant, and targeted." },
+                { name: "Jonathan & Priya S.", role: "Buyers — Constantia", text: "We relocated from London and needed someone who understood exactly what we were looking for. Within three viewings we had found our dream home. The off-market access was extraordinary." },
+                { name: "Dev Naidoo", role: "Investor — Sandton", text: "I've bought four investment properties through this agency over six years. The market knowledge is unmatched and the post-sale support keeps me coming back. These are true professionals." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Arrange a Private Consultation",
+              subtitle: "Whether you're selling, buying, or simply exploring the market — reach out for a confidential, no-obligation conversation with one of our senior agents.",
+              buttonText: "Request Consultation",
+              successMessage: "Thank you. A senior agent will be in touch within 24 hours to arrange your private consultation.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              variant: "gradient",
+              title: "Get In Touch",
+              subtitle: "Our offices are open Monday to Saturday. Private viewings available by appointment.",
+              phone: "+27 21 555 8800",
+              email: "hello@luxuryestates.co.za",
+              address: "15 Portside Tower, Buitenkant Street, Cape Town City Bowl, 8001",
+              whatsapp: "+27 83 000 0000",
               enableWhatsApp: true,
             },
           },

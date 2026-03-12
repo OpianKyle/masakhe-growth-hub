@@ -43,6 +43,7 @@ const templateIcons: Record<string, React.ElementType> = {
   consulting: Lightbulb,
   showroom: Car,
   brokerage: TrendingUp,
+  luxury_estate: Home,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {

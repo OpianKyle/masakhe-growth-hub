@@ -604,7 +604,7 @@ function StatsProfessional({ data, site }: { data: any; site: SiteConfig }) {
 
 function StatsSection({ data, site }: { data: any; site: SiteConfig }) {
   if (site.templateId === "showroom") return <StatsCinematic data={data} site={site} />;
-  if (site.templateId === "brokerage") return <StatsProfessional data={data} site={site} />;
+  if (site.templateId === "brokerage" || site.templateId === "luxury_estate") return <StatsProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "cards": return <StatsCards data={data} site={site} />;
@@ -758,7 +758,7 @@ function FeaturesProfessional({ data, site }: { data: any; site: SiteConfig }) {
 
 function FeaturesSection({ data, site }: { data: any; site: SiteConfig }) {
   if (site.templateId === "showroom") return <FeaturesCinematic data={data} site={site} />;
-  if (site.templateId === "brokerage") return <FeaturesProfessional data={data} site={site} />;
+  if (site.templateId === "brokerage" || site.templateId === "luxury_estate") return <FeaturesProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "icon-grid": return <FeaturesIconGrid data={data} site={site} />;
@@ -885,7 +885,7 @@ function AboutProfessional({ data, site }: { data: any; site: SiteConfig }) {
 
 function AboutSection({ data, site }: { data: any; site: SiteConfig }) {
   if (site.templateId === "showroom") return <AboutCinematic data={data} site={site} />;
-  if (site.templateId === "brokerage") return <AboutProfessional data={data} site={site} />;
+  if (site.templateId === "brokerage" || site.templateId === "luxury_estate") return <AboutProfessional data={data} site={site} />;
   return <AboutDefault data={data} site={site} />;
 }
 
@@ -1031,7 +1031,7 @@ function ServicesProfessional({ data, site }: { data: any; site: SiteConfig }) {
 
 function ServicesSection({ data, site }: { data: any; site: SiteConfig }) {
   if (site.templateId === "showroom") return <ServicesCinematic data={data} site={site} />;
-  if (site.templateId === "brokerage") return <ServicesProfessional data={data} site={site} />;
+  if (site.templateId === "brokerage" || site.templateId === "luxury_estate") return <ServicesProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "bordered": return <ServicesBordered data={data} site={site} />;
@@ -1332,7 +1332,7 @@ function TestimonialsProfessional({ data, site }: { data: any; site: SiteConfig 
 
 function TestimonialsSection({ data, site }: { data: any; site: SiteConfig }) {
   if (site.templateId === "showroom") return <TestimonialsCinematic data={data} site={site} />;
-  if (site.templateId === "brokerage") return <TestimonialsProfessional data={data} site={site} />;
+  if (site.templateId === "brokerage" || site.templateId === "luxury_estate") return <TestimonialsProfessional data={data} site={site} />;
   const variant = data.variant || "default";
   switch (variant) {
     case "large-quote": return <TestimonialsLargeQuote data={data} site={site} />;
@@ -1699,7 +1699,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
   };
 
   const isCinematic = site.templateId === "showroom";
-  const isProfessional = site.templateId === "brokerage";
+  const isProfessional = site.templateId === "brokerage" || site.templateId === "luxury_estate";
 
   if (submitted) {
     return (
@@ -1874,7 +1874,7 @@ export function SectionRenderer({ site }: { site: SiteConfig }) {
   const enabledSections = site.sections.filter((s) => s.enabled);
 
   const isCinematic = site.templateId === "showroom";
-  const isProfessional = site.templateId === "brokerage";
+  const isProfessional = site.templateId === "brokerage" || site.templateId === "luxury_estate";
 
   return (
     <div className={`min-h-screen font-sans ${isCinematic ? "bg-black text-white" : isProfessional ? "bg-white text-slate-900" : "bg-white text-slate-900"}`}>
