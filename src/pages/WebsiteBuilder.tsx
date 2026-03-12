@@ -16,7 +16,8 @@ import {
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
-  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X
+  MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
+  Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -44,6 +45,16 @@ const templateIcons: Record<string, React.ElementType> = {
   showroom: Car,
   brokerage: TrendingUp,
   luxury_estate: Home,
+  funeral: Flower2,
+  bakery: Cookie,
+  childcare: Baby,
+  solar: Sun,
+  printing: Printer,
+  staffing: Users,
+  petcare: PawPrint,
+  church: Church,
+  guesthouse: BedDouble,
+  fashion: Shirt,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {

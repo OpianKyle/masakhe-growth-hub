@@ -180,6 +180,86 @@ export const templateList: TemplateInfo[] = [
     preview: "Strategic layout with expertise areas, methodology, and client success stories",
   },
   {
+    id: "funeral",
+    name: "Funeral Services",
+    description: "For funeral parlours, undertakers, and memorial service providers",
+    icon: "flower-2",
+    color: "bg-stone-700",
+    preview: "Dignified, compassionate layout with services, packages, and 24/7 contact",
+  },
+  {
+    id: "bakery",
+    name: "Bakery & Confectionery",
+    description: "For bakeries, cake shops, confectioners, and pastry businesses",
+    icon: "cookie",
+    color: "bg-amber-700",
+    preview: "Warm golden layout with product showcase, menu, gallery, and order info",
+  },
+  {
+    id: "childcare",
+    name: "Childcare & Crèche",
+    description: "For crèches, nursery schools, after-care centres, and ECD practitioners",
+    icon: "baby",
+    color: "bg-yellow-500",
+    preview: "Bright, welcoming layout with programmes, staff, facilities, and enrolment info",
+  },
+  {
+    id: "solar",
+    name: "Solar & Renewable Energy",
+    description: "For solar installers, inverter suppliers, and load-shedding solution providers",
+    icon: "sun",
+    color: "bg-orange-500",
+    preview: "Modern, clean layout with solutions, savings calculator stats, and quote request",
+  },
+  {
+    id: "printing",
+    name: "Printing & Signage",
+    description: "For print shops, sign makers, branding companies, and marketing printers",
+    icon: "printer",
+    color: "bg-blue-700",
+    preview: "Vibrant layout with product categories, turnaround stats, and order contact",
+  },
+  {
+    id: "staffing",
+    name: "Staffing & Recruitment",
+    description: "For recruitment agencies, HR consultancies, and labour brokers",
+    icon: "users",
+    color: "bg-slate-700",
+    preview: "Professional layout with placement sectors, methodology, and candidate/employer contact",
+  },
+  {
+    id: "petcare",
+    name: "Pet Services & Veterinary",
+    description: "For vets, pet groomers, kennels, dog trainers, and pet supply stores",
+    icon: "paw-print",
+    color: "bg-green-700",
+    preview: "Friendly, warm layout with services, gallery, testimonials, and booking info",
+  },
+  {
+    id: "church",
+    name: "Church & Ministry",
+    description: "For churches, ministries, faith organisations, and community outreach programmes",
+    icon: "church",
+    color: "bg-purple-700",
+    preview: "Welcoming layout with service times, ministries, about the pastor, and location",
+  },
+  {
+    id: "guesthouse",
+    name: "Lodge & Guest House",
+    description: "For guest houses, B&Bs, lodges, self-catering units, and boutique hotels",
+    icon: "bed-double",
+    color: "bg-teal-700",
+    preview: "Warm, scenic layout with room types, amenities, gallery, and booking contact",
+  },
+  {
+    id: "fashion",
+    name: "Fashion & Clothing Brand",
+    description: "For fashion designers, clothing labels, boutiques, and custom apparel makers",
+    icon: "shirt",
+    color: "bg-rose-700",
+    preview: "Bold, editorial layout with collections, brand story, lookbook gallery, and shop info",
+  },
+  {
     id: "showroom",
     name: "Car Showroom",
     description: "Premium template for luxury and used car dealerships with vehicle inventory",
@@ -2892,6 +2972,1120 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               email: "hello@luxuryestates.co.za",
               address: "15 Portside Tower, Buitenkant Street, Cape Town City Bowl, 8001",
               whatsapp: "+27 83 000 0000",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "funeral":
+      return {
+        businessName: name,
+        slug,
+        templateId: "funeral",
+        theme: { primary: "#44403c", accent: "#78716c" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "minimal",
+              title: "Compassionate Care When It Matters Most",
+              subtitle: "We provide dignified, professional funeral services to support families through their most difficult moments. Available 24 hours a day, 7 days a week.",
+              badgeText: "24/7 Emergency Line Available",
+              ctaPrimaryText: "Our Services",
+              ctaSecondaryText: "Contact Us Now",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "25+", label: "Years of Service" },
+                { value: "5,000+", label: "Families Served" },
+                { value: "24/7", label: "Always Available" },
+                { value: "NFDA", label: "Registered" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Families Choose Us",
+              subtitle: "Our Commitment to You",
+              imagePosition: "right",
+              items: [
+                { title: "24/7 Immediate Response", desc: "Our team is available around the clock to assist with collections and arrangements at any time." },
+                { title: "Dignified & Respectful", desc: "We treat every person in our care with the utmost respect and dignity throughout the entire process." },
+                { title: "Transparent Pricing", desc: "No hidden costs. We provide clear, written quotations so families can plan without financial surprises." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Full Funeral Solutions",
+              variant: "bordered",
+              items: [
+                { title: "Basic Funeral Package", desc: "Essential services including transport, preparation, coffin, and graveside service", price: "R8,500" },
+                { title: "Standard Funeral Package", desc: "Complete funeral service with chapel use, hearse, flowers, and order of service booklets", price: "R15,000" },
+                { title: "Premium Funeral Package", desc: "Premium casket, full chapel service, catering coordination, and memorial video tribute", price: "R28,000" },
+                { title: "Cremation Service", desc: "Direct cremation or memorial cremation service with urn and certificate of cremation", price: "R6,500" },
+                { title: "Repatriation", desc: "Full repatriation services for burial in home provinces or neighbouring countries", price: "From R4,500" },
+                { title: "Tombstone Unveiling", desc: "Coordination of tombstone unveiling ceremonies including marquee and catering support", price: "From R3,000" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "About Our Funeral Home",
+              quote: "We carry the burden so your family can focus on healing, honouring, and celebrating a life well-lived.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Family-Owned Business", desc: "Established in 1998 and proudly family-run, we bring a personal touch to every arrangement we make." },
+                { title: "Fully Licensed & Insured", desc: "Registered with the National Funeral Directors Association (NFDA) and fully compliant with Department of Health regulations." },
+                { title: "Cultural Sensitivity", desc: "We respect and accommodate all cultural, religious, and traditional requirements with care and without judgment." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "What Families Say",
+              subtitle: "Words from those we have served",
+              variant: "large-quote",
+              items: [
+                { name: "Ntombi S.", role: "Bereaved Family", text: "During the most painful time of our lives, they handled everything with such grace and professionalism. We will always be grateful." },
+                { name: "Pastor David M.", role: "Community Leader", text: "I have referred many families to this funeral home over the years. Their compassion and attention to detail is unmatched in the region." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "We Are Here For You",
+              subtitle: "Our team is available 24 hours a day, 7 days a week. Please do not hesitate to call us at any time.",
+              phone: "+27 11 987 6543",
+              email: "care@funeralhome.co.za",
+              address: "15 Serenity Drive, Boksburg, Ekurhuleni, 1460",
+              whatsapp: "+27 11 987 6543",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "bakery":
+      return {
+        businessName: name,
+        slug,
+        templateId: "bakery",
+        theme: { primary: "#b45309", accent: "#d97706" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Baked with Love, Delivered with Joy",
+              subtitle: "Handcrafted cakes, fresh breads, and irresistible treats made fresh daily. Custom orders welcome for any occasion.",
+              badgeText: "Order Online or In-Store",
+              ctaPrimaryText: "View Our Menu",
+              ctaSecondaryText: "Order a Custom Cake",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "Daily", label: "Fresh Bakes" },
+                { value: "200+", label: "Menu Items" },
+                { value: "4.9★", label: "Customer Rating" },
+                { value: "Custom", label: "Orders Welcome" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Specialities",
+              subtitle: "Made Fresh Every Day",
+              variant: "bordered",
+              items: [
+                { title: "Custom Celebration Cakes", desc: "Birthday, wedding, and corporate cakes designed to your brief", price: "From R350" },
+                { title: "Fresh Bread & Rolls", desc: "White, brown, whole wheat, and seeded loaves baked every morning", price: "From R18" },
+                { title: "Cupcakes & Muffins", desc: "Assorted flavours available daily — perfect for events and gifting", price: "From R20 each" },
+                { title: "Croissants & Pastries", desc: "Buttery, flaky pastries and filled croissants ready from 6:30am", price: "From R25" },
+                { title: "Cookies & Biscuits", desc: "Shortbread, choc chip, and decorated iced cookies for all occasions", price: "From R15 each" },
+                { title: "Catering Platters", desc: "Mixed pastry and savoury platters for corporate breakfasts and events", price: "From R350" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              variant: "masonry",
+              title: "Our Creations",
+              subtitle: "A taste of what we bake",
+              images: [
+                { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=600", caption: "Custom Birthday Cake" },
+                { url: "https://images.unsplash.com/photo-1464195244916-405fa0a82545?auto=format&fit=crop&q=80&w=600", caption: "Artisan Breads" },
+                { url: "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&q=80&w=600", caption: "Cupcakes & Treats" },
+                { url: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&q=80&w=600", caption: "Wedding Cake" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Happy Customers",
+              subtitle: "What our regulars say",
+              items: [
+                { name: "Priya N.", role: "Regular Customer", text: "The wedding cake was absolutely stunning and tasted incredible. Every guest was asking where it came from!" },
+                { name: "Marcus T.", role: "Office Manager", text: "We order pastry platters for our Monday meetings every week. Consistent quality and always delivered on time." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Place Your Order",
+              subtitle: "Custom orders need 48 hours notice. WhatsApp us your requirements and we'll get back to you with a quote.",
+              phone: "+27 82 345 6789",
+              email: "orders@bakery.co.za",
+              address: "23 Biscuit Lane, Bryanston, Sandton, 2191",
+              whatsapp: "+27 82 345 6789",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "childcare":
+      return {
+        businessName: name,
+        slug,
+        templateId: "childcare",
+        theme: { primary: "#ca8a04", accent: "#16a34a" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "A Safe, Nurturing Place to Grow",
+              subtitle: "We provide quality early childhood education and after-care in a safe, stimulating environment. Registered with the Department of Social Development.",
+              badgeText: "DSD Registered ECD Centre",
+              ctaPrimaryText: "Our Programmes",
+              ctaSecondaryText: "Enrol Your Child",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "Ages 0–6", label: "Age Groups" },
+                { value: "1:6", label: "Carer Ratio" },
+                { value: "15+", label: "Years Operating" },
+                { value: "SACE", label: "Qualified Staff" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Parents Choose Us",
+              subtitle: "Our Commitment",
+              imagePosition: "right",
+              items: [
+                { title: "Safe & Secure Environment", desc: "Fully enclosed premises with CCTV, controlled access, and emergency protocols." },
+                { title: "Qualified Educators", desc: "All carers hold ECD qualifications and are background-checked and First Aid certified." },
+                { title: "Nutritious Meals Included", desc: "Healthy breakfast, lunch, and snacks prepared fresh daily by our in-house cook." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Programmes",
+              subtitle: "Learning Through Play",
+              variant: "bordered",
+              items: [
+                { title: "Baby & Toddler Care (0–2 yrs)", desc: "Gentle, nurturing care with age-appropriate stimulation and development activities", price: "R3,200/month" },
+                { title: "Pre-School Programme (3–5 yrs)", desc: "Structured early learning curriculum including phonics, numeracy, and creative arts", price: "R2,800/month" },
+                { title: "Grade R Preparation (5–6 yrs)", desc: "School-readiness programme aligned to the CAPS curriculum", price: "R2,500/month" },
+                { title: "After-Care (6–13 yrs)", desc: "Safe supervised after-school care with homework help and afternoon activities", price: "R1,400/month" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Our Centre",
+              subtitle: "A bright, welcoming space for learning",
+              images: [
+                { url: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&q=80&w=600", caption: "Learning Area" },
+                { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=600", caption: "Outdoor Play" },
+                { url: "https://images.unsplash.com/photo-1567306301408-9b74779a11af?auto=format&fit=crop&q=80&w=600", caption: "Art & Craft Activities" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Parent Feedback",
+              subtitle: "What our families say",
+              variant: "large-quote",
+              items: [
+                { name: "Lindiwe K.", role: "Parent of 2", text: "My children have been here for four years. The teachers are patient, loving, and professional. I wouldn't send them anywhere else." },
+                { name: "Riaan & Elsa B.", role: "Parents", text: "Our daughter went from shy and anxious to confident and excited about school. The team here is exceptional." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Book a Visit",
+              subtitle: "Come and see our centre for yourself. We welcome parents for a guided tour any weekday morning.",
+              phone: "+27 11 678 9012",
+              email: "enrol@creche.co.za",
+              address: "44 Sunflower Road, Fourways, 2055",
+              whatsapp: "+27 11 678 9012",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "solar":
+      return {
+        businessName: name,
+        slug,
+        templateId: "solar",
+        theme: { primary: "#ea580c", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Take Back Control of Your Power",
+              subtitle: "Solar and backup power solutions that eliminate load-shedding and slash your Eskom bill. Free site assessments, turnkey installation, and guaranteed performance.",
+              badgeText: "SAPVIA Accredited Installer",
+              ctaPrimaryText: "Get a Free Quote",
+              ctaSecondaryText: "View Solutions",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "dark",
+              items: [
+                { value: "800+", label: "Installations Done" },
+                { value: "Up to 90%", label: "Bill Reduction" },
+                { value: "10 Year", label: "Panel Warranty" },
+                { value: "24h", label: "Quote Turnaround" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Solutions",
+              subtitle: "Power for Every Need",
+              variant: "bordered",
+              items: [
+                { title: "Residential Solar + Battery", desc: "Full home solar system with lithium battery backup to keep your lights on during load-shedding", price: "From R65,000" },
+                { title: "Commercial Solar Systems", desc: "Large-scale rooftop solar for offices, warehouses, and retail — reduce overheads significantly", price: "Get a Quote" },
+                { title: "Inverter & Battery Only", desc: "Backup power without solar — ideal for load-shedding protection without the full solar setup", price: "From R22,000" },
+                { title: "Solar Water Heating", desc: "Replace your electric geyser with an efficient solar water heater and cut your geyser costs by 80%", price: "From R9,500" },
+                { title: "Maintenance & Monitoring", desc: "Annual panel cleaning, inverter health checks, and remote system monitoring for peace of mind", price: "From R1,200/yr" },
+                { title: "Finance & Tax Incentives", desc: "We help you access Section 12B tax incentives and solar financing plans to reduce upfront costs", price: "Ask Us" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Choose Us",
+              subtitle: "The Smart Choice",
+              imagePosition: "left",
+              items: [
+                { title: "SAPVIA Accredited", desc: "Certified installers compliant with NRS 097 standards — your installation is safe and warrantable." },
+                { title: "Top-Tier Equipment", desc: "We only install Tier-1 panels, Sunsynk/Victron inverters, and lithium batteries — no cheap substitutes." },
+                { title: "Full Turnkey Service", desc: "From design to COC certificate, we handle the entire installation so you don't have to worry." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Our Installations",
+              subtitle: "Recent projects across South Africa",
+              variant: "masonry",
+              images: [
+                { url: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&q=80&w=600", caption: "Residential Rooftop System" },
+                { url: "https://images.unsplash.com/photo-1555636222-cae831e670b3?auto=format&fit=crop&q=80&w=600", caption: "Commercial Installation" },
+                { url: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&q=80&w=600", caption: "Solar Farm Project" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Customer Stories",
+              subtitle: "Real results from real customers",
+              items: [
+                { name: "Gareth F.", role: "Homeowner, Pretoria", text: "Our Eskom bill went from R4,200 a month to under R400. The installation team was professional and finished in one day." },
+                { name: "Samantha V.", role: "Business Owner, Cape Town", text: "Load-shedding was costing us thousands in lost productivity. Since going solar we haven't been affected once. Best investment we made." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Get Your Free Quote",
+              subtitle: "Send us your latest Eskom bill and we'll show you exactly how much you can save. No obligation.",
+              phone: "+27 87 654 3210",
+              email: "quotes@solar.co.za",
+              address: "Unit 7, Renewable Park, Centurion, 0157",
+              whatsapp: "+27 87 654 3210",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "printing":
+      return {
+        businessName: name,
+        slug,
+        templateId: "printing",
+        theme: { primary: "#1d4ed8", accent: "#7c3aed" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Print That Makes Your Brand Stand Out",
+              subtitle: "From business cards to billboards, we deliver high-quality printing and signage for businesses of all sizes. Fast turnaround, competitive prices.",
+              badgeText: "Same-Day Printing Available",
+              ctaPrimaryText: "Get a Quote",
+              ctaSecondaryText: "View Products",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "Same Day", label: "Rush Orders" },
+                { value: "500+", label: "Happy Clients" },
+                { value: "100+", label: "Products" },
+                { value: "10+", label: "Years Printing" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Products",
+              subtitle: "Everything You Need to Brand Your Business",
+              variant: "bordered",
+              items: [
+                { title: "Business Cards", desc: "Full colour, matte or gloss laminate, standard or premium stock — minimum 100 units", price: "From R250" },
+                { title: "Banners & Pull-Up Stands", desc: "PVC banners, X-banners, and retractable pull-up stands for exhibitions and events", price: "From R350" },
+                { title: "Flyers & Leaflets", desc: "A4, A5, or DL flyers — single or double-sided, digitally or offset printed", price: "From R180" },
+                { title: "Branded Clothing", desc: "T-shirts, golfers, and workwear with embroidery or screen printing", price: "From R120" },
+                { title: "Vehicle Branding", desc: "Cut vinyl, full or partial vehicle wraps for cars, bakkies, and trucks", price: "From R1,200" },
+                { title: "Outdoor Signage", desc: "Aluminium composite, LED-lit, and pylon signs for shops and offices", price: "Get a Quote" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Print With Us",
+              subtitle: "Our Promise",
+              imagePosition: "right",
+              items: [
+                { title: "Fast Turnaround", desc: "Same-day printing for urgent orders. Standard orders ready within 2–3 business days." },
+                { title: "Free Design Service", desc: "Our in-house designers will create or refine your artwork at no extra cost for orders over R500." },
+                { title: "Free Delivery", desc: "Free delivery within 15km of our shop. Nationwide courier available for larger orders." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Recent Work",
+              subtitle: "Printed, branded, and delivered",
+              variant: "masonry",
+              images: [
+                { url: "https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&q=80&w=600", caption: "Branded Clothing" },
+                { url: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&q=80&w=600", caption: "Outdoor Signage" },
+                { url: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&q=80&w=600", caption: "Business Collateral" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Client Reviews",
+              subtitle: "What our customers say",
+              items: [
+                { name: "Mpho L.", role: "Small Business Owner", text: "Ordered 500 flyers on a Wednesday and they were delivered the same afternoon. Quality was excellent and the price was unbeatable." },
+                { name: "Carla J.", role: "Events Coordinator", text: "We trust them with all our event branding. Pull-up stands, t-shirts, banners — everything is always spot on." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Get a Quote Today",
+              subtitle: "Send us your artwork or brief and we'll give you a competitive quote within the hour.",
+              phone: "+27 11 456 7890",
+              email: "quotes@printshop.co.za",
+              address: "14 Printers Row, Midrand, 1685",
+              whatsapp: "+27 11 456 7890",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "staffing":
+      return {
+        businessName: name,
+        slug,
+        templateId: "staffing",
+        theme: { primary: "#334155", accent: "#0ea5e9" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "The Right People, in the Right Roles",
+              subtitle: "We connect South African businesses with skilled, vetted candidates across all industries and skill levels. Permanent, contract, and temporary placements.",
+              badgeText: "APSO Registered Agency",
+              ctaPrimaryText: "Find Staff",
+              ctaSecondaryText: "Submit Your CV",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "2,500+", label: "Placements Made" },
+                { value: "15+", label: "Years Operating" },
+                { value: "48hrs", label: "Average Fill Time" },
+                { value: "92%", label: "Retention Rate" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Our Approach",
+              subtitle: "Why Clients Trust Us",
+              imagePosition: "right",
+              items: [
+                { title: "Rigorous Screening", desc: "Every candidate is background-checked, reference-verified, and skills-assessed before we present them to you." },
+                { title: "Industry Expertise", desc: "Our consultants specialise in specific sectors — we understand your industry's unique requirements." },
+                { title: "30-Day Replacement Guarantee", desc: "If a placement doesn't work out in the first 30 days, we replace them at no additional cost." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Staffing Solutions",
+              variant: "bordered",
+              items: [
+                { title: "Permanent Placements", desc: "Sourcing top talent for permanent positions across all levels and industries" },
+                { title: "Temporary & Contract Staffing", desc: "Flexible workforce solutions for seasonal peaks, project work, and maternity cover" },
+                { title: "Executive Search", desc: "Headhunting senior management and C-suite candidates with deep industry networks" },
+                { title: "Bulk Recruitment", desc: "High-volume hiring projects for call centres, warehouses, and retail operations" },
+                { title: "Skills Assessments", desc: "Psychometric testing, competency assessments, and technical skills verification" },
+                { title: "HR Consulting", desc: "Onboarding processes, employment contracts, disciplinary procedures, and LRA compliance" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "About Our Agency",
+              quote: "Great businesses are built by great people. Our job is to help you find them.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80",
+              items: [
+                { title: "APSO Members", desc: "Registered with the Association of Personnel Service Organisations — held to the highest professional and ethical standards." },
+                { title: "BEE Level 2 Contributor", desc: "Proudly South African and committed to transformation through targeted recruitment and placement practices." },
+                { title: "National Coverage", desc: "With offices in Johannesburg, Cape Town, and Durban, we place candidates across all nine provinces." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Client Feedback",
+              subtitle: "What our clients and candidates say",
+              items: [
+                { name: "Hannes V.", role: "Operations Director, Manufacturing", text: "We filled 12 engineering positions within three weeks. The quality of candidates was exceptional and the consultants really understood our technical requirements." },
+                { name: "Akhona Z.", role: "Placed Candidate", text: "They found me a permanent position that matched my skills and career goals exactly. The whole process was professional and they supported me every step of the way." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Let's Talk Talent",
+              subtitle: "Whether you need to hire or find a job, our team is ready to help. Get in touch for a no-obligation consultation.",
+              phone: "+27 11 889 0123",
+              email: "info@staffingagency.co.za",
+              address: "4th Floor, 14 Fredman Drive, Sandton, 2196",
+              whatsapp: "+27 11 889 0123",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "petcare":
+      return {
+        businessName: name,
+        slug,
+        templateId: "petcare",
+        theme: { primary: "#15803d", accent: "#0891b2" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Professional Care for Your Beloved Pets",
+              subtitle: "Veterinary services, grooming, boarding, and training — everything your pet needs under one roof. Treating every animal like our own.",
+              badgeText: "SAVC Registered Practice",
+              ctaPrimaryText: "Our Services",
+              ctaSecondaryText: "Book an Appointment",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "5,000+", label: "Happy Pets" },
+                { value: "3", label: "Qualified Vets" },
+                { value: "4.9★", label: "Pet Owner Rating" },
+                { value: "7 Days", label: "Open Every Week" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Complete Pet Care",
+              variant: "bordered",
+              items: [
+                { title: "Veterinary Consultations", desc: "Health check-ups, vaccinations, illness diagnosis, and treatment", price: "From R350" },
+                { title: "Grooming & Bathing", desc: "Full groom, bath, blow-dry, nail clipping, ear cleaning, and de-shedding", price: "From R250" },
+                { title: "Boarding & Overnight Care", desc: "Safe, comfortable overnight and extended boarding for dogs and cats", price: "From R200/night" },
+                { title: "Puppy & Dog Training", desc: "Obedience classes, problem behaviour correction, and puppy socialisation", price: "From R800" },
+                { title: "Pet Dentistry", desc: "Dental scaling, extractions, and oral health assessments under anaesthetic", price: "From R1,200" },
+                { title: "Pet Shop & Supplies", desc: "Premium foods, supplements, toys, leads, beds, and accessories in-store", price: "Various" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Pet Owners Trust Us",
+              subtitle: "Our Difference",
+              imagePosition: "right",
+              items: [
+                { title: "Qualified & Caring Team", desc: "All our vets are SAVC-registered and our groomers are certified with years of hands-on experience." },
+                { title: "Modern Facilities", desc: "Digital X-ray, in-house blood lab, separate cat and dog wards, and a stress-free environment." },
+                { title: "Emergency Services", desc: "After-hours emergency line available 24/7 for urgent situations — your pet is never left without help." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Meet Our Patients",
+              subtitle: "Happy, healthy animals in our care",
+              images: [
+                { url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&q=80&w=600", caption: "Dog Grooming" },
+                { url: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=600", caption: "Happy Dogs" },
+                { url: "https://images.unsplash.com/photo-1559715745-e1b33a271c8f?auto=format&fit=crop&q=80&w=600", caption: "Cat Care" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Pet Owner Reviews",
+              subtitle: "What our clients say about us",
+              variant: "large-quote",
+              items: [
+                { name: "Claire M.", role: "Dog Owner", text: "Dr Nkosi is absolutely wonderful with my anxious rescue dog. She comes out of her shell every time we visit. Truly a special team." },
+                { name: "Pieter V.", role: "Cat Owner", text: "My cat had emergency surgery and they were incredible under pressure. Transparent about costs and the aftercare was superb." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Book an Appointment",
+              subtitle: "Walk-ins welcome but booking ensures shorter waiting times. Emergency line available 24/7.",
+              phone: "+27 11 567 8901",
+              email: "hello@petcare.co.za",
+              address: "22 Pets Corner, Roodepoort, 1724",
+              whatsapp: "+27 11 567 8901",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "church":
+      return {
+        businessName: name,
+        slug,
+        templateId: "church",
+        theme: { primary: "#7c3aed", accent: "#a855f7" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "Welcome to Our Family",
+              subtitle: "A vibrant, welcoming community of faith where everyone belongs. Join us for Sunday worship, midweek services, and life-changing community programmes.",
+              badgeText: "All Are Welcome Here",
+              ctaPrimaryText: "Service Times",
+              ctaSecondaryText: "Find Us",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "1,200+", label: "Members" },
+                { value: "35+", label: "Years Established" },
+                { value: "Sunday", label: "08:00 & 10:00" },
+                { value: "15+", label: "Ministries" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Ministries",
+              subtitle: "A Place for Everyone",
+              items: [
+                { title: "Sunday Worship", desc: "Inspiring praise, worship, and teaching every Sunday at 08:00 and 10:00am" },
+                { title: "Children's Church", desc: "Age-appropriate teaching and fun for children aged 3–12 during Sunday services" },
+                { title: "Youth Ministry (Teens)", desc: "Friday night youth meetings, camps, and mentorship programmes for ages 13–25" },
+                { title: "Men's & Women's Ministry", desc: "Monthly gatherings, prayer meetings, and community outreach for men and women" },
+                { title: "Small Groups / Cell Groups", desc: "Midweek home-based groups for deeper community, prayer, and Bible study" },
+                { title: "Community Outreach", desc: "Feeding schemes, skills development, and township ministry reaching thousands monthly" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Meet Our Pastor",
+              quote: "Our vision is to build a church that transforms individuals, families, and communities with the love of God.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Pastor & Congregation", desc: "Serving our community faithfully since 1988 with a heart for the broken, the searching, and the growing." },
+                { title: "Vision Statement", desc: "To be a church that brings hope, healing, and purpose to every person who walks through our doors." },
+                { title: "Partnerships", desc: "Affiliated with the Apostolic Faith Mission (AFM) and partnered with international missions in six countries." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Community Life",
+              subtitle: "Moments from our congregation",
+              images: [
+                { url: "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=600", caption: "Sunday Worship" },
+                { url: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600", caption: "Community Outreach" },
+                { url: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=600", caption: "Youth Camp" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Come and Visit",
+              subtitle: "We'd love to meet you. Join us this Sunday or reach out with any questions — our doors are always open.",
+              phone: "+27 11 234 9876",
+              email: "info@church.co.za",
+              address: "Corner of Hope & Grace Street, Kempton Park, 1619",
+              whatsapp: "+27 11 234 9876",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "guesthouse":
+      return {
+        businessName: name,
+        slug,
+        templateId: "guesthouse",
+        theme: { primary: "#0f766e", accent: "#ca8a04" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "cinematic",
+              title: "Your Home Away from Home",
+              subtitle: "Beautifully appointed rooms, warm hospitality, and a tranquil setting make our guest house the perfect base for business or leisure travel.",
+              badgeText: "TripAdvisor Certificate of Excellence",
+              ctaPrimaryText: "View Rooms",
+              ctaSecondaryText: "Book Now",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "4.8★", label: "Guest Rating" },
+                { value: "12", label: "Luxury Rooms" },
+                { value: "Free", label: "WiFi & Parking" },
+                { value: "Daily", label: "Breakfast Served" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Accommodation Options",
+              subtitle: "Rooms & Rates",
+              variant: "bordered",
+              items: [
+                { title: "Standard Room", desc: "Comfortable queen room with en-suite bathroom, aircon, DSTV, and WiFi", price: "R850/night" },
+                { title: "Deluxe Room", desc: "Spacious deluxe room with king bed, private patio, and garden views", price: "R1,150/night" },
+                { title: "Family Suite", desc: "Two-bedroom suite with kitchenette, lounge area, and private entrance", price: "R1,800/night" },
+                { title: "Self-Catering Cottage", desc: "Fully equipped standalone cottage — ideal for longer stays or families", price: "R1,400/night" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Stay With Us",
+              subtitle: "What We Offer",
+              imagePosition: "right",
+              items: [
+                { title: "Full Breakfast Included", desc: "Start your day right with a hearty home-cooked breakfast included with every room from 07:00–09:30." },
+                { title: "Pool & Garden", desc: "Relax by our sparkling outdoor pool surrounded by manicured gardens and a peaceful outdoor lounge." },
+                { title: "Secure & Central", desc: "24-hour security, secure parking, and a central location close to major attractions and business hubs." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              variant: "masonry",
+              title: "Our Property",
+              subtitle: "Where relaxation meets comfort",
+              images: [
+                { url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=600", caption: "Pool & Garden" },
+                { url: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&q=80&w=600", caption: "Deluxe Room" },
+                { url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&q=80&w=600", caption: "En-Suite Bathroom" },
+                { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=600", caption: "Breakfast Dining" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Guest Reviews",
+              subtitle: "What our guests say",
+              variant: "large-quote",
+              items: [
+                { name: "Sarah & Tom W.", role: "Holiday Guests", text: "Absolutely stunning property. The hosts were incredibly warm and the breakfast was the best we had on our entire road trip. Will definitely be back!" },
+                { name: "Mr. Dlamini", role: "Business Traveller", text: "I stay here every time I'm in town for work. The WiFi is excellent, rooms are spotless, and the check-in process is always effortless." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Make a Reservation",
+              subtitle: "Contact us directly to check availability and book your stay. We respond to all enquiries within 2 hours.",
+              phone: "+27 44 874 5678",
+              email: "bookings@guesthouse.co.za",
+              address: "16 Garden Route Drive, George, Western Cape, 6529",
+              whatsapp: "+27 44 874 5678",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "fashion":
+      return {
+        businessName: name,
+        slug,
+        templateId: "fashion",
+        theme: { primary: "#be123c", accent: "#1c1917" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Wear Your Story",
+              subtitle: "Bold, authentic South African fashion designed for the confident and the creative. Locally made, globally inspired.",
+              badgeText: "100% Proudly South African",
+              ctaPrimaryText: "Shop the Collection",
+              ctaSecondaryText: "Our Story",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "Locally Made", label: "In South Africa" },
+                { value: "5,000+", label: "Happy Customers" },
+                { value: "Ethical", label: "Production" },
+                { value: "SA+Global", label: "Shipping" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Collections",
+              subtitle: "What We Design",
+              variant: "bordered",
+              items: [
+                { title: "Ready-to-Wear", desc: "Seasonal collections of everyday and occasion wear for men and women", price: "From R350" },
+                { title: "Custom Formal Wear", desc: "Tailored suits, dresses, and traditional formal pieces made to your measurements", price: "From R1,800" },
+                { title: "African Print & Heritage", desc: "Vibrant Ankara and traditional-print garments celebrating South African heritage", price: "From R450" },
+                { title: "Corporate Branded Wear", desc: "Custom uniform and branded clothing orders for businesses and events", price: "Get a Quote" },
+                { title: "Accessories", desc: "Bags, belts, jewellery, and headpieces to complete your look", price: "From R150" },
+                { title: "Custom Bridal & Events", desc: "Bespoke bridal gowns, bridesmaids, and full wedding party coordination", price: "From R5,000" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Our Brand Story",
+              quote: "Fashion is how you present yourself to the world. We make sure your story is worth telling.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Founded in 2016", desc: "Born out of a desire to make high-quality, proudly South African fashion accessible and wearable." },
+                { title: "Ethical Manufacturing", desc: "Every piece is designed and sewn in our Johannesburg studio by skilled local machinists paid fair wages." },
+                { title: "Stocked in 12 Boutiques", desc: "Available in select boutiques across Gauteng, Cape Town, and Durban — and online nationwide." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              variant: "masonry",
+              title: "Lookbook",
+              subtitle: "The latest collection",
+              images: [
+                { url: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=80&w=600", caption: "Summer Collection" },
+                { url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=600", caption: "Heritage Edit" },
+                { url: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=600", caption: "Formal Range" },
+                { url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=600", caption: "Accessories" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Style Reviews",
+              subtitle: "What our customers say",
+              variant: "large-quote",
+              items: [
+                { name: "Ayanda M.", role: "Loyal Customer", text: "I wore a custom dress to my sister's wedding and every person at the event was asking who designed it. I felt like a queen!" },
+                { name: "Bongani T.", role: "Corporate Client", text: "We ordered branded staff uniforms for 35 people and the quality, fit, and turnaround was outstanding. Our team looks incredibly professional." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Get in Touch",
+              subtitle: "Custom orders, wholesale enquiries, and styling consultations — reach out and let's create something beautiful.",
+              phone: "+27 76 789 0123",
+              email: "hello@fashionbrand.co.za",
+              address: "Studio 8, 44 Maboneng Precinct, Johannesburg, 2094",
+              whatsapp: "+27 76 789 0123",
               enableWhatsApp: true,
             },
           },
