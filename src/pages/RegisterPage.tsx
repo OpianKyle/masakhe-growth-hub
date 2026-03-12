@@ -114,7 +114,8 @@ export default function RegisterPage() {
         className="hidden lg:flex lg:w-[38%] xl:w-[42%] relative flex-col justify-between p-10 overflow-hidden"
         style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/92 via-slate-900/80 to-blue-950/85" />
+        <div className="absolute inset-0 bg-slate-900/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-900/88 to-blue-950/92" />
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3">

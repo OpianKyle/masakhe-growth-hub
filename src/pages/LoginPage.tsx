@@ -55,7 +55,8 @@ export default function LoginPage() {
         className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden"
         style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-blue-950/80" />
+        <div className="absolute inset-0 bg-slate-900/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-900/88 to-blue-950/92" />
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3">
