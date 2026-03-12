@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, ArrowLeft, Building2, User, FileText, MapPin, Check,
-  Lock, Loader2
+  Lock, Loader2, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+const BG_IMAGE = "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1400";
+
 const steps = [
-  { title: "Account", icon: Lock },
-  { title: "Business Status", icon: Building2 },
-  { title: "Identity", icon: User },
-  { title: "Business Details", icon: FileText },
-  { title: "Contact & Location", icon: MapPin },
-  { title: "Confirmation", icon: Check },
+  { title: "Account", icon: Lock, desc: "Create your login" },
+  { title: "Business Status", icon: Building2, desc: "Tell us about your business" },
+  { title: "Identity", icon: User, desc: "Verify your identity" },
+  { title: "Business Details", icon: FileText, desc: "Business information" },
+  { title: "Contact & Location", icon: MapPin, desc: "How to reach you" },
+  { title: "Confirmation", icon: Check, desc: "Review & submit" },
 ];
 
 export default function RegisterPage() {
@@ -104,245 +106,381 @@ export default function RegisterPage() {
   };
 
   const LAST = steps.length - 1;
+  const progress = ((currentStep) / (steps.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-hero">
-              <span className="text-lg font-bold text-primary-foreground font-heading">M</span>
+    <div className="min-h-screen flex">
+      <div
+        className="hidden lg:flex lg:w-[38%] xl:w-[42%] relative flex-col justify-between p-10 overflow-hidden"
+        style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/92 via-slate-900/80 to-blue-950/85" />
+
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+              <span className="text-lg font-bold text-white font-heading">M</span>
             </div>
-            <span className="text-xl font-bold font-heading text-foreground">Masakhe</span>
+            <span className="text-2xl font-bold font-heading text-white">Masakhe</span>
           </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">&larr; Back to Home</Link>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="flex items-center justify-between mb-12 overflow-x-auto">
-          {steps.map((step, i) => (
-            <div key={step.title} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${i <= currentStep ? "gradient-hero border-transparent" : "border-border bg-muted"}`}>
-                  <step.icon className={`h-5 w-5 ${i <= currentStep ? "text-primary-foreground" : "text-muted-foreground"}`} />
+        <div className="relative z-10 space-y-8">
+          <div>
+            <p className="text-blue-300 text-xs font-semibold uppercase tracking-widest mb-3">Get started today</p>
+            <h2 className="text-3xl font-bold text-white leading-tight mb-3">
+              Everything your<br />business needs
+            </h2>
+            <p className="text-white/55 text-base leading-relaxed">
+              Join thousands of South African SMMEs using Masakhe to grow, manage, and fund their businesses.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              "14-day free trial — no credit card required",
+              "Business funding toolkit worth R50,000+",
+              "Professional website builder included",
+              "Full payroll & HR management",
+              "Dedicated South African support team",
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-3">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/25 flex-shrink-0">
+                  <Check className="h-3 w-3 text-blue-300" />
                 </div>
-                <span className={`text-xs mt-2 hidden md:block ${i <= currentStep ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                  {step.title}
-                </span>
+                <p className="text-white/70 text-sm">{feature}</p>
               </div>
-              {i < steps.length - 1 && (
-                <div className={`h-0.5 w-6 md:w-10 mx-1 ${i < currentStep ? "bg-primary" : "bg-border"}`} />
-              )}
+            ))}
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+            <p className="text-white/80 text-sm italic leading-relaxed mb-3">
+              "Masakhe helped us secure R800,000 in government funding and launch our online store in one week. It's transformed our business."
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">TN</div>
+              <div>
+                <p className="text-white text-xs font-semibold">Thandi Nkosi</p>
+                <p className="text-white/40 text-xs">Owner, TN Fashion & Design, Soweto</p>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="rounded-xl border border-border bg-card p-8 shadow-card"
-          >
-            {currentStep === 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Create Your Account</h2>
-                  <p className="text-muted-foreground mt-2">Start with your login credentials.</p>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Full Name *</Label>
-                    <Input placeholder="Your full name" className="mt-1.5" value={formData.fullName} onChange={(e) => update("fullName", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Email Address *</Label>
-                    <Input type="email" placeholder="you@business.co.za" className="mt-1.5" value={formData.email} onChange={(e) => update("email", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Password *</Label>
-                    <Input type="password" placeholder="Min 6 characters" className="mt-1.5" value={formData.password} onChange={(e) => update("password", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Confirm Password *</Label>
-                    <Input type="password" placeholder="Repeat your password" className="mt-1.5" value={formData.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
-                </p>
-              </div>
-            )}
+        <div className="relative z-10">
+          <p className="text-white/25 text-xs">© {new Date().getFullYear()} Masakhe. All rights reserved.</p>
+        </div>
+      </div>
 
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Business Status</h2>
-                  <p className="text-muted-foreground mt-2">How would you describe your business?</p>
+      <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100">
+          <div className="lg:hidden">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                <span className="text-sm font-bold text-white font-heading">M</span>
+              </div>
+              <span className="text-lg font-bold font-heading text-slate-900">Masakhe</span>
+            </Link>
+          </div>
+          <div className="hidden lg:flex items-center gap-2 text-sm text-slate-500">
+            <span>Step {currentStep + 1} of {steps.length}</span>
+            <span className="mx-1 text-slate-300">·</span>
+            <span className="font-medium text-slate-700">{steps[currentStep].title}</span>
+          </div>
+          <Link to="/login" className="text-sm text-slate-500 hover:text-slate-900 transition-colors font-medium flex items-center gap-1">
+            Already have an account? <span className="text-blue-600">Sign in</span>
+          </Link>
+        </div>
+
+        <div className="w-full h-1 bg-slate-100">
+          <div
+            className="h-full bg-blue-600 transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex-1 flex items-start justify-center px-8 py-10">
+          <div className="w-full max-w-xl">
+            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1">
+              {steps.map((step, i) => (
+                <div key={step.title} className="flex items-center gap-2 flex-shrink-0">
+                  <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    i === currentStep
+                      ? "bg-blue-600 text-white"
+                      : i < currentStep
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-slate-100 text-slate-400"
+                  }`}>
+                    {i < currentStep ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <step.icon className="h-3 w-3" />
+                    )}
+                    <span className="hidden sm:inline">{step.title}</span>
+                    <span className="sm:hidden">{i + 1}</span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />
+                  )}
                 </div>
-                <RadioGroup value={formData.businessStatus} onValueChange={(v) => update("businessStatus", v)} className="space-y-3">
-                  {[
-                    { value: "registered", label: "I have my business registration number", desc: "Registered with CIPC" },
-                    { value: "registering", label: "I'm still registering my business", desc: "In the process of CIPC registration" },
-                    { value: "informal", label: "I'm an informal trader / spaza shop", desc: "Operating without formal registration" },
-                  ].map((option) => (
-                    <label key={option.value} className={`flex items-start gap-4 rounded-lg border p-4 cursor-pointer transition-all ${formData.businessStatus === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                      <RadioGroupItem value={option.value} className="mt-1" />
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+              >
+                {currentStep === 0 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Create your account</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">Start your 14-day free trial. No credit card required.</p>
+                    </div>
+                    <div className="space-y-4">
                       <div>
-                        <p className="font-medium text-foreground">{option.label}</p>
-                        <p className="text-sm text-muted-foreground">{option.desc}</p>
+                        <Label className="text-sm font-medium text-slate-700">Full Name *</Label>
+                        <Input placeholder="Your full name" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.fullName} onChange={(e) => update("fullName", e.target.value)} />
                       </div>
-                    </label>
-                  ))}
-                </RadioGroup>
-              </div>
-            )}
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">Email Address *</Label>
+                        <Input type="email" placeholder="you@business.co.za" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.email} onChange={(e) => update("email", e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Password *</Label>
+                          <Input type="password" placeholder="Min 6 characters" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.password} onChange={(e) => update("password", e.target.value)} />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Confirm Password *</Label>
+                          <Input type="password" placeholder="Repeat password" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      By continuing you agree to our{" "}
+                      <Link to="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>{" "}
+                      and{" "}
+                      <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+                    </p>
+                  </div>
+                )}
 
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Identity Verification</h2>
-                  <p className="text-muted-foreground mt-2">Verify your identity with your South African ID number.</p>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label>South African ID Number</Label>
-                    <Input placeholder="e.g. 8501015800087" className="mt-1.5" value={formData.saId} onChange={(e) => update("saId", e.target.value)} />
-                  </div>
-                  {formData.businessStatus === "registered" && (
+                {currentStep === 1 && (
+                  <div className="space-y-6">
                     <div>
-                      <Label>CIPC Registration Number</Label>
-                      <Input placeholder="e.g. 2024/123456/07" className="mt-1.5" value={formData.cipcNumber} onChange={(e) => update("cipcNumber", e.target.value)} />
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Business Status</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">How would you describe your current business?</p>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
+                    <RadioGroup value={formData.businessStatus} onValueChange={(v) => update("businessStatus", v)} className="space-y-3">
+                      {[
+                        { value: "registered", label: "Formally registered business", desc: "I have a CIPC registration number" },
+                        { value: "registering", label: "Currently registering", desc: "In the process of CIPC registration" },
+                        { value: "informal", label: "Informal trader / spaza shop", desc: "Operating without formal registration" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                            formData.businessStatus === option.value
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-slate-200 hover:border-slate-300 bg-white"
+                          }`}
+                        >
+                          <RadioGroupItem value={option.value} className="mt-0.5" />
+                          <div>
+                            <p className="font-semibold text-slate-900 text-sm">{option.label}</p>
+                            <p className="text-sm text-slate-500 mt-0.5">{option.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
 
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Business Details</h2>
-                  <p className="text-muted-foreground mt-2">Tell us about your business.</p>
-                </div>
-                <div className="grid gap-4">
-                  <div>
-                    <Label>Business Name</Label>
-                    <Input placeholder="Your registered business name" className="mt-1.5" value={formData.businessName} onChange={(e) => update("businessName", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Trading Name (if different)</Label>
-                    <Input placeholder="The name customers know you by" className="mt-1.5" value={formData.tradingName} onChange={(e) => update("tradingName", e.target.value)} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                {currentStep === 2 && (
+                  <div className="space-y-6">
                     <div>
-                      <Label>Business Type</Label>
-                      <select className="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.businessType} onChange={(e) => update("businessType", e.target.value)}>
-                        <option>Pty Ltd</option><option>CC</option><option>Sole Proprietor</option><option>Non-Profit</option><option>Informal</option>
-                      </select>
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Identity Verification</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">We need your South African ID to verify your identity and keep the platform secure.</p>
                     </div>
-                    <div>
-                      <Label>Industry Sector</Label>
-                      <select className="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.industrySector} onChange={(e) => update("industrySector", e.target.value)}>
-                        <option>Retail</option><option>Manufacturing</option><option>Services</option><option>Agriculture</option><option>Food & Beverage</option><option>Technology</option>
-                      </select>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">South African ID Number</Label>
+                        <Input placeholder="e.g. 8501015800087" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white font-mono" value={formData.saId} onChange={(e) => update("saId", e.target.value)} />
+                      </div>
+                      {formData.businessStatus === "registered" && (
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">CIPC Registration Number</Label>
+                          <Input placeholder="e.g. 2024/123456/07" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white font-mono" value={formData.cipcNumber} onChange={(e) => update("cipcNumber", e.target.value)} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Lock className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <p className="text-sm text-blue-700">Your ID number is encrypted and stored securely. It is never shared with third parties and is used only for identity verification in compliance with POPIA.</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Years Operating</Label>
-                      <Input type="number" placeholder="0" className="mt-1.5" value={formData.yearsOperating} onChange={(e) => update("yearsOperating", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Number of Employees</Label>
-                      <Input type="number" placeholder="1" className="mt-1.5" value={formData.employeeCount} onChange={(e) => update("employeeCount", e.target.value)} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Contact & Location</h2>
-                  <p className="text-muted-foreground mt-2">How can customers find and reach you?</p>
-                </div>
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-2 gap-4">
+                {currentStep === 3 && (
+                  <div className="space-y-6">
                     <div>
-                      <Label>Phone Number</Label>
-                      <Input placeholder="+27 " className="mt-1.5" value={formData.phone} onChange={(e) => update("phone", e.target.value)} />
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Business Details</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">Tell us about your business so we can personalise your experience.</p>
                     </div>
-                    <div>
-                      <Label>WhatsApp Number</Label>
-                      <Input placeholder="+27 " className="mt-1.5" value={formData.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} />
+                    <div className="grid gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">Business Name</Label>
+                        <Input placeholder="Your registered business name" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.businessName} onChange={(e) => update("businessName", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">Trading Name <span className="text-slate-400 font-normal">(if different)</span></Label>
+                        <Input placeholder="The name customers know you by" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.tradingName} onChange={(e) => update("tradingName", e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Business Type</Label>
+                          <select className="mt-1.5 flex h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" value={formData.businessType} onChange={(e) => update("businessType", e.target.value)}>
+                            <option>Pty Ltd</option><option>CC</option><option>Sole Proprietor</option><option>Non-Profit</option><option>Informal</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Industry Sector</Label>
+                          <select className="mt-1.5 flex h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" value={formData.industrySector} onChange={(e) => update("industrySector", e.target.value)}>
+                            <option>Retail</option><option>Manufacturing</option><option>Services</option><option>Agriculture</option><option>Food & Beverage</option><option>Technology</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Years Operating</Label>
+                          <Input type="number" placeholder="0" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.yearsOperating} onChange={(e) => update("yearsOperating", e.target.value)} />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">No. of Employees</Label>
+                          <Input type="number" placeholder="1" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.employeeCount} onChange={(e) => update("employeeCount", e.target.value)} />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <Label>Business Email</Label>
-                    <Input type="email" placeholder="info@business.co.za" className="mt-1.5" value={formData.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Physical Address</Label>
-                    <Input placeholder="Street address, suburb, city" className="mt-1.5" value={formData.physicalAddress} onChange={(e) => update("physicalAddress", e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {currentStep === 5 && (
-              <div className="space-y-6 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full gradient-hero">
-                  <Check className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold font-heading text-foreground">Ready to Go!</h2>
-                  <p className="text-muted-foreground mt-2">Review your details and create your account. You can set up your subscription from your dashboard.</p>
-                </div>
-                <div className="text-left rounded-lg border border-border p-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{formData.fullName}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="font-medium">{formData.email}</span></div>
-                  {formData.businessName && <div className="flex justify-between"><span className="text-muted-foreground">Business</span><span className="font-medium">{formData.businessName}</span></div>}
-                  {formData.industrySector && <div className="flex justify-between"><span className="text-muted-foreground">Industry</span><span className="font-medium">{formData.industrySector}</span></div>}
-                  {formData.phone && <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span className="font-medium">{formData.phone}</span></div>}
-                  <div className="border-t border-border my-2 pt-2" />
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Trial</span>
-                    <span className="font-medium text-sa-green">14 days free access</span>
+                {currentStep === 4 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Contact & Location</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">How can customers and our team reach you?</p>
+                    </div>
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Phone Number</Label>
+                          <Input placeholder="+27 " className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.phone} onChange={(e) => update("phone", e.target.value)} />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">WhatsApp Number</Label>
+                          <Input placeholder="+27 " className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">Business Email</Label>
+                        <Input type="email" placeholder="info@business.co.za" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">Physical Address</Label>
+                        <Input placeholder="Street address, suburb, city" className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white" value={formData.physicalAddress} onChange={(e) => update("physicalAddress", e.target.value)} />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <Button variant="hero" size="lg" className="mt-4 w-full" onClick={handleSubmit} disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Creating account...
-                    </>
-                  ) : (
-                    <>
-                      Complete Registration <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
+                )}
+
+                {currentStep === 5 && (
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 mb-4">
+                        <Check className="h-8 w-8 text-green-600" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Almost there!</h2>
+                      <p className="text-slate-500 mt-1.5 text-sm">Review your details and submit to create your account.</p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Account Summary</p>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {[
+                          { label: "Full Name", value: formData.fullName },
+                          { label: "Email", value: formData.email },
+                          formData.businessName && { label: "Business", value: formData.businessName },
+                          formData.industrySector && { label: "Industry", value: formData.industrySector },
+                          formData.phone && { label: "Phone", value: formData.phone },
+                          formData.physicalAddress && { label: "Address", value: formData.physicalAddress },
+                        ].filter(Boolean).map((row: any) => (
+                          <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                            <span className="text-sm text-slate-500">{row.label}</span>
+                            <span className="text-sm font-medium text-slate-900 text-right max-w-xs truncate">{row.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-green-50 border-t border-green-100 px-4 py-3 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-green-800">Free Trial</span>
+                        <span className="text-sm font-bold text-green-700">14 days — full access, no card needed</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm text-sm"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating account...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Complete Registration <ArrowRight className="h-4 w-4" />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {currentStep < LAST && (
+              <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
+                <Button
+                  variant="ghost"
+                  onClick={prev}
+                  disabled={currentStep === 0}
+                  className="text-slate-600 hover:text-slate-900 disabled:opacity-40"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+                <Button
+                  onClick={next}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
+                >
+                  Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
 
-        {currentStep < LAST && (
-          <div className="flex justify-between mt-6">
-            <Button variant="ghost" onClick={prev} disabled={currentStep === 0}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-            <Button variant="hero" onClick={next}>
-              Continue <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            {currentStep > 0 && currentStep < LAST && (
+              <p className="text-center text-xs text-slate-400 mt-4">
+                You can skip optional steps and update them later from your profile.
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

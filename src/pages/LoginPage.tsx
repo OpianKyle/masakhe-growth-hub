@@ -5,7 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Building2, TrendingUp, Users, Globe } from "lucide-react";
+
+const BG_IMAGE = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1400";
+
+const stats = [
+  { icon: Building2, value: "12,000+", label: "Businesses registered" },
+  { icon: TrendingUp, value: "R2.4B+", label: "Funding facilitated" },
+  { icon: Users, value: "95%", label: "Client satisfaction" },
+  { icon: Globe, value: "9", label: "Provinces served" },
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -41,53 +50,145 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-hero">
-              <span className="text-lg font-bold text-primary-foreground font-heading">M</span>
+    <div className="min-h-screen flex">
+      <div
+        className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden"
+        style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-blue-950/80" />
+
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+              <span className="text-lg font-bold text-white font-heading">M</span>
             </div>
-            <span className="text-xl font-bold font-heading text-foreground">Masakhe</span>
+            <span className="text-2xl font-bold font-heading text-white">Masakhe</span>
           </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">&larr; Back to Home</Link>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-16 max-w-md">
-        <div className="rounded-xl border border-border bg-card p-8 shadow-card">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold font-heading text-foreground">Welcome Back</h1>
-            <p className="text-muted-foreground mt-2">Sign in to your Masakhe account</p>
+        <div className="relative z-10 space-y-6">
+          <div>
+            <p className="text-blue-300 text-sm font-semibold uppercase tracking-widest mb-3">South Africa's SMME Platform</p>
+            <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+              Grow your business<br />with confidence
+            </h1>
+            <p className="text-white/60 text-lg leading-relaxed max-w-md">
+              Access funding tools, manage payroll, build your website, and run your business from a single powerful dashboard.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" placeholder="you@business.co.za" className="mt-1.5" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-1.5">
-                <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+          <div className="grid grid-cols-2 gap-4 pt-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 flex-shrink-0">
+                  <stat.icon className="h-4 w-4 text-blue-300" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-lg leading-none">{stat.value}</p>
+                  <p className="text-white/50 text-xs mt-1">{stat.label}</p>
+                </div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <p className="text-white/30 text-xs">© {new Date().getFullYear()} Masakhe Business Solutions. All rights reserved.</p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col min-h-screen bg-white">
+        <div className="flex items-center justify-between px-8 py-6 lg:hidden border-b border-slate-100">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600">
+              <span className="text-base font-bold text-white font-heading">M</span>
+            </div>
+            <span className="text-xl font-bold font-heading text-slate-900">Masakhe</span>
+          </Link>
+          <Link to="/" className="text-sm text-slate-500 hover:text-slate-900">← Back to Home</Link>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-8 py-12">
+          <div className="w-full max-w-sm">
+            <div className="mb-8">
+              <div className="hidden lg:flex items-center justify-end mb-10">
+                <Link to="/" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">← Back to Home</Link>
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 font-heading">Welcome back</h2>
+              <p className="text-slate-500 mt-2">Sign in to your Masakhe account to continue.</p>
             </div>
 
-            <Button type="submit" variant="hero" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@business.co.za"
+                  className="mt-1.5 h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 bg-slate-50 focus:bg-white transition-colors"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password</Label>
+                  <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">Forgot password?</Link>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 bg-slate-50 focus:bg-white transition-colors pr-11"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
 
-          <div className="mt-4 text-center">
-            <Link to="/forgot-password" className="text-sm text-primary hover:underline">Forgot your password?</Link>
-          </div>
+              <Button
+                type="submit"
+                className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-all"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Sign In <ArrowRight className="h-4 w-4" />
+                  </span>
+                )}
+              </Button>
+            </form>
 
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-primary font-semibold hover:underline">Register your business</Link>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-500">
+                Don't have an account?{" "}
+                <Link to="/register" className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+                  Register your business
+                </Link>
+              </p>
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-slate-100">
+              <p className="text-center text-xs text-slate-400">
+                Protected by enterprise-grade security. Your data stays private and compliant with POPIA.
+              </p>
+            </div>
           </div>
         </div>
       </div>
