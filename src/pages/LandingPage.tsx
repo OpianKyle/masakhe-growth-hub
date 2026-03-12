@@ -36,7 +36,7 @@ const stats = [
 ];
 
 const howItWorks = [
-  { step: "01", title: "Register your business", desc: "Create your account and complete our guided onboarding in under 10 minutes. CIPC integration auto-fills your business details.", icon: Lock },
+  { step: "01", title: "Register your business", desc: "Create your account and complete our guided onboarding in under 10 minutes.", icon: Lock },
   { step: "02", title: "Set up your digital presence", desc: "Choose a template, answer five questions, and your professional website goes live — complete with WhatsApp, maps, and SEO.", icon: Globe },
   { step: "03", title: "Access funding & grow", desc: "Use your compliance score to unlock SEFA, SEDA, and DTI funding. Manage payroll, invoices, and social media from one dashboard.", icon: TrendingUp },
 ];
