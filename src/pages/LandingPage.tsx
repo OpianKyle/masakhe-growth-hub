@@ -300,14 +300,14 @@ export default function LandingPage() {
                 </h2>
               </div>
               <p className="text-slate-600 leading-relaxed text-lg">
-                Answer five simple questions and our AI generates a mobile-first website with SEO, WhatsApp integration, and Google Maps — instantly published.
+                Answer a few simple questions and our AI generates a complete, professional website with multiple sections — ready to preview and publish instantly.
               </p>
               <ul className="space-y-3">
                 {[
-                  { label: "34 industry templates", sub: "Bakeries, law firms, salons & more" },
-                  { label: "WhatsApp chat built-in",  sub: "Convert visitors instantly" },
-                  { label: "SEO-optimised content",   sub: "Google-ready from day one" },
-                  { label: "Custom .co.za domain",    sub: "Look professional online" },
+                  { label: "34 industry templates",      sub: "Bakeries, law firms, salons & more" },
+                  { label: "AI-generated content",       sub: "Hero, services, gallery, testimonials" },
+                  { label: "Multiple section types",     sub: "Mix and match to suit your business" },
+                  { label: "Instant live preview",       sub: "See your site before publishing" },
                 ].map((item) => (
                   <li key={item.label} className="flex items-start gap-3">
                     <div className="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
