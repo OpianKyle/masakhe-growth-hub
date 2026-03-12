@@ -381,7 +381,7 @@ export default function LandingPage() {
               </div>
 
               <Link to="/register">
-                <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold h-11 px-6">
+                <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold h-11 px-6 mt-[30px]">
                   Improve My Score <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
