@@ -59,9 +59,7 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-              <span className="text-lg font-bold text-white font-heading">M</span>
-            </div>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain" />
             <span className="text-2xl font-bold font-heading text-white">Masakhe</span>
           </Link>
         </div>
@@ -100,9 +98,7 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col min-h-screen bg-white">
         <div className="flex items-center justify-between px-8 py-6 lg:hidden border-b border-slate-100">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600">
-              <span className="text-base font-bold text-white font-heading">M</span>
-            </div>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold font-heading text-slate-900">Masakhe</span>
           </Link>
           <Link to="/" className="text-sm text-slate-500 hover:text-slate-900">← Back to Home</Link>

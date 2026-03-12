@@ -118,9 +118,7 @@ export default function RegisterPage() {
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-              <span className="text-lg font-bold text-white font-heading">M</span>
-            </div>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain" />
             <span className="text-2xl font-bold font-heading text-white">Masakhe</span>
           </Link>
         </div>
@@ -176,9 +174,7 @@ export default function RegisterPage() {
         <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100">
           <div className="lg:hidden">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                <span className="text-sm font-bold text-white font-heading">M</span>
-              </div>
+              <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
               <span className="text-lg font-bold font-heading text-slate-900">Masakhe</span>
             </Link>
           </div>
