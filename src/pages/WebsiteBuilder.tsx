@@ -248,12 +248,11 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
                     onClick={() => { if (!isPremiumLocked) onSelect(tmpl.id); }}
                   >
                     {/* Hero preview thumbnail */}
-                    <div className="relative h-36 w-full overflow-hidden">
+                    <div className={`relative h-36 w-full overflow-hidden ${tmpl.color}`}>
                       <img
                         src={HERO_PREVIEWS[tmpl.id]?.bgImage}
                         alt={tmpl.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                       />
                       {/* Color overlay */}
