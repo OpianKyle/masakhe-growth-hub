@@ -174,6 +174,25 @@ billingRouter.get("/plans", async (_req, res) => {
 billingRouter.get("/subscription", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    
+    // Admin users always have pro access
+    if (user?.role === "admin") {
+      const adminPlan = await queryOne("SELECT * FROM billing_plans WHERE code = 'pro' LIMIT 1");
+      return res.json({
+        subscription: {
+          status: "ACTIVE",
+          plan_code: "pro",
+          plan_name: "Pro",
+          price_cents: adminPlan?.price_cents || 250000,
+          currency: "ZAR",
+          bill_interval: "month"
+        },
+        plan: adminPlan || { code: "pro", name: "Pro" },
+        invoices: []
+      });
+    }
+    
     const workspace = await queryOne(
       "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
       [userId]
@@ -227,6 +246,13 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
 billingRouter.get("/status", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    
+    // Admin users always have pro access
+    if (user?.role === "admin") {
+      return res.json({ active: true, status: "ACTIVE", plan: "pro" });
+    }
+    
     const workspace = await queryOne(
       "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
       [userId]
