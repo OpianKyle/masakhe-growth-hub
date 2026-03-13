@@ -119,6 +119,48 @@ const CATEGORIES = [
   "Technology", "Property", "Agriculture & Transport", "Education & Community", "Events", "Premium",
 ];
 
+const HERO_STYLE_FALLBACKS: Record<string, string> = {
+  corporate: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=80&w=800",
+  centered: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=800",
+  bold: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=800",
+  minimal: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=800",
+};
+
+interface HeroPreviewData {
+  bgImage: string;
+  primary: string;
+  title: string;
+  subtitle: string;
+}
+
+function buildHeroPreviews(): Record<string, HeroPreviewData> {
+  const map: Record<string, HeroPreviewData> = {};
+  for (const tmpl of templateList) {
+    try {
+      const config = buildTemplate(tmpl.id);
+      const heroSection = config.sections.find((s: any) => s.type === "hero");
+      const data = heroSection?.data || {};
+      const style: string = data.heroStyle || "corporate";
+      map[tmpl.id] = {
+        bgImage: data.backgroundImageUrl || HERO_STYLE_FALLBACKS[style] || HERO_STYLE_FALLBACKS.corporate,
+        primary: config.theme?.primary || "#2563eb",
+        title: data.title || config.businessName || tmpl.name,
+        subtitle: data.subtitle || tmpl.description,
+      };
+    } catch {
+      map[tmpl.id] = {
+        bgImage: HERO_STYLE_FALLBACKS.corporate,
+        primary: "#2563eb",
+        title: tmpl.name,
+        subtitle: tmpl.description,
+      };
+    }
+  }
+  return map;
+}
+
+const HERO_PREVIEWS = buildHeroPreviews();
+
 function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templateId: string) => void; onPreview: (templateId: string) => void; isProPlan: boolean }) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"default" | "az" | "za">("default");
@@ -197,35 +239,58 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
             <p className="text-xs text-slate-400 mb-3">{displayed.length} template{displayed.length !== 1 ? "s" : ""}</p>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {displayed.map((tmpl) => {
-                const Icon = templateIcons[tmpl.id] || Briefcase;
                 const isPremiumLocked = tmpl.premium && !isProPlan;
                 const category = CATEGORY_MAP[tmpl.id];
                 return (
                   <Card
                     key={tmpl.id}
-                    className={`group transition-all border-2 ${isPremiumLocked ? "border-transparent hover:border-amber-400" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
+                    className={`group transition-all border-2 overflow-hidden ${isPremiumLocked ? "border-transparent hover:border-amber-400" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
                     onClick={() => { if (!isPremiumLocked) onSelect(tmpl.id); }}
                   >
-                    <CardContent className="p-4 text-center space-y-2 relative">
+                    {/* Hero preview thumbnail */}
+                    <div className="relative h-36 w-full overflow-hidden">
+                      <img
+                        src={HERO_PREVIEWS[tmpl.id]?.bgImage}
+                        alt={tmpl.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      />
+                      {/* Color overlay */}
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: `linear-gradient(to bottom, ${HERO_PREVIEWS[tmpl.id]?.primary}55 0%, ${HERO_PREVIEWS[tmpl.id]?.primary}dd 100%)` }}
+                      />
+                      {/* Premium badge */}
                       {tmpl.premium && (
                         <div className="absolute top-2 right-2">
-                          <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] px-1.5 py-0.5 gap-1">
+                          <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] px-1.5 py-0.5 gap-1 shadow-md">
                             <Crown className="h-2.5 w-2.5" /> PREMIUM
                           </Badge>
                         </div>
                       )}
-                      <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${tmpl.color} text-white`}>
-                        <Icon className="h-6 w-6" />
+                      {/* Hero text overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white font-bold text-xs leading-tight line-clamp-1 drop-shadow-md">
+                          {HERO_PREVIEWS[tmpl.id]?.title}
+                        </p>
+                        <p className="text-white/75 text-[10px] line-clamp-1 drop-shadow mt-0.5">
+                          {HERO_PREVIEWS[tmpl.id]?.subtitle}
+                        </p>
                       </div>
-                      <h3 className="text-sm font-bold">{tmpl.name}</h3>
-                      <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
-                      {category && (
-                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                          {category}
-                        </span>
-                      )}
+                    </div>
+
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-1">
+                        <h3 className="text-sm font-bold leading-tight">{tmpl.name}</h3>
+                        {category && (
+                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                            {category}
+                          </span>
+                        )}
+                      </div>
                       {isPremiumLocked ? (
-                        <div className="flex gap-1.5 pt-1">
+                        <div className="flex gap-1.5">
                           <Button variant="outline" size="sm" className="flex-1 text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1" onClick={(e) => { e.stopPropagation(); onPreview(tmpl.id); }}>
                             <Eye className="h-3 w-3" /> Preview
                           </Button>
@@ -234,7 +299,7 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
                           </Button>
                         </div>
                       ) : (
-                        <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors mt-1">
+                        <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
                           Use Template
                         </Button>
                       )}
