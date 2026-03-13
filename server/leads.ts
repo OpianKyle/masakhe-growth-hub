@@ -93,6 +93,73 @@ leadsRouter.delete("/:id", requireAuth, async (req, res) => {
   }
 });
 
+leadsRouter.get("/export", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const leads = await queryAll(
+      `SELECT wl.name, wl.email, wl.phone, wl.message, wl.source, wl.status, wl.notes,
+              wl.created_at, vl.make as vehicle_make, vl.model as vehicle_model, vl.year as vehicle_year
+       FROM website_leads wl
+       LEFT JOIN vehicle_listings vl ON vl.id = wl.vehicle_id
+       WHERE wl.user_id = ? ORDER BY wl.created_at DESC`,
+      [userId]
+    );
+    const esc = (v: any) => {
+      if (v == null) return "";
+      const s = String(v).replace(/"/g, '""');
+      return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+    };
+    const headers = ["Name","Email","Phone","Message","Source","Status","Notes","Vehicle","Date"];
+    const rows = leads.map((l: any) => {
+      const veh = [l.vehicle_year, l.vehicle_make, l.vehicle_model].filter(Boolean).join(" ");
+      return [esc(l.name),esc(l.email),esc(l.phone),esc(l.message),esc(l.source),esc(l.status),esc(l.notes),esc(veh),esc(l.created_at)].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="leads-${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+leadsRouter.post("/import", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { rows, websiteId } = req.body as { rows: any[]; websiteId?: string };
+    if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: "No rows provided" });
+
+    let wId = websiteId;
+    if (!wId) {
+      const site = await queryOne("SELECT id FROM websites WHERE owner_id = ? LIMIT 1", [userId]);
+      wId = site?.id;
+    }
+    if (!wId) return res.status(400).json({ error: "No website found. Please create a website first." });
+
+    let imported = 0; let skipped = 0;
+    for (const row of rows) {
+      const name = (row["Name"] || row["name"] || "").trim();
+      if (!name) { skipped++; continue; }
+      const id = randomUUID();
+      await execute(
+        `INSERT INTO website_leads (id, website_id, user_id, name, email, phone, message, source, status, notes)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [id, wId, userId, name,
+          row["Email"] || row["email"] || null,
+          row["Phone"] || row["phone"] || null,
+          row["Message"] || row["message"] || null,
+          row["Source"] || row["source"] || "import",
+          (row["Status"] || row["status"] || "new").toLowerCase(),
+          row["Notes"] || row["notes"] || null]
+      );
+      imported++;
+    }
+    res.json({ ok: true, imported, skipped });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 leadsRouter.get("/stats", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

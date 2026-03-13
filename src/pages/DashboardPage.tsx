@@ -26,6 +26,7 @@ import FundingApplicationPage from "./FundingApplicationPage";
 import VehicleManagementPage from "./VehicleManagementPage";
 import LeadsPage from "./LeadsPage";
 import PayrollPage from "./PayrollPage";
+import ClientsPage from "./ClientsPage";
 import TrialBanner from "@/components/TrialBanner";
 import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
@@ -83,6 +84,7 @@ const baseNavItems: NavItem[] = [
     ],
   },
   { icon: Banknote, label: "Payroll", path: "/dashboard/payroll" },
+  { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
@@ -440,6 +442,7 @@ export default function DashboardPage() {
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="payroll" element={<PayrollPage />} />
+            <Route path="clients" element={<ClientsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Mail, Phone, MessageSquare, Car, Clock,
   CheckCircle, XCircle, Filter, Search, Loader2,
-  Trash2, ChevronDown, BarChart2
+  Trash2, ChevronDown, BarChart2, Download, Upload, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,27 @@ interface LeadStats {
   converted: number;
 }
 
+function parseCSV(text: string): Record<string, string>[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim());
+  return lines.slice(1).map((line) => {
+    const values: string[] = [];
+    let cur = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === "," && !inQ) { values.push(cur); cur = ""; }
+      else { cur += ch; }
+    }
+    values.push(cur);
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = (values[i] || "").trim(); });
+    return row;
+  });
+}
+
 export default function LeadsPage() {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -42,6 +63,9 @@ export default function LeadsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const fetchLeads = () => {
     setLoading(true);
@@ -57,9 +81,58 @@ export default function LeadsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
+  useEffect(() => { fetchLeads(); }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/leads/export", { credentials: "include" });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `leads-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Leads exported successfully" });
+    } catch {
+      toast({ title: "Export failed", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".csv")) {
+      toast({ title: "Please select a CSV file", variant: "destructive" });
+      return;
+    }
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      if (rows.length === 0) throw new Error("No valid rows found");
+
+      const res = await fetch("/api/leads/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rows }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      toast({ title: `Imported ${data.imported} leads${data.skipped ? ` (${data.skipped} skipped)` : ""}` });
+      fetchLeads();
+    } catch (err: any) {
+      toast({ title: err.message || "Import failed", variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (importRef.current) importRef.current.value = "";
+    }
+  };
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -125,12 +198,25 @@ export default function LeadsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" />
-          Leads
-        </h2>
-        <p className="text-muted-foreground mt-1">Manage enquiries from your website visitors.</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            Leads
+          </h2>
+          <p className="text-muted-foreground mt-1">Manage enquiries from your website visitors.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+            Import CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+            Export CSV
+          </Button>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -179,6 +265,10 @@ export default function LeadsPage() {
         </select>
       </div>
 
+      <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 border border-border">
+        <strong>CSV Import format:</strong> Name, Email, Phone, Message, Source, Status, Notes
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -187,7 +277,7 @@ export default function LeadsPage() {
         <div className="text-center py-20 text-muted-foreground">
           <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p className="text-lg font-medium">No leads yet</p>
-          <p className="text-sm mt-1">Leads will appear here when visitors submit enquiries on your website.</p>
+          <p className="text-sm mt-1">Leads will appear here when visitors submit enquiries on your website, or import a CSV file.</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -719,6 +719,56 @@ export async function runMigrations() {
     await createIndex("idx_pr_employee", "payroll_runs", "employee_id");
     await createIndex("idx_pr_period", "payroll_runs", "pay_period");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS broker_clients (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        id_number VARCHAR(20),
+        date_of_birth VARCHAR(20),
+        gender VARCHAR(15),
+        marital_status VARCHAR(20),
+        email VARCHAR(255),
+        phone VARCHAR(30),
+        whatsapp VARCHAR(30),
+        physical_address TEXT,
+        postal_address TEXT,
+        employment_status VARCHAR(50),
+        employer_name VARCHAR(255),
+        occupation VARCHAR(100),
+        monthly_income_cents INT DEFAULT 0,
+        dependants INT DEFAULT 0,
+        risk_profile VARCHAR(15) DEFAULT 'medium',
+        credit_score INT,
+        policy_number VARCHAR(100),
+        property_interest TEXT,
+        status VARCHAR(20) NOT NULL DEFAULT 'prospect',
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_bc_user", "broker_clients", "user_id");
+    await createIndex("idx_bc_status", "broker_clients", "status");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS broker_client_documents (
+        id VARCHAR(36) PRIMARY KEY,
+        client_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        document_name VARCHAR(255) NOT NULL,
+        document_type VARCHAR(50) NOT NULL DEFAULT 'other',
+        file_data LONGTEXT NOT NULL,
+        file_size INT NOT NULL DEFAULT 0,
+        mime_type VARCHAR(100),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(client_id) REFERENCES broker_clients(id) ON DELETE CASCADE,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_bcd_client", "broker_client_documents", "client_id");
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

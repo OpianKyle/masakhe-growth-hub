@@ -1,0 +1,315 @@
+import { Router } from "express";
+import { queryOne, queryAll, execute } from "./db";
+import { requireAuth } from "./auth";
+import { randomUUID } from "crypto";
+import multer from "multer";
+
+export const clientsRouter = Router();
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+// ── List clients ──────────────────────────────────────────────────────────────
+clientsRouter.get("/", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const clients = await queryAll(
+      `SELECT id, full_name, id_number, email, phone, employment_status,
+              monthly_income_cents, risk_profile, policy_number, status,
+              date_of_birth, gender, marital_status, occupation, credit_score,
+              created_at, updated_at
+       FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
+      [userId]
+    );
+    res.json(clients);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+clientsRouter.get("/stats", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const [total, active, prospects, inactive] = await Promise.all([
+      queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ? AND status = 'active'", [userId]),
+      queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ? AND status = 'prospect'", [userId]),
+      queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ? AND status = 'inactive'", [userId]),
+    ]);
+    res.json({ total: total?.count || 0, active: active?.count || 0, prospects: prospects?.count || 0, inactive: inactive?.count || 0 });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+clientsRouter.get("/export", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const clients = await queryAll(
+      `SELECT full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
+              physical_address, postal_address, employment_status, employer_name, occupation,
+              monthly_income_cents, dependants, risk_profile, credit_score, policy_number,
+              property_interest, status, notes
+       FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
+      [userId]
+    );
+
+    const escape = (v: any) => {
+      if (v == null) return "";
+      const s = String(v).replace(/"/g, '""');
+      return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+    };
+
+    const headers = [
+      "Full Name","ID Number","Date of Birth","Gender","Marital Status","Email","Phone","WhatsApp",
+      "Physical Address","Postal Address","Employment Status","Employer","Occupation",
+      "Monthly Income (ZAR)","Dependants","Risk Profile","Credit Score","Policy Number",
+      "Property Interest","Status","Notes"
+    ];
+
+    const rows = clients.map((c: any) => [
+      escape(c.full_name), escape(c.id_number), escape(c.date_of_birth), escape(c.gender),
+      escape(c.marital_status), escape(c.email), escape(c.phone), escape(c.whatsapp),
+      escape(c.physical_address), escape(c.postal_address), escape(c.employment_status),
+      escape(c.employer_name), escape(c.occupation),
+      escape(c.monthly_income_cents ? (c.monthly_income_cents / 100).toFixed(2) : ""),
+      escape(c.dependants), escape(c.risk_profile), escape(c.credit_score),
+      escape(c.policy_number), escape(c.property_interest), escape(c.status), escape(c.notes),
+    ].join(","));
+
+    const csv = [headers.join(","), ...rows].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="clients-${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Import CSV ────────────────────────────────────────────────────────────────
+clientsRouter.post("/import", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { rows } = req.body as { rows: any[] };
+    if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: "No rows provided" });
+
+    let imported = 0;
+    let skipped = 0;
+    for (const row of rows) {
+      const name = (row["Full Name"] || row["full_name"] || "").trim();
+      if (!name) { skipped++; continue; }
+      const id = randomUUID();
+      const rawIncome = row["Monthly Income (ZAR)"] || row["monthly_income"] || "";
+      const incomeCents = rawIncome ? Math.round(parseFloat(rawIncome) * 100) : 0;
+      await execute(
+        `INSERT INTO broker_clients
+         (id, user_id, full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
+          physical_address, postal_address, employment_status, employer_name, occupation,
+          monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          id, userId, name,
+          row["ID Number"] || row["id_number"] || null,
+          row["Date of Birth"] || row["date_of_birth"] || null,
+          row["Gender"] || row["gender"] || null,
+          row["Marital Status"] || row["marital_status"] || null,
+          row["Email"] || row["email"] || null,
+          row["Phone"] || row["phone"] || null,
+          row["WhatsApp"] || row["whatsapp"] || null,
+          row["Physical Address"] || row["physical_address"] || null,
+          row["Postal Address"] || row["postal_address"] || null,
+          row["Employment Status"] || row["employment_status"] || null,
+          row["Employer"] || row["employer_name"] || null,
+          row["Occupation"] || row["occupation"] || null,
+          incomeCents,
+          parseInt(row["Dependants"] || row["dependants"] || "0") || 0,
+          row["Risk Profile"] || row["risk_profile"] || "medium",
+          row["Credit Score"] ? parseInt(row["Credit Score"]) : null,
+          row["Policy Number"] || row["policy_number"] || null,
+          row["Property Interest"] || row["property_interest"] || null,
+          (row["Status"] || row["status"] || "prospect").toLowerCase(),
+          row["Notes"] || row["notes"] || null,
+        ]
+      );
+      imported++;
+    }
+    res.json({ ok: true, imported, skipped });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Get single client ─────────────────────────────────────────────────────────
+clientsRouter.get("/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const client = await queryOne("SELECT * FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    res.json(client);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Create client ─────────────────────────────────────────────────────────────
+clientsRouter.post("/", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const {
+      full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
+      physical_address, postal_address, employment_status, employer_name, occupation,
+      monthly_income, dependants, risk_profile, credit_score, policy_number,
+      property_interest, status, notes,
+    } = req.body;
+    if (!full_name) return res.status(400).json({ error: "Full name is required" });
+
+    const id = randomUUID();
+    await execute(
+      `INSERT INTO broker_clients
+       (id, user_id, full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
+        physical_address, postal_address, employment_status, employer_name, occupation,
+        monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        id, userId, full_name, id_number || null, date_of_birth || null, gender || null,
+        marital_status || null, email || null, phone || null, whatsapp || null,
+        physical_address || null, postal_address || null, employment_status || null,
+        employer_name || null, occupation || null,
+        monthly_income ? Math.round(parseFloat(monthly_income) * 100) : 0,
+        dependants || 0, risk_profile || "medium",
+        credit_score ? parseInt(credit_score) : null,
+        policy_number || null, property_interest || null, status || "prospect", notes || null,
+      ]
+    );
+    res.json({ ok: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Update client ─────────────────────────────────────────────────────────────
+clientsRouter.put("/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const existing = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!existing) return res.status(404).json({ error: "Client not found" });
+
+    const {
+      full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
+      physical_address, postal_address, employment_status, employer_name, occupation,
+      monthly_income, dependants, risk_profile, credit_score, policy_number,
+      property_interest, status, notes,
+    } = req.body;
+
+    await execute(
+      `UPDATE broker_clients SET
+       full_name=?, id_number=?, date_of_birth=?, gender=?, marital_status=?, email=?, phone=?, whatsapp=?,
+       physical_address=?, postal_address=?, employment_status=?, employer_name=?, occupation=?,
+       monthly_income_cents=?, dependants=?, risk_profile=?, credit_score=?, policy_number=?,
+       property_interest=?, status=?, notes=?, updated_at=NOW()
+       WHERE id = ?`,
+      [
+        full_name, id_number || null, date_of_birth || null, gender || null,
+        marital_status || null, email || null, phone || null, whatsapp || null,
+        physical_address || null, postal_address || null, employment_status || null,
+        employer_name || null, occupation || null,
+        monthly_income ? Math.round(parseFloat(monthly_income) * 100) : 0,
+        dependants || 0, risk_profile || "medium",
+        credit_score ? parseInt(credit_score) : null,
+        policy_number || null, property_interest || null, status || "prospect", notes || null,
+        req.params.id,
+      ]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Delete client ─────────────────────────────────────────────────────────────
+clientsRouter.delete("/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const existing = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!existing) return res.status(404).json({ error: "Client not found" });
+    await execute("DELETE FROM broker_clients WHERE id = ?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── List documents for a client ───────────────────────────────────────────────
+clientsRouter.get("/:id/documents", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    const docs = await queryAll(
+      "SELECT id, document_name, document_type, file_size, mime_type, created_at FROM broker_client_documents WHERE client_id = ? ORDER BY created_at DESC",
+      [req.params.id]
+    );
+    res.json(docs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Upload document ───────────────────────────────────────────────────────────
+clientsRouter.post("/:id/documents", requireAuth, upload.single("file"), async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const mimeType = req.file.mimetype;
+    const base64 = req.file.buffer.toString("base64");
+    const fileData = `data:${mimeType};base64,${base64}`;
+
+    const id = randomUUID();
+    await execute(
+      `INSERT INTO broker_client_documents (id, client_id, user_id, document_name, document_type, file_data, file_size, mime_type)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [
+        id, req.params.id, userId,
+        req.body.document_name || req.file.originalname,
+        req.body.document_type || "other",
+        fileData,
+        req.file.size,
+        mimeType,
+      ]
+    );
+    res.json({ ok: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Download / view document ──────────────────────────────────────────────────
+clientsRouter.get("/:id/documents/:docId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    const doc = await queryOne("SELECT * FROM broker_client_documents WHERE id = ? AND client_id = ?", [req.params.docId, req.params.id]);
+    if (!doc) return res.status(404).json({ error: "Document not found" });
+    res.json(doc);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Delete document ───────────────────────────────────────────────────────────
+clientsRouter.delete("/:id/documents/:docId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    await execute("DELETE FROM broker_client_documents WHERE id = ? AND client_id = ?", [req.params.docId, req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
