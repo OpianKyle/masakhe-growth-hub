@@ -161,6 +161,14 @@ function buildHeroPreviews(): Record<string, HeroPreviewData> {
 
 const HERO_PREVIEWS = buildHeroPreviews();
 
+// Preload all hero images immediately when the module loads
+if (typeof window !== "undefined") {
+  Object.values(HERO_PREVIEWS).forEach(({ bgImage }) => {
+    const img = new window.Image();
+    img.src = bgImage;
+  });
+}
+
 function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templateId: string) => void; onPreview: (templateId: string) => void; isProPlan: boolean }) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"default" | "az" | "za">("default");
