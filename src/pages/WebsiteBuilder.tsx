@@ -17,7 +17,8 @@ import {
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
   MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
-  Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt
+  Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
+  Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search
 } from "lucide-react";
 
 const templateIcons: Record<string, React.ElementType> = {
@@ -55,6 +56,16 @@ const templateIcons: Record<string, React.ElementType> = {
   church: Church,
   guesthouse: BedDouble,
   fashion: Shirt,
+  plumbing: Hammer,
+  photography: Camera,
+  catering: ChefHat,
+  drivingschool: Navigation,
+  pharmacy: Pill,
+  nonprofit: Heart,
+  mining: Pickaxe,
+  hairsalon: Scissors,
+  insurance: FileCheck,
+  homeimprovement: Hammer,
 };
 
 const sectionTypeIcons: Record<SectionType, React.ElementType> = {
@@ -83,60 +94,157 @@ const defaultSectionData: Record<SectionType, any> = {
   vehicle_listings: { title: "Our Vehicles", subtitle: "Browse our current inventory" },
 };
 
+const CATEGORY_MAP: Record<string, string> = {
+  professional: "Professional Services", legal: "Professional Services", consulting: "Professional Services",
+  staffing: "Professional Services", funeral: "Professional Services", mining: "Professional Services",
+  accounting: "Finance & Legal", insurance: "Finance & Legal", brokerage: "Finance & Legal",
+  restaurant: "Food & Hospitality", bakery: "Food & Hospitality", guesthouse: "Food & Hospitality",
+  travel: "Food & Hospitality", catering: "Food & Hospitality",
+  healthcare: "Health & Wellness", fitness: "Health & Wellness", beauty: "Health & Wellness",
+  childcare: "Health & Wellness", petcare: "Health & Wellness", pharmacy: "Health & Wellness", hairsalon: "Health & Wellness",
+  construction: "Trade & Construction", automotive: "Trade & Construction", cleaning: "Trade & Construction",
+  solar: "Trade & Construction", security: "Trade & Construction", plumbing: "Trade & Construction", homeimprovement: "Trade & Construction",
+  technology: "Technology",
+  retail: "Retail & Commerce", fashion: "Retail & Commerce",
+  creative: "Creative & Media", printing: "Creative & Media", photography: "Creative & Media",
+  education: "Education & Community", church: "Education & Community", nonprofit: "Education & Community", drivingschool: "Education & Community",
+  agriculture: "Agriculture & Transport", transport: "Agriculture & Transport",
+  realestate: "Property", events: "Events",
+  showroom: "Premium", luxury_estate: "Premium",
+};
+
+const CATEGORIES = [
+  "All", "Trade & Construction", "Food & Hospitality", "Health & Wellness",
+  "Professional Services", "Finance & Legal", "Creative & Media", "Retail & Commerce",
+  "Technology", "Property", "Agriculture & Transport", "Education & Community", "Events", "Premium",
+];
+
 function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templateId: string) => void; onPreview: (templateId: string) => void; isProPlan: boolean }) {
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "az" | "za">("default");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+
+  let displayed = templateList.filter((t) => {
+    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase());
+    const cat = CATEGORY_MAP[t.id] || "Other";
+    const matchCat = categoryFilter === "All" || cat === categoryFilter;
+    return matchSearch && matchCat;
+  });
+
+  if (sortBy === "az") displayed = [...displayed].sort((a, b) => a.name.localeCompare(b.name));
+  else if (sortBy === "za") displayed = [...displayed].sort((a, b) => b.name.localeCompare(a.name));
+
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 p-8">
+    <div className="h-full overflow-y-auto bg-slate-50 p-6 md:p-8">
       <div className="max-w-5xl mx-auto w-full">
-        <div className="text-center mb-10">
+        <div className="text-center mb-7">
           <h2 className="text-3xl font-bold font-heading mb-2">Choose a Template</h2>
           <p className="text-slate-500">Pick a starting point for your website. You can customize everything afterwards.</p>
+          <p className="text-sm text-slate-400 mt-1">{templateList.length} templates available</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {templateList.map((tmpl) => {
-            const Icon = templateIcons[tmpl.id] || Briefcase;
-            const isPremiumLocked = tmpl.premium && !isProPlan;
-            return (
-              <Card
-                key={tmpl.id}
-                className={`group transition-all border-2 ${isPremiumLocked ? "border-transparent hover:border-amber-400" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
-                onClick={() => {
-                  if (!isPremiumLocked) {
-                    onSelect(tmpl.id);
-                  }
-                }}
-              >
-                <CardContent className="p-4 text-center space-y-3 relative">
-                  {tmpl.premium && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] px-1.5 py-0.5 gap-1">
-                        <Crown className="h-2.5 w-2.5" /> PREMIUM
-                      </Badge>
-                    </div>
-                  )}
-                  <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${tmpl.color} text-white`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-sm font-bold">{tmpl.name}</h3>
-                  <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
-                  {isPremiumLocked ? (
-                    <div className="flex gap-1.5">
-                      <Button variant="outline" size="sm" className="flex-1 text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1" onClick={(e) => { e.stopPropagation(); onPreview(tmpl.id); }}>
-                        <Eye className="h-3 w-3" /> Preview
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 text-xs border-slate-200 text-slate-400 gap-1 cursor-default">
-                        <Lock className="h-3 w-3" /> Pro Only
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors">
-                      Use Template
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+
+        {/* Search + Sort controls */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search templates by name or industry..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none"
+          >
+            <option value="default">Sort: Default</option>
+            <option value="az">Sort: A → Z</option>
+            <option value="za">Sort: Z → A</option>
+          </select>
         </div>
+
+        {/* Category filter chips */}
+        <div className="flex gap-2 flex-wrap mb-6">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                categoryFilter === cat
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white border-slate-200 text-slate-600 hover:border-primary/50 hover:text-primary"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {displayed.length === 0 ? (
+          <div className="text-center py-16 text-slate-400">
+            <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-lg font-medium">No templates found</p>
+            <p className="text-sm mt-1">Try a different search term or select a different category</p>
+            <button onClick={() => { setSearch(""); setCategoryFilter("All"); }} className="mt-3 text-sm text-primary hover:underline">
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-slate-400 mb-3">{displayed.length} template{displayed.length !== 1 ? "s" : ""}</p>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {displayed.map((tmpl) => {
+                const Icon = templateIcons[tmpl.id] || Briefcase;
+                const isPremiumLocked = tmpl.premium && !isProPlan;
+                const category = CATEGORY_MAP[tmpl.id];
+                return (
+                  <Card
+                    key={tmpl.id}
+                    className={`group transition-all border-2 ${isPremiumLocked ? "border-transparent hover:border-amber-400" : "cursor-pointer hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-primary"} ${tmpl.premium ? "ring-1 ring-amber-400/50" : ""}`}
+                    onClick={() => { if (!isPremiumLocked) onSelect(tmpl.id); }}
+                  >
+                    <CardContent className="p-4 text-center space-y-2 relative">
+                      {tmpl.premium && (
+                        <div className="absolute top-2 right-2">
+                          <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] px-1.5 py-0.5 gap-1">
+                            <Crown className="h-2.5 w-2.5" /> PREMIUM
+                          </Badge>
+                        </div>
+                      )}
+                      <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${tmpl.color} text-white`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-sm font-bold">{tmpl.name}</h3>
+                      <p className="text-xs text-slate-500 line-clamp-2">{tmpl.description}</p>
+                      {category && (
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                          {category}
+                        </span>
+                      )}
+                      {isPremiumLocked ? (
+                        <div className="flex gap-1.5 pt-1">
+                          <Button variant="outline" size="sm" className="flex-1 text-xs border-amber-400 text-amber-600 hover:bg-amber-50 gap-1" onClick={(e) => { e.stopPropagation(); onPreview(tmpl.id); }}>
+                            <Eye className="h-3 w-3" /> Preview
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1 text-xs border-slate-200 text-slate-400 gap-1 cursor-default">
+                            <Lock className="h-3 w-3" /> Pro Only
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" size="sm" className="w-full text-xs group-hover:bg-primary group-hover:text-white transition-colors mt-1">
+                          Use Template
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

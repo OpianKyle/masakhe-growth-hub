@@ -260,6 +260,86 @@ export const templateList: TemplateInfo[] = [
     preview: "Bold, editorial layout with collections, brand story, lookbook gallery, and shop info",
   },
   {
+    id: "plumbing",
+    name: "Plumbing & HVAC",
+    description: "For plumbers, geyser installers, air conditioning technicians, and drainage specialists",
+    icon: "hammer",
+    color: "bg-blue-800",
+    preview: "Bold layout with 24/7 emergency callout, services, certifications, and contact",
+  },
+  {
+    id: "photography",
+    name: "Photography & Videography",
+    description: "For photographers, videographers, film studios, and content creators",
+    icon: "camera",
+    color: "bg-neutral-800",
+    preview: "Cinematic dark portfolio layout with packages, gallery showcase, and booking contact",
+  },
+  {
+    id: "catering",
+    name: "Catering & Corporate Events",
+    description: "For corporate caterers, private chefs, event catering, and food service companies",
+    icon: "chef-hat",
+    color: "bg-orange-800",
+    preview: "Elegant layout with menus, catering packages, gallery, and quote request",
+  },
+  {
+    id: "drivingschool",
+    name: "Driving School",
+    description: "For driving schools, traffic colleges, and learner licence training providers",
+    icon: "navigation",
+    color: "bg-yellow-700",
+    preview: "Clear layout with licence types, packages, pass rate stats, and enrolment",
+  },
+  {
+    id: "pharmacy",
+    name: "Pharmacy & Chemist",
+    description: "For pharmacies, dispensaries, health supplement stores, and medical suppliers",
+    icon: "pill",
+    color: "bg-teal-800",
+    preview: "Clean medical layout with services, health products, screening, and contact",
+  },
+  {
+    id: "nonprofit",
+    name: "NGO & Non-Profit",
+    description: "For charities, foundations, community organisations, and social enterprises",
+    icon: "heart",
+    color: "bg-rose-800",
+    preview: "Warm layout with mission, programmes, impact stats, and donation contact",
+  },
+  {
+    id: "mining",
+    name: "Mining & Resources",
+    description: "For mining consultants, geological surveyors, and resource extraction companies",
+    icon: "pickaxe",
+    color: "bg-stone-800",
+    preview: "Industrial layout with services, accreditations, project portfolio, and contact",
+  },
+  {
+    id: "hairsalon",
+    name: "Hair Salon & Barber",
+    description: "For hair salons, barber shops, locticians, braiding specialists, and stylists",
+    icon: "scissors",
+    color: "bg-fuchsia-700",
+    preview: "Stylish layout with services menu, gallery, pricing, and booking info",
+  },
+  {
+    id: "insurance",
+    name: "Insurance Broker",
+    description: "For short-term insurance brokers, life cover advisors, and independent FSPs",
+    icon: "file-check",
+    color: "bg-blue-900",
+    preview: "Professional layout with cover types, claim support, credentials, and quote form",
+  },
+  {
+    id: "homeimprovement",
+    name: "Home Improvement",
+    description: "For renovation companies, tilers, painters, waterproofers, and handyman services",
+    icon: "hammer",
+    color: "bg-amber-800",
+    preview: "Bold portfolio layout with before/after gallery, services, quote request, and contact",
+  },
+  {
     id: "showroom",
     name: "Car Showroom",
     description: "Premium template for luxury and used car dealerships with vehicle inventory",
@@ -4086,6 +4166,759 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               email: "hello@fashionbrand.co.za",
               address: "Studio 8, 44 Maboneng Precinct, Johannesburg, 2094",
               whatsapp: "+27 76 789 0123",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "plumbing":
+      return {
+        businessName: name,
+        slug,
+        templateId: "plumbing",
+        theme: { primary: "#1d4ed8", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Fast, Reliable Plumbing & HVAC Services",
+              subtitle: "24/7 emergency call-out. Certified plumbers and HVAC technicians ready across Gauteng. No call-out fee on accepted jobs.",
+              badgeText: "24/7 Emergency Call-Out",
+              ctaPrimaryText: "Call Now",
+              ctaSecondaryText: "Get a Quote",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "24/7", label: "Emergency Service" },
+                { value: "500+", label: "Jobs Completed" },
+                { value: "< 1h", label: "Avg. Response Time" },
+                { value: "PIRB", label: "Registered" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Licensed & Insured",
+              items: [
+                { title: "Burst Pipe Repairs", desc: "Emergency burst pipe response and full pipe replacement with warranty", price: "Call for Quote" },
+                { title: "Geyser Installation & Repairs", desc: "All geyser brands — install, repair, or replace with parts and labour warranty", price: "From R1 800" },
+                { title: "Drain Unblocking", desc: "High-pressure hydro jetting for blocked drains, toilets, and sewer lines", price: "From R650" },
+                { title: "Air Conditioning", desc: "Split unit installation, servicing, gas top-up, and repairs for all brands", price: "From R1 200" },
+                { title: "Leak Detection", desc: "Non-invasive electronic leak detection for walls, slabs, and underground pipes", price: "From R800" },
+                { title: "CCTV Drain Inspection", desc: "Camera inspection to diagnose hidden pipe blockages and root intrusion", price: "From R900" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "features", enabled: true,
+            data: {
+              title: "Why Choose Us",
+              subtitle: "Certified Professionals",
+              imagePosition: "right",
+              items: [
+                { title: "PIRB Registered", desc: "All plumbers are registered with the Plumbing Industry Registration Board." },
+                { title: "Fully Insured", desc: "We carry full liability insurance on every job for your peace of mind." },
+                { title: "Workmanship Guarantee", desc: "All repairs carry a minimum 12-month workmanship guarantee." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "testimonials", enabled: true,
+            data: {
+              title: "What Our Clients Say",
+              subtitle: "Trusted by homeowners & businesses",
+              items: [
+                { name: "Sandra M.", role: "Homeowner, Centurion", text: "Called at 11pm for a burst pipe and they arrived within 45 minutes. Fixed it quickly and left everything clean. Highly recommended!" },
+                { name: "Dave H.", role: "Facilities Manager", text: "We use them for all our commercial properties. Reliable, professional, and their invoices are always detailed and clear." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Contact Us Anytime",
+              subtitle: "Emergency or planned work — call us or send a WhatsApp quote request.",
+              phone: "+27 82 000 1234",
+              email: "service@plumbing.co.za",
+              address: "Based in Pretoria, serving all of Gauteng",
+              whatsapp: "+27 82 000 1234",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "photography":
+      return {
+        businessName: name,
+        slug,
+        templateId: "photography",
+        theme: { primary: "#0f172a", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "cinematic",
+              title: "Telling Your Story Through the Lens",
+              subtitle: "Award-winning photography and videography for weddings, corporates, events, and brand campaigns across South Africa.",
+              badgeText: "Professional Photography Studio",
+              ctaPrimaryText: "View Portfolio",
+              ctaSecondaryText: "Book a Session",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "800+", label: "Shoots Completed" },
+                { value: "12+", label: "Years Experience" },
+                { value: "4.9★", label: "Client Rating" },
+                { value: "50+", label: "Brands Served" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "What We Shoot",
+              subtitle: "Full-Service Creative Studio",
+              items: [
+                { title: "Wedding Photography", desc: "Full-day coverage with edited gallery, prints, and album options.", price: "From R12 000" },
+                { title: "Corporate Events", desc: "Conferences, product launches, award ceremonies, and team days.", price: "From R4 500" },
+                { title: "Brand & Product Photography", desc: "Studio or location shoots for e-commerce, catalogues, and marketing.", price: "From R3 500" },
+                { title: "Portrait Sessions", desc: "Professional headshots, family portraits, and maternity sessions.", price: "From R1 800" },
+                { title: "Video Production", desc: "Brand films, testimonials, event highlights, and social media content.", price: "From R6 000" },
+                { title: "Real Estate Photography", desc: "Interior and exterior shoots with drone add-on available.", price: "From R1 500" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "gallery", enabled: true,
+            data: {
+              variant: "masonry",
+              title: "Our Portfolio",
+              subtitle: "A selection of recent work",
+              images: [
+                { url: "https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?auto=format&fit=crop&q=80&w=600", caption: "Wedding Photography" },
+                { url: "https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&fit=crop&q=80&w=600", caption: "Corporate Event" },
+                { url: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=600", caption: "Fashion Shoot" },
+                { url: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=600", caption: "Product Photography" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Let's Create Something Beautiful",
+              subtitle: "Book a free discovery call or send us your project brief and we'll put together a custom proposal.",
+              phone: "+27 83 000 2345",
+              email: "hello@studio.co.za",
+              address: "1 Creative Hub Lane, Rosebank, Johannesburg, 2196",
+              whatsapp: "+27 83 000 2345",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "catering":
+      return {
+        businessName: name,
+        slug,
+        templateId: "catering",
+        theme: { primary: "#92400e", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "Exceptional Catering for Every Occasion",
+              subtitle: "Corporate lunches, gala dinners, team events, and private functions. Freshly prepared with premium ingredients — Halaal certified.",
+              badgeText: "Corporate & Private Catering",
+              ctaPrimaryText: "Get a Quote",
+              ctaSecondaryText: "View Menus",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "5 000+", label: "Events Catered" },
+                { value: "300+", label: "Corporate Clients" },
+                { value: "50+", label: "Menu Options" },
+                { value: "Halaal", label: "Certified" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Catering Packages",
+              subtitle: "Tailored to Your Event",
+              items: [
+                { title: "Corporate Lunch Boxes", desc: "Daily or weekly meal delivery for office teams. Minimum 20 pax.", price: "From R95/person" },
+                { title: "Boardroom Breakfast", desc: "Continental or hot breakfast service with crockery and setup.", price: "From R120/person" },
+                { title: "Gala Dinner Service", desc: "Full 3-course sit-down dinner with waitstaff and décor options.", price: "From R380/person" },
+                { title: "Cocktail & Canapes", desc: "Standing cocktail functions with premium canapé selections.", price: "From R220/person" },
+                { title: "Traditional Braai Package", desc: "South African braai with all trimmings, salads, and sides.", price: "From R165/person" },
+                { title: "Private Chef Service", desc: "Dedicated chef for intimate dinner parties or special occasions.", price: "From R2 500" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "gallery", enabled: true,
+            data: {
+              title: "Our Events",
+              subtitle: "Recent events we've catered",
+              images: [
+                { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=600", caption: "Gala Dinner Setup" },
+                { url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=600", caption: "Corporate Lunch" },
+                { url: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&q=80&w=600", caption: "Cocktail Function" },
+                { url: "https://images.unsplash.com/photo-1530554764233-e79e16c91d08?auto=format&fit=crop&q=80&w=600", caption: "Festive Braai" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Request a Quote",
+              subtitle: "Tell us your event date, number of guests, and budget — we'll send a tailored menu proposal within 24 hours.",
+              phone: "+27 81 000 3456",
+              email: "events@catering.co.za",
+              address: "Serving Johannesburg, Pretoria & Surrounds",
+              whatsapp: "+27 81 000 3456",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "drivingschool":
+      return {
+        businessName: name,
+        slug,
+        templateId: "drivingschool",
+        theme: { primary: "#a16207", accent: "#facc15" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Get Your Licence the Right Way",
+              subtitle: "Professional driving instruction for Code 8, Code 10, and Code 14 licences. Theory classes, yard practice, and road test preparation.",
+              badgeText: "DLTC Accredited Driving School",
+              ctaPrimaryText: "Enrol Now",
+              ctaSecondaryText: "View Packages",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "92%", label: "First-Time Pass Rate" },
+                { value: "2 000+", label: "Students Trained" },
+                { value: "15+", label: "Years Operating" },
+                { value: "Code 8-14", label: "All Licences" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Packages",
+              subtitle: "From Learner's Licence to Road Test",
+              items: [
+                { title: "Learner's Licence Package", desc: "Full theory prep with K53 manual and 3 practice tests to pass your learner exam.", price: "R450" },
+                { title: "Code 8 — 10 Lessons", desc: "Manual or automatic. Yard manoeuvres, road driving, and test preparation.", price: "R2 800" },
+                { title: "Code 8 — 20 Lessons", desc: "Ideal for complete beginners. Full instruction from basics to road-test ready.", price: "R4 500" },
+                { title: "Code 10 — Light Truck", desc: "Professional light delivery vehicle training with yard and road components.", price: "R5 500" },
+                { title: "Code 14 — Heavy Motor", desc: "Articulated truck licence training with experienced professional instructors.", price: "R12 000" },
+                { title: "Refresher Lessons", desc: "2–5 lesson refresher for licensed drivers returning after a break.", price: "From R400/lesson" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "features", enabled: true,
+            data: {
+              title: "Why Train With Us",
+              subtitle: "Your Confidence on the Road",
+              imagePosition: "left",
+              items: [
+                { title: "DLTC Accredited", desc: "Our school is accredited and instructors are registered with relevant transport authorities." },
+                { title: "Dual-Control Vehicles", desc: "All training vehicles have dual controls for the safety of every learner driver." },
+                { title: "Flexible Scheduling", desc: "Morning, afternoon, and Saturday lessons to fit around your work schedule." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Enrol Today",
+              subtitle: "Call or WhatsApp to book your first lesson or ask about our licence packages.",
+              phone: "+27 79 000 4567",
+              email: "info@drivingschool.co.za",
+              address: "15 Licence Avenue, Soweto, Johannesburg, 1804",
+              whatsapp: "+27 79 000 4567",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "pharmacy":
+      return {
+        businessName: name,
+        slug,
+        templateId: "pharmacy",
+        theme: { primary: "#0f766e", accent: "#0ea5e9" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Your Health, Our Priority",
+              subtitle: "Community pharmacy offering prescription dispensing, chronic medication management, health screening, and a full range of wellness products.",
+              badgeText: "SAPC Registered Pharmacy",
+              ctaPrimaryText: "Visit Us",
+              ctaSecondaryText: "Chronic Meds Enquiry",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "5 000+", label: "Patients Served" },
+                { value: "20+", label: "Years Dispensing" },
+                { value: "48h", label: "Chronic Script Turnaround" },
+                { value: "SAPC", label: "Registered" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Full-Service Community Pharmacy",
+              items: [
+                { title: "Prescription Dispensing", desc: "Acute and chronic prescriptions dispensed accurately and timeously.", price: "" },
+                { title: "Chronic Medication Management", desc: "Repeat script management, compliance counselling, and optional delivery.", price: "" },
+                { title: "Health Screening", desc: "Blood pressure, blood glucose, cholesterol, and BMI checks in-store.", price: "From R50" },
+                { title: "Vaccinations", desc: "Flu, travel, and lifestyle vaccines administered by our pharmacist.", price: "Call for pricing" },
+                { title: "Vitamins & Supplements", desc: "Wide range of supplements, herbal remedies, and health foods in stock.", price: "" },
+                { title: "Medical Aid Claims", desc: "We process all major medical aid schemes directly at point of dispensing.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "about", enabled: true,
+            data: {
+              title: "About Our Pharmacy",
+              quote: "We believe every patient deserves personalised, compassionate pharmaceutical care.",
+              imagePosition: "right",
+              items: [
+                { title: "Community Focused", desc: "Serving our local community with affordable and accessible healthcare since 2003." },
+                { title: "Expert Pharmacists", desc: "Our registered pharmacists provide counselling and guidance on every prescription." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Contact Us",
+              subtitle: "Visit us in-store or call to check medication stock, pricing, and medical aid queries.",
+              phone: "+27 11 000 5678",
+              email: "info@pharmacy.co.za",
+              address: "45 Health Street, Polokwane, Limpopo, 0700",
+              whatsapp: "+27 11 000 5678",
+              enableWhatsApp: false,
+            },
+          },
+        ],
+      };
+
+    case "nonprofit":
+      return {
+        businessName: name,
+        slug,
+        templateId: "nonprofit",
+        theme: { primary: "#be123c", accent: "#f97316" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "Together We Build Stronger Communities",
+              subtitle: "Working to empower vulnerable South Africans through education, skills development, and community upliftment programmes.",
+              badgeText: "NPO Registered",
+              ctaPrimaryText: "Donate Now",
+              ctaSecondaryText: "Get Involved",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "5 000+", label: "Lives Impacted" },
+                { value: "12", label: "Active Programmes" },
+                { value: "R2M+", label: "Funding Raised" },
+                { value: "8 Years", label: "of Service" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Programmes",
+              subtitle: "Where Your Donation Goes",
+              items: [
+                { title: "Youth Skills Development", desc: "Vocational training and mentorship for unemployed youth aged 18–35.", price: "" },
+                { title: "Early Childhood Development", desc: "ECD support, training, and resources for crèches in underserved communities.", price: "" },
+                { title: "Food Security", desc: "Weekly food parcels for 500+ households in our programme areas.", price: "" },
+                { title: "Women in Business", desc: "Business skills and micro-grant programme for women entrepreneurs.", price: "" },
+                { title: "Community Health Clinics", desc: "Monthly mobile health screenings in rural and peri-urban areas.", price: "" },
+                { title: "School Support Programme", desc: "Stationery, uniforms, and after-school tutoring for learners in need.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "about", enabled: true,
+            data: {
+              title: "Our Mission",
+              quote: "We believe that poverty is not destiny — with the right support, every South African can thrive.",
+              imagePosition: "left",
+              items: [
+                { title: "Transparency", desc: "Annual reports and audited financials are published on our website." },
+                { title: "Community-Led", desc: "Our programmes are designed with, and not just for, the communities we serve." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Get in Touch",
+              subtitle: "Whether you'd like to donate, partner, or volunteer — we'd love to hear from you.",
+              phone: "+27 21 000 6789",
+              email: "hello@npo.org.za",
+              address: "Community House, Khayelitsha, Cape Town, 7784",
+              whatsapp: "+27 21 000 6789",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "mining":
+      return {
+        businessName: name,
+        slug,
+        templateId: "mining",
+        theme: { primary: "#292524", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Expert Mining & Resources Consulting",
+              subtitle: "Geological surveys, feasibility studies, environmental compliance, and project management for the South African extractive industries.",
+              badgeText: "SAMREC Compliant Consultants",
+              ctaPrimaryText: "Request Consultation",
+              ctaSecondaryText: "Our Services",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "30+", label: "Projects Delivered" },
+                { value: "15+", label: "Years Experience" },
+                { value: "8", label: "Provinces Active" },
+                { value: "DMRE", label: "Compliant" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "End-to-End Mining Consulting",
+              items: [
+                { title: "Geological Surveys & Mapping", desc: "Detailed geological surveys, borehole logging, and SAMREC-compliant resource estimation.", price: "" },
+                { title: "Feasibility Studies", desc: "Pre-feasibility and bankable feasibility studies for mineral projects.", price: "" },
+                { title: "Mining Rights Applications", desc: "DMRE mining rights, prospecting rights, and environmental authorisation support.", price: "" },
+                { title: "Environmental Compliance", desc: "EMP, EMPR, and Section 24G applications for all mining operations.", price: "" },
+                { title: "Project Management", desc: "Full mine development, commissioning, and operational project management.", price: "" },
+                { title: "Mine Closure Planning", desc: "Closure cost quantification, rehabilitation planning, and trust fund compliance.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "features", enabled: true,
+            data: {
+              title: "Our Expertise",
+              subtitle: "Industry Accreditations",
+              imagePosition: "right",
+              items: [
+                { title: "SAMREC & SAMVAL Compliant", desc: "All resource estimations and valuations adhere to South African Mineral Resource Committee codes." },
+                { title: "Multi-Commodity Experience", desc: "Gold, platinum, chrome, coal, manganese, iron ore, and base metals." },
+                { title: "B-BBEE Compliant", desc: "Level 2 B-BBEE contributor with transformation commitments across all projects." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Contact Our Team",
+              subtitle: "For project inquiries or consultation requests, get in touch with our principal consultants.",
+              phone: "+27 12 000 7890",
+              email: "consulting@miningco.co.za",
+              address: "400 Mining House, eMalahleni (Witbank), Mpumalanga, 1035",
+              whatsapp: "+27 12 000 7890",
+              enableWhatsApp: false,
+            },
+          },
+        ],
+      };
+
+    case "hairsalon":
+      return {
+        businessName: name,
+        slug,
+        templateId: "hairsalon",
+        theme: { primary: "#7e22ce", accent: "#ec4899" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Where Great Hair Happens",
+              subtitle: "Precision cuts, colour, braids, locs, and relaxers by expert stylists. Walk-ins welcome — appointments preferred.",
+              badgeText: "Professional Hair Studio",
+              ctaPrimaryText: "Book Appointment",
+              ctaSecondaryText: "View Services & Prices",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "3 000+", label: "Happy Clients" },
+                { value: "10+", label: "Expert Stylists" },
+                { value: "8+", label: "Years in Business" },
+                { value: "4.8★", label: "Google Rating" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "For All Hair Types",
+              variant: "bordered",
+              items: [
+                { title: "Ladies Cut & Style", desc: "Shampoo, cut, blow-dry, and style by a skilled stylist.", price: "From R180" },
+                { title: "Gents Fade & Cut", desc: "Classic and modern fades, tapers, and beard grooming.", price: "From R80" },
+                { title: "Colour & Highlights", desc: "Full colour, highlights, balayage, and toners for all hair types.", price: "From R350" },
+                { title: "Braids & Weaves", desc: "Box braids, knotless braids, cornrows, sew-ins, and quick weaves.", price: "From R300" },
+                { title: "Dreadlocks & Locs", desc: "New loc installation, maintenance retwisting, and loc extensions.", price: "From R250" },
+                { title: "Relaxer & Keratin", desc: "Chemical relaxers and keratin smoothing treatments.", price: "From R350" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "gallery", enabled: true,
+            data: {
+              variant: "masonry",
+              title: "Our Work",
+              subtitle: "Fresh styles every day",
+              images: [
+                { url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=600", caption: "Colour & Highlights" },
+                { url: "https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&q=80&w=600", caption: "Box Braids" },
+                { url: "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?auto=format&fit=crop&q=80&w=600", caption: "Gents Fade" },
+                { url: "https://images.unsplash.com/photo-1554519515-242161756769?auto=format&fit=crop&q=80&w=600", caption: "Natural Styles" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Book Your Appointment",
+              subtitle: "WhatsApp to book your slot, or walk in — we'll do our best to accommodate you on the day.",
+              phone: "+27 73 000 8901",
+              email: "bookings@hairsalon.co.za",
+              address: "88 Style Street, Sandton, Johannesburg, 2196",
+              whatsapp: "+27 73 000 8901",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "insurance":
+      return {
+        businessName: name,
+        slug,
+        templateId: "insurance",
+        theme: { primary: "#1e3a5f", accent: "#3b82f6" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Protecting What Matters Most",
+              subtitle: "Independent insurance brokers specialising in short-term, life, and commercial insurance. We compare insurers to find you the right cover.",
+              badgeText: "FSP Licensed | FSCA Registered",
+              ctaPrimaryText: "Get a Free Quote",
+              ctaSecondaryText: "Our Cover Types",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "1 200+", label: "Policyholders" },
+                { value: "15+", label: "Years Licensed" },
+                { value: "10+", label: "Insurer Partners" },
+                { value: "FSCA", label: "Registered" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Insurance Solutions",
+              subtitle: "Independent Advice. Best Cover.",
+              items: [
+                { title: "Personal Lines", desc: "Home, car, valuables, and personal liability — structured to your specific needs.", price: "Free Quote" },
+                { title: "Commercial Insurance", desc: "Business assets, liability, business interruption, and engineering cover.", price: "Free Quote" },
+                { title: "Life & Disability Cover", desc: "Life assurance, income protection, and critical illness cover.", price: "Free Quote" },
+                { title: "Fleet Insurance", desc: "Multi-vehicle policies for commercial and personal fleets with fleet discounts.", price: "Free Quote" },
+                { title: "Professional Indemnity", desc: "PI and D&O cover for professionals, directors, and service businesses.", price: "Free Quote" },
+                { title: "Claims Assistance", desc: "We manage your claims from submission to settlement — no dealing with insurers alone.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "features", enabled: true,
+            data: {
+              title: "Why Use a Broker",
+              subtitle: "Independent. Objective. On Your Side.",
+              imagePosition: "right",
+              items: [
+                { title: "We Work for You", desc: "As an independent broker, our loyalty is to you — not to any single insurer." },
+                { title: "Annual Policy Reviews", desc: "We review your cover annually to ensure you're adequately covered and not overpaying." },
+                { title: "Claims Advocacy", desc: "When you claim, we fight your corner to ensure fair and fast settlement." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Get Your Free Quote",
+              subtitle: "Call or WhatsApp us with your cover requirements and we'll compare options from our insurer panel.",
+              phone: "+27 11 000 9012",
+              email: "advice@insurebroker.co.za",
+              address: "Suite 4, Westgate Business Park, Roodepoort, 1724",
+              whatsapp: "+27 11 000 9012",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "homeimprovement":
+      return {
+        businessName: name,
+        slug,
+        templateId: "homeimprovement",
+        theme: { primary: "#92400e", accent: "#dc2626" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(), type: "hero", enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Transform Your Home with Expert Renovations",
+              subtitle: "Trusted home improvement specialists for tiling, painting, waterproofing, paving, and full renovation projects. NHBRC registered.",
+              badgeText: "NHBRC Registered Builders",
+              ctaPrimaryText: "Get a Free Quote",
+              ctaSecondaryText: "View Our Work",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(), type: "stats", enabled: true,
+            data: {
+              items: [
+                { value: "350+", label: "Projects Completed" },
+                { value: "10+", label: "Years Experience" },
+                { value: "NHBRC", label: "Registered" },
+                { value: "5★", label: "Rated Workmanship" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "services", enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Quality Workmanship, Every Time",
+              items: [
+                { title: "Tiling & Flooring", desc: "Floor and wall tiling, laminate, vinyl, and wooden flooring installation.", price: "From R85/m²" },
+                { title: "Painting & Waterproofing", desc: "Interior/exterior painting, roof waterproofing, and rising damp treatment.", price: "From R22/m²" },
+                { title: "Kitchen & Bathroom Renovations", desc: "Full makeovers — plumbing, tiling, fitting, and finishing included.", price: "From R25 000" },
+                { title: "Paving & Driveways", desc: "Concrete, brick, and cobble paving for driveways, patios, and walkways.", price: "From R280/m²" },
+                { title: "Plastering & Screeding", desc: "External and internal plastering, skimming, and floor screeding.", price: "From R55/m²" },
+                { title: "Alterations & Additions", desc: "Room additions, boundary walls, carports, and structural alterations.", price: "Call for Quote" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "gallery", enabled: true,
+            data: {
+              variant: "grid",
+              title: "Before & After",
+              subtitle: "Our recent completed projects",
+              images: [
+                { url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80&w=600", caption: "Kitchen Renovation" },
+                { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600", caption: "Bathroom Remodel" },
+                { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600", caption: "Paving Installation" },
+                { url: "https://images.unsplash.com/photo-1565182999561-18d7dc61c393?auto=format&fit=crop&q=80&w=600", caption: "Exterior Painting" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(), type: "contact", enabled: true,
+            data: {
+              title: "Request Your Free Quote",
+              subtitle: "Send photos of your project via WhatsApp and we'll provide a detailed quote within 24 hours.",
+              phone: "+27 83 000 0123",
+              email: "quote@homerenovations.co.za",
+              address: "Serving Johannesburg, Ekurhuleni & East Rand",
+              whatsapp: "+27 83 000 0123",
               enableWhatsApp: true,
             },
           },
