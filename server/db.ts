@@ -255,7 +255,7 @@ export async function runMigrations() {
       CREATE TABLE IF NOT EXISTS media_assets (
         id VARCHAR(36) PRIMARY KEY,
         workspace_id VARCHAR(36) NOT NULL,
-        url VARCHAR(500) NOT NULL,
+        url LONGTEXT NOT NULL,
         type VARCHAR(10) NOT NULL,
         file_name VARCHAR(255) NOT NULL,
         size INT NOT NULL DEFAULT 0,
@@ -265,6 +265,15 @@ export async function runMigrations() {
         FOREIGN KEY(uploaded_by_user_id) REFERENCES users(id)
       ) ENGINE=InnoDB
     `);
+
+    // Migrate existing media_assets table if needed
+    try {
+      await conn.query(`ALTER TABLE media_assets MODIFY url LONGTEXT NOT NULL`);
+    } catch (err: any) {
+      if (!err.message.includes("Identical")) {
+        console.error("Media assets migration warning:", err.message);
+      }
+    }
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS social_posts (
