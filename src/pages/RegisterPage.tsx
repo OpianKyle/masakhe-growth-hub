@@ -137,7 +137,7 @@ export default function RegisterPage() {
 
           <div className="space-y-3">
             {[
-              "14-day free trial — no credit card required",
+              "Subscribe after sign-up to unlock all features",
               "Business funding toolkit worth R50,000+",
               "Professional website builder included",
               "Full payroll & HR management",
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-2xl font-bold text-slate-900 font-heading">Create your account</h2>
-                      <p className="text-slate-500 mt-1.5 text-sm">Start your 14-day free trial. No credit card required.</p>
+                      <p className="text-slate-500 mt-1.5 text-sm">Create your account and subscribe to unlock all features.</p>
                     </div>
                     <div className="space-y-4">
                       <div>
@@ -426,8 +426,8 @@ export default function RegisterPage() {
                         ))}
                       </div>
                       <div className="bg-green-50 border-t border-green-100 px-4 py-3 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-green-800">Free Trial</span>
-                        <span className="text-sm font-bold text-green-700">14 days — full access, no card needed</span>
+                        <span className="text-sm font-semibold text-green-800">Subscription</span>
+                        <span className="text-sm font-bold text-green-700">Activate after sign-up to unlock all features</span>
                       </div>
                     </div>
 

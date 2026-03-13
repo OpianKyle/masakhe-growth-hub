@@ -205,28 +205,10 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
       `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ? AND bs.status IN ('TRIAL','ACTIVE','PAST_DUE')
+       WHERE bs.workspace_id = ? AND bs.status IN ('ACTIVE','PAST_DUE')
        ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
-
-    // If no billing subscription exists, synthesize a TRIAL based on workspace creation date
-    if (!subscription && workspace.created_at) {
-      const created = new Date(workspace.created_at);
-      const trialEnd = new Date(created.getTime() + 14 * 24 * 60 * 60 * 1000);
-      if (new Date() < trialEnd) {
-        subscription = {
-          status: "TRIAL",
-          trial_end_at: trialEnd.toISOString(),
-          plan_code: null,
-          plan_name: "Free Trial",
-          price_cents: 0,
-          currency: "ZAR",
-          bill_interval: null,
-          synthetic: true,
-        };
-      }
-    }
 
     const invoices = await queryAll(
       "SELECT * FROM billing_invoices WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 20",
@@ -262,26 +244,19 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     }
 
     const subscription = await queryOne(
-      `SELECT bs.status, bs.trial_end_at, bs.plan_id, bp.code as plan_code
+      `SELECT bs.status, bs.plan_id, bp.code as plan_code
        FROM billing_subscriptions bs
        LEFT JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ? AND bs.status IN ('TRIAL','ACTIVE')
+       WHERE bs.workspace_id = ? AND bs.status = 'ACTIVE'
        ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
 
     if (!subscription) {
-      if (workspace.created_at) {
-        const trialEnd = new Date(new Date(workspace.created_at).getTime() + 14 * 24 * 60 * 60 * 1000);
-        if (new Date() < trialEnd) {
-          return res.json({ active: true, status: "TRIAL", plan: null });
-        }
-      }
       return res.json({ active: false, status: null, plan: null });
     }
 
-    const active = subscription.status === 'ACTIVE' || (subscription.status === 'TRIAL' && new Date(subscription.trial_end_at) > new Date());
-    res.json({ active, status: subscription.status, plan: subscription.plan_code || null });
+    res.json({ active: true, status: subscription.status, plan: subscription.plan_code || null });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

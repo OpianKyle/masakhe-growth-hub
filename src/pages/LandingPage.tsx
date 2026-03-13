@@ -129,7 +129,7 @@ export default function LandingPage() {
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 pt-2">
               <Link to="/register">
                 <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-base h-12 px-7 shadow-lg shadow-blue-900/30">
-                  Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/dashboard">
@@ -277,7 +277,7 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mt-14">
             <Link to="/register">
               <Button className="bg-white text-slate-900 hover:bg-slate-100 font-bold h-12 px-8">
-                Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </motion.div>
@@ -471,7 +471,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-blue-300 mb-5">
-              <Shield className="h-3 w-3" /> 14-Day Free Trial — No Credit Card Required
+              <Shield className="h-3 w-3" /> Secure Monthly Billing — Cancel Anytime
             </span>
             <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">Simple, transparent pricing</h2>
             <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start free, upgrade when ready. Cancel anytime.</p>
@@ -521,7 +521,7 @@ export default function LandingPage() {
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
                         : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
                     }`}>
-                      Start 14-day Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                      Subscribe Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                 </div>
@@ -530,7 +530,7 @@ export default function LandingPage() {
           </div>
 
           <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center text-sm text-slate-500 mt-8">
-            All prices in South African Rand (ZAR). No charge during your 14-day trial period.
+            All prices in South African Rand (ZAR). Billed monthly via debit order. Cancel anytime.
           </motion.p>
         </div>
       </section>
@@ -561,7 +561,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
             </div>
-            <p className="text-sm text-white/50">14-day free trial · No credit card required · Cancel anytime</p>
+            <p className="text-sm text-white/50">Secure monthly billing · Cancel anytime · POPIA compliant</p>
           </motion.div>
         </div>
       </section>

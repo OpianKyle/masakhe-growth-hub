@@ -102,7 +102,7 @@ export default function PricingPage() {
               custom={0}
               className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary"
             >
-              <Shield className="h-3 w-3" /> 14-Day Free Trial
+              <Shield className="h-3 w-3" /> Simple Monthly Billing
             </motion.span>
             <motion.h1
               variants={fadeInUp}
@@ -117,7 +117,7 @@ export default function PricingPage() {
               custom={2}
               className="text-lg text-muted-foreground max-w-2xl mx-auto"
             >
-              Choose the plan that fits your business. Start with a 14-day free trial — no commitment, cancel anytime.
+              Choose the plan that fits your business. Billed monthly — no contract, cancel anytime.
             </motion.p>
           </motion.div>
 
@@ -169,7 +169,7 @@ export default function PricingPage() {
                   className="w-full text-base"
                   onClick={() => handleStartTrial(plan.code)}
                 >
-                  Start 14-day Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  Subscribe Now <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </motion.div>
             ))}
@@ -181,7 +181,7 @@ export default function PricingPage() {
             transition={{ delay: 0.8 }}
             className="text-center text-sm text-muted-foreground mt-8"
           >
-            All prices in South African Rand (ZAR). No credit card required to start your trial.
+            All prices in South African Rand (ZAR). Billed monthly via debit order. Cancel anytime.
           </motion.p>
         </div>
       </section>

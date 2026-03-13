@@ -120,8 +120,8 @@ export default function TermsOfServicePage() {
               <h3 className="font-semibold text-foreground mb-2">4.1 Subscription Plans</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Masakhe offers subscription-based access to its platform. Plan details, pricing, and included features are
-                published on our pricing page and may be updated from time to time. A free trial may be offered to new users
-                at our discretion.
+                published on our pricing page and may be updated from time to time. An active subscription is required to
+                access the platform features after registration.
               </p>
             </div>
             <div>

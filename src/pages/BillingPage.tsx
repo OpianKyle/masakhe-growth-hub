@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   CreditCard, Calendar, AlertTriangle,
-  Clock, Loader2, Shield, CalendarDays, Wallet,
+  Loader2, Shield, CalendarDays, Wallet,
   User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,10 +98,6 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
 }
 
-function daysRemaining(dateStr: string | null): number {
-  if (!dateStr) return 0;
-  return Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000));
-}
 
 function statusBadge(status: string) {
   const variants: Record<string, { className: string; label: string }> = {
@@ -474,7 +470,7 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Billing Starts</span>
-              <span className="text-sa-green font-semibold">After trial ends</span>
+              <span className="text-sa-green font-semibold">Upon subscription activation</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Then</span>
@@ -516,7 +512,7 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
             <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-            Your debit order will be processed securely via Adumo Online. Your first payment will only be collected once your trial period ends.
+            Your debit order will be processed securely via Adumo Online. Your subscription activates immediately upon successful payment.
           </div>
 
           <Button
@@ -935,34 +931,8 @@ export default function BillingPage() {
         <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
       </motion.div>
 
-      {(!subscription || subscription.synthetic) ? (
+      {!subscription ? (
         <>
-          {subscription?.synthetic && subscription.trial_end_at && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="rounded-xl border border-[hsl(41,100%,54%)]/30 bg-[hsl(41,100%,54%)]/5 p-6 shadow-card"
-            >
-              <h3 className="text-lg font-bold font-heading text-foreground mb-3 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[hsl(41,100%,54%)]" />
-                Free Trial Active
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Days Remaining</p>
-                  <p className="text-2xl font-bold text-foreground">{daysRemaining(subscription.trial_end_at)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Trial Ends</p>
-                  <p className="text-lg font-semibold text-foreground">{formatDate(subscription.trial_end_at)}</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mt-3">
-                Subscribe to a paid plan below. Your debit order only starts after your trial ends.
-              </p>
-            </motion.div>
-          )}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -973,9 +943,9 @@ export default function BillingPage() {
               <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
                 <CreditCard className="h-7 w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold font-heading text-foreground">Choose Your Plan</h3>
+              <h3 className="text-xl font-bold font-heading text-foreground">Activate Your Subscription</h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                Select a plan to activate your subscription. Your debit order only begins after your trial ends. Cancel anytime.
+                Select a plan to unlock all Masakhe features. Billed monthly via debit order. Cancel anytime.
               </p>
             </div>
             <InlineSubscribeForm onSuccess={fetchBilling} />
@@ -1005,34 +975,6 @@ export default function BillingPage() {
               </div>
             </div>
           </motion.div>
-
-          {subscription.status === "TRIAL" && subscription.trial_end_at && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="rounded-xl border border-[hsl(41,100%,54%)]/30 bg-[hsl(41,100%,54%)]/5 p-6 shadow-card"
-            >
-              <h3 className="text-lg font-bold font-heading text-foreground mb-3 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[hsl(41,100%,54%)]" />
-                Trial Information
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Days Remaining</p>
-                  <p className="text-2xl font-bold text-foreground">{daysRemaining(subscription.trial_end_at)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Trial Ends</p>
-                  <p className="text-lg font-semibold text-foreground">{formatDate(subscription.trial_end_at)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Amount After Trial</p>
-                  <p className="text-lg font-semibold text-foreground">{plan ? formatCents(plan.price_cents) : "—"}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
 
           {subscription.status === "ACTIVE" && subscription.next_billing_at && (
             <motion.div
@@ -1076,11 +1018,11 @@ export default function BillingPage() {
             </motion.div>
           )}
 
-          {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && plan?.code && (
+          {subscription.status === "ACTIVE" && plan?.code && (
             <ChangePlanSection currentPlanCode={plan.code} onSuccess={fetchBilling} />
           )}
 
-          {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && (
+          {subscription.status === "ACTIVE" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1089,9 +1031,7 @@ export default function BillingPage() {
             >
               <h3 className="text-lg font-bold font-heading text-foreground mb-2">Cancel Subscription</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {subscription.status === "TRIAL"
-                  ? "Cancel your trial. You won't be charged."
-                  : "Cancel your subscription. You'll retain access until the end of your current billing period."}
+                Cancel your subscription. You'll retain access until the end of your current billing period.
               </p>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -1103,9 +1043,7 @@ export default function BillingPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      {subscription.status === "TRIAL"
-                        ? "Your trial will end immediately and you won't be charged."
-                        : "Your subscription will be cancelled. You'll lose access to premium features at the end of your billing period."}
+                      Your subscription will be cancelled. You'll lose access to premium features at the end of your billing period.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

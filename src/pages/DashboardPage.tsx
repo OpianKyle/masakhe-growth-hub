@@ -28,7 +28,6 @@ import LeadsPage from "./LeadsPage";
 import PayrollPage from "./PayrollPage";
 import ClientsPage from "./ClientsPage";
 import TrialBanner from "@/components/TrialBanner";
-import DashboardWalkthrough from "@/components/DashboardWalkthrough";
 
 type NavChild = {
   icon: React.ElementType;
@@ -96,9 +95,18 @@ export default function DashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [hasVehicleSite, setHasVehicleSite] = useState(false);
+  const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isImpersonating, originalAdminName, stopImpersonating } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === "admin") { setSubscriptionActive(true); return; }
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setSubscriptionActive(!!d.active))
+      .catch(() => setSubscriptionActive(false));
+  }, [user, location.search]);
 
   useEffect(() => {
     fetch("/api/websites/mine", { credentials: "include" })
@@ -329,8 +337,6 @@ export default function DashboardPage() {
           })}
         </nav>
 
-        {sidebarWide && <DashboardWalkthrough />}
-
         {/* Bottom actions */}
         <div className="shrink-0 px-2 pb-2 space-y-0.5">
           {user?.role === "admin" && (
@@ -425,7 +431,7 @@ export default function DashboardPage() {
           </div>
         )}
         <TrialBanner />
-        <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex-1 overflow-auto min-h-0 relative">
           <Routes>
             <Route index element={<DashboardOverview />} />
             <Route path="website" element={<WebsiteBuilder />} />
@@ -447,6 +453,45 @@ export default function DashboardPage() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
           </Routes>
+          {subscriptionActive === false &&
+            !location.pathname.startsWith("/dashboard/billing") &&
+            !location.pathname.startsWith("/dashboard/settings") && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+              <div className="text-center space-y-5 p-8 max-w-md mx-auto">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Lock className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold font-heading mb-2">Subscription Required</h2>
+                  <p className="text-muted-foreground leading-relaxed">
+                    You need an active Masakhe subscription to access this section.
+                    Subscribe to unlock all features and start building your business.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-left space-y-1.5">
+                  {[
+                    "Website Builder & Publishing",
+                    "Financial Tracking & Invoicing",
+                    "Social Media Hub",
+                    "Payroll Management",
+                    "Business Funding Toolkit",
+                    "Leads & Clients CRM",
+                  ].map((f) => (
+                    <div key={f} className="flex items-center gap-2 text-sm">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate("/dashboard/billing")}
+                  className="w-full rounded-lg bg-primary text-primary-foreground py-2.5 font-semibold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  View Plans & Subscribe
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
