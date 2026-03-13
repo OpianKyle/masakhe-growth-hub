@@ -28,6 +28,12 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    // Admin users always have unrestricted access
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (user?.role === "admin") {
+      return next();
+    }
+
     const member = await queryOne(
       "SELECT wm.workspace_id, w.created_at as workspace_created_at FROM workspace_members wm JOIN workspaces w ON w.id = wm.workspace_id WHERE wm.user_id = ? LIMIT 1",
       [userId]
