@@ -47,9 +47,14 @@ adminRouter.get("/clients", async (req, res) => {
       `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
               bp.industry_sector, bp.phone, bp.physical_address,
-              (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count
+              (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
+              bs.status as subscription_status,
+              bpl.code as plan_code, bpl.name as plan_name
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       LEFT JOIN workspace_members wm ON wm.user_id = u.id
+       LEFT JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status = 'ACTIVE'
+       LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
        ORDER BY u.created_at DESC`
     );
     res.json(clients);
@@ -96,6 +101,57 @@ adminRouter.get("/clients/:id", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch client" });
+  }
+});
+
+adminRouter.post("/clients/:id/subscription", async (req, res) => {
+  try {
+    const { plan } = req.body;
+    if (!["starter", "pro"].includes(plan)) {
+      return res.status(400).json({ error: "Invalid plan. Use 'starter' or 'pro'." });
+    }
+    const workspace = await queryOne(
+      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      [req.params.id]
+    );
+    if (!workspace) return res.status(404).json({ error: "No workspace found for this user" });
+    const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [plan]);
+    if (!billingPlan) return res.status(404).json({ error: "Billing plan not found" });
+    const existing = await queryOne(
+      "SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1",
+      [workspace.id]
+    );
+    if (existing) {
+      await execute(
+        "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, updated_at = NOW() WHERE id = ?",
+        [billingPlan.id, existing.id]
+      );
+    } else {
+      await execute(
+        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status) VALUES (?, ?, 'ACTIVE')",
+        [workspace.id, billingPlan.id]
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to grant subscription" });
+  }
+});
+
+adminRouter.delete("/clients/:id/subscription", async (req, res) => {
+  try {
+    const workspace = await queryOne(
+      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      [req.params.id]
+    );
+    if (!workspace) return res.status(404).json({ error: "No workspace found" });
+    await execute(
+      "UPDATE billing_subscriptions SET status = 'CANCELLED', updated_at = NOW() WHERE workspace_id = ? AND status = 'ACTIVE'",
+      [workspace.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to revoke subscription" });
   }
 });
 

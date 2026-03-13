@@ -3,7 +3,8 @@ import { Link, useLocation, Routes, Route, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
-  Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn
+  Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
+  CreditCard, BadgeCheck, BanknoteIcon
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -38,6 +39,9 @@ interface Client {
   phone?: string;
   physical_address?: string;
   website_count: number;
+  subscription_status?: string | null;
+  plan_code?: string | null;
+  plan_name?: string | null;
 }
 
 const adminNavItems = [
@@ -167,6 +171,37 @@ function ClientList() {
     }
   };
 
+  const grantSubscription = async (id: string, plan: "starter" | "pro", name: string) => {
+    const res = await fetch(`/api/admin/clients/${id}/subscription`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ plan }),
+    });
+    if (res.ok) {
+      toast.success(`${plan.charAt(0).toUpperCase() + plan.slice(1)} subscription granted to ${name}`);
+      loadClients();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to grant subscription");
+    }
+  };
+
+  const revokeSubscription = async (id: string, name: string) => {
+    if (!confirm(`Revoke active subscription for ${name}?`)) return;
+    const res = await fetch(`/api/admin/clients/${id}/subscription`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (res.ok) {
+      toast.success(`Subscription revoked for ${name}`);
+      loadClients();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to revoke subscription");
+    }
+  };
+
   const deleteClient = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) return;
     const res = await fetch(`/api/admin/clients/${id}`, {
@@ -210,6 +245,7 @@ function ClientList() {
               <th className="text-left p-4 font-semibold">Industry</th>
               <th className="text-left p-4 font-semibold">Sites</th>
               <th className="text-left p-4 font-semibold">Role</th>
+              <th className="text-left p-4 font-semibold">Subscription</th>
               <th className="text-left p-4 font-semibold">Joined</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
@@ -238,6 +274,45 @@ function ClientList() {
                     {client.role}
                   </span>
                 </td>
+                <td className="p-4">
+                  {client.role === "admin" ? (
+                    <span className="text-xs text-muted-foreground italic">Admin</span>
+                  ) : client.subscription_status === "ACTIVE" ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800">
+                        <BadgeCheck className="h-3 w-3" />
+                        {client.plan_name || client.plan_code || "Active"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => revokeSubscription(client.id, client.full_name)}
+                      >
+                        Revoke
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                        onClick={() => grantSubscription(client.id, "starter", client.full_name)}
+                      >
+                        <CreditCard className="h-3 w-3" /> Starter
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => grantSubscription(client.id, "pro", client.full_name)}
+                      >
+                        <BanknoteIcon className="h-3 w-3" /> Pro
+                      </Button>
+                    </div>
+                  )}
+                </td>
                 <td className="p-4 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString()}</td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-1">
@@ -258,7 +333,7 @@ function ClientList() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">No clients found.</td>
+                <td colSpan={8} className="p-8 text-center text-muted-foreground">No clients found.</td>
               </tr>
             )}
           </tbody>
