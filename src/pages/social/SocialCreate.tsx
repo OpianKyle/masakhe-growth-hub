@@ -80,7 +80,14 @@ export default function SocialCreate({ workspaceId }: Props) {
       .catch(() => {});
     fetch(`/api/social/ws/${workspaceId}/media`, { credentials: "include" })
       .then(r => r.json())
-      .then(d => setMediaAssets(Array.isArray(d) ? d : []))
+      .then(d => {
+        if (!Array.isArray(d)) return;
+        setMediaAssets(prev => {
+          const fetchedIds = new Set(d.map((a: MediaAsset) => a.id));
+          const extras = prev.filter(a => !fetchedIds.has(a.id));
+          return [...extras, ...d];
+        });
+      })
       .catch(() => {});
   }, [workspaceId]);
 
