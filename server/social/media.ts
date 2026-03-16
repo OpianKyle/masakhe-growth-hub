@@ -113,6 +113,42 @@ mediaRouter.post("/:workspaceId/media/generate", requireActiveSubscription, requ
   }
 });
 
+mediaRouter.post("/:workspaceId/media/from-url", requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+  try {
+    const { url, fileName } = req.body;
+    if (!url) return res.status(400).json({ error: "URL required" });
+
+    const name = fileName || `template-image-${randomUUID()}.jpg`;
+
+    const existing = await queryOne(
+      "SELECT * FROM media_assets WHERE workspace_id = ? AND file_name = ? LIMIT 1",
+      [req.params.workspaceId, name]
+    );
+    if (existing) {
+      return res.json({ ok: true, id: existing.id, url: existing.url, type: existing.type, fileName: existing.file_name });
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch image from URL");
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const mimeType = response.headers.get("content-type") || "image/jpeg";
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    const id = randomUUID();
+    await execute(
+      `INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded_by_user_id, created_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [id, req.params.workspaceId, dataUrl, "IMAGE", name, buffer.length, req.session.userId!, new Date().toISOString()]
+    );
+
+    res.json({ ok: true, id, url: dataUrl, type: "IMAGE", fileName: name });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 mediaRouter.delete("/:workspaceId/media/:assetId", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const asset = await queryOne("SELECT * FROM media_assets WHERE id = ? AND workspace_id = ?", [req.params.assetId, req.params.workspaceId]);

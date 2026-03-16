@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   Sparkles, Copy, ArrowRight, Globe, Building2, Star, Phone,
-  Tag, Users, BarChart3, RefreshCw, ChevronRight
+  Tag, Users, BarChart3, RefreshCw, ChevronRight, Megaphone,
+  Gift, Lightbulb, TrendingUp, Heart, Clock, Handshake, HelpCircle, Rocket, Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, StatsData, ContactData } from "@/types/site";
@@ -27,42 +28,341 @@ interface PostTemplate {
   content: string;
   tags: string[];
   mockImage: string;
+  templateImage: string;
+  templateImageName: string;
 }
-
-const CATEGORY_IMAGES: Record<string, string> = {
-  Introduction: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Services: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  "Our Story": "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Features: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Testimonials: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Milestones: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Contact: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-  Engagement: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-};
 
 const CATEGORY_COLORS: Record<string, { color: string; bg: string; rgb: string }> = {
-  Introduction: { color: "text-blue-600", bg: "bg-blue-500/10", rgb: "100, 116, 204" },
-  Services: { color: "text-green-600", bg: "bg-green-500/10", rgb: "34, 197, 94" },
-  "Our Story": { color: "text-purple-600", bg: "bg-purple-500/10", rgb: "147, 51, 234" },
-  Features: { color: "text-yellow-600", bg: "bg-yellow-500/10", rgb: "202, 138, 4" },
-  Testimonials: { color: "text-amber-600", bg: "bg-amber-500/10", rgb: "217, 119, 6" },
-  Milestones: { color: "text-cyan-600", bg: "bg-cyan-500/10", rgb: "6, 182, 212" },
-  Contact: { color: "text-red-600", bg: "bg-red-500/10", rgb: "220, 38, 38" },
-  Engagement: { color: "text-pink-600", bg: "bg-pink-500/10", rgb: "236, 72, 153" },
+  Introduction:   { color: "text-blue-600",   bg: "bg-blue-500/10",   rgb: "59, 130, 246" },
+  Services:       { color: "text-green-600",  bg: "bg-green-500/10",  rgb: "34, 197, 94" },
+  "Our Story":    { color: "text-purple-600", bg: "bg-purple-500/10", rgb: "147, 51, 234" },
+  Features:       { color: "text-yellow-600", bg: "bg-yellow-500/10", rgb: "202, 138, 4" },
+  Testimonials:   { color: "text-amber-600",  bg: "bg-amber-500/10",  rgb: "217, 119, 6" },
+  Milestones:     { color: "text-cyan-600",   bg: "bg-cyan-500/10",   rgb: "6, 182, 212" },
+  Contact:        { color: "text-red-600",    bg: "bg-red-500/10",    rgb: "220, 38, 38" },
+  Engagement:     { color: "text-pink-600",   bg: "bg-pink-500/10",   rgb: "236, 72, 153" },
+  Advertising:    { color: "text-orange-600", bg: "bg-orange-500/10", rgb: "234, 88, 12" },
+  Promotions:     { color: "text-rose-600",   bg: "bg-rose-500/10",   rgb: "225, 29, 72" },
+  "Tips & Value": { color: "text-teal-600",   bg: "bg-teal-500/10",   rgb: "13, 148, 136" },
 };
 
-// Preload category images
-if (typeof window !== "undefined") {
-  Object.values(CATEGORY_IMAGES).forEach((url) => {
-    const img = new window.Image();
-    img.src = url;
-  });
+function getCategory(cat: string) {
+  return CATEGORY_COLORS[cat] || { color: "text-blue-600", bg: "bg-blue-500/10", rgb: "59, 130, 246" };
 }
 
-function generateTemplates(site: SiteConfig): PostTemplate[] {
+function generateStaticAdTemplates(biz: string): PostTemplate[] {
+  const templates: PostTemplate[] = [];
+
+  // ─── ADVERTISING ──────────────────────────────────────────────────────────
+
+  const adCat = getCategory("Advertising");
+
+  templates.push({
+    id: "ad-flash-sale",
+    category: "Advertising",
+    categoryIcon: Zap,
+    categoryColor: adCat.color,
+    categoryBg: adCat.bg,
+    categoryBgRGB: adCat.rgb,
+    title: "Flash Sale – 24 Hours Only",
+    description: "Drive urgency with a limited-time discount offer",
+    content: `⚡ FLASH SALE — 24 HOURS ONLY!\n\nDon't miss out on massive savings at ${biz}! For the next 24 hours, we're slashing prices on our most popular products and services.\n\n🔥 Up to 30% OFF selected items\n⏰ Offer ends midnight tonight\n🛍️ Limited quantities available\n\nThis is NOT a drill! Tag a friend who needs to know about this deal before it's gone. Share the savings! 💰\n\n👇 Drop "DEAL" in the comments to get the link!\n\n#FlashSale #LimitedOffer #24HoursOnly #${biz.replace(/\s+/g, "")} #SouthAfrica #ShopLocal`,
+    tags: ["#FlashSale", "#LimitedOffer", "#ShopLocal", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-flash-sale.jpg",
+  });
+
+  templates.push({
+    id: "ad-product-launch",
+    category: "Advertising",
+    categoryIcon: Rocket,
+    categoryColor: adCat.color,
+    categoryBg: adCat.bg,
+    categoryBgRGB: adCat.rgb,
+    title: "New Product / Service Launch",
+    description: "Build excitement around your latest launch",
+    content: `🚀 IT'S HERE! Introducing our newest addition at ${biz}!\n\nWe've been working hard behind the scenes, and we're beyond excited to finally reveal what's been keeping us busy.\n\n✨ Designed with YOUR needs in mind\n💎 Premium quality — no compromises\n🇿🇦 Proudly South African, built for South Africans\n\n🎉 LAUNCH SPECIAL: Be among the first 20 customers to claim our exclusive introductory offer!\n\n👇 Comment "LAUNCH" below or DM us to be first in line!\n\n#NewLaunch #ProductLaunch #Innovation #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#NewLaunch", "#ProductLaunch", "#Innovation", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-product-launch.jpg",
+  });
+
+  templates.push({
+    id: "ad-limited-stock",
+    category: "Advertising",
+    categoryIcon: TrendingUp,
+    categoryColor: adCat.color,
+    categoryBg: adCat.bg,
+    categoryBgRGB: adCat.rgb,
+    title: "Low Stock Urgency Alert",
+    description: "Create urgency with a limited stock notification",
+    content: `⚠️ ALMOST GONE — Low Stock Alert!\n\nWe only have a handful of units left of our best-selling item — and at this rate, they're flying off the shelves!\n\n📦 Only a FEW units remaining\n💳 Secure yours before midnight\n🚚 Fast delivery available nationwide\n❌ NO RESTOCK planned this month\n\nDon't be the person who says "I should have bought it when I had the chance!"\n\nWe've seen this sell out THREE times already. Don't sleep on it.\n\n👇 Comment "SOLD" to reserve yours NOW before someone else grabs it!\n\n#LimitedStock #DontMissOut #SellingFast #${biz.replace(/\s+/g, "")} #ShopNow`,
+    tags: ["#LimitedStock", "#DontMissOut", "#SellingFast", "#ShopNow"],
+    mockImage: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-limited-stock.jpg",
+  });
+
+  templates.push({
+    id: "ad-giveaway",
+    category: "Advertising",
+    categoryIcon: Gift,
+    categoryColor: adCat.color,
+    categoryBg: adCat.bg,
+    categoryBgRGB: adCat.rgb,
+    title: "Community Giveaway",
+    description: "Grow your audience with an exciting giveaway post",
+    content: `🎉 GIVEAWAY TIME — We're celebrating with YOU!\n\nTo thank our incredible community for [X] followers / [milestone], we're giving away an amazing prize!\n\n🎁 Prize: [Describe Your Prize]\n💰 Value: R[Amount]\n📅 Winner announced: [Date]\n\nTo enter, simply:\n1️⃣ LIKE this post ❤️\n2️⃣ FOLLOW our page (if you haven't already)\n3️⃣ TAG 2 friends in the comments below\n\n⭐ BONUS: Share this to your story for 5 extra entries!\n\nEach tag = an extra entry. The more you share, the better your chances! Good luck! 🍀\n\n#Giveaway #Competition #WinWithUs #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#Giveaway", "#Competition", "#WinWithUs", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-giveaway.jpg",
+  });
+
+  templates.push({
+    id: "ad-before-after",
+    category: "Advertising",
+    categoryIcon: Sparkles,
+    categoryColor: adCat.color,
+    categoryBg: adCat.bg,
+    categoryBgRGB: adCat.rgb,
+    title: "Before & After Transformation",
+    description: "Showcase a powerful client result or transformation",
+    content: `🔄 The Transformation is REAL — and it could be yours too!\n\nBefore ${biz}:\n❌ [The Problem Your Customer Had]\n❌ [The Frustration They Felt]\n❌ [What Wasn't Working]\n\n↓ After working with ${biz}:\n✅ [Incredible Result 1]\n✅ [Incredible Result 2]\n✅ [Life-Changing Result 3]\n\nThe difference? [Your Key Differentiator — what makes you different]\n\nWe've helped [number]+ clients make this transformation — and we're ready to do the same for YOU.\n\n💬 Comment "TRANSFORM" below and we'll reach out within 24 hours to show you how.\n\n#BeforeAfter #Transformation #Results #ClientWins #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#BeforeAfter", "#Transformation", "#Results", "#ClientWins"],
+    mockImage: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-before-after.jpg",
+  });
+
+  // ─── PROMOTIONS ───────────────────────────────────────────────────────────
+
+  const promoCat = getCategory("Promotions");
+
+  templates.push({
+    id: "promo-discount",
+    category: "Promotions",
+    categoryIcon: Tag,
+    categoryColor: promoCat.color,
+    categoryBg: promoCat.bg,
+    categoryBgRGB: promoCat.rgb,
+    title: "Special Discount Offer",
+    description: "Announce a price reduction or discount code",
+    content: `💥 SPECIAL OFFER — Just For Our Online Community!\n\nWe appreciate every single one of you, so here's a little thank-you gift:\n\n🏷️ [X]% OFF your next purchase / service\n📲 Mention "SOCIAL[X]" when you book or order\n⏳ Valid until [Date]\n\nThis exclusive deal is for our followers ONLY — so share it before it expires!\n\nWhat will you be getting? Let us know in the comments! 👇\n\n📞 Book now: [Phone/WhatsApp]\n📧 Email: [Email]\n\n#SpecialOffer #Discount #ExclusiveDeal #${biz.replace(/\s+/g, "")} #SouthAfrica #ShopLocal`,
+    tags: ["#SpecialOffer", "#Discount", "#ExclusiveDeal", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1556742111-a301076d9d18?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1556742111-a301076d9d18?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-discount-offer.jpg",
+  });
+
+  templates.push({
+    id: "promo-referral",
+    category: "Promotions",
+    categoryIcon: Handshake,
+    categoryColor: promoCat.color,
+    categoryBg: promoCat.bg,
+    categoryBgRGB: promoCat.rgb,
+    title: "Refer a Friend & Earn",
+    description: "Reward customers who bring in new business",
+    content: `💰 REFER A FRIEND — You BOTH Win!\n\nDo you know someone who could benefit from what we offer at ${biz}? Send them our way and we'll reward you BOTH!\n\n🎁 You receive: [Your Reward — e.g. R200 voucher / free service]\n🎁 Your friend gets: [Friend's Reward — e.g. 15% off their first order]\n✅ No limit — refer as many people as you like!\n\nHere's how it works:\n1️⃣ Share this post with a friend who needs us\n2️⃣ They mention YOUR name when they contact us\n3️⃣ You BOTH walk away with something awesome 🏆\n\nTag your person below! 👇\n\n#ReferAFriend #ReferralProgram #WinWin #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#ReferAFriend", "#ReferralProgram", "#WinWin", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-referral.jpg",
+  });
+
+  templates.push({
+    id: "promo-bundle",
+    category: "Promotions",
+    categoryIcon: Star,
+    categoryColor: promoCat.color,
+    categoryBg: promoCat.bg,
+    categoryBgRGB: promoCat.rgb,
+    title: "Bundle Deal / Package Offer",
+    description: "Promote a value-packed bundle or combo package",
+    content: `🎯 BUNDLE DEAL — More Value, Less Spend!\n\nWhy settle for one when you can get MORE for your money?\n\nIntroducing our ${biz} VALUE BUNDLE:\n\n📦 [Item / Service 1] — Worth R[Price]\n📦 [Item / Service 2] — Worth R[Price]\n📦 [Item / Service 3] — Worth R[Price]\n\n💰 Bundle Price: Only R[Bundle Price] (Save R[Savings]!)\n⏳ Available for [X] days only\n\nThis bundle was created because our customers kept asking for it — and we listened! 👂\n\n👇 Comment "BUNDLE" to claim yours or DM us to order!\n\n#BundleDeal #ValueForMoney #${biz.replace(/\s+/g, "")} #SmartShopping #SouthAfrica`,
+    tags: ["#BundleDeal", "#ValueForMoney", "#SmartShopping", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-bundle-deal.jpg",
+  });
+
+  templates.push({
+    id: "promo-partnership",
+    category: "Promotions",
+    categoryIcon: Handshake,
+    categoryColor: promoCat.color,
+    categoryBg: promoCat.bg,
+    categoryBgRGB: promoCat.rgb,
+    title: "Partnership Announcement",
+    description: "Announce an exciting new business partnership",
+    content: `🤝 BIG NEWS — We've Partnered Up!\n\nWe are beyond THRILLED to announce our exciting new partnership with [Partner Name]!\n\nWhat does this mean for YOU?\n\n✨ [Key Benefit 1 for your customers]\n✨ [Key Benefit 2 for your customers]\n✨ [Key Benefit 3 for your customers]\n\nTogether, ${biz} and [Partner] are combining our strengths to deliver something our customers have never experienced before.\n\nStay tuned — there is a LOT more coming your way very soon! 🚀\n\nTag someone who should know about this! 👇\n\n#Partnership #Collaboration #BusinessGrowth #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#Partnership", "#Collaboration", "#BusinessGrowth", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-partnership.jpg",
+  });
+
+  // ─── TIPS & VALUE ─────────────────────────────────────────────────────────
+
+  const tipCat = getCategory("Tips & Value");
+
+  templates.push({
+    id: "tip-pro-tip",
+    category: "Tips & Value",
+    categoryIcon: Lightbulb,
+    categoryColor: tipCat.color,
+    categoryBg: tipCat.bg,
+    categoryBgRGB: tipCat.rgb,
+    title: "Pro Tip Tuesday",
+    description: "Share an industry tip to build authority and trust",
+    content: `💡 PRO TIP from the ${biz} team!\n\nDid you know that [industry-specific fact or insight that surprises your audience]?\n\nHere's what most people get WRONG:\n❌ [Common Mistake 1]\n❌ [Common Mistake 2]\n❌ [Common Mistake 3]\n\nHere's what actually WORKS:\n✅ [Correct Approach 1]\n✅ [Correct Approach 2]\n✅ [Correct Approach 3]\n\n📌 Save this post — you'll want to come back to it!\n\n💬 What questions do you have? Drop them in the comments and we'll answer every single one!\n\n#ProTip #BusinessAdvice #IndustryInsights #${biz.replace(/\s+/g, "")} #SouthAfrica #Entrepreneur`,
+    tags: ["#ProTip", "#BusinessAdvice", "#IndustryInsights", "#Entrepreneur"],
+    mockImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-pro-tip.jpg",
+  });
+
+  templates.push({
+    id: "tip-did-you-know",
+    category: "Tips & Value",
+    categoryIcon: HelpCircle,
+    categoryColor: tipCat.color,
+    categoryBg: tipCat.bg,
+    categoryBgRGB: tipCat.rgb,
+    title: "Did You Know? (Education Post)",
+    description: "Educate your audience with a surprising industry fact",
+    content: `🤔 Did you know this about [your industry]?\n\nFact: [Surprising or eye-opening industry statistic or insight]\n\nMost people don't realise:\n👉 [Supporting fact 1]\n👉 [Supporting fact 2]\n👉 [Supporting fact 3]\n\nAt ${biz}, this is EXACTLY why we [explain your unique approach or commitment].\n\nWe believe an informed customer makes the best decisions — and we're here to keep you informed.\n\n📌 Save this and share with someone in your industry!\n\n#DidYouKnow #Facts #Education #${biz.replace(/\s+/g, "")} #SouthAfrica #SMME`,
+    tags: ["#DidYouKnow", "#Facts", "#Education", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1516321165247-4aa89a48be55?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1516321165247-4aa89a48be55?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-did-you-know.jpg",
+  });
+
+  templates.push({
+    id: "tip-motivation",
+    category: "Tips & Value",
+    categoryIcon: Heart,
+    categoryColor: tipCat.color,
+    categoryBg: tipCat.bg,
+    categoryBgRGB: tipCat.rgb,
+    title: "Monday Motivation",
+    description: "Inspire your audience to start the week strong",
+    content: `💪 MONDAY MOTIVATION from the ${biz} team!\n\n"The secret to getting ahead is getting started." — Mark Twain\n\nThis week, we challenge you to:\n🎯 Set ONE clear, specific goal for your business\n📝 Write down the 3 steps that will get you there\n✅ Take action on step ONE before the end of today\n\nAt ${biz}, we believe deeply in the power of South African entrepreneurship. Every great business — every empire — started with a single brave decision.\n\n💙💛💚🖤 You've got this!\n\n👇 Drop your goal for this week in the comments — let's hold each other accountable!\n\n#MondayMotivation #Entrepreneur #SouthAfrica #SMME #BusinessGrowth`,
+    tags: ["#MondayMotivation", "#Entrepreneur", "#SouthAfrica", "#SMME"],
+    mockImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-motivation.jpg",
+  });
+
+  templates.push({
+    id: "tip-faq",
+    category: "Tips & Value",
+    categoryIcon: HelpCircle,
+    categoryColor: tipCat.color,
+    categoryBg: tipCat.bg,
+    categoryBgRGB: tipCat.rgb,
+    title: "FAQ — Your Top Questions Answered",
+    description: "Address common customer questions in one post",
+    content: `❓ YOUR TOP QUESTIONS — ANSWERED!\n\nWe get asked these ALL the time at ${biz}, so we thought we'd put them all in one place:\n\n🙋 Q: How long does it take?\n💬 A: [Your typical turnaround time]\n\n🙋 Q: What areas do you service?\n💬 A: We serve [your area] and surrounding regions. Nationwide delivery available!\n\n🙋 Q: Do you offer payment plans?\n💬 A: Yes! We offer flexible payment options — ask us about our plans.\n\n🙋 Q: How do I get started?\n💬 A: Simply DM us, WhatsApp us, or click the link in our bio!\n\n📌 Save this and share with someone who's been wondering!\n\n#FAQ #CustomerService #${biz.replace(/\s+/g, "")} #SouthAfrica #HereToHelp`,
+    tags: ["#FAQ", "#CustomerService", "#HereToHelp", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-faq.jpg",
+  });
+
+  // ─── ENGAGEMENT ───────────────────────────────────────────────────────────
+
+  const engCat = getCategory("Engagement");
+
+  templates.push({
+    id: "eng-behind-scenes",
+    category: "Engagement",
+    categoryIcon: Users,
+    categoryColor: engCat.color,
+    categoryBg: engCat.bg,
+    categoryBgRGB: engCat.rgb,
+    title: "Behind the Scenes",
+    description: "Give your audience an exclusive look at your team at work",
+    content: `👀 Ever wondered what goes on BEHIND THE SCENES at ${biz}?\n\nToday, we're giving you an exclusive peek into our world...\n\n☕ We start early — because your orders, bookings, and projects deserve our best\n🛠️ Every single detail is checked, double-checked, and triple-checked\n🤝 We collaborate as a team because great things are never done alone\n❤️ Most importantly — we genuinely care about every single customer\n\nThe passionate people behind the brand are what make ${biz} truly special.\n\n💬 Would you like to see more of our day-to-day? Comment "MORE" below and we'll do a full day-in-the-life post!\n\n#BehindTheScenes #OurTeam #BusinessLife #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#BehindTheScenes", "#OurTeam", "#BusinessLife", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-behind-scenes.jpg",
+  });
+
+  templates.push({
+    id: "eng-poll",
+    category: "Engagement",
+    categoryIcon: BarChart3,
+    categoryColor: engCat.color,
+    categoryBg: engCat.bg,
+    categoryBgRGB: engCat.rgb,
+    title: "This or That? (Engagement Poll)",
+    description: "Boost engagement with a fun audience poll",
+    content: `🗳️ THIS OR THAT? — We want to know what YOU think!\n\nAt ${biz}, your opinions shape everything we do. So tell us:\n\n🅰️ Option A: [Choice 1 — e.g. Morning service vs Evening service]\n🆚\n🅱️ Option B: [Choice 2 — e.g. Pay monthly vs Pay upfront]\n\n👇 Comment A or B below!\n\nBonus question: Is there something specific you wish we offered or did differently? We're ALL ears — your feedback directly influences what we build next.\n\nShare this with a friend and see what THEY choose! 😄\n\n#ThisOrThat #YouDecide #CommunityVote #${biz.replace(/\s+/g, "")} #CustomerFirst`,
+    tags: ["#ThisOrThat", "#CommunityVote", "#CustomerFirst", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-poll.jpg",
+  });
+
+  templates.push({
+    id: "eng-social-proof",
+    category: "Engagement",
+    categoryIcon: BarChart3,
+    categoryColor: engCat.color,
+    categoryBg: engCat.bg,
+    categoryBgRGB: engCat.rgb,
+    title: "Our Numbers Speak for Themselves",
+    description: "Build credibility with real business stats and milestones",
+    content: `📊 THE NUMBERS DON'T LIE — and we're incredibly proud of ours!\n\nSince opening our doors, ${biz} has:\n\n🎯 Served [X]+ happy, satisfied customers\n⭐ Maintained a [4.8]/5 customer satisfaction rating\n📦 Delivered [X]+ successful projects and orders\n🏆 Earned [X] industry recognition / awards\n🇿🇦 Supported [X]+ local jobs in South Africa\n\nWe don't just talk about excellence — we LIVE it, every single day.\n\nNone of this would be possible without YOUR continued trust and support. THANK YOU. 🙏\n\nReady to become our next success story? 👇 Let's talk!\n\n#Milestones #SocialProof #Credibility #${biz.replace(/\s+/g, "")} #Proud #SouthAfrica`,
+    tags: ["#Milestones", "#SocialProof", "#Credibility", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-social-proof.jpg",
+  });
+
+  templates.push({
+    id: "eng-appreciation",
+    category: "Engagement",
+    categoryIcon: Heart,
+    categoryColor: engCat.color,
+    categoryBg: engCat.bg,
+    categoryBgRGB: engCat.rgb,
+    title: "Customer Appreciation Post",
+    description: "Genuinely thank your community for their support",
+    content: `🙏 FROM THE BOTTOM OF OUR HEARTS — THANK YOU!\n\nWe hit a major milestone this week — [X followers / X orders / X years in business / etc.] — and we couldn't have done it without every single one of you.\n\nTo our loyal customers:\nThank you for trusting us. Thank you for choosing us. Thank you for spreading the word.\n\nTo our new followers:\nWelcome to the ${biz} family! We're so glad you found us, and we cannot wait to show you what we're made of.\n\n❤️ This community is everything to us.\n\n💬 Drop a ❤️ in the comments if you've been part of our journey — we see you and we appreciate you more than words can say!\n\n#ThankYou #CustomerAppreciation #Grateful #${biz.replace(/\s+/g, "")} #Community #SouthAfrica`,
+    tags: ["#ThankYou", "#CustomerAppreciation", "#Grateful", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-appreciation.jpg",
+  });
+
+  templates.push({
+    id: "eng-anniversary",
+    category: "Engagement",
+    categoryIcon: Star,
+    categoryColor: engCat.color,
+    categoryBg: engCat.bg,
+    categoryBgRGB: engCat.rgb,
+    title: "Business Anniversary / Milestone",
+    description: "Celebrate a birthday, anniversary, or major milestone",
+    content: `🎂 WE'RE CELEBRATING — And YOU'RE Invited!\n\n${biz} is turning [X] years old / reaching [milestone] — and we want to celebrate with the people who made it possible: YOU! 🎉\n\n[X] years ago, we started with [humble beginning — e.g. a small garage, a dream, R500 in the bank].\n\nToday, we've:\n🏆 Served [X]+ amazing clients\n💼 Built a team of [X] passionate people\n🌍 Expanded to [regions/platforms]\n\nThe road wasn't always easy — but every challenge was worth it because of the incredible community we've built.\n\n🎁 To celebrate, we're offering [ANNIVERSARY SPECIAL: X% off / free gift / etc.] this week only!\n\nThank you for being part of this story. Here's to many more years! 🥂\n\n#Anniversary #Milestone #Celebrating #${biz.replace(/\s+/g, "")} #SouthAfrica`,
+    tags: ["#Anniversary", "#Milestone", "#Celebrating", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-anniversary.jpg",
+  });
+
+  return templates;
+}
+
+function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
   const templates: PostTemplate[] = [];
   const biz = site.businessName || "our business";
-  const getCategory = (cat: string) => CATEGORY_COLORS[cat] || { color: "text-blue-600", bg: "bg-blue-500/10", rgb: "59, 130, 246" };
 
   const hero = site.sections.find(s => s.type === "hero" && s.enabled)?.data as HeroData | undefined;
   const servicesSection = site.sections.find(s => s.type === "services" && s.enabled)?.data as ServicesData | undefined;
@@ -72,7 +372,6 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
   const contactSection = site.sections.find(s => s.type === "contact" && s.enabled)?.data as ContactData | undefined;
   const featuresSection = site.sections.find(s => s.type === "features" && s.enabled)?.data;
 
-  // --- INTRODUCTION TEMPLATES ---
   if (hero) {
     const cat = getCategory("Introduction");
     templates.push({
@@ -86,26 +385,28 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: `Introduce ${biz} to your audience`,
       content: `👋 Introducing ${biz}!\n\n${hero.subtitle || hero.title || "We're here to serve you."}\n\n${hero.ctaPrimaryText ? `${hero.ctaPrimaryText} today — ` : ""}we'd love to work with you.\n\n#SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #SMME`,
       tags: ["#SmallBusiness", "#SMME", "#SouthAfrica"],
-      mockImage: CATEGORY_IMAGES["Introduction"],
+      mockImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-meet-business.jpg",
     });
 
-    const cat2 = getCategory("Introduction");
     templates.push({
       id: "intro-2",
       category: "Introduction",
       categoryIcon: Building2,
-      categoryColor: cat2.color,
-      categoryBg: cat2.bg,
-      categoryBgRGB: cat2.rgb,
+      categoryColor: cat.color,
+      categoryBg: cat.bg,
+      categoryBgRGB: cat.rgb,
       title: "What We Do",
       description: `Explain what ${biz} offers`,
       content: `✨ At ${biz}, we believe in making a difference.\n\n${hero.subtitle || "We offer top-quality products and services tailored to your needs."}\n\nGet in touch — we're ready to help!\n\n#${biz.replace(/\s+/g, "")} #BusinessGrowth #ShopLocal`,
       tags: ["#BusinessGrowth", "#ShopLocal"],
-      mockImage: CATEGORY_IMAGES["Introduction"],
+      mockImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-what-we-do.jpg",
     });
   }
 
-  // --- SERVICE TEMPLATES ---
   if (servicesSection?.items?.length) {
     const catSvc = getCategory("Services");
     servicesSection.items.slice(0, 4).forEach((service, i) => {
@@ -120,7 +421,9 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
         description: `Promote service: ${service.title}`,
         content: `🌟 Service Spotlight: ${service.title}\n\n${service.desc || "One of our most popular offerings."}\n\n${service.price ? `Starting from ${service.price} — ` : ""}Contact ${biz} today to learn more!\n\n#${biz.replace(/\s+/g, "")} #Services #SouthAfrica #SMME`,
         tags: ["#Services", "#SMME"],
-        mockImage: CATEGORY_IMAGES["Services"],
+        mockImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
+        templateImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200",
+        templateImageName: `template-service-${i}.jpg`,
       });
     });
 
@@ -137,12 +440,13 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
         description: "Showcase all offerings",
         content: `💼 Here's what we offer at ${biz}:\n\n${serviceList}\n\nReady to get started? Reach out to us today!\n\n#${biz.replace(/\s+/g, "")} #Services #BusinessGrowth #ShopLocal`,
         tags: ["#Services", "#ShopLocal"],
-        mockImage: CATEGORY_IMAGES["Services"],
+        mockImage: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=600",
+        templateImage: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=1200",
+        templateImageName: "template-all-services.jpg",
       });
     }
   }
 
-  // --- ABOUT / STORY TEMPLATES ---
   if (aboutSection) {
     const catStory = getCategory("Our Story");
     const storyText = aboutSection.quote || (aboutSection.items?.[0]?.desc) || "";
@@ -157,11 +461,12 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: "Share your business journey",
       content: `📖 The Story Behind ${biz}\n\n${storyText || "Every business has a story. Ours is built on passion, hard work, and dedication to our customers."}\n\nWe're proud of where we've come from and excited about where we're going. Thank you for being part of our journey! 🙏\n\n#OurStory #${biz.replace(/\s+/g, "")} #SouthAfrica #Entrepreneur`,
       tags: ["#OurStory", "#Entrepreneur"],
-      mockImage: CATEGORY_IMAGES["Our Story"],
+      mockImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-our-story.jpg",
     });
 
     if (aboutSection.items?.length > 0) {
-      const point = aboutSection.items[0];
       templates.push({
         id: "about-2",
         category: "Our Story",
@@ -170,15 +475,16 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
         categoryBg: catStory.bg,
         categoryBgRGB: catStory.rgb,
         title: "Why Choose Us",
-        description: "Highlight your unique value",
+        description: "Highlight your unique value proposition",
         content: `💪 Why choose ${biz}?\n\n${aboutSection.items.slice(0, 3).map(item => `✅ ${item.title}: ${item.desc}`).join("\n\n")}\n\nDiscover the difference — reach out today!\n\n#WhyChooseUs #${biz.replace(/\s+/g, "")} #QualityService`,
         tags: ["#WhyChooseUs", "#QualityService"],
-        mockImage: CATEGORY_IMAGES["Our Story"],
+        mockImage: "https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&q=80&w=600",
+        templateImage: "https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&q=80&w=1200",
+        templateImageName: "template-why-choose-us.jpg",
       });
     }
   }
 
-  // --- FEATURES TEMPLATES ---
   if (featuresSection?.items?.length) {
     const catFeat = getCategory("Features");
     templates.push({
@@ -192,11 +498,12 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: "Emphasize your unique features",
       content: `⭐ What sets ${biz} apart?\n\n${featuresSection.items.slice(0, 3).map((f: any) => `🔹 ${f.title}: ${f.desc}`).join("\n\n")}\n\nExperience the ${biz} difference today.\n\n#Excellence #${biz.replace(/\s+/g, "")} #BusinessGrowth`,
       tags: ["#Excellence", "#BusinessGrowth"],
-      mockImage: CATEGORY_IMAGES["Features"],
+      mockImage: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-what-makes-different.jpg",
     });
   }
 
-  // --- TESTIMONIAL TEMPLATES ---
   if (testimonialsSection?.items?.length) {
     const catTest = getCategory("Testimonials");
     testimonialsSection.items.slice(0, 2).forEach((t, i) => {
@@ -211,12 +518,13 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
         description: `Customer testimonial: ${t.name}`,
         content: `⭐ What our customers say about ${biz}:\n\n"${t.text}"\n— ${t.name}${t.role ? `, ${t.role}` : ""}\n\nWe love hearing from our customers! Share your experience with us.\n\n#CustomerLove #${biz.replace(/\s+/g, "")} #Testimonial #SouthAfrica`,
         tags: ["#CustomerLove", "#Testimonial"],
-        mockImage: CATEGORY_IMAGES["Testimonials"],
+        mockImage: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=600",
+        templateImage: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1200",
+        templateImageName: `template-testimonial-${i}.jpg`,
       });
     });
   }
 
-  // --- STATS TEMPLATES ---
   if (statsSection?.items?.length) {
     const catMile = getCategory("Milestones");
     const statsList = statsSection.items.map(s => `📊 ${s.value} ${s.label}`).join("\n");
@@ -231,11 +539,12 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: "Celebrate your milestones",
       content: `🎉 Celebrating milestones at ${biz}!\n\n${statsList}\n\nNone of this would be possible without our amazing customers. Thank you! 🙌\n\n#Milestones #${biz.replace(/\s+/g, "")} #Grateful #Entrepreneur`,
       tags: ["#Milestones", "#Grateful"],
-      mockImage: CATEGORY_IMAGES["Milestones"],
+      mockImage: "https://images.unsplash.com/photo-1521791055366-0d553872952f?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1521791055366-0d553872952f?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-achievements.jpg",
     });
   }
 
-  // --- CONTACT / CTA TEMPLATES ---
   if (contactSection) {
     const catCont = getCategory("Contact");
     const contactLines = [
@@ -256,7 +565,9 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: "Encourage contact and inquiries",
       content: `📣 Ready to work with ${biz}? We'd love to hear from you!\n\n${contactLines || "Reach out and let's chat."}\n\nDon't hesitate — let's make something great together! 💼\n\n#ContactUs #${biz.replace(/\s+/g, "")} #GetInTouch #SouthAfrica`,
       tags: ["#ContactUs", "#GetInTouch"],
-      mockImage: CATEGORY_IMAGES["Contact"],
+      mockImage: "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-get-in-touch.jpg",
     });
 
     templates.push({
@@ -270,60 +581,42 @@ function generateTemplates(site: SiteConfig): PostTemplate[] {
       description: "Weekly call-to-action post",
       content: `🌟 This week at ${biz}!\n\nLooking for quality ${servicesSection?.items?.[0]?.title || "services"}? You've found the right team.\n\n${contactLines || "Get in touch today."}\n\n#WeekendSpecial #${biz.replace(/\s+/g, "")} #SouthAfrica #ShopLocal`,
       tags: ["#WeekendSpecial", "#ShopLocal"],
-      mockImage: CATEGORY_IMAGES["Contact"],
+      mockImage: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=1200",
+      templateImageName: "template-weekend-cta.jpg",
     });
-  }
-
-  // --- GENERIC FALLBACK if no site data ---
-  if (templates.length === 0) {
-    const catIntro = getCategory("Introduction");
-    const catEngage = getCategory("Engagement");
-    templates.push(
-      {
-        id: "generic-1",
-        category: "Introduction",
-        categoryIcon: Building2,
-        categoryColor: catIntro.color,
-        categoryBg: catIntro.bg,
-        categoryBgRGB: catIntro.rgb,
-        title: "Business Introduction",
-        description: "Introduce your business",
-        content: `👋 Hello! We're ${biz} and we're excited to connect with you on social media.\n\nStay tuned for updates, offers, and more!\n\n#SmallBusiness #SMME #SouthAfrica`,
-        tags: ["#SmallBusiness", "#SMME"],
-        mockImage: CATEGORY_IMAGES["Introduction"],
-      },
-      {
-        id: "generic-2",
-        category: "Engagement",
-        categoryIcon: Star,
-        categoryColor: catEngage.color,
-        categoryBg: catEngage.bg,
-        categoryBgRGB: catEngage.rgb,
-        title: "Customer Appreciation",
-        description: "Thank your customers",
-        content: `🙏 A huge THANK YOU to all our customers! Your support means everything to us at ${biz}.\n\nWe're committed to giving you the best — every single day.\n\n#ThankYou #CustomerAppreciation #${biz.replace(/\s+/g, "")}`,
-        tags: ["#ThankYou", "#CustomerAppreciation"],
-        mockImage: CATEGORY_IMAGES["Engagement"],
-      }
-    );
   }
 
   return templates;
 }
 
-const CATEGORY_ORDER = ["Introduction", "Services", "Our Story", "Features", "Testimonials", "Milestones", "Contact", "Engagement"];
+function generateTemplates(site: SiteConfig | null): PostTemplate[] {
+  const biz = site?.businessName || "our business";
+  const adTemplates = generateStaticAdTemplates(biz);
+  const siteTemplates = site ? generateSiteTemplates(site) : [];
+  return [...siteTemplates, ...adTemplates];
+}
+
+const CATEGORY_ORDER = [
+  "Introduction", "Services", "Our Story", "Features", "Testimonials",
+  "Milestones", "Contact", "Advertising", "Promotions", "Tips & Value", "Engagement",
+];
 
 export default function SocialPostTemplates({ workspaceId, site }: Props) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const templates = site ? generateTemplates(site) : [];
+  const templates = generateTemplates(site);
   const categories = ["All", ...CATEGORY_ORDER.filter(c => templates.some(t => t.category === c))];
   const filtered = selectedCategory === "All" ? templates : templates.filter(t => t.category === selectedCategory);
 
   const handleUseTemplate = (template: PostTemplate) => {
-    navigate(`/dashboard/social/create?template=${encodeURIComponent(template.content)}`);
+    const params = new URLSearchParams();
+    params.set("template", template.content);
+    params.set("templateImage", template.templateImage);
+    params.set("templateImageName", template.templateImageName);
+    navigate(`/dashboard/social/create?${params.toString()}`);
   };
 
   const handleCopy = async (template: PostTemplate) => {
@@ -342,8 +635,8 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
           </h2>
           <p className="text-muted-foreground mt-0.5">
             {site
-              ? `Smart posts generated from your ${site.businessName} website`
-              : "Complete your website in the Website Builder to unlock personalised templates"}
+              ? `Smart posts generated from your ${site.businessName} website + advertising templates`
+              : "Ready-to-use advertising templates — build your website to unlock personalised posts"}
           </p>
         </div>
         {!site && (
@@ -353,111 +646,125 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
         )}
       </div>
 
-      {!site ? (
-        <Card className="p-12 text-center border-dashed">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-            <Globe className="h-8 w-8 text-muted-foreground/40" />
+      {!site && (
+        <Card className="p-4 border-dashed border-primary/30 bg-primary/5 flex items-start gap-3">
+          <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-primary">Unlock personalised templates</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Build your website in the Website Builder to generate posts tailored to your business name, services, and story.
+            </p>
           </div>
-          <h3 className="font-bold text-lg mb-1">No Website Found</h3>
-          <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
-            Build your website first using the Website Builder. We'll use your business name, services, and story to generate personalised social media posts for you.
-          </p>
-          <Button onClick={() => navigate("/dashboard/website")} className="gradient-hero text-white">
-            <Globe className="h-4 w-4 mr-2" /> Go to Website Builder <ChevronRight className="h-4 w-4 ml-1" />
+          <Button size="sm" onClick={() => navigate("/dashboard/website")} className="gradient-hero text-white ml-auto shrink-0">
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </Card>
-      ) : (
-        <>
-          {/* Category filter */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all border ${
-                  selectedCategory === cat
-                    ? "bg-primary text-white border-primary shadow-sm"
-                    : "bg-white border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                {cat} {cat === "All" ? `(${templates.length})` : `(${templates.filter(t => t.category === cat).length})`}
-              </button>
-            ))}
-          </div>
-
-          {/* Templates grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filtered.map((template, i) => {
-              const Icon = template.categoryIcon;
-              return (
-                <motion.div
-                  key={template.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                >
-                  <Card className="group transition-all border-2 overflow-hidden hover:shadow-lg hover:-translate-y-1 border-transparent hover:border-primary cursor-pointer">
-                    {/* Mock image with gradient overlay */}
-                    <div className="relative h-40 w-full overflow-hidden bg-slate-200">
-                      <img
-                        src={template.mockImage}
-                        alt={template.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                      />
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: `linear-gradient(to bottom, rgba(${template.categoryBgRGB}, 0.4) 0%, rgba(${template.categoryBgRGB}, 0.8) 100%)` }}
-                      />
-                      {/* Category icon overlay */}
-                      <div className="absolute top-3 right-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${template.categoryBg}`}>
-                          <Icon className={`h-5 w-5 ${template.categoryColor}`} />
-                        </div>
-                      </div>
-                      {/* Text overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white font-bold text-sm leading-tight drop-shadow-md">{template.title}</p>
-                        <p className="text-white/80 text-xs drop-shadow mt-0.5">{template.description}</p>
-                      </div>
-                    </div>
-
-                    {/* Content section */}
-                    <div className="p-4 space-y-3">
-                      <div className="flex-1 rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed overflow-hidden max-h-24 relative">
-                        {template.content}
-                        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-50 to-transparent" />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 gradient-hero text-white"
-                          onClick={() => handleUseTemplate(template)}
-                        >
-                          Use Template <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCopy(template)}
-                          className={copiedId === template.id ? "border-green-300 text-green-600" : ""}
-                        >
-                          {copiedId === template.id ? (
-                            <><RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" /> Copied!</>
-                          ) : (
-                            <><Copy className="h-3.5 w-3.5 mr-1" /> Copy</>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </>
       )}
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all border ${
+              selectedCategory === cat
+                ? "bg-primary text-white border-primary shadow-sm"
+                : "bg-white border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            }`}
+          >
+            {cat} {cat === "All" ? `(${templates.length})` : `(${templates.filter(t => t.category === cat).length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Templates grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filtered.map((template, i) => {
+          const Icon = template.categoryIcon;
+          return (
+            <motion.div
+              key={template.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+            >
+              <Card className="group transition-all border-2 overflow-hidden hover:shadow-lg hover:-translate-y-1 border-transparent hover:border-primary cursor-pointer">
+                {/* Mock image with gradient overlay */}
+                <div className="relative h-44 w-full overflow-hidden bg-slate-200">
+                  <img
+                    src={template.mockImage}
+                    alt={template.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: `linear-gradient(to bottom, rgba(${template.categoryBgRGB}, 0.35) 0%, rgba(0,0,0,0.65) 100%)` }}
+                  />
+                  {/* Category badge */}
+                  <div className="absolute top-3 left-3">
+                    <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm bg-white/20 text-white border border-white/30`}>
+                      <Icon className="h-3 w-3" />
+                      {template.category}
+                    </div>
+                  </div>
+                  {/* Image indicator */}
+                  <div className="absolute top-3 right-3">
+                    <div className="flex items-center gap-1 rounded-full px-2 py-1 text-xs bg-black/40 text-white/90 backdrop-blur-sm border border-white/20">
+                      <Megaphone className="h-3 w-3" />
+                      + image
+                    </div>
+                  </div>
+                  {/* Text overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white font-bold text-sm leading-tight drop-shadow-md">{template.title}</p>
+                    <p className="text-white/80 text-xs drop-shadow mt-0.5">{template.description}</p>
+                  </div>
+                </div>
+
+                {/* Content section */}
+                <div className="p-4 space-y-3">
+                  <div className="flex-1 rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed overflow-hidden max-h-24 relative">
+                    {template.content}
+                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-50 to-transparent" />
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 mb-1">
+                    {template.tags.slice(0, 3).map(tag => (
+                      <span key={tag} className="rounded-full bg-primary/8 text-primary text-[10px] px-2 py-0.5 font-medium border border-primary/15">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 gradient-hero text-white"
+                      onClick={() => handleUseTemplate(template)}
+                    >
+                      Use Template <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopy(template)}
+                      className={copiedId === template.id ? "border-green-300 text-green-600" : ""}
+                    >
+                      {copiedId === template.id ? (
+                        <><RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" /> Copied!</>
+                      ) : (
+                        <><Copy className="h-3.5 w-3.5 mr-1" /> Copy</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
