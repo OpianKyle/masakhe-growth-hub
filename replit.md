@@ -7,6 +7,14 @@ Masakhe is a digital platform designed to assist South African SMMEs with compre
 - Remote MySQL database on Xneelo (no SQLite, no paid Replit services)
 - South African business context (Rand currency, SA tax/compliance)
 
+## SEO Implementation
+- `react-helmet-async` installed; `HelmetProvider` wraps app in `src/App.tsx`
+- `index.html` has full base meta tags: title, description, keywords, OG, Twitter Card, canonical, JSON-LD (Organization + WebSite + SoftwareApplication schemas)
+- Per-page `<Helmet>` added to: `LandingPage` (with FAQPage JSON-LD schema), `PricingPage` (with Offer JSON-LD), `LoginPage`, `RegisterPage`, `PrivacyPolicyPage`, `TermsOfServicePage`
+- `public/sitemap.xml` created with all 6 public URLs (`/`, `/pricing`, `/register`, `/login`, `/privacy`, `/terms`)
+- `public/robots.txt` updated: blocks `/dashboard/`, `/admin/`, `/onboarding/`, `/api/`; declares Sitemap URL
+- App domain: `https://masakhegroup.co.za` (all canonicals and JSON-LD use this)
+
 ## System Architecture
 Masakhe utilizes a React 18 frontend with TypeScript and Vite, communicating with an Express.js backend using `mysql2/promise` for database interactions. The application is styled with Tailwind CSS and `shadcn/ui` components, employing React Router DOM for navigation, TanStack React Query for state management, and Recharts for data visualization. Authentication is managed via `express-session` and `express-mysql-session` with `bcryptjs`.
 

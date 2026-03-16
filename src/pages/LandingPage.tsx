@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
 import {
   ArrowRight, Globe, Smartphone, BarChart3, Bot, FileText, Shield,
@@ -80,6 +81,49 @@ const complianceBadges = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
+      <Helmet>
+        <title>Masakhe | South Africa's #1 SMME Business Platform</title>
+        <meta name="description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media tools — all in one platform. From R899/month." />
+        <meta name="keywords" content="SMME South Africa, business registration, CIPC, SARS compliance, tax, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
+        <link rel="canonical" href="https://masakhegroup.co.za/" />
+        <meta property="og:title" content="Masakhe | South Africa's #1 SMME Business Platform" />
+        <meta property="og:description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media — all in one." />
+        <meta property="og:url" content="https://masakhegroup.co.za/" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:title" content="Masakhe | South Africa's SMME Business Platform" />
+        <meta name="twitter:description" content="All-in-one platform for South African SMMEs. Register, comply, grow." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is Masakhe?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe is South Africa's all-in-one SMME business platform offering business registration, tax compliance, invoicing, payroll, AI website builder, social media management, and access to funding." }
+            },
+            {
+              "@type": "Question",
+              "name": "How much does Masakhe cost?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe plans start from R899/month for the Starter plan, with Pro at R2,500/month and Enterprise at R5,500/month." }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Masakhe help with CIPC business registration?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe integrates with CIPC to help South African entrepreneurs register their businesses quickly with AI-assisted onboarding." }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I use Masakhe for SARS tax compliance?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe automates SARS submissions, VAT201 generation, and compliance monitoring to keep your business tax-compliant." }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Masakhe have a website builder?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe includes an AI-powered website builder with 44 industry-specific templates. Answer five questions and your professional website goes live in minutes." }
+            }
+          ]
+        })}</script>
+      </Helmet>
 
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">

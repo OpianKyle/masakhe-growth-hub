@@ -59,7 +59,10 @@ export default function SocialCreate({ workspaceId }: Props) {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
-  const [contentText, setContentText] = useState(templateParam ? decodeURIComponent(templateParam) : "");
+  const [contentText, setContentText] = useState(() => {
+    if (!templateParam) return "";
+    try { return decodeURIComponent(templateParam); } catch { return templateParam; }
+  });
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
   const [scheduledAt, setScheduledAt] = useState("");

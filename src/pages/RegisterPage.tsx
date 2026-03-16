@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -110,6 +111,14 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex">
+      <Helmet>
+        <title>Create Your Free Account | Masakhe SMME Platform</title>
+        <meta name="description" content="Start your 30-day free trial. Register your South African SMME on Masakhe — business registration, compliance, website builder, invoicing & payroll in one place." />
+        <link rel="canonical" href="https://masakhegroup.co.za/register" />
+        <meta property="og:title" content="Create Free SMME Account | Masakhe" />
+        <meta property="og:description" content="Join 15,000+ South African businesses. Start your free trial today." />
+        <meta property="og:url" content="https://masakhegroup.co.za/register" />
+      </Helmet>
       <div
         className="hidden lg:flex lg:w-[38%] xl:w-[42%] relative flex-col justify-between p-10 overflow-hidden"
         style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}

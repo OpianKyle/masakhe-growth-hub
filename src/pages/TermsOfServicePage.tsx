@@ -1,9 +1,15 @@
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { FileText, ChevronLeft } from "lucide-react";
 
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Terms of Service | Masakhe SMME Platform</title>
+        <meta name="description" content="Read the Masakhe terms of service. Understand the terms governing your use of the Masakhe SMME business platform." />
+        <link rel="canonical" href="https://masakhegroup.co.za/terms" />
+      </Helmet>
       {/* Header */}
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">

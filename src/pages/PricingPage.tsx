@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
 import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,25 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Pricing Plans | Masakhe SMME Platform — From R899/month</title>
+        <meta name="description" content="Simple, transparent pricing for South African SMMEs. Starter from R899/month — includes website builder, invoicing, compliance & more. No hidden fees." />
+        <link rel="canonical" href="https://masakhegroup.co.za/pricing" />
+        <meta property="og:title" content="Masakhe Pricing | SMME Plans from R899/month" />
+        <meta property="og:description" content="Affordable plans for South African small businesses. Website builder, tax compliance, social media & more — all in one place." />
+        <meta property="og:url" content="https://masakhegroup.co.za/pricing" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "PriceSpecification",
+          "name": "Masakhe Pricing Plans",
+          "description": "Pricing plans for Masakhe SMME Platform",
+          "offers": [
+            { "@type": "Offer", "name": "Starter", "price": "899", "priceCurrency": "ZAR", "description": "Website builder, invoicing, compliance score, and funding scoring." },
+            { "@type": "Offer", "name": "Pro", "price": "2500", "priceCurrency": "ZAR", "description": "Everything in Starter plus social media hub, content calendar, and analytics." },
+            { "@type": "Offer", "name": "Enterprise", "price": "5500", "priceCurrency": "ZAR", "description": "Full platform access with multi-location, white-label, and dedicated support." }
+          ]
+        })}</script>
+      </Helmet>
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
