@@ -3,10 +3,12 @@ import { queryOne, queryAll, execute } from "./db";
 import { randomUUID } from "crypto";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+}
 
 function requireAuth(req: any, res: any, next: Function) {
   if (!req.session?.userId) return res.status(401).json({ error: "Not authenticated" });
@@ -97,7 +99,7 @@ Business Information:
 
 Return ONLY valid JSON.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-5.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
@@ -188,7 +190,7 @@ Proposal Information:
 
 Return ONLY valid JSON.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-5.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
@@ -412,7 +414,7 @@ Respond ONLY in JSON:
   "summary": "1-2 sentence plain English summary of verification result"
 }`;
 
-    const aiRes = await openai.chat.completions.create({
+    const aiRes = await getOpenAI().chat.completions.create({
       model: "gpt-4.1",
       messages: [{ role: "user", content: aiPrompt }],
       response_format: { type: "json_object" },
@@ -573,7 +575,7 @@ ADDITIONAL NOTES: ${fd.notes || "None"}
 
 Return ONLY valid JSON.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-5.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },

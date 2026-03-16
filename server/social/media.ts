@@ -9,10 +9,12 @@ import multer from "multer";
 import path from "path";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -81,7 +83,7 @@ mediaRouter.post("/:workspaceId/media/generate", requireActiveSubscription, requ
       `Style: modern, vibrant, clean layout, suitable for Facebook and Instagram. No text overlays.`,
     ].filter(Boolean).join(" ");
 
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "gpt-image-1",
       prompt: finalPrompt,
       n: 1,
