@@ -54,6 +54,8 @@ export default function SocialCreate({ workspaceId }: Props) {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
   const templateParam = searchParams.get("template");
+  const templateImageParam = searchParams.get("templateImage");
+  const templateImageNameParam = searchParams.get("templateImageName");
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -81,6 +83,27 @@ export default function SocialCreate({ workspaceId }: Props) {
       .then(d => setMediaAssets(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId || !templateImageParam) return;
+    const imageUrl = decodeURIComponent(templateImageParam);
+    const imageName = templateImageNameParam ? decodeURIComponent(templateImageNameParam) : undefined;
+    fetch(`/api/social/ws/${workspaceId}/media/from-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ url: imageUrl, fileName: imageName }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const newAsset: MediaAsset = { id: data.id, url: data.url, type: "IMAGE", file_name: data.fileName };
+          setMediaAssets(prev => prev.some(a => a.id === data.id) ? prev : [newAsset, ...prev]);
+          setSelectedMedia(prev => prev.includes(data.id) ? prev : [data.id, ...prev]);
+        }
+      })
+      .catch(() => {});
+  }, [workspaceId, templateImageParam, templateImageNameParam]);
 
   useEffect(() => {
     if (editId && workspaceId) {
