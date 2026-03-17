@@ -562,7 +562,33 @@ export default function WebsiteBuilder() {
   }
 
   if (!site) {
-    return <TemplatePicker onSelect={handleTemplateSelect} onPreview={handlePreview} isProPlan={isProPlan} />;
+    return (
+      <>
+        <Dialog open={showTemplateConfirm} onOpenChange={setShowTemplateConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Switch Template?</DialogTitle>
+              <DialogDescription>
+                Switching to a new template will replace your current website design. Your layout and content will be overwritten with the new template's defaults — you can customise it again afterwards.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowTemplateConfirm(false); setPendingTemplateId(null); }}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                if (pendingTemplateId) applyTemplate(pendingTemplateId);
+                setShowTemplateConfirm(false);
+                setPendingTemplateId(null);
+              }}>
+                Switch Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <TemplatePicker onSelect={handleTemplateSelect} onPreview={handlePreview} isProPlan={isProPlan} />
+      </>
+    );
   }
 
   const availableSections: SectionType[] = site.templateId === "showroom"
