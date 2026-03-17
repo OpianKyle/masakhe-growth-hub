@@ -117,24 +117,30 @@ router.post("/websites", async (req, res) => {
     const { id, slug, content } = req.body;
     const ownerId = req.session?.userId || "local";
     const now = new Date().toISOString();
-    
-    const existing = id ? await queryOne("SELECT id FROM websites WHERE id = ?", [id]) : null;
-    
+
     const slugOwner = await queryOne("SELECT id FROM websites WHERE slug = ?", [slug]);
-    if (slugOwner && slugOwner.id !== id) {
+
+    // Resolve which record to update: prefer the provided id, else the user's existing site
+    let targetId = id || null;
+    if (!targetId) {
+      const userSite = await queryOne("SELECT id FROM websites WHERE owner_id = ?", [ownerId]);
+      if (userSite) targetId = userSite.id;
+    }
+
+    if (slugOwner && slugOwner.id !== targetId) {
       return res.status(400).json({ error: "Slug is already taken" });
     }
-    
-    if (existing) {
-      const owned = await queryOne("SELECT id FROM websites WHERE id = ? AND owner_id = ?", [id, ownerId]);
+
+    if (targetId) {
+      const owned = await queryOne("SELECT id FROM websites WHERE id = ? AND owner_id = ?", [targetId, ownerId]);
       if (!owned) return res.status(403).json({ error: "Not authorized to update this website" });
       await execute(
         "UPDATE websites SET slug = ?, content_json = ?, updated_at = ? WHERE id = ?",
-        [slug, JSON.stringify(content), now, id]
+        [slug, JSON.stringify(content), now, targetId]
       );
-      res.json({ id, ok: true });
+      res.json({ id: targetId, ok: true });
     } else {
-      const newId = id || randomUUID();
+      const newId = randomUUID();
       await execute(
         "INSERT INTO websites (id, owner_id, slug, status, content_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [newId, ownerId, slug, "draft", JSON.stringify(content), now, now]

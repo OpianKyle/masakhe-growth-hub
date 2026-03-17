@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/website/ImageUploadField";
 import { SectionRenderer } from "@/components/website/SectionRenderer";
 import { SectionEditor } from "@/components/website/SectionEditor";
@@ -337,6 +338,8 @@ export default function WebsiteBuilder() {
   const [savedCustomDomain, setSavedCustomDomain] = useState<string>("");
   const [savingDomain, setSavingDomain] = useState(false);
   const [siteId, setSiteId] = useState<string | null>(null);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -394,8 +397,21 @@ export default function WebsiteBuilder() {
     }
   };
 
+  const applyTemplate = (templateId: string) => {
+    const newSite = buildTemplate(templateId);
+    const existingId = siteId || site?.id || null;
+    setSite({ ...newSite, id: existingId ?? undefined });
+    if (existingId) setSiteId(existingId);
+    setPublishedUrl(null);
+  };
+
   const handleTemplateSelect = (templateId: string) => {
-    setSite(buildTemplate(templateId));
+    if (siteId || site?.id) {
+      setPendingTemplateId(templateId);
+      setShowTemplateConfirm(true);
+    } else {
+      applyTemplate(templateId);
+    }
   };
 
   const handlePreview = (templateId: string) => {
@@ -464,7 +480,7 @@ export default function WebsiteBuilder() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ id: site.id, slug: site.slug, content: site }),
+        body: JSON.stringify({ id: siteId || site.id, slug: site.slug, content: site }),
       });
       const result = await res.json();
       if (res.ok) {
@@ -556,6 +572,30 @@ export default function WebsiteBuilder() {
     : ["hero", "stats", "features", "about", "services", "gallery", "testimonials", "contact", "contact_form"];
 
   return (
+    <>
+    <Dialog open={showTemplateConfirm} onOpenChange={setShowTemplateConfirm}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Switch Template?</DialogTitle>
+          <DialogDescription>
+            Switching to a new template will replace your current website design. Your existing website record will be updated — nothing is permanently deleted, but your current layout and content will be overwritten with the new template's defaults. You can customise it again afterwards.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowTemplateConfirm(false); setPendingTemplateId(null); }}>
+            Cancel
+          </Button>
+          <Button onClick={() => {
+            if (pendingTemplateId) applyTemplate(pendingTemplateId);
+            setShowTemplateConfirm(false);
+            setPendingTemplateId(null);
+          }}>
+            Switch Template
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
       <div className="w-[420px] flex flex-col border-r bg-white shadow-xl">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-20">
@@ -728,5 +768,6 @@ export default function WebsiteBuilder() {
         </div>
       </div>
     </div>
+    </>
   );
 }
