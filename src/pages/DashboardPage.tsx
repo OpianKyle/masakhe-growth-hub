@@ -55,7 +55,6 @@ type NavItem = NavSingle | NavGroup;
 
 const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 
-const VEHICLE_TEMPLATES = ["showroom", "brokerage"];
 
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
@@ -95,7 +94,8 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
-  const [hasVehicleSite, setHasVehicleSite] = useState(false);
+  const [hasShowroomSite, setHasShowroomSite] = useState(false);
+  const [hasBrokerageSite, setHasBrokerageSite] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,20 +114,18 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((data) => {
         const sites = Array.isArray(data) ? data : [];
-        const found = sites.some((s: any) => VEHICLE_TEMPLATES.includes(s.content?.templateId));
-        setHasVehicleSite(found);
+        setHasShowroomSite(sites.some((s: any) => s.content?.templateId === "showroom"));
+        setHasBrokerageSite(sites.some((s: any) => s.content?.templateId === "brokerage"));
       })
       .catch(() => {});
   }, [location.pathname]);
 
-  const navItems: NavItem[] = hasVehicleSite
-    ? [
-        ...baseNavItems.slice(0, 5),
-        { icon: Car, label: "Vehicles", path: "/dashboard/vehicles" },
-        { icon: Users, label: "Leads", path: "/dashboard/leads" },
-        ...baseNavItems.slice(5),
-      ]
-    : baseNavItems;
+  const navItems: NavItem[] = [
+    ...baseNavItems.slice(0, 5),
+    ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles" } as NavSingle] : []),
+    ...(hasBrokerageSite ? [{ icon: Users, label: "Leads", path: "/dashboard/leads" } as NavSingle] : []),
+    ...baseNavItems.slice(5),
+  ];
 
   const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
     isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]
