@@ -373,9 +373,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     title: "Life Cover Awareness",
     description: "Educate your audience on the importance of life insurance",
     content: `🛡️ DOES YOUR FAMILY KNOW THEY'RE PROTECTED?\n\nLife is unpredictable. One moment everything is fine — and the next, your loved ones could be facing financial hardship without you.\n\nAt ${biz}, we help South African families secure their future with the right life cover:\n\n✅ Pay-out on death, disability or critical illness\n✅ Covers outstanding debt, bonds & school fees\n✅ Plans starting from as little as R200/month\n✅ Fully underwritten — no hidden surprises\n\nThe question isn't whether you can afford life cover — it's whether your family can afford for you NOT to have it.\n\n📞 Book a FREE consultation today. No obligation. Just peace of mind.\n\n👇 Comment "COVER" or DM us to get started.\n\n#LifeCover #LifeInsurance #FinancialPlanning #${biz.replace(/\s+/g, "")} #SouthAfrica #ProtectYourFamily`,
-    tags: ["#LifeCover", "#LifeInsurance", "#FinancialPlanning", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200",
+    tags: ["#LifeCover", "#LifeInsurance", "#FinancialPlanning", "#SouthAfrica"],    mockImage: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-life-cover.jpg",
   });
 
@@ -469,9 +468,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     title: "Debt Consolidation",
     description: "Help clients struggling with multiple debt obligations",
     content: `💳 DROWNING IN DEBT? HERE'S YOUR LIFELINE.\n\nIf you're juggling multiple monthly repayments — credit cards, vehicle finance, personal loans, store accounts — you're likely paying MORE than you need to.\n\nDebt consolidation through ${biz} could help you:\n\n✅ Combine ALL your debt into ONE lower monthly payment\n✅ Reduce your total interest paid significantly\n✅ Free up cash flow every single month\n✅ Protect your credit record from missed payments\n✅ Regain control and build a clear path to financial freedom\n\n📊 Example: 4 x R2,500 monthly payments = R10,000/month\nAfter consolidation: as low as R6,500/month — saving R3,500 every month!\n\nYou don't have to keep struggling alone. Our qualified debt advisors have helped hundreds of South African families breathe again.\n\n📞 FREE, no-obligation consultation. Completely confidential.\n\n👇 Comment "DEBT" or DM us to get started today!\n\n#DebtConsolidation #DebtRelief #FinancialFreedom #${biz.replace(/\s+/g, "")} #SouthAfrica #DebtAdvice`,
-    tags: ["#DebtConsolidation", "#DebtRelief", "#FinancialFreedom", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1508870712619-79ff42ba9229?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1508870712619-79ff42ba9229?auto=format&fit=crop&q=80&w=1200",
+    tags: ["#DebtConsolidation", "#DebtRelief", "#FinancialFreedom", "#SouthAfrica"],    mockImage: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-debt-consolidation.jpg",
   });
 
@@ -485,9 +483,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     title: "Business Insurance for SMMEs",
     description: "Target SMME owners who need to protect their business assets",
     content: `🏢 YOUR BUSINESS IS YOUR BIGGEST ASSET — IS IT PROTECTED?\n\nMost SMME owners insure their cars but not their businesses. One incident could wipe out everything you've spent years building.\n\nAt ${biz}, our commercial insurance specialists cover South African SMMEs against:\n\n🔥 Fire, flood and natural disasters\n🚨 Theft, burglary and malicious damage\n⚖️ Public liability and professional indemnity\n🛑 Business interruption (when you can't trade)\n💼 Key person insurance (what if you're incapacitated?)\n🚗 Commercial vehicle and fleet cover\n\nWhether you run a spaza shop, a construction company or a professional practice — we have a solution tailored for your business.\n\n📞 Get your FREE business insurance quote in under 24 hours.\n\n👉 Don't wait until something goes wrong. Protect what you've built.\n\n👇 Comment "BIZINSURE" or send us a DM today!\n\n#BusinessInsurance #SMME #SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #CommercialInsurance`,
-    tags: ["#BusinessInsurance", "#SMME", "#SmallBusiness", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1457449022326-7ac4b73408e1?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1457449022326-7ac4b73408e1?auto=format&fit=crop&q=80&w=1200",
+    tags: ["#BusinessInsurance", "#SMME", "#SmallBusiness", "#SouthAfrica"],    mockImage: "https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-business-insurance.jpg",
   });
 
@@ -550,9 +547,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
       title: "Meet Our Business",
       description: `Introduce ${biz} to your audience`,
       content: `👋 Introducing ${biz}!\n\n${hero.subtitle || hero.title || "We're here to serve you."}\n\n${hero.ctaPrimaryText ? `${hero.ctaPrimaryText} today — ` : ""}we'd love to work with you.\n\n#SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #SMME`,
-      tags: ["#SmallBusiness", "#SMME", "#SouthAfrica"],
-      mockImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
-      templateImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200",
+      tags: ["#SmallBusiness", "#SMME", "#SouthAfrica"],      mockImage: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&q=80&w=1200",
       templateImageName: "template-meet-business.jpg",
     });
 
@@ -567,14 +563,20 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
       description: `Explain what ${biz} offers`,
       content: `✨ At ${biz}, we believe in making a difference.\n\n${hero.subtitle || "We offer top-quality products and services tailored to your needs."}\n\nGet in touch — we're ready to help!\n\n#${biz.replace(/\s+/g, "")} #BusinessGrowth #ShopLocal`,
       tags: ["#BusinessGrowth", "#ShopLocal"],
-      mockImage: "https://images.unsplash.com/photo-1454167156348-3df8b4717da5?auto=format&fit=crop&q=80&w=600",
-      templateImage: "https://images.unsplash.com/photo-1454167156348-3df8b4717da5?auto=format&fit=crop&q=80&w=1200",
+      mockImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=1200",
       templateImageName: "template-what-we-do.jpg",
     });
   }
 
   if (servicesSection?.items?.length) {
     const catSvc = getCategory("Services");
+    const serviceImages = [
+      { mock: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=600', tmpl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=1200' },
+      { mock: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=600', tmpl: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1200' },
+      { mock: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=600', tmpl: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=1200' },
+      { mock: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&q=80&w=600', tmpl: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&q=80&w=1200' },
+    ];
     servicesSection.items.slice(0, 4).forEach((service, i) => {
       templates.push({
         id: `service-${i}`,
@@ -587,8 +589,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
         description: `Promote service: ${service.title}`,
         content: `🌟 Service Spotlight: ${service.title}\n\n${service.desc || "One of our most popular offerings."}\n\n${service.price ? `Starting from ${service.price} — ` : ""}Contact ${biz} today to learn more!\n\n#${biz.replace(/\s+/g, "")} #Services #SouthAfrica #SMME`,
         tags: ["#Services", "#SMME"],
-        mockImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=600",
-        templateImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200",
+        mockImage: serviceImages[i % serviceImages.length].mock,
+        templateImage: serviceImages[i % serviceImages.length].tmpl,
         templateImageName: `template-service-${i}.jpg`,
       });
     });
@@ -674,10 +676,9 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
     const catTest = getCategory("Testimonials");
     const testimonialImages = [
       { mockImage: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=600", templateImage: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1200" },
-      { mockImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600", templateImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200" },
+      { mockImage: "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&q=80&w=600", templateImage: "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&q=80&w=1200" },
     ];
     testimonialsSection.items.slice(0, 2).forEach((t, i) => {
-      const imgPair = testimonialImages[i] || testimonialImages[0];
       templates.push({
         id: `testimonial-${i}`,
         category: "Testimonials",
@@ -689,8 +690,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
         description: `Customer testimonial: ${t.name}`,
         content: `⭐ What our customers say about ${biz}:\n\n"${t.text}"\n— ${t.name}${t.role ? `, ${t.role}` : ""}\n\nWe love hearing from our customers! Share your experience with us.\n\n#CustomerLove #${biz.replace(/\s+/g, "")} #Testimonial #SouthAfrica`,
         tags: ["#CustomerLove", "#Testimonial"],
-        mockImage: imgPair.mockImage,
-        templateImage: imgPair.templateImage,
+        mockImage: testimonialImages[i % 2].mockImage,
+        templateImage: testimonialImages[i % 2].templateImage,
         templateImageName: `template-testimonial-${i}.jpg`,
       });
     });
