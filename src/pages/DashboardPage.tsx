@@ -62,7 +62,7 @@ const baseNavItems: NavItem[] = [
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
   {
     icon: Wallet,
-    label: "Income/Expenses",
+    label: "Transactions",
     groupId: "finance",
     children: [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
@@ -84,9 +84,9 @@ const baseNavItems: NavItem[] = [
   },
   { icon: Banknote, label: "Payroll", path: "/dashboard/payroll" },
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
-  { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
-  { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
+  { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
+  { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
