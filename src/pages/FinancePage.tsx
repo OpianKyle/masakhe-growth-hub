@@ -162,7 +162,7 @@ export default function FinancePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-heading">Finance</h2>
+          <h2 className="text-2xl font-bold font-heading">Transactions</h2>
           <p className="text-muted-foreground">Track your income and expenses</p>
         </div>
         <div className="flex items-center gap-2">
