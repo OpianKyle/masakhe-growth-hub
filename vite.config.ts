@@ -29,4 +29,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: [
+      "@tiptap/react",
+      "@tiptap/starter-kit",
+      "@tiptap/extension-link",
+      "@tiptap/extension-underline",
+      "@tiptap/extension-text-align",
+      "@tiptap/extension-placeholder",
+      "@tiptap/extension-text-style",
+      "@tiptap/extension-color",
+    ],
+  },
 }));

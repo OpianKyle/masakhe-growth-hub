@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import EmailVisualEditor from "@/components/EmailVisualEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -878,21 +879,19 @@ function CampaignModal({ campaign, contacts, audienceCounts, onClose, onSaved }:
 
           {/* Step 2: Content */}
           {step === 2 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Email Body (HTML)</p>
-                <span className="text-xs text-muted-foreground">Use {"{{first_name}}"} to personalise</span>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-0.5">Email Body</p>
+                <p className="text-xs text-muted-foreground">Write your email using the visual editor below. Switch to HTML mode if you need to paste custom code. Use the <strong>Insert Name</strong> button to personalise with each recipient's first name.</p>
               </div>
-              <Textarea
-                className="font-mono text-xs min-h-64 resize-y"
+              <EmailVisualEditor
                 value={form.body_html}
-                onChange={e => set("body_html", e.target.value)}
-                placeholder="Write your email HTML here..."
+                onChange={v => set("body_html", v)}
               />
-              <div className="border rounded-xl p-4 bg-gray-50">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Preview</p>
+              <div className="border rounded-xl p-4 bg-gray-50 dark:bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Email Preview (as it will appear to recipients)</p>
                 <div
-                  className="bg-white rounded-lg p-4 text-sm max-h-64 overflow-y-auto shadow-inner"
+                  className="bg-white rounded-lg p-4 text-sm max-h-56 overflow-y-auto shadow-inner"
                   dangerouslySetInnerHTML={{ __html: form.body_html.replace(/\{\{first_name\}\}/g, "John").replace(/\{\{name\}\}/g, "John") }}
                 />
               </div>
