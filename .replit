@@ -72,3 +72,7 @@ APP_URL = "https://masakhegroup.co.za"
 [userenv.development]
 
 [userenv.production]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
