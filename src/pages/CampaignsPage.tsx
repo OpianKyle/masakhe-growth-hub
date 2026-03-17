@@ -26,7 +26,7 @@ interface Campaign {
   body_html?: string;
   template_key?: string;
   status: "draft" | "scheduled" | "sending" | "sent" | "paused";
-  audience: "all" | "tagged";
+  audience: "all" | "tagged" | "broker_clients" | "all_with_clients";
   audience_tag?: string;
   scheduled_at?: string;
   sent_at?: string;
@@ -254,6 +254,7 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [stats, setStats] = useState<Stats>({ totalCampaigns: 0, totalContacts: 0, totalSent: 0, openRate: 0 });
+  const [audienceCounts, setAudienceCounts] = useState({ subscribed: 0, brokerClients: 0 });
   const [loading, setLoading] = useState(true);
   const [contactSearch, setContactSearch] = useState("");
   const [campaignSearch, setCampaignSearch] = useState("");
@@ -273,14 +274,16 @@ export default function CampaignsPage() {
   async function loadAll() {
     setLoading(true);
     try {
-      const [cRes, ctRes, sRes] = await Promise.all([
+      const [cRes, ctRes, sRes, acRes] = await Promise.all([
         fetch("/api/campaigns/", { credentials: "include" }),
         fetch("/api/campaigns/contacts/list", { credentials: "include" }),
         fetch("/api/campaigns/stats", { credentials: "include" }),
+        fetch("/api/campaigns/audience/counts", { credentials: "include" }),
       ]);
       if (cRes.ok) setCampaigns(await cRes.json());
       if (ctRes.ok) setContacts(await ctRes.json());
       if (sRes.ok) setStats(await sRes.json());
+      if (acRes.ok) setAudienceCounts(await acRes.json());
     } finally {
       setLoading(false);
     }
@@ -407,11 +410,11 @@ export default function CampaignsPage() {
             <Badge className={`${sc.color} border gap-1 text-xs font-medium px-2 py-1`}>
               <Icon className="h-3 w-3" />{sc.label}
             </Badge>
-            {detailCampaign.status === "draft" && (
+            <Button size="sm" variant="outline" onClick={() => { setEditCampaign(detailCampaign); setShowCampaignModal(true); }}>
+              <Edit3 className="h-3.5 w-3.5 mr-1" />Edit
+            </Button>
+            {detailCampaign.status !== "sent" && detailCampaign.status !== "sending" && (
               <>
-                <Button size="sm" variant="outline" onClick={() => { setEditCampaign(detailCampaign); setShowCampaignModal(true); }}>
-                  <Edit3 className="h-3.5 w-3.5 mr-1" />Edit
-                </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowTestModal(detailCampaign)}>
                   <TestTube className="h-3.5 w-3.5 mr-1" />Test
                 </Button>
@@ -443,7 +446,12 @@ export default function CampaignsPage() {
           <Card className="p-4 space-y-2 text-sm">
             <p className="font-medium text-foreground mb-3">Campaign Details</p>
             <div className="flex justify-between"><span className="text-muted-foreground">From</span><span>{detailCampaign.from_name || "—"} &lt;{detailCampaign.from_email || "—"}&gt;</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Audience</span><span className="capitalize">{detailCampaign.audience}{detailCampaign.audience_tag ? ` (${detailCampaign.audience_tag})` : ""}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Audience</span><span>
+              {detailCampaign.audience === "all" && "All subscribed contacts"}
+              {detailCampaign.audience === "broker_clients" && "My Clients (dashboard)"}
+              {detailCampaign.audience === "all_with_clients" && "Contacts + Clients (combined)"}
+              {detailCampaign.audience === "tagged" && `Tagged: ${detailCampaign.audience_tag || "—"}`}
+            </span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Template</span><span className="capitalize">{detailCampaign.template_key || "blank"}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span>{formatDate(detailCampaign.created_at)}</span></div>
             {detailCampaign.sent_at && <div className="flex justify-between"><span className="text-muted-foreground">Sent</span><span>{formatDate(detailCampaign.sent_at)}</span></div>}
@@ -576,16 +584,14 @@ export default function CampaignsPage() {
                             <p className="text-xs text-muted-foreground">Opened</p>
                           </div>
 
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                            {c.status === "draft" && (
-                              <>
-                                <Button size="icon" variant="ghost" className="h-7 w-7" title="Edit" onClick={() => { setEditCampaign(c); setShowCampaignModal(true); }}>
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50" title="Send" onClick={() => sendCampaign(c.id)} disabled={sending === c.id}>
-                                  {sending === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                                </Button>
-                              </>
+                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Edit Campaign" onClick={() => { setEditCampaign(c); setShowCampaignModal(true); }}>
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </Button>
+                            {c.status !== "sent" && c.status !== "sending" && (
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50" title="Send Now" onClick={() => sendCampaign(c.id)} disabled={sending === c.id}>
+                                {sending === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                              </Button>
                             )}
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50" title="Delete" onClick={() => deleteCampaign(c.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
@@ -690,6 +696,7 @@ export default function CampaignsPage() {
           <CampaignModal
             campaign={editCampaign}
             contacts={contacts}
+            audienceCounts={audienceCounts}
             onClose={() => { setShowCampaignModal(false); setEditCampaign(null); }}
             onSaved={() => { setShowCampaignModal(false); setEditCampaign(null); loadAll(); }}
           />
@@ -733,9 +740,10 @@ export default function CampaignsPage() {
 
 // ── Campaign Create/Edit Modal ───────────────────────────────────────────────
 
-function CampaignModal({ campaign, contacts, onClose, onSaved }: {
+function CampaignModal({ campaign, contacts, audienceCounts, onClose, onSaved }: {
   campaign: Campaign | null;
   contacts: Contact[];
+  audienceCounts: { subscribed: number; brokerClients: number };
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -899,11 +907,20 @@ function CampaignModal({ campaign, contacts, onClose, onSaved }: {
                 <Select value={form.audience} onValueChange={v => set("audience", v)}>
                   <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All subscribed contacts ({contacts.filter(c => c.status === "subscribed").length} contacts)</SelectItem>
-                    <SelectItem value="tagged">Contacts with a specific tag</SelectItem>
+                    <SelectItem value="all">
+                      Campaign Contacts — subscribed ({audienceCounts.subscribed})
+                    </SelectItem>
+                    <SelectItem value="broker_clients">
+                      My Clients — from the Clients dashboard ({audienceCounts.brokerClients} with email)
+                    </SelectItem>
+                    <SelectItem value="all_with_clients">
+                      Everyone — Campaign Contacts + Clients ({audienceCounts.subscribed + audienceCounts.brokerClients} combined, deduped)
+                    </SelectItem>
+                    <SelectItem value="tagged">Campaign Contacts — specific tag only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               {form.audience === "tagged" && (
                 <div>
                   <Label>Tag</Label>
@@ -919,18 +936,24 @@ function CampaignModal({ campaign, contacts, onClose, onSaved }: {
                   )}
                 </div>
               )}
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 <p className="font-medium mb-1">Ready to send</p>
                 <p className="text-xs">
                   This campaign will be sent to <strong>
-                    {form.audience === "all"
-                      ? `${contacts.filter(c => c.status === "subscribed").length} subscribed contacts`
-                      : form.audience_tag
-                        ? `contacts tagged "${form.audience_tag}"`
-                        : "contacts with the selected tag"}
-                  </strong>. You can save as a draft first and send it when ready.
+                    {form.audience === "all" && `${audienceCounts.subscribed} subscribed contacts`}
+                    {form.audience === "broker_clients" && `${audienceCounts.brokerClients} clients from your Clients dashboard`}
+                    {form.audience === "all_with_clients" && `~${audienceCounts.subscribed + audienceCounts.brokerClients} recipients (deduplicated by email)`}
+                    {form.audience === "tagged" && (form.audience_tag ? `contacts tagged "${form.audience_tag}"` : "contacts with the selected tag")}
+                  </strong>. Save as draft first and send when ready.
                 </p>
               </div>
+
+              {form.audience === "broker_clients" && audienceCounts.brokerClients === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                  No clients with email addresses found. Add client emails in the <strong>Clients</strong> section of your dashboard first.
+                </div>
+              )}
             </div>
           )}
         </div>

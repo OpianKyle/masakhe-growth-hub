@@ -830,6 +830,13 @@ export async function runMigrations() {
     `);
     await createIndex("idx_csends_campaign", "campaign_sends", "campaign_id");
 
+    // Widen audience column to VARCHAR so broker_clients option is accepted
+    try {
+      await conn.query(`ALTER TABLE campaigns MODIFY COLUMN audience VARCHAR(50) NOT NULL DEFAULT 'all'`);
+    } catch (e: any) {
+      if (!e.message.includes("doesn't exist")) throw e;
+    }
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

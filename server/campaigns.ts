@@ -167,7 +167,24 @@ campaignsRouter.post("/:id/send", async (req, res) => {
     if (campaign.status === "sent") return res.status(400).json({ error: "Campaign already sent" });
 
     let contacts: any[];
-    if (campaign.audience === "tagged" && campaign.audience_tag) {
+    if (campaign.audience === "broker_clients") {
+      const rows = await queryAll(
+        "SELECT id, email, SUBSTRING_INDEX(full_name, ' ', 1) AS first_name FROM broker_clients WHERE user_id = ? AND email IS NOT NULL AND email != ''",
+        [userId]
+      );
+      contacts = rows;
+    } else if (campaign.audience === "all_with_clients") {
+      const [cc, bc] = await Promise.all([
+        queryAll("SELECT id, email, first_name FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed'", [userId]),
+        queryAll("SELECT id, email, SUBSTRING_INDEX(full_name, ' ', 1) AS first_name FROM broker_clients WHERE user_id = ? AND email IS NOT NULL AND email != ''", [userId]),
+      ]);
+      const seen = new Set<string>();
+      contacts = [...cc, ...bc].filter(c => {
+        if (!c.email || seen.has(c.email.toLowerCase())) return false;
+        seen.add(c.email.toLowerCase());
+        return true;
+      });
+    } else if (campaign.audience === "tagged" && campaign.audience_tag) {
       contacts = await queryAll(
         "SELECT * FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed' AND FIND_IN_SET(?, REPLACE(tags, ', ', ','))",
         [userId, campaign.audience_tag]
@@ -180,7 +197,7 @@ campaignsRouter.post("/:id/send", async (req, res) => {
     }
 
     if (contacts.length === 0) {
-      return res.status(400).json({ error: "No subscribed contacts found for this campaign" });
+      return res.status(400).json({ error: "No recipients found for this campaign" });
     }
 
     const transporter = getTransporter();
@@ -248,6 +265,24 @@ campaignsRouter.post("/:id/test", async (req, res) => {
       html,
     });
     res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Audience counts ─────────────────────────────────────────────────────────
+
+campaignsRouter.get("/audience/counts", async (req, res) => {
+  const userId = (req.session as any).userId;
+  try {
+    const [subscribed, brokerClients] = await Promise.all([
+      queryOne("SELECT COUNT(*) as total FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed'", [userId]),
+      queryOne("SELECT COUNT(*) as total FROM broker_clients WHERE user_id = ? AND email IS NOT NULL AND email != ''", [userId]),
+    ]);
+    res.json({
+      subscribed: (subscribed as any)?.total || 0,
+      brokerClients: (brokerClients as any)?.total || 0,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
