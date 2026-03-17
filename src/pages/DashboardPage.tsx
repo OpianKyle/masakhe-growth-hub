@@ -62,11 +62,11 @@ const baseNavItems: NavItem[] = [
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
   {
     icon: Wallet,
-    label: "Transactions",
+    label: "Income/Expenses",
     groupId: "finance",
     children: [
-      { icon: Wallet, label: "Transactions", path: "/dashboard/finance" },
-      { icon: Receipt, label: "Invoices", path: "/dashboard/invoices" },
+      { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
+      { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices" },
     ],
   },
   {
