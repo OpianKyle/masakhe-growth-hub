@@ -156,6 +156,21 @@ router.get("/websites/mine", async (req, res) => {
   }
 });
 
+router.get("/websites/by-domain", async (req, res) => {
+  try {
+    const hostname = String(req.query.hostname || "").trim().toLowerCase();
+    if (!hostname) return res.json({ site: null });
+    const site = await queryOne(
+      "SELECT id, slug, custom_domain, status FROM websites WHERE custom_domain = ?",
+      [hostname]
+    );
+    if (!site) return res.json({ site: null });
+    res.json({ site: { slug: site.slug, status: site.status } });
+  } catch (err) {
+    res.json({ site: null });
+  }
+});
+
 router.get("/websites/:slug", async (req, res) => {
   try {
     const site = await queryOne("SELECT * FROM websites WHERE slug = ?", [req.params.slug]);
@@ -176,5 +191,26 @@ router.post("/websites/:id/publish", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to publish" });
+  }
+});
+
+router.put("/websites/:id/domain", requireAuth, async (req, res) => {
+  try {
+    const ownerId = req.session?.userId || "local";
+    const owned = await queryOne("SELECT id FROM websites WHERE id = ? AND owner_id = ?", [req.params.id, ownerId]);
+    if (!owned) return res.status(403).json({ error: "Not authorized" });
+
+    const { customDomain } = req.body;
+    const domain = customDomain ? customDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "") : null;
+
+    if (domain) {
+      const taken = await queryOne("SELECT id FROM websites WHERE custom_domain = ? AND id != ?", [domain, req.params.id]);
+      if (taken) return res.status(400).json({ error: "This domain is already registered to another site" });
+    }
+
+    await execute("UPDATE websites SET custom_domain = ?, domain_verified = 0 WHERE id = ?", [domain, req.params.id]);
+    res.json({ ok: true, customDomain: domain });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update domain" });
   }
 });

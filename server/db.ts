@@ -136,6 +136,13 @@ export async function runMigrations() {
     `);
 
     await conn.query(`
+      ALTER TABLE websites ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255) NULL UNIQUE
+    `).catch(() => {});
+    await conn.query(`
+      ALTER TABLE websites ADD COLUMN IF NOT EXISTS domain_verified TINYINT(1) NOT NULL DEFAULT 0
+    `).catch(() => {});
+
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS business_profiles (
         id VARCHAR(36) PRIMARY KEY,
         user_id VARCHAR(36) NOT NULL UNIQUE,

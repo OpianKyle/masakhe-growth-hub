@@ -28,8 +28,9 @@ function migrateLegacyConfig(raw: any): SiteConfig {
   };
 }
 
-export default function PublishedSite() {
-  const { slug } = useParams();
+export default function PublishedSite({ slugOverride }: { slugOverride?: string } = {}) {
+  const params = useParams();
+  const slug = slugOverride || params.slug;
   const [config, setConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
