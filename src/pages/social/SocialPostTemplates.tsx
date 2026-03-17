@@ -374,8 +374,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     description: "Educate your audience on the importance of life insurance",
     content: `🛡️ DOES YOUR FAMILY KNOW THEY'RE PROTECTED?\n\nLife is unpredictable. One moment everything is fine — and the next, your loved ones could be facing financial hardship without you.\n\nAt ${biz}, we help South African families secure their future with the right life cover:\n\n✅ Pay-out on death, disability or critical illness\n✅ Covers outstanding debt, bonds & school fees\n✅ Plans starting from as little as R200/month\n✅ Fully underwritten — no hidden surprises\n\nThe question isn't whether you can afford life cover — it's whether your family can afford for you NOT to have it.\n\n📞 Book a FREE consultation today. No obligation. Just peace of mind.\n\n👇 Comment "COVER" or DM us to get started.\n\n#LifeCover #LifeInsurance #FinancialPlanning #${biz.replace(/\s+/g, "")} #SouthAfrica #ProtectYourFamily`,
     tags: ["#LifeCover", "#LifeInsurance", "#FinancialPlanning", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200",
+    mockImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-life-cover.jpg",
   });
 
@@ -470,8 +470,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     description: "Help clients struggling with multiple debt obligations",
     content: `💳 DROWNING IN DEBT? HERE'S YOUR LIFELINE.\n\nIf you're juggling multiple monthly repayments — credit cards, vehicle finance, personal loans, store accounts — you're likely paying MORE than you need to.\n\nDebt consolidation through ${biz} could help you:\n\n✅ Combine ALL your debt into ONE lower monthly payment\n✅ Reduce your total interest paid significantly\n✅ Free up cash flow every single month\n✅ Protect your credit record from missed payments\n✅ Regain control and build a clear path to financial freedom\n\n📊 Example: 4 x R2,500 monthly payments = R10,000/month\nAfter consolidation: as low as R6,500/month — saving R3,500 every month!\n\nYou don't have to keep struggling alone. Our qualified debt advisors have helped hundreds of South African families breathe again.\n\n📞 FREE, no-obligation consultation. Completely confidential.\n\n👇 Comment "DEBT" or DM us to get started today!\n\n#DebtConsolidation #DebtRelief #FinancialFreedom #${biz.replace(/\s+/g, "")} #SouthAfrica #DebtAdvice`,
     tags: ["#DebtConsolidation", "#DebtRelief", "#FinancialFreedom", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=1200",
+    mockImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-debt-consolidation.jpg",
   });
 
@@ -486,8 +486,8 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     description: "Target SMME owners who need to protect their business assets",
     content: `🏢 YOUR BUSINESS IS YOUR BIGGEST ASSET — IS IT PROTECTED?\n\nMost SMME owners insure their cars but not their businesses. One incident could wipe out everything you've spent years building.\n\nAt ${biz}, our commercial insurance specialists cover South African SMMEs against:\n\n🔥 Fire, flood and natural disasters\n🚨 Theft, burglary and malicious damage\n⚖️ Public liability and professional indemnity\n🛑 Business interruption (when you can't trade)\n💼 Key person insurance (what if you're incapacitated?)\n🚗 Commercial vehicle and fleet cover\n\nWhether you run a spaza shop, a construction company or a professional practice — we have a solution tailored for your business.\n\n📞 Get your FREE business insurance quote in under 24 hours.\n\n👉 Don't wait until something goes wrong. Protect what you've built.\n\n👇 Comment "BIZINSURE" or send us a DM today!\n\n#BusinessInsurance #SMME #SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #CommercialInsurance`,
     tags: ["#BusinessInsurance", "#SMME", "#SmallBusiness", "#SouthAfrica"],
-    mockImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
-    templateImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=1200",
+    mockImage: "https://images.unsplash.com/photo-1454187580459-b4ee8ce36b53?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1454187580459-b4ee8ce36b53?auto=format&fit=crop&q=80&w=1200",
     templateImageName: "template-business-insurance.jpg",
   });
 
@@ -551,8 +551,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
       description: `Introduce ${biz} to your audience`,
       content: `👋 Introducing ${biz}!\n\n${hero.subtitle || hero.title || "We're here to serve you."}\n\n${hero.ctaPrimaryText ? `${hero.ctaPrimaryText} today — ` : ""}we'd love to work with you.\n\n#SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #SMME`,
       tags: ["#SmallBusiness", "#SMME", "#SouthAfrica"],
-      mockImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=600",
-      templateImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1200",
+      mockImage: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1200",
       templateImageName: "template-meet-business.jpg",
     });
 
@@ -567,8 +567,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
       description: `Explain what ${biz} offers`,
       content: `✨ At ${biz}, we believe in making a difference.\n\n${hero.subtitle || "We offer top-quality products and services tailored to your needs."}\n\nGet in touch — we're ready to help!\n\n#${biz.replace(/\s+/g, "")} #BusinessGrowth #ShopLocal`,
       tags: ["#BusinessGrowth", "#ShopLocal"],
-      mockImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=600",
-      templateImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=1200",
+      mockImage: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=600",
+      templateImage: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=1200",
       templateImageName: "template-what-we-do.jpg",
     });
   }
@@ -587,8 +587,8 @@ function generateSiteTemplates(site: SiteConfig): PostTemplate[] {
         description: `Promote service: ${service.title}`,
         content: `🌟 Service Spotlight: ${service.title}\n\n${service.desc || "One of our most popular offerings."}\n\n${service.price ? `Starting from ${service.price} — ` : ""}Contact ${biz} today to learn more!\n\n#${biz.replace(/\s+/g, "")} #Services #SouthAfrica #SMME`,
         tags: ["#Services", "#SMME"],
-        mockImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
-        templateImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200",
+        mockImage: "https://images.unsplash.com/photo-1469521318815-f99a601e8e16?auto=format&fit=crop&q=80&w=600",
+        templateImage: "https://images.unsplash.com/photo-1469521318815-f99a601e8e16?auto=format&fit=crop&q=80&w=1200",
         templateImageName: `template-service-${i}.jpg`,
       });
     });
