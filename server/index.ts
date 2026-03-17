@@ -24,6 +24,7 @@ import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
 import { payrollRouter } from "./payroll";
 import { clientsRouter } from "./clients";
+import { campaignsRouter } from "./campaigns";
 import path from "path";
 
 async function main() {
@@ -84,6 +85,7 @@ async function main() {
   app.use("/api/leads", leadsRouter);
   app.use("/api/payroll", payrollRouter);
   app.use("/api/clients", clientsRouter);
+  app.use("/api/campaigns", campaignsRouter);
   app.use("/api", router);
 
   const distPath = path.join(process.cwd(), "dist");

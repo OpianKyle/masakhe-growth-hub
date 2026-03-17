@@ -769,6 +769,67 @@ export async function runMigrations() {
     `);
     await createIndex("idx_bcd_client", "broker_client_documents", "client_id");
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS campaign_contacts (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        company VARCHAR(255),
+        phone VARCHAR(50),
+        tags VARCHAR(500),
+        status ENUM('subscribed','unsubscribed') DEFAULT 'subscribed',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_ccontacts_user", "campaign_contacts", "user_id");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        from_name VARCHAR(150),
+        from_email VARCHAR(255),
+        reply_to VARCHAR(255),
+        body_html LONGTEXT,
+        template_key VARCHAR(50) DEFAULT 'blank',
+        status ENUM('draft','scheduled','sending','sent','paused') DEFAULT 'draft',
+        audience ENUM('all','tagged') DEFAULT 'all',
+        audience_tag VARCHAR(150),
+        scheduled_at DATETIME,
+        sent_at DATETIME,
+        total_recipients INT DEFAULT 0,
+        sent_count INT DEFAULT 0,
+        opened_count INT DEFAULT 0,
+        clicked_count INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_campaigns_user", "campaigns", "user_id");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS campaign_sends (
+        id VARCHAR(36) PRIMARY KEY,
+        campaign_id VARCHAR(36) NOT NULL,
+        contact_id VARCHAR(36),
+        email VARCHAR(255) NOT NULL,
+        status ENUM('pending','sent','failed','opened','clicked') DEFAULT 'pending',
+        sent_at DATETIME,
+        opened_at DATETIME,
+        clicked_at DATETIME,
+        error_message TEXT,
+        FOREIGN KEY(campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_csends_campaign", "campaign_sends", "campaign_id");
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

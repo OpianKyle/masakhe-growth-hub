@@ -27,6 +27,7 @@ import VehicleManagementPage from "./VehicleManagementPage";
 import LeadsPage from "./LeadsPage";
 import PayrollPage from "./PayrollPage";
 import ClientsPage from "./ClientsPage";
+import CampaignsPage from "./CampaignsPage";
 import TrialBanner from "@/components/TrialBanner";
 
 type NavChild = {
@@ -86,7 +87,7 @@ const baseNavItems: NavItem[] = [
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
-  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", comingSoon: true },
+  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -449,6 +450,7 @@ export default function DashboardPage() {
             <Route path="leads" element={<LeadsPage />} />
             <Route path="payroll" element={<PayrollPage />} />
             <Route path="clients" element={<ClientsPage />} />
+            <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
