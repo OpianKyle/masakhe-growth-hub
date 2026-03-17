@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import {
   Sparkles, Copy, ArrowRight, Globe, Building2, Star, Phone,
   Tag, Users, BarChart3, RefreshCw, ChevronRight, Megaphone,
-  Gift, Lightbulb, TrendingUp, Heart, Clock, Handshake, HelpCircle, Rocket, Zap
+  Gift, Lightbulb, TrendingUp, Heart, Clock, Handshake, HelpCircle, Rocket, Zap,
+  ShieldCheck, PiggyBank, Briefcase, DollarSign, PieChart, FileCheck, Award, Home, AlertTriangle, UserCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, StatsData, ContactData } from "@/types/site";
@@ -43,7 +44,8 @@ const CATEGORY_COLORS: Record<string, { color: string; bg: string; rgb: string }
   Engagement:     { color: "text-pink-600",   bg: "bg-pink-500/10",   rgb: "236, 72, 153" },
   Advertising:    { color: "text-orange-600", bg: "bg-orange-500/10", rgb: "234, 88, 12" },
   Promotions:     { color: "text-rose-600",   bg: "bg-rose-500/10",   rgb: "225, 29, 72" },
-  "Tips & Value": { color: "text-teal-600",   bg: "bg-teal-500/10",   rgb: "13, 148, 136" },
+  "Tips & Value":        { color: "text-teal-600",   bg: "bg-teal-500/10",   rgb: "13, 148, 136" },
+  "Brokerage & Finance": { color: "text-indigo-600", bg: "bg-indigo-500/10", rgb: "79, 70, 229" },
 };
 
 function getCategory(cat: string) {
@@ -357,6 +359,170 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     templateImageName: "template-anniversary.jpg",
   });
 
+  // ─── BROKERAGE & FINANCE ─────────────────────────────────────────────────
+
+  const brokerCat = getCategory("Brokerage & Finance");
+
+  templates.push({
+    id: "broker-life-cover",
+    category: "Brokerage & Finance",
+    categoryIcon: ShieldCheck,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Life Cover Awareness",
+    description: "Educate your audience on the importance of life insurance",
+    content: `🛡️ DOES YOUR FAMILY KNOW THEY'RE PROTECTED?\n\nLife is unpredictable. One moment everything is fine — and the next, your loved ones could be facing financial hardship without you.\n\nAt ${biz}, we help South African families secure their future with the right life cover:\n\n✅ Pay-out on death, disability or critical illness\n✅ Covers outstanding debt, bonds & school fees\n✅ Plans starting from as little as R200/month\n✅ Fully underwritten — no hidden surprises\n\nThe question isn't whether you can afford life cover — it's whether your family can afford for you NOT to have it.\n\n📞 Book a FREE consultation today. No obligation. Just peace of mind.\n\n👇 Comment "COVER" or DM us to get started.\n\n#LifeCover #LifeInsurance #FinancialPlanning #${biz.replace(/\s+/g, "")} #SouthAfrica #ProtectYourFamily`,
+    tags: ["#LifeCover", "#LifeInsurance", "#FinancialPlanning", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-life-cover.jpg",
+  });
+
+  templates.push({
+    id: "broker-retirement",
+    category: "Brokerage & Finance",
+    categoryIcon: PiggyBank,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Retirement Planning",
+    description: "Prompt clients to start planning for retirement early",
+    content: `⏰ ARE YOU SAVING ENOUGH FOR RETIREMENT?\n\nHere's a hard truth: 94% of South Africans cannot afford to retire comfortably.\n\nDon't be part of that statistic.\n\nAt ${biz}, our retirement planning specialists help you:\n\n📈 Build a personalised retirement savings strategy\n🏦 Choose between RAs, pension funds, and living annuities\n💰 Maximise your 27.5% tax deductible contributions\n🧮 Calculate exactly how much you need — and how to get there\n🇿🇦 Navigate SARS retirement fund tax benefits\n\nWhether you're 25 or 55, the best time to start was yesterday. The second best time is TODAY.\n\n📊 Book your FREE retirement gap analysis — no cost, no commitment.\n\n👇 Comment "RETIRE" to get started!\n\n#RetirementPlanning #RetirementFund #FinancialFreedom #${biz.replace(/\s+/g, "")} #SouthAfrica #RA`,
+    tags: ["#RetirementPlanning", "#FinancialFreedom", "#RA", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-retirement-planning.jpg",
+  });
+
+  templates.push({
+    id: "broker-investment",
+    category: "Brokerage & Finance",
+    categoryIcon: TrendingUp,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Investment Portfolio Growth",
+    description: "Showcase investment opportunities and wealth-building advice",
+    content: `📈 YOUR MONEY SHOULD WORK AS HARD AS YOU DO.\n\nToo many South Africans leave their savings sitting in a bank account earning 4% while inflation quietly eats away at their wealth.\n\nAt ${biz}, we help our clients invest smarter:\n\n🏦 Unit trusts & managed funds\n📊 JSE-listed equities and ETFs\n🌍 Offshore investing & rand hedging\n🏘️ Property investment strategies\n💎 Alternative investments & structured products\n\nOur advisors don't chase commission — we chase YOUR results.\n\n📊 Example: R5,000/month invested over 20 years at 12% p.a. = R4.9 million. 💰\n\nStop letting inflation win. Start building real wealth today.\n\n📞 Book a FREE investment strategy session with one of our qualified advisors.\n\n👇 Comment "INVEST" or DM us to get started!\n\n#Investing #WealthBuilding #FinancialAdvisor #${biz.replace(/\s+/g, "")} #SouthAfrica #JSE`,
+    tags: ["#Investing", "#WealthBuilding", "#FinancialAdvisor", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-investment-portfolio.jpg",
+  });
+
+  templates.push({
+    id: "broker-tfsa",
+    category: "Brokerage & Finance",
+    categoryIcon: PieChart,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Tax-Free Savings Account",
+    description: "Educate clients about the TFSA tax benefit",
+    content: `💡 THE SMARTEST TAX MOVE MOST SOUTH AFRICANS AREN'T MAKING.\n\nDid you know SARS allows every South African to invest R36,000 per year — TAX FREE?\n\nThat means:\n❌ No tax on interest\n❌ No tax on dividends\n❌ No capital gains tax on growth\n\nYour TFSA grows completely tax-free for LIFE — up to a R500,000 lifetime limit.\n\nAt ${biz}, we help you:\n✅ Open and fund your TFSA correctly\n✅ Choose the right fund for your goals and risk profile\n✅ Combine TFSAs with other investments for maximum benefit\n✅ Avoid common TFSA mistakes that cost clients thousands\n\nThis is literally free money from SARS — are you taking advantage of it?\n\n📞 Get your FREE TFSA strategy session today.\n\n👇 Drop "TFSA" in the comments to find out more!\n\n#TFSA #TaxFree #TaxSavings #${biz.replace(/\s+/g, "")} #SouthAfrica #SARS #FinancialTip`,
+    tags: ["#TFSA", "#TaxFree", "#TaxSavings", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1579621970795-87facc2f976d?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1579621970795-87facc2f976d?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-tfsa.jpg",
+  });
+
+  templates.push({
+    id: "broker-estate-planning",
+    category: "Brokerage & Finance",
+    categoryIcon: FileCheck,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Estate Planning & Will",
+    description: "Drive conversations about wills and estate planning",
+    content: `📜 WHO GETS EVERYTHING YOU'VE WORKED FOR IF SOMETHING HAPPENS TO YOU?\n\nIf you don't have a valid will, the Intestate Succession Act decides — not you.\n\nAnd without proper estate planning:\n❌ Your estate could take years to wind up\n❌ Your family may receive nothing for months\n❌ Executor's fees and estate duty can consume up to 20%+ of your estate\n❌ Loved ones left with debt they didn't know about\n\nAt ${biz}, our estate planning specialists help you:\n\n✅ Draft a legally valid will\n✅ Structure your estate to minimise taxes and delays\n✅ Set up trusts for minor children and dependants\n✅ Nominate the right beneficiaries on all your policies\n✅ Plan for business succession if you're a business owner\n\nIt's not about dying — it's about living with peace of mind knowing your loved ones are taken care of.\n\n📞 Book your FREE estate review today.\n\n👇 Comment "ESTATE" or send us a DM!\n\n#EstatePlanning #Will #FinancialPlanning #${biz.replace(/\s+/g, "")} #SouthAfrica #Legacy`,
+    tags: ["#EstatePlanning", "#Will", "#FinancialPlanning", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-estate-planning.jpg",
+  });
+
+  templates.push({
+    id: "broker-short-term",
+    category: "Brokerage & Finance",
+    categoryIcon: AlertTriangle,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Short-Term Insurance Review",
+    description: "Prompt clients to review their short-term cover",
+    content: `⚠️ ARE YOU UNDERINSURED — AND DON'T EVEN KNOW IT?\n\nMost South Africans haven't reviewed their insurance in over 3 years. In that time:\n\n🏠 Your home's replacement value may have increased by 30%+\n🚗 Your vehicle's market value has changed\n📱 You've bought new appliances, electronics & valuables\n💼 Your business assets have grown\n\nIf you claim today, you could receive significantly less than you expect — and be left out of pocket.\n\nAt ${biz}, we offer FREE short-term insurance reviews to make sure you're:\n\n✅ Paying the right premium for your current situation\n✅ Covered for the RIGHT amount (not just the cheapest policy)\n✅ Protected against gaps most people don't know about\n✅ Getting the best value from a reputable underwriter\n\nOur brokers work for YOU — not the insurance companies.\n\n📞 Book your FREE insurance review now. It takes 30 minutes and could save you thousands.\n\n👇 Comment "REVIEW" or DM us!\n\n#Insurance #ShortTermInsurance #UnderInsured #${biz.replace(/\s+/g, "")} #SouthAfrica #Broker`,
+    tags: ["#Insurance", "#ShortTermInsurance", "#Broker", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-short-term-insurance.jpg",
+  });
+
+  templates.push({
+    id: "broker-debt-consolidation",
+    category: "Brokerage & Finance",
+    categoryIcon: DollarSign,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Debt Consolidation",
+    description: "Help clients struggling with multiple debt obligations",
+    content: `💳 DROWNING IN DEBT? HERE'S YOUR LIFELINE.\n\nIf you're juggling multiple monthly repayments — credit cards, vehicle finance, personal loans, store accounts — you're likely paying MORE than you need to.\n\nDebt consolidation through ${biz} could help you:\n\n✅ Combine ALL your debt into ONE lower monthly payment\n✅ Reduce your total interest paid significantly\n✅ Free up cash flow every single month\n✅ Protect your credit record from missed payments\n✅ Regain control and build a clear path to financial freedom\n\n📊 Example: 4 x R2,500 monthly payments = R10,000/month\nAfter consolidation: as low as R6,500/month — saving R3,500 every month!\n\nYou don't have to keep struggling alone. Our qualified debt advisors have helped hundreds of South African families breathe again.\n\n📞 FREE, no-obligation consultation. Completely confidential.\n\n👇 Comment "DEBT" or DM us to get started today!\n\n#DebtConsolidation #DebtRelief #FinancialFreedom #${biz.replace(/\s+/g, "")} #SouthAfrica #DebtAdvice`,
+    tags: ["#DebtConsolidation", "#DebtRelief", "#FinancialFreedom", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-debt-consolidation.jpg",
+  });
+
+  templates.push({
+    id: "broker-business-insurance",
+    category: "Brokerage & Finance",
+    categoryIcon: Briefcase,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Business Insurance for SMMEs",
+    description: "Target SMME owners who need to protect their business assets",
+    content: `🏢 YOUR BUSINESS IS YOUR BIGGEST ASSET — IS IT PROTECTED?\n\nMost SMME owners insure their cars but not their businesses. One incident could wipe out everything you've spent years building.\n\nAt ${biz}, our commercial insurance specialists cover South African SMMEs against:\n\n🔥 Fire, flood and natural disasters\n🚨 Theft, burglary and malicious damage\n⚖️ Public liability and professional indemnity\n🛑 Business interruption (when you can't trade)\n💼 Key person insurance (what if you're incapacitated?)\n🚗 Commercial vehicle and fleet cover\n\nWhether you run a spaza shop, a construction company or a professional practice — we have a solution tailored for your business.\n\n📞 Get your FREE business insurance quote in under 24 hours.\n\n👉 Don't wait until something goes wrong. Protect what you've built.\n\n👇 Comment "BIZINSURE" or send us a DM today!\n\n#BusinessInsurance #SMME #SmallBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #CommercialInsurance`,
+    tags: ["#BusinessInsurance", "#SMME", "#SmallBusiness", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-business-insurance.jpg",
+  });
+
+  templates.push({
+    id: "broker-meet-advisor",
+    category: "Brokerage & Finance",
+    categoryIcon: UserCheck,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Meet Your Financial Advisor",
+    description: "Introduce your advisor team and build trust with your audience",
+    content: `👋 MEET THE TEAM BEHIND YOUR FINANCIAL FUTURE.\n\nAt ${biz}, we believe great financial advice starts with a real relationship — not a call centre.\n\nOur team of qualified financial advisors are:\n\n🎓 CFP® certified and FSCA registered\n🤝 Dedicated to YOUR goals, not a sales target\n📍 Based locally — available for in-person consultations\n🔒 Bound by the Financial Advisory and Intermediary Services (FAIS) Act\n💬 Always available — email, WhatsApp, or phone\n\nWe've helped hundreds of South African families and businesses:\n✅ Build wealth through smart investing\n✅ Protect their income and assets\n✅ Plan for retirement with confidence\n✅ Navigate complex financial decisions\n\nWe're not just your broker — we're your long-term financial partner.\n\n📞 Book a FREE 30-minute introduction call. No sales pitch. Just good advice.\n\n👇 Comment "HELLO" or DM us to meet your advisor today!\n\n#FinancialAdvisor #CFP #FSCA #${biz.replace(/\s+/g, "")} #SouthAfrica #TrustYourAdvisor`,
+    tags: ["#FinancialAdvisor", "#CFP", "#FSCA", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-meet-advisor.jpg",
+  });
+
+  templates.push({
+    id: "broker-client-success",
+    category: "Brokerage & Finance",
+    categoryIcon: Award,
+    categoryColor: brokerCat.color,
+    categoryBg: brokerCat.bg,
+    categoryBgRGB: brokerCat.rgb,
+    title: "Client Success Story",
+    description: "Share an anonymised client win to build social proof",
+    content: `🏆 ANOTHER FAMILY SECURED. ANOTHER DREAM PROTECTED.\n\nWe love sharing these moments — with full permission, of course. 😊\n\nMeet [Client First Name], a [profession/business owner] from [city], who came to ${biz} just [X months/years] ago:\n\n❌ No life cover\n❌ No retirement savings\n❌ No will or estate plan\n❌ Three different debts eating into their monthly income\n\nToday:\n✅ R[X] million in life cover — family fully protected\n✅ R[X,000] per month flowing into a diversified investment portfolio\n✅ Will and estate plan completed and signed\n✅ Debt consolidated — saving R[X,000] per month\n\n"I wish I'd done this 10 years ago. ${biz} changed everything for us." — [Client Name]\n\nEvery South African deserves this kind of financial security. It's not just for the wealthy — it's for anyone ready to take the first step.\n\n📞 Your success story starts with a FREE consultation. Book today.\n\n👇 Comment "SUCCESS" or DM us — let's write YOUR story next!\n\n#ClientSuccess #FinancialPlanning #Testimonial #${biz.replace(/\s+/g, "")} #SouthAfrica #FinancialFreedom`,
+    tags: ["#ClientSuccess", "#FinancialPlanning", "#Testimonial", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-client-success.jpg",
+  });
+
   return templates;
 }
 
@@ -600,6 +766,7 @@ function generateTemplates(site: SiteConfig | null): PostTemplate[] {
 const CATEGORY_ORDER = [
   "Introduction", "Services", "Our Story", "Features", "Testimonials",
   "Milestones", "Contact", "Advertising", "Promotions", "Tips & Value", "Engagement",
+  "Brokerage & Finance",
 ];
 
 export default function SocialPostTemplates({ workspaceId, site }: Props) {
