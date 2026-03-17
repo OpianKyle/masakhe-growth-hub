@@ -837,6 +837,25 @@ export async function runMigrations() {
       if (!e.message.includes("doesn't exist")) throw e;
     }
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS user_email_settings (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL UNIQUE,
+        provider VARCHAR(20) NOT NULL DEFAULT 'smtp',
+        smtp_host VARCHAR(255),
+        smtp_port INT DEFAULT 587,
+        smtp_secure TINYINT(1) DEFAULT 0,
+        smtp_user VARCHAR(255),
+        smtp_pass_enc TEXT,
+        from_name VARCHAR(150),
+        from_email VARCHAR(255),
+        reply_to VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

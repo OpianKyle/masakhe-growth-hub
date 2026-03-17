@@ -3,11 +3,12 @@ import { queryAll, queryOne, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import nodemailer from "nodemailer";
+import { getUserTransporter } from "./email-settings";
 
 export const campaignsRouter = Router();
 campaignsRouter.use(requireAuth);
 
-function getTransporter() {
+function getGlobalTransporter() {
   if (!process.env.SMTP_PASSWORD) return null;
   const smtpPort = parseInt(process.env.SMTP_PORT || "465");
   return nodemailer.createTransport({
@@ -19,6 +20,24 @@ function getTransporter() {
       pass: process.env.SMTP_PASSWORD,
     },
   });
+}
+
+async function resolveTransporter(userId: string, campaign: any) {
+  const userSettings = await getUserTransporter(userId);
+  if (userSettings) {
+    return {
+      transporter: userSettings.transporter,
+      fromEmail: campaign.from_email || userSettings.fromEmail,
+      fromName: campaign.from_name || userSettings.fromName,
+      replyTo: campaign.reply_to || userSettings.replyTo,
+    };
+  }
+  return {
+    transporter: getGlobalTransporter(),
+    fromEmail: campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za",
+    fromName: campaign.from_name || "Masakhe",
+    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za",
+  };
 }
 
 function buildEmail(campaign: any, contactFirstName?: string): string {
@@ -200,21 +219,19 @@ campaignsRouter.post("/:id/send", async (req, res) => {
       return res.status(400).json({ error: "No recipients found for this campaign" });
     }
 
-    const transporter = getTransporter();
+    const { transporter, fromEmail, fromName, replyTo } = await resolveTransporter(userId, campaign);
     await execute("UPDATE campaigns SET status='sending', total_recipients=? WHERE id=?", [contacts.length, campaign.id]);
 
     let sentCount = 0;
     const sendPromises = contacts.map(async (contact: any) => {
       const sendId = randomUUID();
       const html = buildEmail(campaign, contact.first_name);
-      const fromEmail = campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za";
-      const fromName = campaign.from_name || "Masakhe";
       try {
         if (transporter) {
           await transporter.sendMail({
             from: `"${fromName}" <${fromEmail}>`,
             to: contact.email,
-            replyTo: campaign.reply_to || fromEmail,
+            replyTo: replyTo || fromEmail,
             subject: campaign.subject,
             html,
           });
@@ -252,15 +269,13 @@ campaignsRouter.post("/:id/test", async (req, res) => {
   try {
     const campaign = await queryOne("SELECT * FROM campaigns WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!campaign) return res.status(404).json({ error: "Not found" });
-    const transporter = getTransporter();
-    if (!transporter) return res.status(503).json({ error: "SMTP not configured" });
+    const { transporter, fromEmail, fromName, replyTo } = await resolveTransporter(userId, campaign);
+    if (!transporter) return res.status(503).json({ error: "SMTP not configured. Please set up your email settings in Settings → Email." });
     const html = buildEmail(campaign, "Test Recipient");
-    const fromEmail = campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za";
-    const fromName = campaign.from_name || "Masakhe";
     await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to: email,
-      replyTo: campaign.reply_to || fromEmail,
+      replyTo: replyTo || fromEmail,
       subject: `[TEST] ${campaign.subject}`,
       html,
     });

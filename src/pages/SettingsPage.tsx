@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload } from "lucide-react";
+import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function SettingsPage() {
@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "email">("profile");
 
   const buildForm = (u: typeof user) => ({
     fullName: u?.full_name || "",
@@ -123,10 +123,116 @@ export default function SettingsPage() {
     }
   };
 
+  const [emailSettings, setEmailSettings] = useState({
+    provider: "smtp",
+    smtp_host: "",
+    smtp_port: "587",
+    smtp_secure: false,
+    smtp_user: "",
+    smtp_pass: "",
+    from_name: "",
+    from_email: "",
+    reply_to: "",
+  });
+  const [emailLoaded, setEmailLoaded] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [emailConnected, setEmailConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (activeTab === "email" && !emailLoaded) {
+      fetch("/api/email-settings", { credentials: "include" })
+        .then(r => r.json())
+        .then(data => {
+          if (data.settings) {
+            setEmailSettings(prev => ({
+              ...prev,
+              provider: data.settings.provider || "smtp",
+              smtp_host: data.settings.smtp_host || "",
+              smtp_port: String(data.settings.smtp_port || "587"),
+              smtp_secure: !!data.settings.smtp_secure,
+              smtp_user: data.settings.smtp_user || "",
+              from_name: data.settings.from_name || "",
+              from_email: data.settings.from_email || "",
+              reply_to: data.settings.reply_to || "",
+            }));
+            setEmailConnected(true);
+          }
+          setEmailLoaded(true);
+        })
+        .catch(() => setEmailLoaded(true));
+    }
+  }, [activeTab, emailLoaded]);
+
+  const PROVIDERS = [
+    { value: "gmail",   label: "Gmail",          host: "smtp.gmail.com",       port: "587", secure: false },
+    { value: "outlook", label: "Outlook / Microsoft 365", host: "smtp.office365.com", port: "587", secure: false },
+    { value: "smtp",    label: "Custom SMTP",     host: "",                     port: "587", secure: false },
+  ];
+
+  const handleProviderChange = (value: string) => {
+    const preset = PROVIDERS.find(p => p.value === value);
+    setEmailSettings(prev => ({
+      ...prev,
+      provider: value,
+      smtp_host: preset?.host ?? prev.smtp_host,
+      smtp_port: preset?.port ?? prev.smtp_port,
+      smtp_secure: preset?.secure ?? prev.smtp_secure,
+    }));
+  };
+
+  const handleSaveEmail = async () => {
+    setSavingEmail(true);
+    try {
+      const res = await fetch("/api/email-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...emailSettings,
+          smtp_port: parseInt(emailSettings.smtp_port) || 587,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setEmailConnected(true);
+        setEmailSettings(prev => ({ ...prev, smtp_pass: "" }));
+        toast({ title: "Email settings saved", description: "Your SMTP settings have been saved." });
+      } else {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    try {
+      const res = await fetch("/api/email-settings/test", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast({ title: "Test email sent!", description: data.message });
+      } else {
+        toast({ title: "Connection failed", description: data.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to send test email.", variant: "destructive" });
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   const tabs = [
     { key: "profile" as const, label: "Personal & Business", icon: User },
     { key: "business" as const, label: "Business Details", icon: Building2 },
     { key: "banking" as const, label: "Banking", icon: CreditCard },
+    { key: "email" as const, label: "Email Sending", icon: ServerCog },
   ];
 
   return (
@@ -358,14 +464,184 @@ export default function SettingsPage() {
             </div>
           </>
         )}
+
+        {activeTab === "email" && (
+          <>
+            <div className="mb-6">
+              <h3 className="text-base font-semibold text-foreground flex items-center gap-2 mb-1">
+                <ServerCog className="h-4 w-4 text-primary" />
+                Email Sending Configuration
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Connect your own email account so campaigns are sent from your address. Supports Gmail, Outlook, and any custom SMTP server.
+              </p>
+              {emailConnected === true && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Email account connected
+                </div>
+              )}
+              {emailConnected === false && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="h-4 w-4" />
+                  No email account configured yet
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <ServerCog className="h-3.5 w-3.5 text-muted-foreground" />
+                  Email Provider
+                </label>
+                <select
+                  value={emailSettings.provider}
+                  onChange={e => handleProviderChange(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="gmail">Gmail</option>
+                  <option value="outlook">Outlook / Microsoft 365</option>
+                  <option value="smtp">Custom SMTP</option>
+                </select>
+              </div>
+
+              {emailSettings.provider === "gmail" && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4 text-sm text-blue-800 dark:text-blue-300 space-y-2">
+                  <p className="font-semibold">Gmail setup requires an App Password:</p>
+                  <ol className="list-decimal ml-4 space-y-1 text-xs">
+                    <li>Enable 2-Step Verification on your Google account</li>
+                    <li>Go to <strong>Google Account → Security → App Passwords</strong></li>
+                    <li>Create a new App Password (select "Mail" and "Other")</li>
+                    <li>Use the generated 16-character code as your password below</li>
+                  </ol>
+                </div>
+              )}
+
+              {emailSettings.provider === "outlook" && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4 text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                  <p className="font-semibold">Outlook / Microsoft 365 setup:</p>
+                  <p className="text-xs">Use your full Microsoft email address and account password. If your organisation uses MFA, you may need to create an App Password.</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">SMTP Host</label>
+                  <Input
+                    value={emailSettings.smtp_host}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, smtp_host: e.target.value }))}
+                    placeholder="e.g. smtp.gmail.com"
+                    disabled={emailSettings.provider !== "smtp"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Port</label>
+                  <Input
+                    value={emailSettings.smtp_port}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, smtp_port: e.target.value }))}
+                    placeholder="587"
+                    disabled={emailSettings.provider !== "smtp"}
+                  />
+                </div>
+              </div>
+
+              {emailSettings.provider === "smtp" && (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="smtp_secure"
+                    checked={emailSettings.smtp_secure}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, smtp_secure: e.target.checked }))}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <label htmlFor="smtp_secure" className="text-sm font-medium text-foreground cursor-pointer">
+                    Use SSL/TLS (port 465)
+                  </label>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    Email Address / Username
+                  </label>
+                  <Input
+                    type="email"
+                    value={emailSettings.smtp_user}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, smtp_user: e.target.value }))}
+                    placeholder="you@gmail.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">
+                    Password {emailConnected && <span className="text-xs text-muted-foreground font-normal">(leave blank to keep existing)</span>}
+                  </label>
+                  <Input
+                    type="password"
+                    value={emailSettings.smtp_pass}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, smtp_pass: e.target.value }))}
+                    placeholder={emailConnected ? "••••••••••••" : "App password or account password"}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4 space-y-4">
+                <h4 className="text-sm font-semibold text-foreground">Sender Identity</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup icon={User} label="From Name">
+                    <Input
+                      value={emailSettings.from_name}
+                      onChange={e => setEmailSettings(prev => ({ ...prev, from_name: e.target.value }))}
+                      placeholder="Your Business Name"
+                    />
+                  </FieldGroup>
+                  <FieldGroup icon={Mail} label="From Email">
+                    <Input
+                      type="email"
+                      value={emailSettings.from_email}
+                      onChange={e => setEmailSettings(prev => ({ ...prev, from_email: e.target.value }))}
+                      placeholder="you@yourdomain.com"
+                    />
+                  </FieldGroup>
+                </div>
+                <FieldGroup icon={Mail} label="Reply-To (optional)">
+                  <Input
+                    type="email"
+                    value={emailSettings.reply_to}
+                    onChange={e => setEmailSettings(prev => ({ ...prev, reply_to: e.target.value }))}
+                    placeholder="replies@yourdomain.com (optional)"
+                  />
+                </FieldGroup>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Button onClick={handleSaveEmail} disabled={savingEmail} className="px-6">
+                  <Save className="h-4 w-4 mr-2" />
+                  {savingEmail ? "Saving..." : "Save Settings"}
+                </Button>
+                {emailConnected && (
+                  <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail}>
+                    <Send className="h-4 w-4 mr-2" />
+                    {testingEmail ? "Sending..." : "Send Test Email"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </motion.div>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="px-8">
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
+      {activeTab !== "email" && (
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={saving} className="px-8">
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
