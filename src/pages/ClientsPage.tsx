@@ -65,6 +65,39 @@ const DOC_TYPES = [
   { value: "other", label: "Other" },
 ];
 
+const DOC_TYPE_COLORS: Record<string, string> = {
+  id: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+  proof_of_income: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  bank_statement: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  payslip: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+  proof_of_address: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  contract: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+  tax_certificate: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  other: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+};
+
+const DOC_TYPE_ICON_BG: Record<string, string> = {
+  id: "bg-violet-100 dark:bg-violet-900/30",
+  proof_of_income: "bg-green-100 dark:bg-green-900/30",
+  bank_statement: "bg-blue-100 dark:bg-blue-900/30",
+  payslip: "bg-teal-100 dark:bg-teal-900/30",
+  proof_of_address: "bg-amber-100 dark:bg-amber-900/30",
+  contract: "bg-indigo-100 dark:bg-indigo-900/30",
+  tax_certificate: "bg-orange-100 dark:bg-orange-900/30",
+  other: "bg-gray-100 dark:bg-gray-800",
+};
+
+const DOC_TYPE_ICON_COLOR: Record<string, string> = {
+  id: "text-violet-600 dark:text-violet-400",
+  proof_of_income: "text-green-600 dark:text-green-400",
+  bank_statement: "text-blue-600 dark:text-blue-400",
+  payslip: "text-teal-600 dark:text-teal-400",
+  proof_of_address: "text-amber-600 dark:text-amber-400",
+  contract: "text-indigo-600 dark:text-indigo-400",
+  tax_certificate: "text-orange-600 dark:text-orange-400",
+  other: "text-gray-500 dark:text-gray-400",
+};
+
 function parseCSV(text: string): Record<string, string>[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
@@ -92,6 +125,22 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" });
 const fmtBytes = (b: number) =>
   b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`;
+
+const getInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0].toUpperCase()).join("");
+
+const avatarColors = [
+  "from-violet-500 to-purple-600",
+  "from-blue-500 to-indigo-600",
+  "from-teal-500 to-cyan-600",
+  "from-green-500 to-emerald-600",
+  "from-amber-500 to-orange-600",
+  "from-pink-500 to-rose-600",
+];
+const getAvatarColor = (name: string) => {
+  const code = name ? name.charCodeAt(0) : 0;
+  return avatarColors[code % avatarColors.length];
+};
 
 const riskColors: Record<string, string> = {
   low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -341,18 +390,68 @@ export default function ClientsPage() {
       </div>
     ) : null;
 
+  const SectionHeader = ({
+    icon: Icon,
+    label,
+    iconBg,
+  }: {
+    icon: React.ElementType;
+    label: string;
+    iconBg: string;
+  }) => (
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${iconBg}`}>
+        <Icon className="h-3.5 w-3.5 text-white" />
+      </div>
+      <h4 className="font-semibold text-sm text-foreground uppercase tracking-wide">{label}</h4>
+    </div>
+  );
+
+  const statCards = [
+    {
+      label: "Total Clients",
+      value: stats.total,
+      icon: Users,
+      iconBg: "bg-gradient-to-br from-violet-500 to-purple-600",
+      cardAccent: "border-l-4 border-l-violet-500",
+    },
+    {
+      label: "Active",
+      value: stats.active,
+      icon: CheckCircle,
+      iconBg: "bg-gradient-to-br from-green-500 to-emerald-600",
+      cardAccent: "border-l-4 border-l-green-500",
+    },
+    {
+      label: "Prospects",
+      value: stats.prospects,
+      icon: AlertCircle,
+      iconBg: "bg-gradient-to-br from-blue-500 to-indigo-600",
+      cardAccent: "border-l-4 border-l-blue-500",
+    },
+    {
+      label: "Inactive",
+      value: stats.inactive,
+      icon: X,
+      iconBg: "bg-gradient-to-br from-gray-400 to-gray-500",
+      cardAccent: "border-l-4 border-l-gray-400",
+    },
+  ];
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="relative rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+        <div className="relative">
           <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
             <Briefcase className="h-6 w-6 text-primary" />
             Clients
           </h2>
           <p className="text-muted-foreground mt-1">Manage your brokerage client portfolio and documents.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex items-center gap-2 flex-wrap">
           <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
           <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}>
             {importing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
@@ -371,31 +470,29 @@ export default function ClientsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Clients", value: stats.total, icon: Users, color: "text-primary" },
-          { label: "Active", value: stats.active, icon: CheckCircle, color: "text-green-500" },
-          { label: "Prospects", value: stats.prospects, icon: AlertCircle, color: "text-blue-500" },
-          { label: "Inactive", value: stats.inactive, icon: X, color: "text-muted-foreground" },
-        ].map((s) => (
+        {statCards.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-border bg-card p-4 shadow-card">
-            <div className="flex items-center gap-2 mb-1">
-              <s.icon className={`h-4 w-4 ${s.color}`} />
+            transition={{ delay: i * 0.05 }}
+            className={`rounded-xl border border-border bg-card shadow-card p-4 ${s.cardAccent}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${s.iconBg} shadow-sm`}>
+                <s.icon className="h-4 w-4 text-white" />
+              </div>
               <span className="text-sm text-muted-foreground">{s.label}</span>
             </div>
-            <p className="text-2xl font-bold text-foreground">{s.value}</p>
+            <p className="text-3xl font-bold text-foreground">{s.value}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 bg-muted/40 rounded-xl p-3 border border-border">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search clients..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+          <Input placeholder="Search clients..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-background" />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
+          className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm min-w-[140px]">
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="prospect">Prospect</option>
@@ -423,8 +520,12 @@ export default function ClientsPage() {
               {filtered.map((client) => (
                 <motion.div key={client.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   onClick={() => openClient(client)}
-                  className={`rounded-xl border bg-card shadow-card p-4 cursor-pointer transition-colors hover:border-primary/50 ${selectedClient?.id === client.id ? "border-primary bg-primary/5" : "border-border"}`}>
-                  <div className="flex items-start justify-between gap-2">
+                  className={`rounded-xl border bg-card shadow-card p-4 cursor-pointer transition-all hover:border-primary/50 hover:shadow-md ${selectedClient?.id === client.id ? "border-primary bg-primary/5 shadow-md" : "border-border"}`}>
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(client.full_name)} flex items-center justify-center shadow-sm`}>
+                      <span className="text-sm font-bold text-white">{getInitials(client.full_name)}</span>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">{client.full_name}</span>
@@ -464,10 +565,15 @@ export default function ClientsPage() {
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
             className="lg:flex-1 rounded-xl border border-border bg-card shadow-card overflow-hidden">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-              <div>
-                <h3 className="font-bold text-lg text-foreground">{selectedClient.full_name}</h3>
-                <p className="text-sm text-muted-foreground">{selectedClient.policy_number ? `Policy: ${selectedClient.policy_number}` : "No policy number"}</p>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(selectedClient.full_name)} flex items-center justify-center shadow-sm`}>
+                  <span className="text-sm font-bold text-white">{getInitials(selectedClient.full_name)}</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">{selectedClient.full_name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedClient.policy_number ? `Policy: ${selectedClient.policy_number}` : "No policy number"}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={() => openEdit(selectedClient)}>
@@ -480,10 +586,10 @@ export default function ClientsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-border bg-muted/20">
               {(["details", "documents"] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-3 text-sm font-medium transition-colors ${activeTab === tab ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                  className={`px-5 py-3 text-sm font-medium transition-colors ${activeTab === tab ? "border-b-2 border-primary text-primary bg-background" : "text-muted-foreground hover:text-foreground"}`}>
                   {tab === "details" ? "Client Details" : `Documents`}
                 </button>
               ))}
@@ -491,13 +597,10 @@ export default function ClientsPage() {
 
             <div className="p-5 overflow-y-auto max-h-[600px]">
               {activeTab === "details" && (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {/* Personal */}
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <User className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold text-sm text-foreground uppercase tracking-wide">Personal Information</h4>
-                    </div>
+                  <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">
+                    <SectionHeader icon={User} label="Personal Information" iconBg="bg-gradient-to-br from-violet-500 to-purple-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Full Name" value={selectedClient.full_name} />
                       <Field label="ID / Passport Number" value={selectedClient.id_number} />
@@ -509,11 +612,8 @@ export default function ClientsPage() {
                   </section>
 
                   {/* Contact */}
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Phone className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold text-sm text-foreground uppercase tracking-wide">Contact Details</h4>
-                    </div>
+                  <section className="rounded-xl bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4">
+                    <SectionHeader icon={Phone} label="Contact Details" iconBg="bg-gradient-to-br from-blue-500 to-indigo-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Email" value={selectedClient.email} />
                       <Field label="Phone" value={selectedClient.phone} />
@@ -534,11 +634,8 @@ export default function ClientsPage() {
                   </section>
 
                   {/* Employment & Finance */}
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Building2 className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold text-sm text-foreground uppercase tracking-wide">Employment & Finances</h4>
-                    </div>
+                  <section className="rounded-xl bg-teal-50/60 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/20 p-4">
+                    <SectionHeader icon={Building2} label="Employment & Finances" iconBg="bg-gradient-to-br from-teal-500 to-cyan-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Employment Status" value={selectedClient.employment_status} />
                       <Field label="Employer" value={selectedClient.employer_name} />
@@ -548,11 +645,8 @@ export default function ClientsPage() {
                   </section>
 
                   {/* Brokerage */}
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold text-sm text-foreground uppercase tracking-wide">Brokerage Profile</h4>
-                    </div>
+                  <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
+                    <SectionHeader icon={Shield} label="Brokerage Profile" iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Risk Profile" value={selectedClient.risk_profile ? selectedClient.risk_profile.charAt(0).toUpperCase() + selectedClient.risk_profile.slice(1) : undefined} />
                       <Field label="Credit Score" value={selectedClient.credit_score} />
@@ -573,21 +667,26 @@ export default function ClientsPage() {
                     )}
                   </section>
 
-                  <p className="text-xs text-muted-foreground">Added {fmtDate(selectedClient.created_at)}</p>
+                  <p className="text-xs text-muted-foreground px-1">Added {fmtDate(selectedClient.created_at)}</p>
                 </div>
               )}
 
               {activeTab === "documents" && (
                 <div className="space-y-5">
                   {/* Upload */}
-                  <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 space-y-3">
-                    <p className="text-sm font-medium text-foreground">Upload Document</p>
+                  <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 dark:bg-primary/10 p-5 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-sm">
+                        <Upload className="h-4 w-4 text-white" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">Upload Document</p>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         placeholder="Document name (optional)"
                         value={docName}
                         onChange={(e) => setDocName(e.target.value)}
-                        className="flex-1"
+                        className="flex-1 bg-background"
                       />
                       <select value={docType} onChange={(e) => setDocType(e.target.value)}
                         className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
@@ -596,14 +695,16 @@ export default function ClientsPage() {
                         ))}
                       </select>
                     </div>
-                    <input ref={docUploadRef} type="file" className="hidden"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx,.csv"
-                      onChange={handleDocUpload} />
-                    <Button variant="outline" size="sm" onClick={() => docUploadRef.current?.click()} disabled={uploadingDoc}>
-                      {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                      Choose & Upload File
-                    </Button>
-                    <p className="text-xs text-muted-foreground">Accepted: PDF, Word, Excel, Images (max 20MB)</p>
+                    <div className="flex items-center gap-3">
+                      <input ref={docUploadRef} type="file" className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx,.csv"
+                        onChange={handleDocUpload} />
+                      <Button variant="outline" size="sm" onClick={() => docUploadRef.current?.click()} disabled={uploadingDoc}>
+                        {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                        Choose & Upload File
+                      </Button>
+                      <p className="text-xs text-muted-foreground">PDF, Word, Excel, Images (max 20MB)</p>
+                    </div>
                   </div>
 
                   {/* Doc list */}
@@ -613,19 +714,28 @@ export default function ClientsPage() {
                     </div>
                   ) : docs.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">
-                      <FolderOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">No documents uploaded yet</p>
+                      <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+                        <FolderOpen className="h-7 w-7 opacity-40" />
+                      </div>
+                      <p className="text-sm font-medium">No documents uploaded yet</p>
+                      <p className="text-xs mt-1">Upload files using the form above.</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {docs.map((doc) => (
-                        <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-border bg-background p-3">
-                          <FileText className="h-8 w-8 text-primary shrink-0" />
+                        <div key={doc.id} className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 hover:border-primary/30 hover:bg-muted/30 transition-colors">
+                          <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${DOC_TYPE_ICON_BG[doc.document_type] || DOC_TYPE_ICON_BG.other}`}>
+                            <FileText className={`h-5 w-5 ${DOC_TYPE_ICON_COLOR[doc.document_type] || DOC_TYPE_ICON_COLOR.other}`} />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{doc.document_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {DOC_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type} • {fmtBytes(doc.file_size)} • {fmtDate(doc.created_at)}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLORS[doc.document_type] || DOC_TYPE_COLORS.other}`}>
+                                {DOC_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{fmtBytes(doc.file_size)}</span>
+                              <span className="text-xs text-muted-foreground">{fmtDate(doc.created_at)}</span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDoc(doc)} title="Download">
@@ -653,17 +763,20 @@ export default function ClientsPage() {
             className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
               className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-2xl my-4">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-t-2xl">
                 <h3 className="text-lg font-bold text-foreground">{editingClient ? "Edit Client" : "Add New Client"}</h3>
                 <Button variant="ghost" size="icon" onClick={closeForm}><X className="h-4 w-4" /></Button>
               </div>
 
-              <div className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
                 {/* Personal */}
-                <section>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <User className="h-4 w-4" />Personal Information
-                  </h4>
+                <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
+                      <User className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Personal Information</h4>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="sm:col-span-2">
                       <label className="text-xs text-muted-foreground mb-1 block">Full Name *</label>
@@ -702,10 +815,13 @@ export default function ClientsPage() {
                 </section>
 
                 {/* Contact */}
-                <section>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <Phone className="h-4 w-4" />Contact Details
-                  </h4>
+                <section className="rounded-xl bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
+                      <Phone className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Contact Details</h4>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Email</label>
@@ -735,10 +851,13 @@ export default function ClientsPage() {
                 </section>
 
                 {/* Employment & Finance */}
-                <section>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />Employment & Finances
-                  </h4>
+                <section className="rounded-xl bg-teal-50/60 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/20 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600">
+                      <Building2 className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Employment & Finances</h4>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Employment Status</label>
@@ -765,10 +884,13 @@ export default function ClientsPage() {
                 </section>
 
                 {/* Brokerage */}
-                <section>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />Brokerage Profile
-                  </h4>
+                <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                      <Shield className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Brokerage Profile</h4>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Risk Profile</label>
