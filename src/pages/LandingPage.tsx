@@ -64,9 +64,12 @@ const pricingPlans = [
 ];
 
 const testimonials = [
-  { name: "Sipho Dlamini",  role: "Construction, Pretoria",       text: "The funding toolkit alone is worth it. We accessed R600,000 in SEFA funding within two months of signing up.",              initials: "SD", color: "bg-emerald-500" },
-  { name: "Priya Naidoo",   role: "Accounting Practice, Durban",  text: "The payroll module saves us 8 hours a month. PAYE calculations are accurate and the payslips look professional.",          initials: "PN", color: "bg-purple-500" },
-  { name: "Marcus Petersen",role: "Retail Shop, Cape Town",       text: "My website was live on a Monday. By Friday I had three new customer enquiries through the WhatsApp button.",                initials: "MP", color: "bg-blue-500" },
+  { name: "Sipho Dlamini",   role: "Construction Business, Pretoria",    text: "The funding toolkit alone is worth it. We accessed R600,000 in SEFA funding within two months of signing up.", initials: "SD", gradient: "from-emerald-500 to-teal-600" },
+  { name: "Priya Naidoo",    role: "Accounting Practice, Durban",        text: "The payroll module saves us 8 hours a month. PAYE calculations are accurate and the payslips look professional.", initials: "PN", gradient: "from-purple-500 to-violet-600" },
+  { name: "Marcus Petersen", role: "Retail Shop Owner, Cape Town",       text: "My website was live on a Monday. By Friday I had three new customer enquiries through the WhatsApp button.", initials: "MP", gradient: "from-blue-500 to-indigo-600" },
+  { name: "Nomsa Khumalo",   role: "Catering & Events, Johannesburg",    text: "I used to dread tax season. Now my VAT returns are automated and I always know where my business stands financially.", initials: "NK", gradient: "from-rose-500 to-pink-600" },
+  { name: "Andile Mokoena",  role: "IT Services, Midrand",               text: "The social media scheduler is a game-changer. My clients see consistent content even when I'm out on site.", initials: "AM", gradient: "from-amber-500 to-orange-600" },
+  { name: "Fatima Essop",    role: "Beauty & Wellness Studio, Bellville", text: "Within three weeks I had a professional website, branded invoices, and my first Google Business review. Incredible.", initials: "FE", gradient: "from-cyan-500 to-sky-600" },
 ];
 
 const complianceBadges = [
@@ -450,63 +453,127 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials: large featured quote + row ── */}
-      <section className="py-24 bg-slate-50">
-        <div className="container mx-auto px-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <p className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-3">Customer Stories</p>
-            <h2 className="text-4xl font-bold font-heading text-slate-900">What our clients say</h2>
+      {/* ── Testimonials ── */}
+      <section className="py-28 relative overflow-hidden bg-white">
+        {/* subtle background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-blue-50 opacity-60 blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-indigo-50 opacity-50 blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-6 relative">
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-700 mb-5 uppercase tracking-widest">
+              ★ Customer Stories
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 mb-4">
+              Real businesses. <span className="text-blue-600">Real results.</span>
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              Join 15,000+ South African SMMEs already growing with Masakhe.
+            </p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-blue-600 rounded-3xl p-10 flex flex-col justify-between"
-            >
+          {/* Featured testimonial */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative rounded-3xl overflow-hidden mb-8"
+            style={{ background: "linear-gradient(135deg, #1a56db 0%, #1e3a8a 60%, #0f172a 100%)" }}
+          >
+            {/* decorative large quote */}
+            <div className="absolute top-6 right-10 text-white/10 font-serif leading-none select-none pointer-events-none" style={{ fontSize: "18rem", lineHeight: 1 }}>"</div>
+            <div className="relative z-10 grid lg:grid-cols-[1fr_auto] gap-8 items-end p-10 md:p-14">
               <div>
-                <div className="flex gap-0.5 mb-6">
-                  {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-xl">★</span>)}
+                <div className="flex gap-1 mb-6">
+                  {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-2xl">★</span>)}
                 </div>
-                <p className="text-white text-xl md:text-2xl font-medium leading-relaxed mb-8">
-                  "Masakhe helped me get my business online in one day. I got my first website enquiry the very same week. The funding toolkit helped us access R800,000 from government — money we didn't even know existed."
+                <p className="text-white text-xl md:text-2xl lg:text-3xl font-medium leading-relaxed max-w-3xl">
+                  "Masakhe got my business online in one day. I had my first website enquiry the same week — and the funding toolkit helped us access <span className="text-amber-300 font-bold">R800,000 from government</span> that we didn't even know was available."
                 </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-amber-400 flex items-center justify-center text-slate-900 text-sm font-bold flex-shrink-0">TN</div>
-                <div>
-                  <p className="text-white font-bold">Thandi Nkosi</p>
-                  <p className="text-blue-200 text-sm">Fashion Designer & Owner, Soweto</p>
+                <div className="mt-8 flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-base font-bold shadow-lg flex-shrink-0">TN</div>
+                  <div>
+                    <p className="text-white font-bold text-base">Thandi Nkosi</p>
+                    <p className="text-blue-200 text-sm">Fashion Designer & Owner · Soweto</p>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-
-            <div className="space-y-4">
-              {testimonials.map((t, i) => (
-                <motion.div
-                  key={t.name}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex gap-0.5 mb-3">
-                    {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-xs">★</span>)}
-                  </div>
-                  <p className="text-slate-600 text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
-                  <div className="flex items-center gap-2.5">
-                    <div className={`h-8 w-8 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{t.initials}</div>
-                    <div>
-                      <p className="text-slate-900 text-xs font-bold">{t.name}</p>
-                      <p className="text-slate-400 text-xs">{t.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+              <div className="hidden lg:flex flex-col gap-3 text-right shrink-0">
+                <div className="bg-white/10 backdrop-blur rounded-2xl px-6 py-4 border border-white/10">
+                  <p className="text-amber-300 text-3xl font-bold">R800k</p>
+                  <p className="text-white/70 text-xs mt-1">Funding accessed</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur rounded-2xl px-6 py-4 border border-white/10">
+                  <p className="text-emerald-300 text-3xl font-bold">1 day</p>
+                  <p className="text-white/70 text-xs mt-1">To go online</p>
+                </div>
+              </div>
             </div>
+          </motion.div>
+
+          {/* 6-card grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="group bg-white border border-slate-200 rounded-2xl p-7 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+              >
+                {/* Quote mark */}
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center mb-5 flex-shrink-0`}>
+                  <span className="text-white text-2xl font-serif leading-none">"</span>
+                </div>
+
+                {/* Stars */}
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-sm">★</span>)}
+                </div>
+
+                {/* Quote */}
+                <p className="text-slate-600 text-sm leading-relaxed flex-1 mb-6">"{t.text}"</p>
+
+                {/* Divider */}
+                <div className="h-px bg-slate-100 mb-5" />
+
+                {/* Author */}
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm`}>
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="text-slate-900 text-sm font-semibold">{t.name}</p>
+                    <p className="text-slate-400 text-xs">{t.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
+
+          {/* Social proof bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            {[
+              { value: "15,000+", label: "Active businesses" },
+              { value: "4.9 / 5", label: "Average rating" },
+              { value: "R2.4B+", label: "Revenue processed" },
+              { value: "98%",    label: "Customer satisfaction" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-slate-50 rounded-2xl px-6 py-5 text-center border border-slate-100">
+                <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                <p className="text-slate-500 text-xs mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
