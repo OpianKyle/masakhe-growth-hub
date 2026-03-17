@@ -17,8 +17,8 @@ const fadeInUp = {
 const plans = [
   {
     code: "starter",
-    name: "Starter",
-    price: "R899",
+    name: "Basic",
+    price: "R599",
     period: "/month",
     description: "Everything you need to get your SMME online and compliant.",
     features: [
@@ -39,7 +39,7 @@ const plans = [
     period: "/month",
     description: "Full suite with social media management and advanced analytics.",
     features: [
-      { icon: Globe, label: "Everything in Starter" },
+      { icon: Globe, label: "Everything in Basic" },
       { icon: Smartphone, label: "Social Media Hub" },
       { icon: Calendar, label: "Content Calendar" },
       { icon: Megaphone, label: "Multi-platform Publishing" },
@@ -67,10 +67,10 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Pricing Plans | Masakhe SMME Platform — From R899/month</title>
-        <meta name="description" content="Simple, transparent pricing for South African SMMEs. Starter from R899/month — includes website builder, invoicing, compliance & more. No hidden fees." />
+        <title>Pricing Plans | Masakhe SMME Platform — From R599/month</title>
+        <meta name="description" content="Simple, transparent pricing for South African SMMEs. Basic from R599/month — includes website builder, invoicing, compliance & more. No hidden fees." />
         <link rel="canonical" href="https://masakhegroup.co.za/pricing" />
-        <meta property="og:title" content="Masakhe Pricing | SMME Plans from R899/month" />
+        <meta property="og:title" content="Masakhe Pricing | SMME Plans from R599/month" />
         <meta property="og:description" content="Affordable plans for South African small businesses. Website builder, tax compliance, social media & more — all in one place." />
         <meta property="og:url" content="https://masakhegroup.co.za/pricing" />
         <script type="application/ld+json">{JSON.stringify({
@@ -79,8 +79,8 @@ export default function PricingPage() {
           "name": "Masakhe Pricing Plans",
           "description": "Pricing plans for Masakhe SMME Platform",
           "offers": [
-            { "@type": "Offer", "name": "Starter", "price": "899", "priceCurrency": "ZAR", "description": "Website builder, invoicing, compliance score, and funding scoring." },
-            { "@type": "Offer", "name": "Pro", "price": "2500", "priceCurrency": "ZAR", "description": "Everything in Starter plus social media hub, content calendar, and analytics." },
+            { "@type": "Offer", "name": "Basic", "price": "599", "priceCurrency": "ZAR", "description": "Website builder, invoicing, compliance score, and funding scoring." },
+            { "@type": "Offer", "name": "Pro", "price": "2500", "priceCurrency": "ZAR", "description": "Everything in Basic plus social media hub, content calendar, and analytics." },
             { "@type": "Offer", "name": "Enterprise", "price": "5500", "priceCurrency": "ZAR", "description": "Full platform access with multi-location, white-label, and dedicated support." }
           ]
         })}</script>

@@ -74,9 +74,9 @@ interface BillingData {
 const planOptions = [
   {
     code: "starter",
-    name: "Starter",
-    price: "R899",
-    priceCents: 89900,
+    name: "Basic",
+    price: "R599",
+    priceCents: 59900,
     description: "Website Builder, Financial Tracking, Invoices, Compliance Score, Funding Scoring",
   },
   {
@@ -84,7 +84,7 @@ const planOptions = [
     name: "Pro",
     price: "R2,500",
     priceCents: 250000,
-    description: "Everything in Starter + Social Media Hub, Content Calendar, Analytics, Media Library",
+    description: "Everything in Basic + Social Media Hub, Content Calendar, Analytics, Media Library",
     popular: true,
   },
 ];

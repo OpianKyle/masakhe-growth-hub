@@ -45,8 +45,8 @@ const howItWorks = [
 const pricingPlans = [
   {
     code: "starter",
-    name: "Starter",
-    price: "R899",
+    name: "Basic",
+    price: "R599",
     period: "/month",
     description: "Everything to get your SMME online and compliant.",
     features: ["Website Builder", "Financial Tracking", "Invoice Generation", "Compliance Score", "Funding Scoring", "Basic Support"],
@@ -58,7 +58,7 @@ const pricingPlans = [
     price: "R2,500",
     period: "/month",
     description: "Full suite with social media and advanced analytics.",
-    features: ["Everything in Starter", "Social Media Hub", "Content Calendar", "Multi-platform Publishing", "Analytics Dashboard", "Media Library", "Priority Support"],
+    features: ["Everything in Basic", "Social Media Hub", "Content Calendar", "Multi-platform Publishing", "Analytics Dashboard", "Media Library", "Priority Support"],
     popular: true,
   },
 ];
@@ -86,7 +86,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white font-sans">
       <Helmet>
         <title>Masakhe | South Africa's #1 SMME Business Platform</title>
-        <meta name="description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media tools — all in one platform. From R899/month." />
+        <meta name="description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media tools — all in one platform. From R599/month." />
         <meta name="keywords" content="SMME South Africa, business registration, CIPC, SARS compliance, tax, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
         <link rel="canonical" href="https://masakhegroup.co.za/" />
         <meta property="og:title" content="Masakhe | South Africa's #1 SMME Business Platform" />
@@ -107,7 +107,7 @@ export default function LandingPage() {
             {
               "@type": "Question",
               "name": "How much does Masakhe cost?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe plans start from R899/month for the Starter plan, with Pro at R2,500/month and Enterprise at R5,500/month." }
+              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe plans start from R599/month for the Basic plan, with Pro at R2,500/month and Enterprise at R5,500/month." }
             },
             {
               "@type": "Question",
