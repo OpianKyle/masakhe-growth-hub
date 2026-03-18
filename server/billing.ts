@@ -111,13 +111,13 @@ billingRouter.get("/terms-pdf", async (_req, res) => {
     drawText("2.4 You remain responsible for all charges incurred up to and including the date your cancellation is confirmed.", { indent: 10 });
     spacer();
 
-    drawText("3. FREE TRIAL", { font: fontBold, size: headingSize });
+    drawText("3. SUBSCRIPTIONS", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("3.1 New subscribers receive a 14-day free trial starting from the date of registration.", { indent: 10 });
+    drawText("3.1 Subscriptions are activated immediately upon successful payment processing.", { indent: 10 });
     spacer(0.5);
-    drawText("3.2 No charges will be processed during the trial period.", { indent: 10 });
+    drawText("3.2 There is no free trial period. All plans are billed from the date of subscription.", { indent: 10 });
     spacer(0.5);
-    drawText("3.3 After the trial period ends, your selected plan will be billed automatically unless you cancel before the trial expires.", { indent: 10 });
+    drawText("3.3 Trial access may be granted at the sole discretion of Masakhe on a case-by-case basis.", { indent: 10 });
     spacer();
 
     drawText("4. REFUND POLICY", { font: fontBold, size: headingSize });

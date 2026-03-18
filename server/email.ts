@@ -51,7 +51,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
             <td style="padding:40px;">
               <h2 style="margin:0 0 16px;color:#1a1a2e;font-size:22px;font-weight:600;">Welcome aboard, ${firstName}!</h2>
               <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                Thank you for joining Masakhe. Your account has been created and your <strong>14-day free trial</strong> has started automatically.
+                Thank you for joining Masakhe. Your account has been created and you're ready to get started.
               </p>
               <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
                 With Masakhe, you can:
@@ -105,7 +105,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
               </table>
 
               <p style="margin:0 0 8px;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                Your trial gives you full access to all features for 14 days. Subscribe anytime from your Billing page to continue after the trial ends.
+                Subscribe from your Billing page to unlock all Masakhe features and grow your business.
               </p>
               <p style="margin:24px 0 0;color:#4a4a5a;font-size:15px;line-height:1.6;">
                 Welcome to the Masakhe community!<br>

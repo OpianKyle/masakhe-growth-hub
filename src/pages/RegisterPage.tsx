@@ -113,10 +113,10 @@ export default function RegisterPage() {
     <div className="min-h-screen flex">
       <Helmet>
         <title>Create Your Free Account | Masakhe SMME Platform</title>
-        <meta name="description" content="Start your 30-day free trial. Register your South African SMME on Masakhe — business registration, compliance, website builder, invoicing & payroll in one place." />
+        <meta name="description" content="Create your account. Register your South African SMME on Masakhe — business registration, compliance, website builder, invoicing & payroll in one place." />
         <link rel="canonical" href="https://masakhegroup.co.za/register" />
-        <meta property="og:title" content="Create Free SMME Account | Masakhe" />
-        <meta property="og:description" content="Join 15,000+ South African businesses. Start your free trial today." />
+        <meta property="og:title" content="Create Your SMME Account | Masakhe" />
+        <meta property="og:description" content="Join 15,000+ South African businesses on Masakhe. Create your account today." />
         <meta property="og:url" content="https://masakhegroup.co.za/register" />
       </Helmet>
       <div

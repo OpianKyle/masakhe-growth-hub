@@ -408,7 +408,7 @@ export const templateList: TemplateInfo[] = [
     description: "Premium template for software companies, SaaS products, and technology startups",
     icon: "monitor",
     color: "bg-violet-950",
-    preview: "Modern dark violet layout with product features, pricing tiers, integrations, and free trial CTA",
+    preview: "Modern dark violet layout with product features, pricing tiers, integrations, and get started CTA",
     premium: true,
   },
   {
@@ -5524,7 +5524,7 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               title: "The Platform That Powers Your Business",
               subtitle: "All-in-one software built for African businesses — fast, affordable, and designed for scale.",
               badgeText: "Trusted by 8,000+ Businesses",
-              ctaPrimaryText: "Start Free Trial",
+              ctaPrimaryText: "Get Started",
               ctaSecondaryText: "Watch Demo",
               backgroundImageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80",
             },
@@ -5592,8 +5592,8 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
             type: "contact",
             enabled: true,
             data: {
-              title: "Start Your Free 14-Day Trial",
-              subtitle: "No credit card required. Set up in minutes. Cancel anytime.",
+              title: "Get Started Today",
+              subtitle: "Set up in minutes. Choose a plan that fits your business. Cancel anytime.",
               email: "hello@saasplatform.co.za",
               phone: "+27 11 000 1234",
               address: "The Innovation Hub, Tshwane, 0001",
