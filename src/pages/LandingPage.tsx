@@ -673,33 +673,78 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA: bright blue ── */}
-      <section className="relative py-28 overflow-hidden bg-blue-600">
+      {/* ── CTA ── */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950" />
         <div className="absolute inset-0">
-          <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-500/40 blur-3xl" />
-          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-indigo-600/40 blur-3xl" />
+          <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-green-600/20 blur-[120px]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-blue-600/25 blur-[100px]" />
+          <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-amber-500/15 blur-[120px]" />
+          <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-red-600/10 blur-[80px]" />
+        </div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="absolute top-0 left-0 right-0 flex h-1">
+          <div className="flex-1 bg-green-500" />
+          <div className="flex-1 bg-amber-400" />
+          <div className="flex-1 bg-red-500" />
+          <div className="flex-1 bg-blue-700" />
+          <div className="flex-1 bg-white/30" />
         </div>
         <div className="relative container mx-auto px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-2xl mx-auto space-y-7">
-            <h2 className="text-4xl md:text-5xl font-bold font-heading text-white leading-tight">
-              Ready to grow your<br />business with Masakhe?
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="max-w-3xl mx-auto"
+          >
+            <motion.span
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-5 py-2 text-xs font-semibold text-blue-300 mb-8 tracking-wider uppercase"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+              Join 15,000+ South African Entrepreneurs
+            </motion.span>
+
+            <h2 className="text-5xl md:text-6xl font-black font-heading text-white leading-tight mb-6">
+              Ready to grow your{" "}
+              <span className="relative inline-block">
+                <span className="bg-gradient-to-r from-blue-400 via-green-400 to-amber-400 bg-clip-text text-transparent">
+                  business
+                </span>
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 via-green-400 to-amber-400 rounded-full opacity-60" />
+              </span>
+              {" "}with Masakhe?
             </h2>
-            <p className="text-lg text-white/70">
-              Join 15,000+ South African entrepreneurs already building their future. Registration takes less than 5 minutes.
+
+            <p className="text-lg text-slate-400 mb-10 leading-relaxed max-w-xl mx-auto">
+              Registration takes less than 5 minutes. Everything your SMME needs — website, payroll, invoicing, compliance — all in one place.
             </p>
-            <div className="flex flex-wrap gap-4 justify-center pt-2">
+
+            <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Link to="/register">
-                <Button className="bg-white text-blue-700 hover:bg-blue-50 font-bold text-base h-12 px-8 shadow-lg">
-                  Start Free Registration <ArrowRight className="ml-2 h-5 w-5" />
+                <Button className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-base h-14 px-10 rounded-xl shadow-2xl shadow-blue-600/40 hover:shadow-blue-500/50 transition-all duration-300 group">
+                  Start Free Registration
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Button>
               </Link>
               <Link to="/login">
-                <Button className="border-2 border-white/30 text-white bg-transparent hover:bg-white/10 font-semibold text-base h-12 px-8">
+                <Button className="border-2 border-white/20 text-white bg-white/5 backdrop-blur-sm hover:bg-white/15 hover:border-white/40 font-semibold text-base h-14 px-8 rounded-xl transition-all duration-300">
                   Sign In
                 </Button>
               </Link>
             </div>
-            <p className="text-sm text-white/50">Secure monthly billing · Cancel anytime · POPIA compliant</p>
+
+            <div className="flex flex-wrap gap-6 justify-center text-sm text-slate-500">
+              {["Secure monthly billing", "Cancel anytime", "POPIA compliant"].map((item) => (
+                <span key={item} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500" /> {item}
+                </span>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
