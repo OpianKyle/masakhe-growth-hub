@@ -19,6 +19,8 @@ interface Invoice {
   customer_name: string;
   customer_email: string | null;
   total_cents: number;
+  vat_enabled: boolean;
+  vat_cents: number;
   items: InvoiceItem[];
   status: string;
   created_at: string;
@@ -30,6 +32,7 @@ export default function InvoicesPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
+  const [vatEnabled, setVatEnabled] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -80,7 +83,9 @@ export default function InvoicesPage() {
     setItems(updated);
   };
 
-  const total = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+  const vatAmount = vatEnabled ? subtotal * 0.15 : 0;
+  const total = subtotal + vatAmount;
 
   const handleCreate = async () => {
     if (!customerName.trim()) { toast.error("Customer name is required"); return; }
@@ -91,7 +96,7 @@ export default function InvoicesPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ customerName, customerEmail: customerEmail || undefined, items }),
+      body: JSON.stringify({ customerName, customerEmail: customerEmail || undefined, items, vatEnabled }),
     });
 
     if (res.ok) {
@@ -100,6 +105,7 @@ export default function InvoicesPage() {
       setShowCreate(false);
       setCustomerName(""); setCustomerEmail("");
       setItems([{ name: "", qty: 1, unitPrice: 0 }]);
+      setVatEnabled(true);
       loadInvoices();
     } else {
       const data = await res.json();
@@ -197,9 +203,35 @@ export default function InvoicesPage() {
               <Plus className="h-3 w-3 mr-1" /> Add Item
             </Button>
 
-            <div className="flex items-center justify-between border-t pt-4">
-              <div className="text-lg font-bold">Total: <span className="text-primary">R{total.toFixed(2)}</span></div>
-              <div className="flex gap-2">
+            <div className="border-t pt-4 flex flex-col items-end gap-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer mb-2 self-start">
+                <input
+                  type="checkbox"
+                  checked={vatEnabled}
+                  onChange={(e) => setVatEnabled(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Include VAT (15%)</span>
+              </label>
+
+              <div className="w-full max-w-xs space-y-1 text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>R{subtotal.toFixed(2)}</span>
+                </div>
+                {vatEnabled && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>VAT (15%)</span>
+                    <span>R{vatAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base border-t pt-1">
+                  <span>{vatEnabled ? "Total (incl. VAT)" : "Total"}</span>
+                  <span className="text-primary">R{total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-3">
                 <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
                 <Button onClick={handleCreate} className="gradient-hero text-white">Create Invoice</Button>
               </div>
@@ -216,7 +248,7 @@ export default function InvoicesPage() {
               <th className="text-left p-3 font-semibold">Invoice #</th>
               <th className="text-left p-3 font-semibold">Customer</th>
               <th className="text-left p-3 font-semibold">Items</th>
-              <th className="text-right p-3 font-semibold">Total</th>
+              <th className="text-right p-3 font-semibold">Total (incl. VAT)</th>
               <th className="text-left p-3 font-semibold">Date</th>
               <th className="text-right p-3 font-semibold">Actions</th>
             </tr>
@@ -234,7 +266,10 @@ export default function InvoicesPage() {
                   <div className="font-medium">{inv.customer_name}</div>
                   {inv.customer_email && <div className="text-xs text-muted-foreground">{inv.customer_email}</div>}
                 </td>
-                <td className="p-3 text-muted-foreground">{inv.items.length} item{inv.items.length !== 1 ? "s" : ""}</td>
+                <td className="p-3 text-muted-foreground">
+                  {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
+                  {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
+                </td>
                 <td className="p-3 text-right font-bold text-primary">R{(inv.total_cents / 100).toFixed(2)}</td>
                 <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("en-ZA")}</td>
                 <td className="p-3 text-right">

@@ -866,6 +866,9 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    await addColumnIfMissing("invoices", "vat_enabled", "TINYINT(1) NOT NULL DEFAULT 0");
+    await addColumnIfMissing("invoices", "vat_cents", "INT NOT NULL DEFAULT 0");
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

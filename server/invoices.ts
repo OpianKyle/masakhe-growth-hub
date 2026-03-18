@@ -20,7 +20,7 @@ invoiceRouter.get("/export", async (req, res) => {
       [userId]
     );
 
-    const header = "Invoice Number,Customer Name,Customer Email,Items,Total,Status,Date";
+    const header = "Invoice Number,Customer Name,Customer Email,Items,Subtotal,VAT (15%),Total,Status,Date";
     const rows = invoices.map((inv: any) => {
       const items = JSON.parse(inv.items_json || "[]");
       const itemsSummary = items
@@ -30,11 +30,13 @@ invoiceRouter.get("/export", async (req, res) => {
           return `${qty}x ${item.name || "Item"} @ R${unitPrice}`;
         })
         .join("; ");
+      const subtotal = ((inv.total_cents - (inv.vat_cents || 0)) / 100).toFixed(2);
+      const vat = ((inv.vat_cents || 0) / 100).toFixed(2);
       const total = (inv.total_cents / 100).toFixed(2);
       const date = inv.created_at ? inv.created_at.split("T")[0] : "";
       const custName = (inv.customer_name || "").replace(/"/g, '""');
       const custEmail = (inv.customer_email || "").replace(/"/g, '""');
-      return `${inv.invoice_number},"${custName}","${custEmail}","${itemsSummary.replace(/"/g, '""')}",${total},${inv.status || "final"},${date}`;
+      return `${inv.invoice_number},"${custName}","${custEmail}","${itemsSummary.replace(/"/g, '""')}",${subtotal},${vat},${total},${inv.status || "final"},${date}`;
     });
 
     const csv = [header, ...rows].join("\n");
@@ -100,8 +102,8 @@ invoiceRouter.post("/import", upload.single("file"), async (req, res) => {
       const id = randomUUID();
 
       await execute(
-        `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, items_json, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
+        `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, vat_enabled, vat_cents, items_json, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 'final', ?)`,
         [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
       );
       imported++;
@@ -146,15 +148,18 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { customerName, customerEmail, items } = req.body;
+    const { customerName, customerEmail, items, vatEnabled } = req.body;
 
     if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "customerName and items are required" });
     }
 
-    const totalCents = items.reduce((sum: number, item: any) => {
+    const subtotalCents = items.reduce((sum: number, item: any) => {
       return sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100);
     }, 0);
+
+    const vatCents = vatEnabled ? Math.round(subtotalCents * 0.15) : 0;
+    const totalCents = subtotalCents + vatCents;
 
     const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0;
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
@@ -163,9 +168,9 @@ invoiceRouter.post("/", async (req, res) => {
     const now = new Date().toISOString();
 
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, items_json, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
-      [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, vat_enabled, vat_cents, items_json, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
+      [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), now]
     );
 
     res.json({ ok: true, id, invoiceNumber });
@@ -178,7 +183,12 @@ invoiceRouter.get("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
-    res.json(invoices.map((inv: any) => ({ ...inv, items: JSON.parse(inv.items_json) })));
+    res.json(invoices.map((inv: any) => ({
+      ...inv,
+      items: JSON.parse(inv.items_json),
+      vat_enabled: !!inv.vat_enabled,
+      vat_cents: inv.vat_cents || 0,
+    })));
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch invoices" });
   }
@@ -191,13 +201,17 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
 
     const user = await queryOne(
-      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url
+      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number
        FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
        WHERE u.id = ?`,
       [userId]
     );
 
     const items = JSON.parse(invoice.items_json);
+    const vatEnabled = !!invoice.vat_enabled;
+    const vatCents = invoice.vat_cents || 0;
+    const subtotalCents = invoice.total_cents - vatCents;
+
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -256,6 +270,10 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       page.drawText(`Email: ${user.email}`, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
+    if (user?.vat_number) {
+      page.drawText(`VAT Reg No: ${user.vat_number}`, { x: 50, y, size: 9, font, color: grey });
+      y -= 14;
+    }
 
     y -= 15;
     page.drawRectangle({ x: 50, y, width: 495, height: 1, color: rgb(0.85, 0.85, 0.85) });
@@ -304,9 +322,29 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     page.drawRectangle({ x: 350, y: y - 2, width: 195, height: 1, color: rgb(0.7, 0.7, 0.7) });
     y -= 18;
 
-    const totalRands = invoice.total_cents / 100;
-    page.drawText("TOTAL:", { x: 380, y, size: 11, font: fontBold, color: black });
-    page.drawText(`R${totalRands.toFixed(2)}`, { x: 465, y, size: 11, font: fontBold, color: green });
+    if (vatEnabled) {
+      const subtotalRands = subtotalCents / 100;
+      const vatRands = vatCents / 100;
+      const totalRands = invoice.total_cents / 100;
+
+      page.drawText("Subtotal:", { x: 360, y, size: 9, font, color: grey });
+      page.drawText(`R${subtotalRands.toFixed(2)}`, { x: 465, y, size: 9, font, color: black });
+      y -= 16;
+
+      page.drawText("VAT (15%):", { x: 360, y, size: 9, font, color: grey });
+      page.drawText(`R${vatRands.toFixed(2)}`, { x: 465, y, size: 9, font, color: black });
+      y -= 16;
+
+      page.drawRectangle({ x: 350, y: y + 8, width: 195, height: 0.5, color: rgb(0.7, 0.7, 0.7) });
+      y -= 6;
+
+      page.drawText("TOTAL (incl. VAT):", { x: 340, y, size: 11, font: fontBold, color: black });
+      page.drawText(`R${totalRands.toFixed(2)}`, { x: 460, y, size: 11, font: fontBold, color: green });
+    } else {
+      const totalRands = invoice.total_cents / 100;
+      page.drawText("TOTAL:", { x: 380, y, size: 11, font: fontBold, color: black });
+      page.drawText(`R${totalRands.toFixed(2)}`, { x: 465, y, size: 11, font: fontBold, color: green });
+    }
 
     page.drawText("Thank you for your business!", { x: 50, y: 60, size: 9, font, color: grey });
     page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: rgb(0.7, 0.7, 0.7) });
