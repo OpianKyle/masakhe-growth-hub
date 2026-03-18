@@ -160,37 +160,45 @@ export default function PricingPage() {
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.15, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`relative rounded-2xl border bg-card p-8 flex flex-col ${
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                className={`relative rounded-2xl border backdrop-blur-sm p-8 flex flex-col transition-all duration-300 ${
                   plan.popular
-                    ? "border-secondary shadow-elevated"
-                    : "border-border shadow-card"
+                    ? "border-secondary/60 bg-gradient-to-br from-secondary/20 via-card to-card shadow-2xl shadow-secondary/20 scale-105"
+                    : "border-border/50 bg-gradient-to-br from-card to-card/80 hover:border-primary/30 shadow-lg hover:shadow-xl"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="gradient-gold text-sa-black text-xs font-bold px-4 py-1 rounded-full">
-                      Most Popular
-                    </span>
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-secondary to-secondary/60 rounded-full blur-lg opacity-50"></div>
+                      <span className="relative gradient-gold text-sa-black text-xs font-bold px-5 py-1.5 rounded-full block shadow-lg shadow-secondary/30">
+                        ★ Most Popular
+                      </span>
+                    </div>
                   </div>
                 )}
 
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold font-heading text-foreground">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
-                </div>
-
                 <div className="mb-8">
-                  <span className="text-4xl font-bold font-heading text-foreground">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+                  <h3 className="text-3xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{plan.description}</p>
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10">
+                  <span className="text-5xl font-black font-heading text-foreground">{plan.price}</span>
+                  <span className="text-muted-foreground text-sm ml-2 font-medium">{plan.period}</span>
+                </div>
+
+                <ul className="space-y-4 mb-10 flex-1">
                   {plan.features.map((feature) => (
-                    <li key={feature.label} className="flex items-center gap-3 text-sm text-foreground">
-                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <Check className="h-3 w-3 text-primary" />
+                    <li key={feature.label} className="flex items-start gap-3 text-sm text-foreground/90">
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                        plan.popular 
+                          ? "bg-gradient-to-br from-secondary to-secondary/60" 
+                          : "bg-primary/15"
+                      }`}>
+                        <Check className={`h-3.5 w-3.5 ${plan.popular ? "text-white" : "text-primary"}`} />
                       </div>
-                      {feature.label}
+                      <span className="font-medium">{feature.label}</span>
                     </li>
                   ))}
                 </ul>
@@ -198,7 +206,11 @@ export default function PricingPage() {
                 <Button
                   variant={plan.variant}
                   size="lg"
-                  className="w-full text-base"
+                  className={`w-full text-base font-semibold rounded-xl transition-all duration-300 ${
+                    plan.popular
+                      ? "shadow-lg shadow-secondary/30 hover:shadow-xl hover:shadow-secondary/40"
+                      : "hover:shadow-lg"
+                  }`}
                   onClick={() => handleStartTrial(plan.code)}
                 >
                   Subscribe Now <ArrowRight className="ml-2 h-4 w-4" />

@@ -597,49 +597,67 @@ export default function LandingPage() {
             <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start free, upgrade when ready. Cancel anytime.</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {pricingPlans.map((plan, i) => (
               <motion.div
                 key={plan.code}
                 initial={{ opacity: 0, y: 32 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className={`relative rounded-2xl flex flex-col overflow-hidden ${
+                transition={{ delay: i * 0.12 }}
+                whileHover={{ y: -6, transition: { duration: 0.3 } }}
+                className={`relative rounded-2xl flex flex-col overflow-hidden backdrop-blur-sm transition-all duration-300 ${
                   plan.popular
-                    ? "bg-white"
-                    : "bg-white/5 border border-white/10"
+                    ? "bg-gradient-to-br from-white via-blue-50/80 to-white border border-white/60 shadow-2xl shadow-blue-400/30 scale-105"
+                    : "bg-gradient-to-br from-white/10 to-white/5 border border-white/15 hover:border-white/30 shadow-xl hover:shadow-2xl hover:shadow-white/10"
                 }`}
               >
                 {plan.popular && (
-                  <div className="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 text-xs font-bold text-center py-2 tracking-wider uppercase">
-                    Most Popular — Best Value
+                  <div className="relative h-12 flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 opacity-90"></div>
+                    <span className="relative text-white text-xs font-black tracking-wider uppercase flex items-center gap-1.5">
+                      ⭐ Most Popular — Best Value
+                    </span>
                   </div>
                 )}
-                <div className="p-8 flex flex-col flex-1">
-                  <div className="mb-5">
-                    <h3 className={`text-xl font-bold font-heading ${plan.popular ? "text-slate-900" : "text-white"}`}>{plan.name}</h3>
-                    <p className={`text-sm mt-1 ${plan.popular ? "text-slate-500" : "text-white/50"}`}>{plan.description}</p>
+                <div className={`p-8 flex flex-col flex-1 ${plan.popular ? "" : "pt-6"}`}>
+                  <div className="mb-6">
+                    <h3 className={`text-2xl font-black font-heading ${plan.popular ? "bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent" : "text-white"}`}>
+                      {plan.name}
+                    </h3>
+                    <p className={`text-sm mt-2 leading-relaxed ${plan.popular ? "text-slate-600" : "text-white/70"}`}>
+                      {plan.description}
+                    </p>
                   </div>
-                  <div className="mb-8">
-                    <span className={`text-5xl font-bold font-heading ${plan.popular ? "text-slate-900" : "text-white"}`}>{plan.price}</span>
-                    <span className={`ml-1 text-sm ${plan.popular ? "text-slate-400" : "text-white/40"}`}>{plan.period}</span>
+                  <div className={`mb-8 p-4 rounded-xl ${plan.popular ? "bg-gradient-to-r from-blue-50 to-blue-100/50" : "bg-white/10"}`}>
+                    <span className={`text-6xl font-black font-heading ${plan.popular ? "text-blue-700" : "text-white"}`}>
+                      {plan.price}
+                    </span>
+                    <span className={`ml-2 text-sm font-semibold ${plan.popular ? "text-blue-600" : "text-white/60"}`}>
+                      {plan.period}
+                    </span>
                   </div>
-                  <ul className="space-y-3 mb-8 flex-1">
+                  <ul className="space-y-4 mb-10 flex-1">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-3 text-sm">
-                        <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? "bg-blue-50" : "bg-white/10"}`}>
-                          <Check className={`h-3 w-3 ${plan.popular ? "text-blue-600" : "text-white"}`} />
+                      <li key={feature} className="flex items-start gap-3 text-sm">
+                        <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 font-bold ${
+                          plan.popular 
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white" 
+                            : "bg-white/20 text-white"
+                        }`}>
+                          <Check className="h-3.5 w-3.5" />
                         </div>
-                        <span className={plan.popular ? "text-slate-700" : "text-white/75"}>{feature}</span>
+                        <span className={plan.popular ? "text-slate-700 font-medium" : "text-white/85"}>
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
                   <Link to={`/register?plan=${plan.code}`} className="block">
-                    <Button className={`w-full h-12 font-semibold text-sm rounded-xl ${
+                    <Button className={`w-full h-12 font-semibold text-sm rounded-xl transition-all duration-300 ${
                       plan.popular
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                        ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-600/40 hover:shadow-xl hover:shadow-blue-600/50"
+                        : "bg-white/15 hover:bg-white/25 text-white border border-white/20 hover:border-white/40"
                     }`}>
                       Subscribe Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
