@@ -519,7 +519,10 @@ export async function runMigrations() {
     await createIndex("idx_prt_token", "password_reset_tokens", "token");
     await createIndex("idx_prt_user", "password_reset_tokens", "user_id");
 
-    await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Starter', 89900), ('pro', 'Pro', 250000)`);
+    await conn.query(`INSERT IGNORE INTO billing_plans (code, name, price_cents) VALUES ('starter', 'Enterprise', 59900), ('pro', 'Enterprise Plus', 89900), ('premium', 'Enterprise Premium', 149900)`);
+    await conn.query(`UPDATE billing_plans SET name = 'Enterprise', price_cents = 59900 WHERE code = 'starter'`);
+    await conn.query(`UPDATE billing_plans SET name = 'Enterprise Plus', price_cents = 89900 WHERE code = 'pro'`);
+    await conn.query(`UPDATE billing_plans SET name = 'Enterprise Premium', price_cents = 149900 WHERE code = 'premium'`);
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS business_plans (

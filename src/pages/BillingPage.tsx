@@ -74,18 +74,25 @@ interface BillingData {
 const planOptions = [
   {
     code: "starter",
-    name: "Basic",
+    name: "Enterprise",
     price: "R599",
     priceCents: 59900,
-    description: "Website Builder, Financial Tracking, Invoices, Compliance Score, Funding Scoring",
+    description: "Overview Dashboard, Website Builder, Social Media Builder, Transactions",
   },
   {
     code: "pro",
-    name: "Pro",
-    price: "R2,500",
-    priceCents: 250000,
-    description: "Everything in Basic + Social Media Hub, Content Calendar, Analytics, Media Library",
+    name: "Enterprise Plus",
+    price: "R899",
+    priceCents: 89900,
+    description: "Everything in Enterprise + Business Toolkit, Employee Management",
     popular: true,
+  },
+  {
+    code: "premium",
+    name: "Enterprise Premium",
+    price: "R1,499",
+    priceCents: 149900,
+    description: "Everything in Enterprise Plus + Payroll Management, Client Management, Campaign Management",
   },
 ];
 
@@ -118,7 +125,7 @@ function statusBadge(status: string) {
 }
 
 const checkoutSchema = z.object({
-  planCode: z.enum(["starter", "pro"]),
+  planCode: z.enum(["starter", "pro", "premium"]),
   recipientName: z.string().min(2, "Full name is required"),
   email: z.string().email("A valid email address is required"),
   contactNumber: z.string().min(7, "Contact number is required"),
@@ -550,13 +557,13 @@ function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: st
   const formRef = useRef<HTMLFormElement>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedTargetCode, setSelectedTargetCode] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const targetPlan = currentPlanCode === "starter"
-    ? planOptions.find((p) => p.code === "pro")!
-    : planOptions.find((p) => p.code === "starter")!;
-
-  const isUpgrade = currentPlanCode === "starter";
+  const currentPlan = planOptions.find((p) => p.code === currentPlanCode)!;
+  const otherPlans = planOptions.filter((p) => p.code !== currentPlanCode);
+  const targetPlan = planOptions.find((p) => p.code === selectedTargetCode) || otherPlans[0];
+  const isUpgrade = targetPlan.priceCents > currentPlan.priceCents;
 
   const defaultStartDate = (() => {
     const d = new Date();
@@ -646,42 +653,51 @@ function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: st
 
       {!showForm ? (
         <div className="space-y-4">
-          <div className={`rounded-xl border p-4 ${isUpgrade ? "border-primary/30 bg-primary/5" : "border-border"}`}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-foreground font-heading">{targetPlan.name}</span>
-                  {isUpgrade && (
-                    <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Crown className="h-2.5 w-2.5" /> Recommended
-                    </span>
-                  )}
-                </div>
-                <p className="text-lg font-bold font-heading text-foreground">
-                  {targetPlan.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">{targetPlan.description}</p>
-                {isUpgrade && (
-                  <div className="mt-3 space-y-1.5">
-                    <p className="text-xs font-semibold text-foreground">Unlocks with Pro:</p>
-                    <ul className="text-xs text-muted-foreground space-y-1">
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Premium website templates</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Vehicle inventory management</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Website leads tracking</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Social Media Hub with analytics</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sa-green" />Content calendar and media library</li>
-                    </ul>
+          <p className="text-sm text-muted-foreground">Select a plan to switch to:</p>
+          <div className="grid gap-3">
+            {otherPlans.map((plan) => {
+              const isPlanUpgrade = plan.priceCents > currentPlan.priceCents;
+              const isSelected = (selectedTargetCode || otherPlans[0].code) === plan.code;
+              return (
+                <label
+                  key={plan.code}
+                  className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-all ${
+                    isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                  }`}
+                  onClick={() => setSelectedTargetCode(plan.code)}
+                >
+                  <input
+                    type="radio"
+                    name="targetPlan"
+                    value={plan.code}
+                    checked={isSelected}
+                    onChange={() => setSelectedTargetCode(plan.code)}
+                    className="mt-1 accent-primary"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-bold text-foreground font-heading">{plan.name}</span>
+                      {isPlanUpgrade && (
+                        <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Crown className="h-2.5 w-2.5" /> Upgrade
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-base font-bold font-heading text-foreground">
+                      {plan.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{plan.description}</p>
                   </div>
-                )}
-              </div>
-            </div>
+                </label>
+              );
+            })}
           </div>
 
           <Button
             onClick={() => setShowForm(true)}
-            className={isUpgrade ? "w-full" : "w-full"}
             variant={isUpgrade ? "default" : "outline"}
             size="lg"
+            className="w-full"
           >
             {isUpgrade ? (
               <><ArrowUpCircle className="h-4 w-4 mr-2" />Upgrade to {targetPlan.name} — {targetPlan.price}/month</>
@@ -689,12 +705,6 @@ function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: st
               <><ArrowDownCircle className="h-4 w-4 mr-2" />Switch to {targetPlan.name} — {targetPlan.price}/month</>
             )}
           </Button>
-
-          {!isUpgrade && (
-            <p className="text-xs text-muted-foreground text-center">
-              Downgrading will remove access to premium features including premium templates, vehicle inventory, and lead tracking.
-            </p>
-          )}
         </div>
       ) : (
         <div className="space-y-4 mt-4">

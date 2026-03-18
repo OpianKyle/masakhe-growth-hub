@@ -278,7 +278,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       shippingAddress3,
     } = req.body;
 
-    if (!planCode || !['starter', 'pro'].includes(planCode)) {
+    if (!planCode || !['starter', 'pro', 'premium'].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
     }
 
@@ -514,7 +514,7 @@ billingRouter.post("/change-plan", requireAuth, async (req, res) => {
     const userId = req.session.userId!;
     const { newPlanCode, recipientName, email, contactNumber, mobileNumber, collectionDay: clientCollectionDay, startDate: clientStartDate, shippingAddress1, shippingAddress2, shippingAddress3 } = req.body;
 
-    if (!newPlanCode || !['starter', 'pro'].includes(newPlanCode)) {
+    if (!newPlanCode || !['starter', 'pro', 'premium'].includes(newPlanCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
     }
 
@@ -541,7 +541,7 @@ billingRouter.post("/change-plan", requireAuth, async (req, res) => {
     }
 
     if (existingSub.plan_code === newPlanCode) {
-      return res.status(400).json({ error: `You are already on the ${newPlanCode === 'pro' ? 'Pro' : 'Starter'} plan.` });
+      return res.status(400).json({ error: `You are already on the ${newPlan.name} plan.` });
     }
 
     const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);

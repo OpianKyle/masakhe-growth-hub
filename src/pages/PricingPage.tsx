@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
-import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck } from "lucide-react";
+import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck, Users, Banknote, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,16 +17,15 @@ const fadeInUp = {
 const plans = [
   {
     code: "starter",
-    name: "Basic",
+    name: "Enterprise",
     price: "R599",
     period: "/month",
-    description: "Everything you need to get your SMME online and compliant.",
+    description: "Everything you need to get your SMME online and running.",
     features: [
+      { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
-      { icon: Wallet, label: "Financial Tracking" },
-      { icon: FileText, label: "Invoice Generation" },
-      { icon: Shield, label: "Compliance Score" },
-      { icon: ClipboardCheck, label: "Funding Scoring" },
+      { icon: Smartphone, label: "Social Media Builder" },
+      { icon: Wallet, label: "Transactions" },
       { icon: Headphones, label: "Basic Support" },
     ],
     variant: "hero" as const,
@@ -34,21 +33,34 @@ const plans = [
   },
   {
     code: "pro",
-    name: "Pro",
-    price: "R2,500",
+    name: "Enterprise Plus",
+    price: "R899",
     period: "/month",
-    description: "Full suite with social media management and advanced analytics.",
+    description: "Everything in Enterprise plus business tools and employee management.",
     features: [
-      { icon: Globe, label: "Everything in Basic" },
-      { icon: Smartphone, label: "Social Media Hub" },
-      { icon: Calendar, label: "Content Calendar" },
-      { icon: Megaphone, label: "Multi-platform Publishing" },
-      { icon: BarChart3, label: "Analytics Dashboard" },
-      { icon: Image, label: "Media Library" },
+      { icon: Globe, label: "Everything in Enterprise" },
+      { icon: BookOpen, label: "Business Toolkit" },
+      { icon: Users, label: "Employee Management" },
       { icon: Headphones, label: "Priority Support" },
     ],
     variant: "gold" as const,
     popular: true,
+  },
+  {
+    code: "premium",
+    name: "Enterprise Premium",
+    price: "R1,499",
+    period: "/month",
+    description: "Full suite with payroll, client and campaign management.",
+    features: [
+      { icon: Globe, label: "Everything in Enterprise Plus" },
+      { icon: Banknote, label: "Payroll Management" },
+      { icon: Users, label: "Client Management" },
+      { icon: Megaphone, label: "Campaign Management" },
+      { icon: Headphones, label: "Dedicated Support" },
+    ],
+    variant: "hero" as const,
+    popular: false,
   },
 ];
 
@@ -141,7 +153,7 @@ export default function PricingPage() {
             </motion.p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan, i) => (
               <motion.div
                 key={plan.code}

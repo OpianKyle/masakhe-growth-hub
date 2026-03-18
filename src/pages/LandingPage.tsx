@@ -45,21 +45,30 @@ const howItWorks = [
 const pricingPlans = [
   {
     code: "starter",
-    name: "Basic",
+    name: "Enterprise",
     price: "R599",
     period: "/month",
-    description: "Everything to get your SMME online and compliant.",
-    features: ["Website Builder", "Financial Tracking", "Invoice Generation", "Compliance Score", "Funding Scoring", "Basic Support"],
+    description: "Everything to get your SMME online and running.",
+    features: ["Overview Dashboard", "Website Builder", "Social Media Builder", "Transactions", "Basic Support"],
     popular: false,
   },
   {
     code: "pro",
-    name: "Pro",
-    price: "R2,500",
+    name: "Enterprise Plus",
+    price: "R899",
     period: "/month",
-    description: "Full suite with social media and advanced analytics.",
-    features: ["Everything in Basic", "Social Media Hub", "Content Calendar", "Multi-platform Publishing", "Analytics Dashboard", "Media Library", "Priority Support"],
+    description: "Enterprise plus business tools and employee management.",
+    features: ["Everything in Enterprise", "Business Toolkit", "Employee Management", "Priority Support"],
     popular: true,
+  },
+  {
+    code: "premium",
+    name: "Enterprise Premium",
+    price: "R1,499",
+    period: "/month",
+    description: "Full suite with payroll, client and campaign management.",
+    features: ["Everything in Enterprise Plus", "Payroll Management", "Client Management", "Campaign Management", "Dedicated Support"],
+    popular: false,
   },
 ];
 
@@ -588,7 +597,7 @@ export default function LandingPage() {
             <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start free, upgrade when ready. Cancel anytime.</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {pricingPlans.map((plan, i) => (
               <motion.div
                 key={plan.code}

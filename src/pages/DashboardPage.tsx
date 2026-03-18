@@ -67,17 +67,17 @@ const baseNavItems: NavItem[] = [
     children: [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices" },
+      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
     ],
   },
   {
     icon: HandCoins,
-    label: "Funding Toolkit",
+    label: "Business Toolkit",
     groupId: "funding",
     children: [
       { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
       { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
       { icon: ClipboardCheck, label: "Funding Scoring", path: "/dashboard/funding" },
-      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
       { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify" },
       { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
     ],
