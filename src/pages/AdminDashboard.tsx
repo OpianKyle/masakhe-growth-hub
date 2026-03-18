@@ -40,6 +40,7 @@ interface Client {
   physical_address?: string;
   website_count: number;
   subscription_status?: string | null;
+  trial_end_at?: string | null;
   plan_code?: string | null;
   plan_name?: string | null;
 }
@@ -171,7 +172,22 @@ function ClientList() {
     }
   };
 
-  const grantSubscription = async (id: string, plan: "starter" | "pro", name: string) => {
+  const grantTrial = async (id: string, name: string) => {
+    if (!confirm(`Grant ${name} a 7-day Premium trial?`)) return;
+    const res = await fetch(`/api/admin/clients/${id}/trial`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.ok) {
+      toast.success(`7-day Premium trial granted to ${name}`);
+      loadClients();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to grant trial");
+    }
+  };
+
+  const grantSubscription = async (id: string, plan: "starter" | "pro" | "premium", name: string) => {
     const res = await fetch(`/api/admin/clients/${id}/subscription`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -277,6 +293,21 @@ function ClientList() {
                 <td className="p-4">
                   {client.role === "admin" ? (
                     <span className="text-xs text-muted-foreground italic">Admin</span>
+                  ) : client.subscription_status === "TRIAL" ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800">
+                        <Clock className="h-3 w-3" />
+                        Trial · {client.trial_end_at ? Math.max(0, Math.ceil((new Date(client.trial_end_at).getTime() - Date.now()) / 86400000)) : "?"} days left
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => revokeSubscription(client.id, client.full_name)}
+                      >
+                        Revoke
+                      </Button>
+                    </div>
                   ) : client.subscription_status === "ACTIVE" ? (
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800">
@@ -293,7 +324,15 @@ function ClientList() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+                        onClick={() => grantTrial(client.id, client.full_name)}
+                      >
+                        <Clock className="h-3 w-3" /> 7-day Trial
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

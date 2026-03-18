@@ -205,7 +205,9 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
       `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
        FROM billing_subscriptions bs
        JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ? AND bs.status IN ('ACTIVE','PAST_DUE')
+       WHERE bs.workspace_id = ?
+         AND bs.status IN ('ACTIVE','PAST_DUE','TRIAL')
+         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
        ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
@@ -244,10 +246,12 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     }
 
     const subscription = await queryOne(
-      `SELECT bs.status, bs.plan_id, bp.code as plan_code
+      `SELECT bs.status, bs.plan_id, bp.code as plan_code, bs.trial_end_at
        FROM billing_subscriptions bs
        LEFT JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ? AND bs.status = 'ACTIVE'
+       WHERE bs.workspace_id = ?
+         AND bs.status IN ('ACTIVE','TRIAL')
+         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
        ORDER BY bs.created_at DESC LIMIT 1`,
       [workspace.id]
     );
@@ -256,7 +260,7 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
       return res.json({ active: false, status: null, plan: null });
     }
 
-    res.json({ active: true, status: subscription.status, plan: subscription.plan_code || null });
+    res.json({ active: true, status: subscription.status, plan: subscription.plan_code || null, trialEndsAt: subscription.trial_end_at || null });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

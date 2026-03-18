@@ -48,12 +48,12 @@ adminRouter.get("/clients", async (req, res) => {
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
               bp.industry_sector, bp.phone, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
-              bs.status as subscription_status,
+              bs.status as subscription_status, bs.trial_end_at,
               bpl.code as plan_code, bpl.name as plan_name
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
        LEFT JOIN workspace_members wm ON wm.user_id = u.id
-       LEFT JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status = 'ACTIVE'
+       LEFT JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status IN ('ACTIVE','TRIAL') AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
        LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
        ORDER BY u.created_at DESC`
     );
@@ -104,11 +104,48 @@ adminRouter.get("/clients/:id", async (req, res) => {
   }
 });
 
+adminRouter.post("/clients/:id/trial", async (req, res) => {
+  try {
+    const workspace = await queryOne(
+      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      [req.params.id]
+    );
+    if (!workspace) return res.status(404).json({ error: "No workspace found for this user" });
+
+    const premiumPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium'");
+    if (!premiumPlan) return res.status(404).json({ error: "Premium plan not found" });
+
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 7);
+    const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    const existing = await queryOne(
+      "SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1",
+      [workspace.id]
+    );
+    if (existing) {
+      await execute(
+        "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
+        [premiumPlan.id, now, trialEndStr, existing.id]
+      );
+    } else {
+      await execute(
+        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
+        [workspace.id, premiumPlan.id, now, trialEndStr]
+      );
+    }
+    res.json({ ok: true, trialEndsAt: trialEndStr });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to grant trial" });
+  }
+});
+
 adminRouter.post("/clients/:id/subscription", async (req, res) => {
   try {
     const { plan } = req.body;
-    if (!["starter", "pro"].includes(plan)) {
-      return res.status(400).json({ error: "Invalid plan. Use 'starter' or 'pro'." });
+    if (!["starter", "pro", "premium"].includes(plan)) {
+      return res.status(400).json({ error: "Invalid plan. Use 'starter', 'pro', or 'premium'." });
     }
     const workspace = await queryOne(
       "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
@@ -146,7 +183,7 @@ adminRouter.delete("/clients/:id/subscription", async (req, res) => {
     );
     if (!workspace) return res.status(404).json({ error: "No workspace found" });
     await execute(
-      "UPDATE billing_subscriptions SET status = 'CANCELLED', updated_at = NOW() WHERE workspace_id = ? AND status = 'ACTIVE'",
+      "UPDATE billing_subscriptions SET status = 'CANCELLED', updated_at = NOW() WHERE workspace_id = ? AND status IN ('ACTIVE','TRIAL')",
       [workspace.id]
     );
     res.json({ ok: true });
