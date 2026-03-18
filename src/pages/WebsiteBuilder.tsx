@@ -23,6 +23,8 @@ import {
   Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search
 } from "lucide-react";
 
+const SERVER_IP = (import.meta as any).env?.VITE_SERVER_IP || "YOUR_SERVER_IP";
+
 const templateIcons: Record<string, React.ElementType> = {
   professional: Briefcase,
   restaurant: UtensilsCrossed,
@@ -680,18 +682,21 @@ export default function WebsiteBuilder() {
                   <span className="text-[10px] font-semibold">Domain saved: {savedCustomDomain}</span>
                 </div>
                 <p className="text-[10px] text-slate-600 font-semibold">DNS Setup Instructions:</p>
-                <p className="text-[10px] text-slate-500">In your domain registrar, add a CNAME record:</p>
-                <div className="rounded bg-slate-100 px-2 py-1 font-mono text-[10px] text-slate-700">
-                  Type: CNAME<br />
-                  Name: {savedCustomDomain.startsWith("www.") ? "www" : savedCustomDomain.split(".")[0]}<br />
-                  Value: masakhegroup.co.za
+                <p className="text-[10px] text-slate-500">In your domain registrar, add these two A records:</p>
+                <div className="rounded bg-slate-100 px-2 py-1 font-mono text-[10px] text-slate-700 space-y-1">
+                  <div>Type: A &nbsp; Name: @ &nbsp; Value: {SERVER_IP}</div>
+                  <div>Type: A &nbsp; Name: www &nbsp; Value: {SERVER_IP}</div>
+                </div>
+                <div className="flex items-start gap-1 text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                  <p className="text-[10px]">Do <strong>not</strong> use a CNAME — point directly to the server IP above.</p>
                 </div>
                 <p className="text-[10px] text-slate-400">DNS changes can take up to 24–48 hours to propagate.</p>
               </div>
             ) : (
               <div className="flex items-start gap-1 text-slate-500">
                 <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                <p className="text-[10px]">Enter your domain and point it to <strong>masakhegroup.co.za</strong> via a CNAME record in your DNS settings.</p>
+                <p className="text-[10px]">Enter your domain and add an A record pointing to the Masakhe server IP in your DNS settings.</p>
               </div>
             )}
           </div>
