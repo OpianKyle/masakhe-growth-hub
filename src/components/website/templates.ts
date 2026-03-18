@@ -366,6 +366,96 @@ export const templateList: TemplateInfo[] = [
     preview: "Sophisticated dark charcoal & gold layout with carousel hero, featured listings, agent profile, and lead capture",
     premium: true,
   },
+  {
+    id: "corporate_group",
+    name: "Corporate Group",
+    description: "Premium template for holding companies, corporate groups, and multi-division enterprises",
+    icon: "briefcase",
+    color: "bg-blue-950",
+    preview: "Commanding navy & gold layout with group subsidiaries, leadership team, governance, and investor relations",
+    premium: true,
+  },
+  {
+    id: "luxury_spa",
+    name: "Luxury Spa & Retreat",
+    description: "Premium template for high-end spas, wellness retreats, and boutique wellbeing centres",
+    icon: "sparkles",
+    color: "bg-rose-950",
+    preview: "Lavish rose & champagne layout with signature treatments, day packages, gallery, and online booking",
+    premium: true,
+  },
+  {
+    id: "investment",
+    name: "Investment & Wealth Advisory",
+    description: "Premium template for investment managers, wealth advisors, and private equity firms",
+    icon: "trending-up",
+    color: "bg-emerald-950",
+    preview: "Sophisticated charcoal & emerald layout with fund overview, investment philosophy, team, and client portal CTA",
+    premium: true,
+  },
+  {
+    id: "boutique_hotel",
+    name: "Boutique Hotel & Resort",
+    description: "Premium template for boutique hotels, lodges, resorts, and exclusive guest experiences",
+    icon: "bed-double",
+    color: "bg-amber-950",
+    preview: "Cinematic dark-gold layout with room types, resort amenities, gallery, and direct booking CTA",
+    premium: true,
+  },
+  {
+    id: "saas_tech",
+    name: "Tech Startup & SaaS",
+    description: "Premium template for software companies, SaaS products, and technology startups",
+    icon: "monitor",
+    color: "bg-violet-950",
+    preview: "Modern dark violet layout with product features, pricing tiers, integrations, and free trial CTA",
+    premium: true,
+  },
+  {
+    id: "franchise",
+    name: "Franchise & Multi-Branch",
+    description: "Premium template for franchise owners, multi-location retailers, and brand licensees",
+    icon: "map-pin",
+    color: "bg-orange-950",
+    preview: "Professional brand-forward layout with franchise model, branch locator, testimonials, and application CTA",
+    premium: true,
+  },
+  {
+    id: "wedding_venue",
+    name: "Luxury Wedding Venue",
+    description: "Premium template for exclusive wedding venues, function halls, and event estates",
+    icon: "heart",
+    color: "bg-pink-950",
+    preview: "Romantic champagne & blush layout with venue spaces, wedding packages, gallery, and availability enquiry",
+    premium: true,
+  },
+  {
+    id: "private_school",
+    name: "Private School & Academy",
+    description: "Premium template for private schools, academies, colleges, and elite educational institutions",
+    icon: "graduation-cap",
+    color: "bg-indigo-950",
+    preview: "Prestigious navy layout with academic programmes, facilities gallery, leadership, and enrolment CTA",
+    premium: true,
+  },
+  {
+    id: "eco_brand",
+    name: "Sustainable & Eco Brand",
+    description: "Premium template for green businesses, eco-conscious brands, and sustainability-focused SMMEs",
+    icon: "leaf",
+    color: "bg-green-950",
+    preview: "Earthy dark-green layout with sustainability story, certified products, impact stats, and ethical sourcing",
+    premium: true,
+  },
+  {
+    id: "medical_premium",
+    name: "Specialist Medical Practice",
+    description: "Premium template for specialist doctors, private clinics, and multi-practitioner medical centres",
+    icon: "heart-pulse",
+    color: "bg-teal-950",
+    preview: "Clean premium teal layout with specialisations, practitioner profiles, patient testimonials, and appointment booking",
+    premium: true,
+  },
 ];
 
 export function buildTemplate(templateId: string, businessName?: string): SiteConfig {
@@ -5013,6 +5103,998 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
               phone: "012 345 6789",
               address: "123 Business Way, Sandton, 2196",
               whatsapp: "+27 12 345 6789",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "corporate_group":
+      return {
+        businessName: name,
+        slug,
+        templateId: "corporate_group",
+        theme: { primary: "#1e3a8a", accent: "#b45309" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Building South Africa's Future, Together",
+              subtitle: "A diversified group of companies committed to excellence, transformation, and sustainable growth across key sectors.",
+              badgeText: "JSE-Listed · Level 1 B-BBEE",
+              ctaPrimaryText: "Our Portfolio",
+              ctaSecondaryText: "Investor Relations",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "R2.4B", label: "Group Revenue" },
+                { value: "12", label: "Subsidiaries" },
+                { value: "4,200+", label: "Employees" },
+                { value: "25+", label: "Years Operating" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Our Business Pillars",
+              subtitle: "Diversified Across Key Sectors",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Property & Infrastructure", desc: "Developing commercial and residential properties across South Africa." },
+                { title: "Financial Services", desc: "Providing innovative insurance, lending, and investment solutions." },
+                { title: "Technology & Innovation", desc: "Driving digital transformation through proprietary platforms." },
+                { title: "Mining & Resources", desc: "Responsible extraction and beneficiation of South Africa's natural wealth." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Group Leadership",
+              quote: "Our commitment is to create lasting value for shareholders, employees, and the communities we serve.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Transformation Commitment", desc: "Level 1 B-BBEE rating and 60%+ black ownership across key subsidiaries." },
+                { title: "Governance", desc: "King IV compliant board with independent non-executive directors." },
+                { title: "ESG Strategy", desc: "Embedded environmental, social and governance principles in all operations." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Group Companies",
+              subtitle: "Our Portfolio",
+              items: [
+                { title: "Capital Properties", desc: "Award-winning property development and asset management." },
+                { title: "Shield Financial", desc: "Short-term insurance, life cover, and employee benefits." },
+                { title: "Nexus Technology Solutions", desc: "Enterprise software, cloud infrastructure, and IT consulting." },
+                { title: "Terra Mining Resources", desc: "Iron ore, chrome, and manganese extraction and processing." },
+                { title: "Horizon Logistics", desc: "Pan-African supply chain, transport, and warehousing." },
+                { title: "Edubridge Academy", desc: "Corporate training, learnerships, and skills development." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Corporate Head Office",
+              subtitle: "For investor relations, media enquiries, and group partnerships.",
+              email: "ir@corporategroup.co.za",
+              phone: "+27 11 700 8000",
+              address: "1 Corporate Drive, Sandton, 2196",
+              whatsapp: "",
+              enableWhatsApp: false,
+            },
+          },
+        ],
+      };
+
+    case "luxury_spa":
+      return {
+        businessName: name,
+        slug,
+        templateId: "luxury_spa",
+        theme: { primary: "#9f1239", accent: "#b45309" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Surrender to Serenity",
+              subtitle: "A sanctuary of pure indulgence — where ancient healing meets modern luxury in the heart of South Africa.",
+              badgeText: "Award-Winning Wellness Retreat",
+              ctaPrimaryText: "Book Your Retreat",
+              ctaSecondaryText: "View Treatments",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "50+", label: "Treatments" },
+                { value: "4.9★", label: "Guest Rating" },
+                { value: "12", label: "Treatment Rooms" },
+                { value: "10+", label: "Years of Bliss" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Signature Experiences",
+              subtitle: "Our Curated Menu",
+              imageUrl: "https://images.unsplash.com/photo-1611073615830-9578bf5e5b9f?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Ubuntu Ritual", desc: "A 90-minute full-body ceremony using indigenous Rooibos and Marula oils.", price: "R1,850" },
+                { title: "Fynbos Deep Tissue", desc: "Targeted muscle therapy infused with Cape Floral Kingdom botanicals.", price: "R1,250" },
+                { title: "Gold Radiance Facial", desc: "24K gold leaf and collagen facial for luminous, ageless skin.", price: "R1,600" },
+                { title: "Couples Sanctuary Package", desc: "3-hour private suite experience — massage, soak, and champagne.", price: "R4,200" },
+                { title: "African Mud Wrap", desc: "Detoxifying full-body wrap using therapeutic Mpumalanga volcanic clay.", price: "R1,100" },
+                { title: "Day Retreat", desc: "Full day of wellness — breakfast, 2 treatments, pool access & lunch.", price: "R3,500" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "The Sanctuary",
+              subtitle: "Step into your escape",
+              images: [
+                { url: "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&q=80&w=600", caption: "Relaxation Pool" },
+                { url: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=600", caption: "Treatment Room" },
+                { url: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?auto=format&fit=crop&q=80&w=600", caption: "Outdoor Terrace" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Guest Experiences",
+              subtitle: "Words from our sanctuary family",
+              items: [
+                { name: "Naledi K.", role: "Johannesburg", text: "I left feeling reborn. The Ubuntu Ritual was unlike anything I've experienced. Pure magic." },
+                { name: "Sarah & Mark T.", role: "Cape Town", text: "Our couples retreat was the most romantic day of our lives. Every detail was perfection." },
+                { name: "Dr. Priya N.", role: "Durban", text: "I book the Day Retreat quarterly. It's my non-negotiable investment in myself." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Reserve Your Experience",
+              subtitle: "Our wellness concierge is available 7 days a week to curate your perfect escape.",
+              email: "reservations@luxuryspa.co.za",
+              phone: "+27 21 555 9000",
+              address: "44 Vineyard Estate, Stellenbosch, 7600",
+              whatsapp: "+27 21 555 9000",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "investment":
+      return {
+        businessName: name,
+        slug,
+        templateId: "investment",
+        theme: { primary: "#065f46", accent: "#1e3a8a" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Preserving and Growing Generational Wealth",
+              subtitle: "Independent, conflict-free wealth management for South Africa's high-net-worth families and institutions.",
+              badgeText: "FSP Authorised · FSCA Regulated",
+              ctaPrimaryText: "Schedule a Consultation",
+              ctaSecondaryText: "View Our Approach",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "R4.8B", label: "Assets Under Management" },
+                { value: "320+", label: "Client Families" },
+                { value: "18yr", label: "Track Record" },
+                { value: "11.2%", label: "Avg Annual Return" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Our Investment Philosophy",
+              subtitle: "Principled. Patient. Proven.",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Long-Term Value", desc: "We invest in fundamentally strong businesses and assets, not short-term speculation." },
+                { title: "Capital Preservation First", desc: "Protecting your wealth from inflation and volatility before seeking growth." },
+                { title: "Transparent Fees", desc: "No hidden commissions. Our only incentive is your portfolio's success." },
+                { title: "SA & Global Exposure", desc: "Diversified across local equities, offshore assets, and alternative investments." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Wealth Solutions",
+              subtitle: "Comprehensive Private Client Services",
+              items: [
+                { title: "Discretionary Portfolio Management", desc: "Bespoke portfolios tailored to your risk profile and life goals.", price: "From R2M AUM" },
+                { title: "Retirement & Pension Planning", desc: "RA, living annuity, and corporate pension fund structuring.", price: "" },
+                { title: "Offshore Investment", desc: "Section 10(1)(o) exemptions, forex allowances, and global fund placement.", price: "" },
+                { title: "Estate & Trust Planning", desc: "Succession planning, testamentary trusts, and executor services.", price: "" },
+                { title: "Tax-Efficient Structuring", desc: "SARS-compliant investment wrappers minimising your effective tax rate.", price: "" },
+                { title: "Family Office Services", desc: "Consolidated reporting, bill payment, and multi-generational wealth oversight.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Client Perspectives",
+              subtitle: "Long-term partnerships built on trust",
+              items: [
+                { name: "M. Dlamini", role: "Business Owner, KZN", text: "They restructured my entire estate and offshore exposure in 90 days. I sleep better knowing my family is protected." },
+                { name: "The Botha Family", role: "Generational Clients", text: "We've been clients for 14 years. Three generations, one advisor we trust completely." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Begin Your Wealth Journey",
+              subtitle: "Minimum portfolio R2 million. Consultations by appointment only.",
+              email: "private@wealthadvisory.co.za",
+              phone: "+27 11 880 4400",
+              address: "The Zone, Rosebank, Johannesburg, 2196",
+              whatsapp: "",
+              enableWhatsApp: false,
+            },
+          },
+        ],
+      };
+
+    case "boutique_hotel":
+      return {
+        businessName: name,
+        slug,
+        templateId: "boutique_hotel",
+        theme: { primary: "#92400e", accent: "#1e3a8a" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "cinematic",
+              title: "Where Africa's Soul Meets Timeless Luxury",
+              subtitle: "A boutique sanctuary of handcrafted rooms, curated experiences, and warm South African hospitality.",
+              badgeText: "AA Travel Award Winner · 5-Star Graded",
+              ctaPrimaryText: "Check Availability",
+              ctaSecondaryText: "Explore Rooms",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "28", label: "Luxury Rooms" },
+                { value: "4.9★", label: "TripAdvisor" },
+                { value: "5-Star", label: "AA Grading" },
+                { value: "15yr", label: "Established" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Rooms & Suites",
+              subtitle: "A Home Beyond Home",
+              imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Garden Room", desc: "Private patio with garden views, king bed, and handcrafted amenities.", price: "From R2,800/night" },
+                { title: "Heritage Suite", desc: "Spacious suite with lounge, colonial artwork, and mountain panorama.", price: "From R4,500/night" },
+                { title: "Presidential Villa", desc: "Private plunge pool, butler service, chef's breakfast, and 180° views.", price: "From R12,000/night" },
+                { title: "Honeymoon Suite", desc: "Draped four-poster, rose petal turndown, and private terrace jacuzzi.", price: "From R6,200/night" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "The Full Experience",
+              subtitle: "Every Detail Considered",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Farm-to-Table Restaurant", desc: "Seasonal menus celebrating Karoo lamb, Boland wines, and local producers." },
+                { title: "Infinity Pool & Spa", desc: "Solar-heated pool and full spa treatments overlooking the valley." },
+                { title: "Safari & Tours", desc: "Guided game drives, wine routes, cultural village visits, and stargazing." },
+                { title: "Corporate Retreats", desc: "Private conference facilities for executive offsites and team experiences." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "The Property",
+              subtitle: "Captured in every season",
+              images: [
+                { url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=600", caption: "Pool Terrace" },
+                { url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=600", caption: "Heritage Suite" },
+                { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=600", caption: "Restaurant" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Reservations",
+              subtitle: "Our concierge team is available 24/7 to craft your perfect stay.",
+              email: "reservations@boutiquehotel.co.za",
+              phone: "+27 23 614 1000",
+              address: "Wine Valley Road, Robertson, 6705",
+              whatsapp: "+27 23 614 1000",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "saas_tech":
+      return {
+        businessName: name,
+        slug,
+        templateId: "saas_tech",
+        theme: { primary: "#7c3aed", accent: "#0891b2" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "The Platform That Powers Your Business",
+              subtitle: "All-in-one software built for African businesses — fast, affordable, and designed for scale.",
+              badgeText: "Trusted by 8,000+ Businesses",
+              ctaPrimaryText: "Start Free Trial",
+              ctaSecondaryText: "Watch Demo",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "8,000+", label: "Active Users" },
+                { value: "99.9%", label: "Uptime SLA" },
+                { value: "2min", label: "Setup Time" },
+                { value: "4.8★", label: "App Rating" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Everything You Need. Nothing You Don't.",
+              subtitle: "Built for South African Businesses",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Cloud-Based & Mobile-Ready", desc: "Access your data from any device, anywhere in South Africa — even with load shedding via offline mode." },
+                { title: "SARS & CIPC Compliant", desc: "Built-in VAT calculations, compliant invoicing, and CIPC integration." },
+                { title: "Secure Local Data Hosting", desc: "All data hosted in South African data centres — POPIA compliant by design." },
+                { title: "Integrates with Everything", desc: "Xero, Sage, Standard Bank, FNB, and 40+ local integrations out of the box." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Pricing Plans",
+              subtitle: "Simple, Transparent Pricing",
+              items: [
+                { title: "Starter", desc: "Perfect for sole proprietors and micro businesses. Up to 2 users.", price: "R299/month" },
+                { title: "Growth", desc: "For growing SMEs. Up to 10 users, advanced reports, and API access.", price: "R799/month" },
+                { title: "Enterprise", desc: "Unlimited users, custom modules, dedicated account manager, and SLA.", price: "Custom" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "What Our Customers Say",
+              subtitle: "Real results from real businesses",
+              items: [
+                { name: "Sipho M.", role: "CEO, Joburg Logistics", text: "We cut invoicing time by 80% in the first month. The SARS integration alone paid for a year's subscription." },
+                { name: "Priya S.", role: "Founder, Durban Retail Group", text: "Finally a platform that understands South Africa. The load-shedding offline mode is a game-changer." },
+                { name: "Andre V.", role: "CFO, Cape Property Group", text: "The multi-branch reporting saves us 3 days a month. Our accountants are delighted." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Start Your Free 14-Day Trial",
+              subtitle: "No credit card required. Set up in minutes. Cancel anytime.",
+              email: "hello@saasplatform.co.za",
+              phone: "+27 11 000 1234",
+              address: "The Innovation Hub, Tshwane, 0001",
+              whatsapp: "+27 11 000 1234",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "franchise":
+      return {
+        businessName: name,
+        slug,
+        templateId: "franchise",
+        theme: { primary: "#c2410c", accent: "#1d4ed8" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Own a Proven Business. Build Your Legacy.",
+              subtitle: "Join South Africa's fastest-growing franchise network — backed by a system that works and a team that supports you.",
+              badgeText: "50+ Locations Nationwide",
+              ctaPrimaryText: "Apply for a Franchise",
+              ctaSecondaryText: "Find a Branch Near You",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "50+", label: "Franchise Locations" },
+                { value: "R800K", label: "Avg First-Year Revenue" },
+                { value: "94%", label: "Franchisee Satisfaction" },
+                { value: "8yr", label: "Brand History" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Our Franchise Works",
+              subtitle: "A Proven System Behind You",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Comprehensive Training", desc: "4-week intensive training programme covering operations, marketing, and financial management." },
+                { title: "Turnkey Setup", desc: "We handle site selection, fit-out, equipment supply, and staff recruitment." },
+                { title: "Centralised Marketing", desc: "National campaigns, social media management, and branded collateral at no extra cost." },
+                { title: "Ongoing Support", desc: "Dedicated franchise support manager visits monthly and is always a call away." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Franchise Packages",
+              subtitle: "Find Your Fit",
+              items: [
+                { title: "Kiosk Franchise", desc: "Compact format for malls and high-traffic locations. Ideal for first-time franchisees.", price: "From R380,000" },
+                { title: "Standard Store", desc: "Full-format store with complete product range and seating. Best ROI format.", price: "From R750,000" },
+                { title: "Master Franchise", desc: "Own the rights to develop multiple units in an exclusive territory.", price: "From R2,500,000" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Franchisee Stories",
+              subtitle: "Real people, real businesses",
+              items: [
+                { name: "Thabo M.", role: "Franchise Owner, Soweto", text: "I opened my first store 3 years ago. I just signed for my third location. The system really works." },
+                { name: "Fatima A.", role: "Franchise Owner, Cape Town", text: "The training was exceptional. I had no business experience and now I run a R1.2M operation." },
+                { name: "Craig P.", role: "Master Franchisee, KZN", text: "I own 6 units. The support from head office makes the whole network feel like family." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Start Your Franchise Journey",
+              subtitle: "Complete our brief application and our franchise development team will be in touch within 48 hours.",
+              email: "franchise@brandgroup.co.za",
+              phone: "+27 11 450 7000",
+              address: "Franchise Head Office, Midrand, 1685",
+              whatsapp: "+27 11 450 7000",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "wedding_venue":
+      return {
+        businessName: name,
+        slug,
+        templateId: "wedding_venue",
+        theme: { primary: "#9d174d", accent: "#92400e" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Where Love Stories Come to Life",
+              subtitle: "A breathtaking estate nestled in the winelands, offering an unforgettable backdrop for the most important day of your life.",
+              badgeText: "SA Wedding Awards Finalist",
+              ctaPrimaryText: "Check Availability",
+              ctaSecondaryText: "View Packages",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "500+", label: "Weddings Hosted" },
+                { value: "250", label: "Guest Capacity" },
+                { value: "4.9★", label: "Couple Rating" },
+                { value: "15ha", label: "Estate Grounds" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Wedding Packages",
+              subtitle: "Every Detail, Perfectly Planned",
+              imageUrl: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Intimate Ceremony", desc: "Up to 50 guests. Chapel, florals, sound system, and champagne toast included.", price: "From R28,000" },
+                { title: "Classic Wedding", desc: "Up to 120 guests. Full venue exclusive use, wedding coordinator, and décor package.", price: "From R65,000" },
+                { title: "Grand Celebration", desc: "Up to 250 guests. Full estate buyout, 2-night honeymoon suite, and catering included.", price: "From R150,000" },
+                { title: "Micro Wedding", desc: "Intimate elopement for up to 20 guests — beautiful, meaningful, stress-free.", price: "From R15,000" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Our Venue Spaces",
+              subtitle: "A Stage for Every Moment",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1510076857177-7470076d4098?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Garden Chapel", desc: "A fern-draped open-air chapel with mountain views for intimate ceremonies." },
+                { title: "The Grande Hall", desc: "Elegant chandeliered reception hall seating 250 with dance floor and stage." },
+                { title: "Vineyard Terrace", desc: "Al fresco cocktail hour space among the vines with sunset panorama." },
+                { title: "Honeymoon Cottage", desc: "Private rose-garden cottage with fireplace, jacuzzi, and chef's breakfast." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Captured Moments",
+              subtitle: "Every wedding tells a unique story",
+              images: [
+                { url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=600", caption: "Chapel Ceremony" },
+                { url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&q=80&w=600", caption: "Reception Evening" },
+                { url: "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&q=80&w=600", caption: "Garden Portraits" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Begin Your Love Story Here",
+              subtitle: "Contact our wedding coordinator for a private tour and availability check.",
+              email: "weddings@estateventure.co.za",
+              phone: "+27 21 876 5400",
+              address: "Vineyard Estate, Franschhoek, 7690",
+              whatsapp: "+27 21 876 5400",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "private_school":
+      return {
+        businessName: name,
+        slug,
+        templateId: "private_school",
+        theme: { primary: "#1e3a8a", accent: "#166534" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Shaping Tomorrow's Leaders Today",
+              subtitle: "A world-class independent school committed to academic excellence, character formation, and servant leadership in South Africa.",
+              badgeText: "IEB Accredited · 100% Matric Pass Rate",
+              ctaPrimaryText: "Apply for Enrolment",
+              ctaSecondaryText: "Tour Our Campus",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "100%", label: "Matric Pass Rate" },
+                { value: "850", label: "Enrolled Learners" },
+                { value: "12:1", label: "Learner-Teacher Ratio" },
+                { value: "65+", label: "Co-Curricular Activities" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Academic Excellence",
+              subtitle: "Our Educational Approach",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80",
+              items: [
+                { title: "IEB Curriculum", desc: "Independent Examinations Board curriculum with consistent above-national-average results." },
+                { title: "STEM Academy", desc: "Dedicated science, technology, engineering, and mathematics centre with lab facilities." },
+                { title: "Arts & Culture", desc: "Full-time music, drama, and visual arts programmes with dedicated performance venues." },
+                { title: "Sport Programme", desc: "40+ sporting codes, professional coaching, and provincial representation pathways." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "School Phases",
+              subtitle: "A Journey from Foundation to Matric",
+              items: [
+                { title: "Pre-Primary (Gr R)", desc: "Play-based learning in a nurturing, language-rich environment.", price: "R4,200/month" },
+                { title: "Primary School (Gr 1–7)", desc: "Strong academic foundation with sport, art, and music integration.", price: "R5,800/month" },
+                { title: "High School (Gr 8–12)", desc: "IEB curriculum, subject specialisation, and university preparation.", price: "R7,500/month" },
+                { title: "Boarding School", desc: "Safe, structured boarding facility with academic support and house parents.", price: "R9,800/month" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Our Heritage & Values",
+              quote: "We don't just teach — we inspire a love of learning that lasts a lifetime.",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Founded 1968", desc: "Over 55 years of shaping South Africa's finest minds and leaders." },
+                { title: "Bursary Programme", desc: "R2.4M in merit and need-based bursaries awarded annually." },
+                { title: "Alumni Network", desc: "8,000+ alumni in leadership positions across industry, academia, and government." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Enrolment Enquiries",
+              subtitle: "Applications for 2025 are open. Book a campus tour to experience our community first-hand.",
+              email: "admissions@privateschool.co.za",
+              phone: "+27 12 345 8900",
+              address: "Academy Road, Pretoria East, 0181",
+              whatsapp: "+27 12 345 8900",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "eco_brand":
+      return {
+        businessName: name,
+        slug,
+        templateId: "eco_brand",
+        theme: { primary: "#14532d", accent: "#92400e" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "Good for You. Good for the Planet.",
+              subtitle: "Proudly South African sustainable products — crafted with purpose, packaged without guilt, and delivered with love for our earth.",
+              badgeText: "Certified Carbon Neutral · Fair Trade",
+              ctaPrimaryText: "Shop Our Range",
+              ctaSecondaryText: "Our Story",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1542601906897-58b25793aea0?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "100%", label: "Plastic-Free Packaging" },
+                { value: "2,400", label: "Trees Planted" },
+                { value: "Zero", label: "Carbon Footprint" },
+                { value: "40+", label: "Ethical Products" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "Why We Exist",
+              quote: "South Africa's biodiversity is our greatest inheritance. We're building a business that protects it.",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Indigenous Ingredients", desc: "Rooibos, Baobab, Marula, and Moringa sourced directly from smallholder farmers." },
+                { title: "Women-Led Supply Chain", desc: "75% of our suppliers are women-owned cooperatives in rural communities." },
+                { title: "B Corp Certified", desc: "Independently verified to meet the highest standards of social and environmental performance." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Product Range",
+              subtitle: "Ethically Crafted. Consciously Packaged.",
+              imageUrl: "https://images.unsplash.com/photo-1599056407108-da7bf2cd1e38?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Rooibos Skincare", desc: "Antioxidant-rich face and body range in 100% compostable packaging.", price: "From R189" },
+                { title: "Baobab Superfood", desc: "Certified organic baobab powder sourced from Limpopo community growers.", price: "From R149" },
+                { title: "Eco Cleaning Range", desc: "Plant-based cleaning concentrates in refillable aluminium bottles.", price: "From R89" },
+                { title: "Beeswax Wraps", desc: "Handmade food storage wraps replacing single-use plastic in your kitchen.", price: "From R120" },
+                { title: "Corporate Gifting", desc: "Branded sustainable gift sets for corporates — zero waste, maximum impact.", price: "From R350" },
+                { title: "Monthly Eco Box", desc: "Curated subscription box of 5 sustainable SA products delivered to your door.", price: "R499/month" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Our Impact",
+              subtitle: "Every purchase makes a difference",
+              images: [
+                { url: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=600", caption: "Community Farmers" },
+                { url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80&w=600", caption: "Our Products" },
+                { url: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=600", caption: "South African Nature" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Join the Movement",
+              subtitle: "Shop online, partner with us, or enquire about wholesale and corporate orders.",
+              email: "hello@ecobrand.co.za",
+              phone: "+27 21 433 7800",
+              address: "Green Quarter, Cape Town, 8001",
+              whatsapp: "+27 21 433 7800",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "medical_premium":
+      return {
+        businessName: name,
+        slug,
+        templateId: "medical_premium",
+        theme: { primary: "#0f766e", accent: "#1e3a8a" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "minimal",
+              title: "Specialist Care. Personalised Medicine.",
+              subtitle: "A multi-disciplinary private practice delivering world-class specialist healthcare to the people of South Africa.",
+              badgeText: "HPCSA Registered · Medical Aid Accredited",
+              ctaPrimaryText: "Book an Appointment",
+              ctaSecondaryText: "Meet Our Specialists",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "12", label: "Specialist Doctors" },
+                { value: "20,000+", label: "Patients Treated" },
+                { value: "8", label: "Medical Aids Accepted" },
+                { value: "Same Day", label: "Urgent Appointments" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Specialisations",
+              subtitle: "Comprehensive Private Medical Care",
+              imageUrl: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&q=80",
+              items: [
+                { title: "Cardiology", desc: "ECG, echocardiography, stress testing, and cardiac risk management.", price: "" },
+                { title: "Orthopaedic Surgery", desc: "Joint replacement, sports injuries, spinal surgery, and fracture management.", price: "" },
+                { title: "Oncology", desc: "Chemotherapy, targeted therapy, palliative care, and cancer screening.", price: "" },
+                { title: "Radiology & Imaging", desc: "MRI, CT, ultrasound, and digital X-ray services with same-day reporting.", price: "" },
+                { title: "Paediatrics", desc: "Child health, developmental assessments, vaccination, and allergy testing.", price: "" },
+                { title: "Dermatology", desc: "Skin cancer screening, cosmetic dermatology, and chronic skin conditions.", price: "" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Choose Our Practice",
+              subtitle: "Patient-First at Every Step",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?auto=format&fit=crop&q=80",
+              items: [
+                { title: "State-of-the-Art Facilities", desc: "Fully equipped theatre, ICU, diagnostic imaging, and on-site pathology lab." },
+                { title: "Medical Aid Compliant", desc: "We accept Discovery, Momentum, Bonitas, Medihelp, and 4 more major schemes." },
+                { title: "Multilingual Care", desc: "Practitioners speak English, Zulu, Afrikaans, Xhosa, and Sepedi." },
+                { title: "Digital Patient Portal", desc: "Book, consult, and access your results online or via our mobile app." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Patient Testimonials",
+              subtitle: "Health restored. Lives changed.",
+              items: [
+                { name: "Mrs. Dlamini", role: "Cardiology Patient", text: "Dr. Nkosi identified my condition before it became critical. His thoroughness saved my life. I am eternally grateful." },
+                { name: "Mr. van der Berg", role: "Orthopaedic Patient", text: "I was back on the golf course 8 weeks after my knee replacement. The surgical team and physio were world class." },
+                { name: "Lindiwe M.", role: "Parent, Paediatric Patient", text: "The doctors here explained everything so clearly. My daughter was comfortable and well-cared for throughout." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Book an Appointment",
+              subtitle: "For medical emergencies please call 10177. For appointments and enquiries use the details below.",
+              email: "appointments@medicalpractice.co.za",
+              phone: "+27 11 555 2200",
+              address: "Medical Centre, Rosebank, Johannesburg, 2196",
+              whatsapp: "+27 11 555 2200",
               enableWhatsApp: true,
             },
           },
