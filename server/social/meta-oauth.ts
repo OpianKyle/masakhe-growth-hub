@@ -271,32 +271,55 @@ export async function publishToFacebook(
   pageId: string,
   accessTokenEnc: string,
   message: string,
-  mediaUrl?: string
+  mediaUrl?: string,
+  mediaBuffer?: Buffer,
+  mediaMimeType?: string
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
   try {
     const accessToken = decrypt(accessTokenEnc);
-    let url: string;
-    let body: Record<string, string>;
+
+    if (mediaBuffer) {
+      const formData = new FormData();
+      formData.append("message", message);
+      formData.append("access_token", accessToken);
+      const blob = new Blob([mediaBuffer], { type: mediaMimeType || "image/jpeg" });
+      formData.append("source", blob, "image.jpg");
+      const res = await fetch(`${META_GRAPH_URL}/${pageId}/photos`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.error) {
+        console.error("[Facebook] Photo binary upload error:", data.error);
+        return { success: false, error: data.error.message };
+      }
+      return { success: true, postId: data.id || data.post_id };
+    }
 
     if (mediaUrl) {
-      url = `${META_GRAPH_URL}/${pageId}/photos`;
-      body = { url: mediaUrl, message, access_token: accessToken };
-    } else {
-      url = `${META_GRAPH_URL}/${pageId}/feed`;
-      body = { message, access_token: accessToken };
+      const res = await fetch(`${META_GRAPH_URL}/${pageId}/photos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: mediaUrl, message, access_token: accessToken }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        console.error("[Facebook] Photo URL upload error:", data.error);
+        return { success: false, error: data.error.message };
+      }
+      return { success: true, postId: data.id || data.post_id };
     }
 
-    const res = await fetch(url, {
+    const res = await fetch(`${META_GRAPH_URL}/${pageId}/feed`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ message, access_token: accessToken }),
     });
     const data = await res.json();
-
     if (data.error) {
+      console.error("[Facebook] Feed post error:", data.error);
       return { success: false, error: data.error.message };
     }
-
     return { success: true, postId: data.id || data.post_id };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -312,6 +335,8 @@ export async function publishToInstagram(
   try {
     const accessToken = decrypt(accessTokenEnc);
 
+    console.log(`[Instagram] Creating media container for IG user ${igUserId}, image: ${imageUrl}`);
+
     const containerRes = await fetch(`${META_GRAPH_URL}/${igUserId}/media`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -324,8 +349,11 @@ export async function publishToInstagram(
     const containerData = await containerRes.json();
 
     if (containerData.error) {
+      console.error("[Instagram] Media container error:", containerData.error);
       return { success: false, error: containerData.error.message };
     }
+
+    console.log("[Instagram] Media container created:", containerData.id);
 
     const creationId = containerData.id;
 

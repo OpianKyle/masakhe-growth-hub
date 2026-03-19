@@ -204,6 +204,8 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
   const mediaAssetIds = JSON.parse(post?.media_asset_ids || "[]");
 
   let mediaUrl: string | undefined;
+  let mediaBuffer: Buffer | undefined;
+  let mediaMimeType: string | undefined;
   let tempFilePath: string | undefined;
   let mediaResolutionError: string | undefined;
 
@@ -213,16 +215,24 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
       if (asset.url.startsWith("data:")) {
         const match = asset.url.match(/^data:([^;]+);base64,(.+)$/);
         if (match) {
-          const mimeType = match[1];
-          const base64Data = match[2];
-          const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+          mediaMimeType = match[1];
+          mediaBuffer = Buffer.from(match[2], "base64");
+
+          // Also create a temp file for Instagram (needs a public URL)
+          const ext = mediaMimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
           const fileName = `social-${randomUUID()}.${ext}`;
           const uploadDir = path.join(process.cwd(), "public", "uploads", "social-temp");
           if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
           tempFilePath = path.join(uploadDir, fileName);
-          fs.writeFileSync(tempFilePath, Buffer.from(base64Data, "base64"));
-          const appUrl = process.env.APP_URL || "http://localhost:5000";
-          mediaUrl = `${appUrl}/uploads/social-temp/${fileName}`;
+          fs.writeFileSync(tempFilePath, mediaBuffer);
+
+          // Use the Replit dev domain when running locally, else use APP_URL (production)
+          const replitDomain = process.env.REPLIT_DOMAINS?.split(",")[0];
+          const baseUrl = replitDomain
+            ? `https://${replitDomain}`
+            : (process.env.APP_URL || "http://localhost:5000");
+          mediaUrl = `${baseUrl}/uploads/social-temp/${fileName}`;
+          console.log(`[publish] Image resolved: buffer=${mediaBuffer.length}b, url=${mediaUrl}`);
         } else {
           mediaResolutionError = "Image data is corrupted and cannot be published";
         }
@@ -232,8 +242,12 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
         const relativePath = asset.url.startsWith("/") ? asset.url.slice(1) : asset.url;
         const diskPath = path.join(process.cwd(), "public", relativePath);
         if (fs.existsSync(diskPath)) {
-          const appUrl = process.env.APP_URL || "http://localhost:5000";
-          mediaUrl = `${appUrl}/${relativePath}`;
+          const replitDomain = process.env.REPLIT_DOMAINS?.split(",")[0];
+          const baseUrl = replitDomain
+            ? `https://${replitDomain}`
+            : (process.env.APP_URL || "http://localhost:5000");
+          mediaUrl = `${baseUrl}/${relativePath}`;
+          mediaBuffer = fs.readFileSync(diskPath);
         } else {
           mediaResolutionError = `Image file "${asset.file_name || asset.url}" no longer exists on the server. Please re-upload the image.`;
         }
@@ -280,7 +294,9 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
         target.platform_account_id,
         target.access_token_enc,
         contentText,
-        mediaUrl
+        mediaBuffer ? undefined : mediaUrl,
+        mediaBuffer,
+        mediaMimeType
       );
       if (result.success) {
         await execute(
