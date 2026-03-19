@@ -29,6 +29,7 @@ import PayrollPage from "./PayrollPage";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
 import TrialBanner from "@/components/TrialBanner";
+import ComplianceDocsGate from "@/components/ComplianceDocsGate";
 
 type NavChild = {
   icon: React.ElementType;
@@ -453,6 +454,8 @@ export default function DashboardPage() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
           </Routes>
+          <ComplianceDocsGate />
+
           {subscriptionActive === false &&
             !location.pathname.startsWith("/dashboard/billing") &&
             !location.pathname.startsWith("/dashboard/settings") && (

@@ -883,6 +883,22 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS compliance_documents (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        doc_type ENUM('FICA','BUSINESS_REG') NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_data LONGTEXT NOT NULL,
+        mime_type VARCHAR(100) NOT NULL DEFAULT 'application/octet-stream',
+        file_size INT NOT NULL DEFAULT 0,
+        uploaded_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_user_doc_type (user_id, doc_type),
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();
