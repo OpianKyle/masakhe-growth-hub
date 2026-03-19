@@ -7,7 +7,7 @@ import crypto from "crypto";
 
 export const metaOAuthRouter = Router();
 
-const META_GRAPH_URL = "https://graph.facebook.com/v19.0";
+const META_GRAPH_URL = "https://graph.facebook.com/v20.0";
 
 metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) => {
   try {
