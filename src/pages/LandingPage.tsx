@@ -352,7 +352,7 @@ export default function LandingPage() {
                 <p className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-3">Website Builder</p>
                 <h2 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 leading-tight">
                   Professional website.<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">3 minutes. Done.</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Done in minutes</span>
                 </h2>
               </div>
               <p className="text-slate-600 leading-relaxed text-lg">
@@ -384,10 +384,7 @@ export default function LandingPage() {
                 </Link>
                 <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
                   <Globe className="h-4 w-4 text-emerald-500" />
-                  <div>
-                    <p className="text-xs text-slate-500 leading-none">Live in</p>
-                    <p className="text-sm font-bold text-slate-900 leading-tight">3 minutes</p>
-                  </div>
+                  <p className="text-sm font-bold text-slate-900 leading-tight">Live in minutes</p>
                 </div>
               </div>
             </motion.div>
