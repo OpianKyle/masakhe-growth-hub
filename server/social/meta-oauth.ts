@@ -3,6 +3,7 @@ import { queryOne, queryAll, execute } from "../db";
 import { encrypt, decrypt } from "../crypto";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
+import crypto from "crypto";
 
 export const metaOAuthRouter = Router();
 
@@ -69,6 +70,10 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
     const expiresIn = longLivedData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
+    const fbProfileRes = await fetch(`${META_GRAPH_URL}/me?fields=id&access_token=${userAccessToken}`);
+    const fbProfileData = await fbProfileRes.json();
+    const facebookUserId = fbProfileData.id || null;
+
     const pagesRes = await fetch(
       `${META_GRAPH_URL}/me/accounts?fields=id,name,access_token,category,instagram_business_account&access_token=${userAccessToken}`
     );
@@ -93,13 +98,13 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
         const id = randomUUID();
         await execute(
           `INSERT INTO social_accounts (id, workspace_id, platform, account_name, profile_url, platform_account_id,
-            access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, facebook_user_id, is_mock, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [
             id, workspaceId, "META_FACEBOOK", page.name,
             `https://facebook.com/${page.id}`, page.id,
             encrypt(page.access_token), encrypt(userAccessToken), tokenExpiresAt,
-            userId, 0, now, now,
+            userId, facebookUserId, 0, now, now,
           ]
         );
         await writeAuditLog(workspaceId, userId, "CONNECTED_ACCOUNT", "social_account", id, {
@@ -108,6 +113,11 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
           pageId: page.id,
         });
         connectedCount++;
+      } else {
+        await execute(
+          "UPDATE social_accounts SET facebook_user_id = ? WHERE id = ? AND facebook_user_id IS NULL",
+          [facebookUserId, existing.id]
+        );
       }
 
       if (page.instagram_business_account) {
@@ -127,14 +137,14 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
           const igAccountId = randomUUID();
           await execute(
             `INSERT INTO social_accounts (id, workspace_id, platform, account_name, profile_url, platform_account_id,
-              access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, is_mock, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              access_token_enc, refresh_token_enc, token_expires_at, connected_by_user_id, facebook_user_id, is_mock, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               igAccountId, workspaceId, "META_INSTAGRAM",
               igData.username || igData.name || `IG-${igId}`,
               igData.username ? `https://instagram.com/${igData.username}` : null,
               igId, encrypt(page.access_token), encrypt(userAccessToken), tokenExpiresAt,
-              userId, 0, now, now,
+              userId, facebookUserId, 0, now, now,
             ]
           );
           await writeAuditLog(workspaceId, userId, "CONNECTED_ACCOUNT", "social_account", igAccountId, {
@@ -143,6 +153,11 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
             username: igData.username,
           });
           connectedCount++;
+        } else {
+          await execute(
+            "UPDATE social_accounts SET facebook_user_id = ? WHERE id = ? AND facebook_user_id IS NULL",
+            [facebookUserId, existingIg.id]
+          );
         }
       }
     }
@@ -153,6 +168,102 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
     res.redirect(
       `/dashboard/social?error=${encodeURIComponent(err.message || "Connection failed")}`
     );
+  }
+});
+
+metaOAuthRouter.post("/meta/data-deletion", async (req: Request, res: Response) => {
+  try {
+    const { signed_request } = req.body;
+
+    if (!signed_request) {
+      return res.status(400).json({ error: "Missing signed_request" });
+    }
+
+    const appSecret = process.env.META_APP_SECRET;
+    if (!appSecret) {
+      console.error("[Meta Data Deletion] META_APP_SECRET not configured");
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    const parts = signed_request.split(".");
+    if (parts.length !== 2) {
+      return res.status(400).json({ error: "Invalid signed_request format" });
+    }
+
+    const [encodedSig, encodedPayload] = parts;
+
+    const expectedSig = crypto
+      .createHmac("sha256", appSecret)
+      .update(encodedPayload)
+      .digest("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+
+    if (encodedSig !== expectedSig) {
+      console.warn("[Meta Data Deletion] Invalid signature");
+      return res.status(400).json({ error: "Invalid signature" });
+    }
+
+    const payload = JSON.parse(
+      Buffer.from(encodedPayload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8")
+    );
+
+    const facebookUserId = payload.user_id;
+    if (!facebookUserId) {
+      return res.status(400).json({ error: "No user_id in payload" });
+    }
+
+    const confirmationCode = randomUUID().replace(/-/g, "").toUpperCase();
+    const id = randomUUID();
+
+    const result = await execute(
+      "DELETE FROM social_accounts WHERE facebook_user_id = ? AND platform IN ('META_FACEBOOK', 'META_INSTAGRAM')",
+      [facebookUserId]
+    );
+    const deletedCount = (result as any).affectedRows || 0;
+
+    await execute(
+      `INSERT INTO meta_data_deletion_requests (id, confirmation_code, facebook_user_id, status, deleted_accounts, processed_at)
+       VALUES (?, ?, ?, 'completed', ?, NOW())`,
+      [id, confirmationCode, facebookUserId, deletedCount]
+    );
+
+    console.log(`[Meta Data Deletion] Deleted ${deletedCount} account(s) for FB user ${facebookUserId}, code: ${confirmationCode}`);
+
+    const appUrl = process.env.APP_URL || "https://masakhegroup.co.za";
+
+    res.json({
+      url: `${appUrl}/meta-deletion-status?code=${confirmationCode}`,
+      confirmation_code: confirmationCode,
+    });
+  } catch (err: any) {
+    console.error("[Meta Data Deletion] Error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+metaOAuthRouter.get("/meta/data-deletion/status", async (req: Request, res: Response) => {
+  try {
+    const { code } = req.query;
+    if (!code) return res.status(400).json({ error: "Missing code" });
+
+    const record = await queryOne(
+      "SELECT confirmation_code, status, deleted_accounts, created_at, processed_at FROM meta_data_deletion_requests WHERE confirmation_code = ?",
+      [code]
+    );
+
+    if (!record) return res.status(404).json({ error: "Not found" });
+
+    res.json({
+      confirmation_code: record.confirmation_code,
+      status: record.status,
+      deleted_accounts: record.deleted_accounts,
+      requested_at: record.created_at,
+      processed_at: record.processed_at,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

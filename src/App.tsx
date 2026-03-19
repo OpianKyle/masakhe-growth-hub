@@ -20,6 +20,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import MetaDeletionStatusPage from "./pages/MetaDeletionStatusPage";
 import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,7 @@ const App = () => (
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/meta-deletion-status" element={<MetaDeletionStatusPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

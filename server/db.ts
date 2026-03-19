@@ -869,6 +869,20 @@ export async function runMigrations() {
     await addColumnIfMissing("invoices", "vat_enabled", "TINYINT(1) NOT NULL DEFAULT 0");
     await addColumnIfMissing("invoices", "vat_cents", "INT NOT NULL DEFAULT 0");
 
+    await addColumnIfMissing("social_accounts", "facebook_user_id", "VARCHAR(50) NULL");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS meta_data_deletion_requests (
+        id VARCHAR(36) PRIMARY KEY,
+        confirmation_code VARCHAR(64) NOT NULL UNIQUE,
+        facebook_user_id VARCHAR(50) NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        deleted_accounts INT NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        processed_at DATETIME NULL
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();
