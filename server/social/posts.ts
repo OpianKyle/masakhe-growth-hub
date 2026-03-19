@@ -185,11 +185,11 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
 
   let mediaUrl: string | undefined;
   if (mediaAssetIds.length > 0) {
-    const asset = await queryOne("SELECT file_url FROM social_media_assets WHERE id = ?", [mediaAssetIds[0]]);
-    if (asset?.file_url) {
-      mediaUrl = asset.file_url.startsWith("http")
-        ? asset.file_url
-        : `${process.env.APP_URL || "http://localhost:5000"}${asset.file_url}`;
+    const asset = await queryOne("SELECT url FROM media_assets WHERE id = ?", [mediaAssetIds[0]]);
+    if (asset?.url) {
+      mediaUrl = asset.url.startsWith("http")
+        ? asset.url
+        : `${process.env.APP_URL || "http://localhost:5000"}${asset.url}`;
     }
   }
 
