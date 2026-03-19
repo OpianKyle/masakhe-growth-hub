@@ -102,8 +102,14 @@ export default function SocialAccounts({ workspaceId }: Props) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("connected") === "meta") {
-      const count = params.get("count") || "0";
-      toast.success(`Successfully connected ${count} Meta account(s)!`);
+      const count = parseInt(params.get("count") || "0", 10);
+      const igFound = params.get("instagram") === "1";
+      if (count > 0) {
+        toast.success(`Successfully connected ${count} account${count !== 1 ? "s" : ""}!`);
+      }
+      if (!igFound) {
+        toast.warning("No Instagram Business Account found. Make sure your Instagram is set to a Business or Creator account and linked to your Facebook Page.", { duration: 8000 });
+      }
       load();
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -254,15 +260,40 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 </div>
               </div>
 
-              {platform && !mockMode && isMetaPlatform(platform) ? (
+              {platform === "META_INSTAGRAM" && !mockMode ? (
+                <div className="space-y-3">
+                  <Card className="p-4 border-blue-200 bg-blue-50">
+                    <div className="flex items-start gap-3">
+                      <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-blue-900 text-sm">Instagram connects via Facebook</p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          Instagram Business accounts are linked through your Facebook Page. Click below — if your Instagram is correctly set up, it will connect automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4 border-amber-200 bg-amber-50">
+                    <p className="font-medium text-amber-900 text-xs mb-2">Instagram requirements:</p>
+                    <ul className="text-xs text-amber-800 space-y-1 list-none">
+                      <li>✅ Your Instagram must be a <strong>Business</strong> or <strong>Creator</strong> account (not personal)</li>
+                      <li>✅ Your Instagram must be <strong>linked to a Facebook Page</strong> you manage</li>
+                      <li>✅ You must be an <strong>admin</strong> of that Facebook Page</li>
+                    </ul>
+                    <p className="text-xs text-amber-700 mt-2">
+                      To switch to a Business account: open Instagram → Settings → Account → Switch to Professional Account.
+                      Then link it to your Facebook Page under Settings → Linked Accounts.
+                    </p>
+                  </Card>
+                </div>
+              ) : platform && !mockMode && isMetaPlatform(platform) ? (
                 <Card className="p-4 border-blue-200 bg-blue-50">
                   <div className="flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium text-blue-900 text-sm">Connect via Facebook</p>
                       <p className="text-xs text-blue-700 mt-1">
-                        Click below to sign in with Facebook. This will automatically connect your Facebook Page
-                        {platform === "META_INSTAGRAM" ? " and linked Instagram business account" : ""}.
+                        Sign in with Facebook to connect your Facebook Page. If a Business Instagram account is linked to that Page, it will connect automatically too.
                       </p>
                     </div>
                   </div>

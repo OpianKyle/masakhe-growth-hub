@@ -79,16 +79,28 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
     );
     const pagesData = await pagesRes.json();
 
+    console.log("[Meta OAuth] Pages response:", JSON.stringify({ count: pagesData.data?.length, error: pagesData.error }));
+
+    if (pagesData.error) {
+      console.error("[Meta OAuth] Pages API error:", pagesData.error);
+      return res.redirect(
+        `/dashboard/social?error=${encodeURIComponent("Facebook API error: " + pagesData.error.message)}`
+      );
+    }
+
     if (!pagesData.data || pagesData.data.length === 0) {
       return res.redirect(
-        "/dashboard/social?error=No+Facebook+Pages+found.+Make+sure+your+Facebook+account+manages+at+least+one+Page."
+        "/dashboard/social?error=No+Facebook+Pages+found.+Please+make+sure+your+Facebook+account+manages+at+least+one+Facebook+Page."
       );
     }
 
     const now = new Date().toISOString();
     let connectedCount = 0;
+    let instagramFound = false;
 
     for (const page of pagesData.data) {
+      console.log(`[Meta OAuth] Page: ${page.name} (${page.id}), has_instagram: ${!!page.instagram_business_account}`);
+
       const existing = await queryOne(
         "SELECT id FROM social_accounts WHERE workspace_id = ? AND platform = 'META_FACEBOOK' AND platform_account_id = ?",
         [workspaceId, page.id]
@@ -115,12 +127,13 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
         connectedCount++;
       } else {
         await execute(
-          "UPDATE social_accounts SET facebook_user_id = ? WHERE id = ? AND facebook_user_id IS NULL",
-          [facebookUserId, existing.id]
+          "UPDATE social_accounts SET facebook_user_id = ?, access_token_enc = ?, token_expires_at = ?, updated_at = ? WHERE id = ?",
+          [facebookUserId, encrypt(page.access_token), tokenExpiresAt, now, existing.id]
         );
       }
 
       if (page.instagram_business_account) {
+        instagramFound = true;
         const igId = page.instagram_business_account.id;
 
         const existingIg = await queryOne(
@@ -133,6 +146,7 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
             `${META_GRAPH_URL}/${igId}?fields=username,name,profile_picture_url&access_token=${page.access_token}`
           );
           const igData = await igRes.json();
+          console.log(`[Meta OAuth] Instagram account data:`, JSON.stringify({ id: igId, username: igData.username, error: igData.error }));
 
           const igAccountId = randomUUID();
           await execute(
@@ -162,7 +176,7 @@ metaOAuthRouter.get("/oauth/meta/callback", async (req: Request, res: Response) 
       }
     }
 
-    res.redirect(`/dashboard/social?connected=meta&count=${connectedCount}`);
+    res.redirect(`/dashboard/social?connected=meta&count=${connectedCount}&instagram=${instagramFound ? "1" : "0"}`);
   } catch (err: any) {
     console.error("Meta OAuth callback error:", err);
     res.redirect(
