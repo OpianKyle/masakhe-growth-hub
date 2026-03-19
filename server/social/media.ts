@@ -7,6 +7,7 @@ import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import OpenAI from "openai";
 
 function getOpenAI() {
@@ -32,6 +33,14 @@ const upload = multer({
 export const mediaRouter = Router();
 mediaRouter.use(requireAuth);
 
+function isUrlBroken(url: string): boolean {
+  if (!url) return true;
+  if (url.startsWith("data:")) return false;
+  if (url.startsWith("http://") || url.startsWith("https://")) return false;
+  const filePath = path.join(process.cwd(), "public", url.startsWith("/") ? url.slice(1) : url);
+  return !fs.existsSync(filePath);
+}
+
 mediaRouter.get("/:workspaceId/media", requireWorkspaceRole("owner", "admin", "editor", "viewer"), async (req, res) => {
   try {
     const assets = await queryAll(
@@ -42,7 +51,24 @@ mediaRouter.get("/:workspaceId/media", requireWorkspaceRole("owner", "admin", "e
        ORDER BY ma.created_at DESC`,
       [req.params.workspaceId]
     );
-    res.json(assets);
+
+    const brokenIds: string[] = [];
+    const good = assets.filter((a: any) => {
+      if (isUrlBroken(a.url)) {
+        brokenIds.push(a.id);
+        return false;
+      }
+      return true;
+    });
+
+    if (brokenIds.length > 0) {
+      await execute(
+        `DELETE FROM media_assets WHERE id IN (${brokenIds.map(() => "?").join(",")})`,
+        brokenIds
+      );
+    }
+
+    res.json(good);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -205,9 +205,10 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
 
   let mediaUrl: string | undefined;
   let tempFilePath: string | undefined;
+  let mediaResolutionError: string | undefined;
 
   if (mediaAssetIds.length > 0) {
-    const asset = await queryOne("SELECT url FROM media_assets WHERE id = ?", [mediaAssetIds[0]]);
+    const asset = await queryOne("SELECT url, file_name FROM media_assets WHERE id = ?", [mediaAssetIds[0]]);
     if (asset?.url) {
       if (asset.url.startsWith("data:")) {
         const match = asset.url.match(/^data:([^;]+);base64,(.+)$/);
@@ -222,17 +223,39 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
           fs.writeFileSync(tempFilePath, Buffer.from(base64Data, "base64"));
           const appUrl = process.env.APP_URL || "http://localhost:5000";
           mediaUrl = `${appUrl}/uploads/social-temp/${fileName}`;
+        } else {
+          mediaResolutionError = "Image data is corrupted and cannot be published";
         }
-      } else if (asset.url.startsWith("http")) {
+      } else if (asset.url.startsWith("http://") || asset.url.startsWith("https://")) {
         mediaUrl = asset.url;
       } else {
-        mediaUrl = `${process.env.APP_URL || "http://localhost:5000"}${asset.url}`;
+        const relativePath = asset.url.startsWith("/") ? asset.url.slice(1) : asset.url;
+        const diskPath = path.join(process.cwd(), "public", relativePath);
+        if (fs.existsSync(diskPath)) {
+          const appUrl = process.env.APP_URL || "http://localhost:5000";
+          mediaUrl = `${appUrl}/${relativePath}`;
+        } else {
+          mediaResolutionError = `Image file "${asset.file_name || asset.url}" no longer exists on the server. Please re-upload the image.`;
+        }
       }
+    } else if (asset) {
+      mediaResolutionError = "Image has no URL data. Please re-upload the image.";
     }
   }
 
   let allSuccess = true;
   const now = new Date().toISOString();
+
+  if (mediaResolutionError) {
+    for (const target of targets) {
+      await execute(
+        "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+        [mediaResolutionError, target.id]
+      );
+    }
+    await execute("UPDATE social_posts SET status = 'FAILED', updated_at = ? WHERE id = ?", [now, postId]);
+    return;
+  }
 
   for (const target of targets) {
     if (target.is_mock) {
