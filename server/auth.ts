@@ -86,6 +86,29 @@ authRouter.post("/register", async (req, res) => {
       );
     }
 
+    const wsName = businessData?.businessName || `${fullName}'s Business`;
+    const wsId = randomUUID();
+    await execute(
+      "INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+      [wsId, wsName, userId, now, now]
+    );
+    await execute(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
+      [randomUUID(), wsId, userId, "owner", now]
+    );
+
+    const starterPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'starter' LIMIT 1");
+    if (starterPlan) {
+      const trialStart = new Date();
+      const trialEnd = new Date(trialStart);
+      trialEnd.setDate(trialEnd.getDate() + 3);
+      await execute(
+        `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
+         VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
+        [wsId, starterPlan.id, trialStart.toISOString(), trialEnd.toISOString(), now, now]
+      );
+    }
+
     req.session.userId = userId;
     req.session.save(async () => {
       const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [userId]);

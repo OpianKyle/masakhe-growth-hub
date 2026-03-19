@@ -301,7 +301,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? AND status IN ('TRIAL','ACTIVE')",
       [workspaceId]
     );
-    if (existingSub) {
+    if (existingSub && existingSub.status === "ACTIVE") {
       return res.status(400).json({ error: "You already have an active subscription" });
     }
 

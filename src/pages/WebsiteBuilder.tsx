@@ -18,12 +18,9 @@ import {
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
   MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
-  Globe, CheckCircle2, AlertCircle,
   Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
   Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search
 } from "lucide-react";
-
-const SERVER_IP = (import.meta as any).env?.VITE_SERVER_IP || "YOUR_SERVER_IP";
 
 const templateIcons: Record<string, React.ElementType> = {
   professional: Briefcase,
@@ -336,9 +333,6 @@ export default function WebsiteBuilder() {
   const [showAddSection, setShowAddSection] = useState(false);
   const [isProPlan, setIsProPlan] = useState(false);
   const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
-  const [customDomain, setCustomDomain] = useState<string>("");
-  const [savedCustomDomain, setSavedCustomDomain] = useState<string>("");
-  const [savingDomain, setSavingDomain] = useState(false);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
@@ -362,42 +356,10 @@ export default function WebsiteBuilder() {
         if (existing.status === "published") {
           setPublishedUrl(`${window.location.origin}/site/${existing.slug}`);
         }
-        if (existing.custom_domain) {
-          setCustomDomain(existing.custom_domain);
-          setSavedCustomDomain(existing.custom_domain);
-        }
         setLastSaved(new Date(existing.updated_at || existing.created_at).toLocaleTimeString());
       }
     }).finally(() => setLoadingExisting(false));
   }, []);
-
-  const onSaveDomain = async () => {
-    const id = siteId || site?.id;
-    if (!id) {
-      toast.error("Please save your website first before adding a custom domain");
-      return;
-    }
-    setSavingDomain(true);
-    try {
-      const res = await fetch(`/api/websites/${id}/domain`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ customDomain: customDomain.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSavedCustomDomain(data.customDomain || "");
-        toast.success(data.customDomain ? "Custom domain saved!" : "Custom domain removed");
-      } else {
-        toast.error(data.error || "Failed to save domain");
-      }
-    } catch {
-      toast.error("Network error saving domain");
-    } finally {
-      setSavingDomain(false);
-    }
-  };
 
   const applyTemplate = (templateId: string) => {
     const newSite = buildTemplate(templateId);
@@ -658,49 +620,6 @@ export default function WebsiteBuilder() {
           </div>
         )}
 
-        {(siteId || site?.id) && (
-          <div className="mx-4 mt-3 rounded-lg border bg-white p-3 space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5 text-blue-600" />
-              <p className="text-[10px] font-bold text-slate-700 uppercase">Custom Domain</p>
-            </div>
-            <div className="flex gap-1">
-              <Input
-                value={customDomain}
-                onChange={(e) => setCustomDomain(e.target.value)}
-                className="h-7 text-[11px]"
-                placeholder="www.yourdomain.co.za"
-              />
-              <Button size="sm" className="h-7 text-[11px] px-2 shrink-0" onClick={onSaveDomain} disabled={savingDomain}>
-                {savingDomain ? "Saving..." : "Save"}
-              </Button>
-            </div>
-            {savedCustomDomain ? (
-              <div className="rounded bg-blue-50 border border-blue-100 p-2 space-y-1.5">
-                <div className="flex items-center gap-1 text-blue-700">
-                  <CheckCircle2 className="h-3 w-3" />
-                  <span className="text-[10px] font-semibold">Domain saved: {savedCustomDomain}</span>
-                </div>
-                <p className="text-[10px] text-slate-600 font-semibold">DNS Setup Instructions:</p>
-                <p className="text-[10px] text-slate-500">In your domain registrar, add these two A records:</p>
-                <div className="rounded bg-slate-100 px-2 py-1 font-mono text-[10px] text-slate-700 space-y-1">
-                  <div>Type: A &nbsp; Name: @ &nbsp; Value: {SERVER_IP}</div>
-                  <div>Type: A &nbsp; Name: www &nbsp; Value: {SERVER_IP}</div>
-                </div>
-                <div className="flex items-start gap-1 text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5">
-                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                  <p className="text-[10px]">Do <strong>not</strong> use a CNAME — point directly to the server IP above.</p>
-                </div>
-                <p className="text-[10px] text-slate-400">DNS changes can take up to 24–48 hours to propagate.</p>
-              </div>
-            ) : (
-              <div className="flex items-start gap-1 text-slate-500">
-                <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                <p className="text-[10px]">Enter your domain and add an A record pointing to the Masakhe server IP in your DNS settings.</p>
-              </div>
-            )}
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="rounded-lg border bg-slate-50 p-3 space-y-3">

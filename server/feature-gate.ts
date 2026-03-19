@@ -6,7 +6,9 @@ export async function getSubscriptionStatus(workspaceId: string) {
     `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
      FROM billing_subscriptions bs
      JOIN billing_plans bp ON bp.id = bs.plan_id
-     WHERE bs.workspace_id = ? AND bs.status = 'ACTIVE'
+     WHERE bs.workspace_id = ?
+       AND bs.status IN ('ACTIVE', 'TRIAL')
+       AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
      ORDER BY bs.created_at DESC LIMIT 1`,
     [workspaceId]
   );
@@ -39,7 +41,7 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
 
     const sub = await getSubscriptionStatus(member.workspace_id);
 
-    if (sub && sub.status === "ACTIVE") {
+    if (sub && (sub.status === "ACTIVE" || (sub.status === "TRIAL" && new Date(sub.trial_end_at) > new Date()))) {
       return next();
     }
 
