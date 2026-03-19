@@ -2,7 +2,16 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Clock, Send, AlertTriangle, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Send, AlertTriangle, FileText, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+
+interface Target {
+  id: string;
+  account_name: string;
+  platform: string;
+  status: string;
+  error_message?: string | null;
+}
 
 interface Post {
   id: string;
@@ -10,7 +19,7 @@ interface Post {
   status: string;
   scheduled_at: string | null;
   created_at: string;
-  targets: any[];
+  targets: Target[];
 }
 
 interface Props {
@@ -38,18 +47,43 @@ export default function SocialCalendar({ workspaceId }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-  useEffect(() => {
+  const loadPosts = () => {
     if (!workspaceId) return;
     fetch(`/api/social/ws/${workspaceId}/posts?month=${monthStr}`, { credentials: "include" })
       .then(r => r.json())
       .then(setPosts)
       .catch(() => {});
-  }, [workspaceId, monthStr]);
+  };
+
+  useEffect(() => { loadPosts(); }, [workspaceId, monthStr]);
+
+  const handleRetry = async (post: Post) => {
+    setRetrying(true);
+    try {
+      const res = await fetch(`/api/social/ws/${workspaceId}/posts/${post.id}/retry`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Retrying post…");
+        setSelectedPost(null);
+        setTimeout(() => loadPosts(), 3000);
+      } else {
+        toast.error(data.error || "Retry failed");
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const navigate = (dir: number) => {
     setCurrentDate(new Date(year, month + dir, 1));
@@ -78,6 +112,9 @@ export default function SocialCalendar({ workspaceId }: Props) {
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  const failedTargets = selectedPost?.targets?.filter(t => t.status === "FAILED") || [];
+  const hasErrors = failedTargets.some(t => t.error_message);
 
   return (
     <div className="space-y-6">
@@ -148,17 +185,43 @@ export default function SocialCalendar({ workspaceId }: Props) {
                 Scheduled: {new Date(selectedPost.scheduled_at).toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" })}
               </p>
             )}
+
             {selectedPost.targets?.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs font-medium mb-1">Targets:</p>
-                {selectedPost.targets.map((t: any) => (
-                  <span key={t.id} className="inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] mr-1 mb-1">
-                    {t.account_name} ({t.platform.replace("META_", "")})
-                  </span>
+              <div className="mb-3 space-y-1.5">
+                <p className="text-xs font-medium">Targets:</p>
+                {selectedPost.targets.map((t: Target) => (
+                  <div key={t.id}>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[t.status] || "bg-gray-100 text-gray-700"}`}>
+                        {t.status}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {t.account_name} ({t.platform.replace("META_", "")})
+                      </span>
+                    </div>
+                    {t.status === "FAILED" && t.error_message && (
+                      <p className="mt-1 ml-1 text-[11px] text-red-600 bg-red-50 rounded px-2 py-1 border border-red-100">
+                        {t.error_message}
+                      </p>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
+
+            {selectedPost.status === "FAILED" && hasErrors && (
+              <div className="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                <strong>Tip:</strong> If the error mentions "token", "permission", or "OAuth", try disconnecting and reconnecting your Meta account from the Accounts page.
+              </div>
+            )}
+
+            <div className="flex gap-2 flex-wrap">
+              {selectedPost.status === "FAILED" && (
+                <Button size="sm" variant="outline" onClick={() => handleRetry(selectedPost)} disabled={retrying}>
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${retrying ? "animate-spin" : ""}`} />
+                  Retry
+                </Button>
+              )}
               <Link to={`/dashboard/social/create?edit=${selectedPost.id}`}>
                 <Button size="sm" variant="outline">Edit</Button>
               </Link>

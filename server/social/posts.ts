@@ -6,6 +6,8 @@ import { requireActiveSubscription } from "../feature-gate";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 import { publishToFacebook, publishToInstagram } from "./meta-oauth";
+import fs from "fs";
+import path from "path";
 
 export const postsRouter = Router();
 postsRouter.use(requireAuth);
@@ -155,6 +157,24 @@ postsRouter.put("/:workspaceId/posts/:postId", requireActiveSubscription, requir
   }
 });
 
+postsRouter.post("/:workspaceId/posts/:postId/retry", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
+  try {
+    const post = await queryOne("SELECT * FROM social_posts WHERE id = ? AND workspace_id = ?", [req.params.postId, req.params.workspaceId]);
+    if (!post) return res.status(404).json({ error: "Post not found" });
+    if (post.status !== "FAILED") return res.status(400).json({ error: "Only failed posts can be retried" });
+
+    const now = new Date().toISOString();
+    await execute("UPDATE social_posts SET status = 'PUBLISHING', updated_at = ? WHERE id = ?", [now, req.params.postId]);
+    await execute("UPDATE social_post_targets SET status = 'PUBLISHING', error_message = NULL WHERE social_post_id = ? AND status = 'FAILED'", [req.params.postId]);
+
+    publishPostNow(req.params.postId, req.params.workspaceId, req.session.userId!).catch(console.error);
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 postsRouter.delete("/:workspaceId/posts/:postId", requireActiveSubscription, requireWorkspaceRole("owner", "admin", "editor"), async (req, res) => {
   try {
     const post = await queryOne("SELECT status FROM social_posts WHERE id = ? AND workspace_id = ?", [req.params.postId, req.params.workspaceId]);
@@ -184,12 +204,30 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
   const mediaAssetIds = JSON.parse(post?.media_asset_ids || "[]");
 
   let mediaUrl: string | undefined;
+  let tempFilePath: string | undefined;
+
   if (mediaAssetIds.length > 0) {
     const asset = await queryOne("SELECT url FROM media_assets WHERE id = ?", [mediaAssetIds[0]]);
     if (asset?.url) {
-      mediaUrl = asset.url.startsWith("http")
-        ? asset.url
-        : `${process.env.APP_URL || "http://localhost:5000"}${asset.url}`;
+      if (asset.url.startsWith("data:")) {
+        const match = asset.url.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          const mimeType = match[1];
+          const base64Data = match[2];
+          const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+          const fileName = `social-${randomUUID()}.${ext}`;
+          const uploadDir = path.join(process.cwd(), "public", "uploads", "social-temp");
+          if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+          tempFilePath = path.join(uploadDir, fileName);
+          fs.writeFileSync(tempFilePath, Buffer.from(base64Data, "base64"));
+          const appUrl = process.env.APP_URL || "http://localhost:5000";
+          mediaUrl = `${appUrl}/uploads/social-temp/${fileName}`;
+        }
+      } else if (asset.url.startsWith("http")) {
+        mediaUrl = asset.url;
+      } else {
+        mediaUrl = `${process.env.APP_URL || "http://localhost:5000"}${asset.url}`;
+      }
     }
   }
 
@@ -283,6 +321,10 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
 
   const finalStatus = targets.length === 0 ? "PUBLISHED" : allSuccess ? "PUBLISHED" : "FAILED";
   await execute("UPDATE social_posts SET status = ?, updated_at = ? WHERE id = ?", [finalStatus, now, postId]);
+
+  if (tempFilePath && fs.existsSync(tempFilePath)) {
+    try { fs.unlinkSync(tempFilePath); } catch {}
+  }
 
   await writeAuditLog(workspaceId, userId, finalStatus === "PUBLISHED" ? "PUBLISHED_POST" : "FAILED_POST", "social_post", postId, { targetCount: targets.length, allSuccess });
 }
