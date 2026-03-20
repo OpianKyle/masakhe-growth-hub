@@ -89,6 +89,7 @@ documentsRouter.delete("/business-plans/:id", requireAuth, async (req, res) => {
 
 documentsRouter.post("/business-plans/:id/generate", requireAuth, async (req, res) => {
   try {
+    console.log(`[generate] business-plan ${req.params.id} using model: ${getModel()}`);
     const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
@@ -128,7 +129,7 @@ Return ONLY valid JSON.`;
       [JSON.stringify(content), new Date().toISOString(), req.params.id]
     );
     res.json({ ok: true, content });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { console.error("[generate] business-plan error:", err.message); res.status(500).json({ error: err.message }); }
 });
 
 // ─── FUNDING PROPOSALS ───────────────────────────────────────────────────────
@@ -186,6 +187,7 @@ documentsRouter.delete("/funding-proposals/:id", requireAuth, async (req, res) =
 
 documentsRouter.post("/funding-proposals/:id/generate", requireAuth, async (req, res) => {
   try {
+    console.log(`[generate] funding-proposal ${req.params.id} using model: ${getModel()}`);
     const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
@@ -219,7 +221,7 @@ Return ONLY valid JSON.`;
       [JSON.stringify(content), new Date().toISOString(), req.params.id]
     );
     res.json({ ok: true, content });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { console.error("[generate] funding-proposal error:", err.message); res.status(500).json({ error: err.message }); }
 });
 
 // ─── FINANCIAL STATEMENTS ────────────────────────────────────────────────────
