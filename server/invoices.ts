@@ -357,7 +357,9 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     const hasBankDetails = user?.bank_name || user?.account_number;
     if (hasBankDetails) {
-      y -= 30;
+      y -= 22;
+      page.drawText("Please make payment to the following banking details:", { x: 50, y, size: 9, font, color: grey });
+      y -= 14;
       page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
       y -= 16;
       page.drawText("BANKING DETAILS", { x: 50, y, size: 9, font: fontBold, color: grey });
