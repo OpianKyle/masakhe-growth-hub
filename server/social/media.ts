@@ -11,10 +11,13 @@ import fs from "fs";
 import OpenAI from "openai";
 
 function getOpenAI() {
-  return new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  });
+  const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OpenAI API key not configured.");
+  const opts: ConstructorParameters<typeof OpenAI>[0] = { apiKey };
+  if (!process.env.OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+    opts.baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+  }
+  return new OpenAI(opts);
 }
 
 const upload = multer({
