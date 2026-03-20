@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil } from "lucide-react";
 
 interface InvoiceItem {
   name: string;
@@ -33,6 +33,7 @@ export default function InvoicesPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -113,6 +114,46 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleEdit = (inv: Invoice) => {
+    setEditingId(inv.id);
+    setCustomerName(inv.customer_name);
+    setCustomerEmail(inv.customer_email || "");
+    setItems(inv.items.length > 0 ? inv.items : [{ name: "", qty: 1, unitPrice: 0 }]);
+    setVatEnabled(inv.vat_enabled);
+    setShowCreate(false);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setShowCreate(false);
+    setCustomerName("");
+    setCustomerEmail("");
+    setItems([{ name: "", qty: 1, unitPrice: 0 }]);
+    setVatEnabled(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!customerName.trim()) { toast.error("Customer name is required"); return; }
+    if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
+    if (items.some((i) => i.unitPrice <= 0)) { toast.error("All items need a price"); return; }
+
+    const res = await fetch(`/api/invoices/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ customer_name: customerName, customer_email: customerEmail || undefined, items, vat_enabled: vatEnabled }),
+    });
+
+    if (res.ok) {
+      toast.success("Invoice updated");
+      resetForm();
+      loadInvoices();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to update invoice");
+    }
+  };
+
   const downloadPdf = async (id: string, num: string) => {
     const res = await fetch(`/api/invoices/${id}/pdf`, { credentials: "include" });
     if (!res.ok) { toast.error("Failed to download PDF"); return; }
@@ -146,13 +187,13 @@ export default function InvoicesPage() {
         <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
       </div>
 
-      {/* Create Invoice Form */}
-      {showCreate && (
+      {/* Create / Edit Invoice Form */}
+      {(showCreate || editingId !== null) && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
           <Card className="p-6 border-primary/20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Create Invoice</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}><X className="h-4 w-4" /></Button>
+              <h3 className="text-lg font-bold">{editingId ? "Edit Invoice" : "Create Invoice"}</h3>
+              <Button variant="ghost" size="icon" onClick={resetForm}><X className="h-4 w-4" /></Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -232,8 +273,12 @@ export default function InvoicesPage() {
               </div>
 
               <div className="flex gap-2 mt-3">
-                <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-                <Button onClick={handleCreate} className="gradient-hero text-white">Create Invoice</Button>
+                <Button variant="ghost" onClick={resetForm}>Cancel</Button>
+                {editingId ? (
+                  <Button onClick={handleUpdate} className="gradient-hero text-white">Save Changes</Button>
+                ) : (
+                  <Button onClick={handleCreate} className="gradient-hero text-white">Create Invoice</Button>
+                )}
               </div>
             </div>
           </Card>
@@ -273,9 +318,14 @@ export default function InvoicesPage() {
                 <td className="p-3 text-right font-bold text-primary">R{(inv.total_cents / 100).toFixed(2)}</td>
                 <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("en-ZA")}</td>
                 <td className="p-3 text-right">
-                  <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
-                    <Download className="h-3.5 w-3.5 mr-1" /> PDF
-                  </Button>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
+                      <Download className="h-3.5 w-3.5 mr-1" /> PDF
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

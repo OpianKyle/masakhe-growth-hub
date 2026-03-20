@@ -8,11 +8,11 @@ import { useState, useEffect } from "react";
 
 function HeroCorporate({ data, site }: { data: any; site: SiteConfig }) {
   return (
-    <section className="relative overflow-hidden bg-slate-950 py-24 text-white">
+    <section className="relative overflow-hidden bg-slate-950 py-12 md:py-24 text-white">
       <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full opacity-20 blur-[100px]" style={{ backgroundColor: site.theme.primary }} />
       <div className="absolute right-1/4 bottom-1/4 h-64 w-64 rounded-full opacity-10 blur-[100px]" style={{ backgroundColor: site.theme.accent }} />
       <div className="container relative mx-auto px-4">
-        <nav className="mb-16 flex items-center justify-between">
+        <nav className="mb-8 md:mb-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {site.logoUrl ? (
               <img src={site.logoUrl} alt={site.businessName} className="h-12 max-w-[160px] rounded-lg object-contain" />
@@ -29,7 +29,7 @@ function HeroCorporate({ data, site }: { data: any; site: SiteConfig }) {
         </nav>
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tighter md:text-6xl">{data.title}</h1>
+            <h1 className="mb-6 text-3xl font-extrabold leading-tight tracking-tighter sm:text-5xl md:text-6xl">{data.title}</h1>
             <p className="mb-8 text-xl text-slate-400">{data.subtitle}</p>
             <div className="flex flex-wrap gap-4">
               {data.ctaPrimaryText && <Button size="lg" className="text-white font-semibold px-8" style={{ backgroundColor: site.theme.primary }}>{data.ctaPrimaryText}</Button>}
@@ -75,7 +75,7 @@ function HeroCentered({ data, site }: { data: any; site: SiteConfig }) {
         </nav>
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-3xl">
-            <h1 className="mb-6 text-5xl font-extrabold leading-tight md:text-7xl" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
+            <h1 className="mb-6 text-3xl font-extrabold leading-tight sm:text-5xl md:text-7xl" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
               {data.title}
             </h1>
             <p className="mx-auto mb-10 max-w-xl text-xl text-white/80">{data.subtitle}</p>
@@ -140,7 +140,7 @@ function HeroBold({ data, site }: { data: any; site: SiteConfig }) {
               <Sparkles className="h-4 w-4" />
               {data.badgeText || site.businessName}
             </motion.div>
-            <h1 className="mb-6 text-5xl font-black leading-none tracking-tight md:text-7xl">
+            <h1 className="mb-6 text-3xl font-black leading-none tracking-tight sm:text-5xl md:text-7xl">
               {data.title}
             </h1>
             <p className="mb-10 max-w-lg text-lg text-white/80">{data.subtitle}</p>
@@ -206,7 +206,7 @@ function HeroMinimal({ data, site }: { data: any; site: SiteConfig }) {
         <div className="max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="mb-6 h-1.5 w-16 rounded-full" style={{ backgroundColor: site.theme.primary }} />
-            <h1 className="mb-6 text-5xl font-extrabold leading-[1.1] tracking-tight text-slate-900 md:text-7xl">
+            <h1 className="mb-6 text-3xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl md:text-7xl">
               {data.title}
             </h1>
             <p className="mb-10 max-w-2xl text-xl text-slate-500 leading-relaxed">{data.subtitle}</p>
@@ -272,7 +272,7 @@ function HeroGradient({ data, site }: { data: any; site: SiteConfig }) {
         </nav>
         <div className="grid items-center gap-12 pb-16 lg:grid-cols-2">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="mb-6 text-5xl font-black leading-tight tracking-tight md:text-6xl">
+            <h1 className="mb-6 text-3xl font-black leading-tight tracking-tight sm:text-5xl md:text-6xl">
               {data.title}
             </h1>
             <p className="mb-10 max-w-lg text-lg text-white/75 leading-relaxed">{data.subtitle}</p>
@@ -333,7 +333,7 @@ function HeroCinematic({ data, site }: { data: any; site: SiteConfig }) {
         </nav>
         <div className="flex flex-1 flex-col justify-end pb-24">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="mb-6 text-6xl font-light leading-[1.05] tracking-tight md:text-8xl lg:text-9xl max-w-5xl">
+            <h1 className="mb-6 text-3xl font-light leading-[1.05] tracking-tight sm:text-5xl md:text-8xl lg:text-9xl max-w-5xl">
               {data.title}
             </h1>
             <p className="mb-10 max-w-xl text-lg text-white/60 font-light leading-relaxed">{data.subtitle}</p>
@@ -461,7 +461,7 @@ function HeroCarousel({ data, site }: { data: any; site: SiteConfig }) {
                 {slide.subtext || data.subtitle}
               </span>
             </div>
-            <h1 className="mb-6 text-5xl font-extrabold leading-[1.1] tracking-tight md:text-7xl">
+            <h1 className="mb-6 text-3xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-7xl">
               {slide.headline || data.title}
             </h1>
             <p className="mb-10 max-w-xl text-lg text-white/70 leading-relaxed">
@@ -620,7 +620,7 @@ function FeaturesDefault({ data, site }: { data: any; site: SiteConfig }) {
         <div className="grid items-center gap-16 lg:grid-cols-2">
           <div className={data.imagePosition === "left" ? "order-2" : "order-1"}>
             <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}20`, color: site.theme.primary }}>{data.subtitle}</Badge>
-            <h2 className="mb-8 text-4xl font-bold tracking-tight">{data.title}</h2>
+            <h2 className="mb-8 text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
             <div className="grid gap-6">
               {(data.items || []).map((item: any, i: number) => (
                 <Card key={i} className="flex gap-4 border-none bg-slate-50 p-6 shadow-none transition-shadow hover:shadow-md">
@@ -650,7 +650,7 @@ function FeaturesIconGrid({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}15`, color: site.theme.primary }}>{data.subtitle}</Badge>
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {(data.items || []).map((item: any, i: number) => (
@@ -675,7 +675,7 @@ function FeaturesNumbered({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}15`, color: site.theme.primary }}>{data.subtitle}</Badge>
-          <h2 className="text-4xl font-bold tracking-tight mb-12">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-12">{data.title}</h2>
           <div className="space-y-0">
             {(data.items || []).map((item: any, i: number) => (
               <div key={i} className="flex gap-6 pb-10 relative">
@@ -705,7 +705,7 @@ function FeaturesCinematic({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-16">
           <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
           <p className="text-white/40 text-lg font-light">{data.subtitle}</p>
         </div>
         <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 bg-white/[0.08] border border-white/[0.08]">
@@ -734,7 +734,7 @@ function FeaturesProfessional({ data, site }: { data: any; site: SiteConfig }) {
             <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
           </div>
-          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
         </div>
         <div className="grid gap-8 md:grid-cols-2">
           {(data.items || []).map((item: any, i: number) => (
@@ -769,14 +769,14 @@ function FeaturesSection({ data, site }: { data: any; site: SiteConfig }) {
 
 function AboutDefault({ data, site }: { data: any; site: SiteConfig }) {
   return (
-    <section className="bg-slate-50 py-24">
+    <section className="bg-slate-50 py-12 md:py-24">
       <div className="container mx-auto px-4">
         <div className="grid items-center gap-16 lg:grid-cols-2">
           <div className={`overflow-hidden rounded-2xl shadow-2xl ${data.imagePosition === "left" ? "order-1" : "order-2"}`}>
             <img src={data.imageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80"} className="aspect-video w-full object-cover" alt="About" />
           </div>
           <div className={data.imagePosition === "left" ? "order-2" : "order-1"}>
-            <h2 className="mb-6 text-4xl font-bold tracking-tight">{data.title}</h2>
+            <h2 className="mb-6 text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
             {data.quote && (
               <div className="mb-8 border-l-4 pl-6 text-2xl italic text-slate-600" style={{ borderColor: site.theme.primary }}>
                 "{data.quote}"
@@ -813,7 +813,7 @@ function AboutCinematic({ data, site }: { data: any; site: SiteConfig }) {
           </div>
           <div className={data.imagePosition === "left" ? "order-2" : "order-1"}>
             <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-            <h2 className="mb-8 text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
+            <h2 className="mb-8 text-2xl sm:text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
             {data.quote && (
               <div className="mb-10 border-l-2 pl-6 text-xl font-light text-white/60 italic leading-relaxed" style={{ borderColor: site.theme.primary }}>
                 "{data.quote}"
@@ -856,7 +856,7 @@ function AboutProfessional({ data, site }: { data: any; site: SiteConfig }) {
               <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
               <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>About Us</span>
             </div>
-            <h2 className="mb-6 text-4xl font-bold tracking-tight">{data.title}</h2>
+            <h2 className="mb-6 text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
             {data.quote && (
               <div className="mb-8 border-l-4 pl-6 text-xl italic text-white/70 leading-relaxed" style={{ borderColor: site.theme.accent }}>
                 "{data.quote}"
@@ -895,7 +895,7 @@ function ServicesDefault({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-16 text-center">
           <Badge className="mb-4" style={{ backgroundColor: `${site.theme.accent}20`, color: site.theme.accent }}>{data.subtitle}</Badge>
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {(data.items || []).map((service: any, i: number) => (
@@ -917,7 +917,7 @@ function ServicesBordered({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-16 text-center">
           <Badge className="mb-4" style={{ backgroundColor: `${site.theme.accent}15`, color: site.theme.accent }}>{data.subtitle}</Badge>
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {(data.items || []).map((service: any, i: number) => (
@@ -940,7 +940,7 @@ function ServicesCompact({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-12">
           <Badge className="mb-4" style={{ backgroundColor: `${site.theme.accent}15`, color: site.theme.accent }}>{data.subtitle}</Badge>
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid grid-cols-1 gap-0 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white overflow-hidden">
           {(data.items || []).map((service: any, i: number) => (
@@ -970,7 +970,7 @@ function ServicesCinematic({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-16">
           <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
           <p className="text-white/40 text-lg font-light">{data.subtitle}</p>
         </div>
         <div className="grid gap-0 divide-y divide-white/[0.08]">
@@ -1007,7 +1007,7 @@ function ServicesProfessional({ data, site }: { data: any; site: SiteConfig }) {
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
             <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
           </div>
-          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {(data.items || []).map((service: any, i: number) => (
@@ -1043,11 +1043,11 @@ function ServicesSection({ data, site }: { data: any; site: SiteConfig }) {
 function GalleryDefault({ data, site }: { data: any; site: SiteConfig }) {
   const images = data.images || [];
   return (
-    <section className="bg-slate-50 py-24">
+    <section className="bg-slate-50 py-12 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           {data.subtitle && <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}20`, color: site.theme.primary }}>{data.subtitle}</Badge>}
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className={`grid gap-4 ${images.length <= 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
           {images.map((img: any, i: number) => (
@@ -1069,11 +1069,11 @@ function GalleryDefault({ data, site }: { data: any; site: SiteConfig }) {
 function GalleryMasonry({ data, site }: { data: any; site: SiteConfig }) {
   const images = data.images || [];
   return (
-    <section className="bg-white py-24">
+    <section className="bg-white py-12 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           {data.subtitle && <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}15`, color: site.theme.primary }}>{data.subtitle}</Badge>}
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((img: any, i: number) => (
@@ -1101,7 +1101,7 @@ function GalleryFeatured({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           {data.subtitle && <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}15`, color: site.theme.primary }}>{data.subtitle}</Badge>}
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         {main && (
           <div className="mb-4 group relative overflow-hidden rounded-2xl shadow-lg">
@@ -1139,7 +1139,7 @@ function GalleryCinematic({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-16">
           <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">{data.title}</h2>
           {data.subtitle && <p className="text-white/40 text-lg font-light">{data.subtitle}</p>}
         </div>
         <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -1177,7 +1177,7 @@ function TestimonialsDefault({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           {data.subtitle && <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}20`, color: site.theme.primary }}>{data.subtitle}</Badge>}
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {(data.items || []).map((item: any, i: number) => (
@@ -1209,7 +1209,7 @@ function TestimonialsLargeQuote({ data, site }: { data: any; site: SiteConfig })
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           {data.subtitle && <Badge className="mb-4" style={{ backgroundColor: `${site.theme.primary}15`, color: site.theme.primary }}>{data.subtitle}</Badge>}
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
         </div>
         <div className="grid gap-8 md:grid-cols-2">
           {(data.items || []).map((item: any, i: number) => (
@@ -1239,7 +1239,7 @@ function TestimonialsMinimal({ data, site }: { data: any; site: SiteConfig }) {
     <section className="py-24 bg-white">
       <div className="container mx-auto px-4">
         <div className="mb-12">
-          <h2 className="text-4xl font-bold tracking-tight">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">{data.title}</h2>
           {data.subtitle && <p className="mt-2 text-slate-500">{data.subtitle}</p>}
         </div>
         <div className="grid gap-0 divide-y divide-slate-100">
@@ -1270,7 +1270,7 @@ function TestimonialsCinematic({ data, site }: { data: any; site: SiteConfig }) 
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-          <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-4">{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-4">{data.title}</h2>
           {data.subtitle && <p className="text-white/40 text-lg font-light mb-16">{data.subtitle}</p>}
           <div className="space-y-0 divide-y divide-white/[0.08]">
             {(data.items || []).map((item: any, i: number) => (
@@ -1301,7 +1301,7 @@ function TestimonialsProfessional({ data, site }: { data: any; site: SiteConfig 
             <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>{data.subtitle}</span>
             <div className="h-px w-10" style={{ backgroundColor: site.theme.accent }} />
           </div>
-          <h2 className="text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ color: site.theme.primary }}>{data.title}</h2>
         </div>
         <div className="grid gap-8 md:grid-cols-3">
           {(data.items || []).map((item: any, i: number) => (
@@ -1343,7 +1343,7 @@ function TestimonialsSection({ data, site }: { data: any; site: SiteConfig }) {
 
 function ContactDefault({ data, site }: { data: any; site: SiteConfig }) {
   return (
-    <section className="bg-slate-950 py-24 text-white">
+    <section className="bg-slate-950 py-12 md:py-24 text-white">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl">
           <h2 className="mb-4 text-4xl font-bold">{data.title}</h2>
@@ -1516,7 +1516,7 @@ function ContactCinematic({ data, site }: { data: any; site: SiteConfig }) {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl">
           <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-          <h2 className="mb-4 text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
+          <h2 className="mb-4 text-2xl sm:text-4xl md:text-5xl font-light tracking-tight">{data.title}</h2>
           <p className="mb-16 text-lg text-white/40 font-light max-w-2xl">{data.subtitle}</p>
           <div className="grid gap-0 divide-y divide-white/[0.08]">
             {data.phone && (
@@ -1588,7 +1588,7 @@ function VehicleListingsSection({ data, site }: { data: any; site: SiteConfig })
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className={isCinematic ? "mb-16" : "text-center mb-12"}>
           {isCinematic && <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />}
-          <h2 className={isCinematic ? "text-4xl md:text-5xl font-light tracking-tight mb-3" : "text-3xl md:text-4xl font-bold mb-3"}
+          <h2 className={isCinematic ? "text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3" : "text-3xl md:text-4xl font-bold mb-3"}
             style={!isCinematic ? { color: site.theme.primary } : undefined}>
             {data.title || "Our Vehicles"}
           </h2>
@@ -1779,7 +1779,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
             <div className="grid lg:grid-cols-2 gap-16 items-start">
               <div>
                 <div className="h-px w-16 mb-8" style={{ backgroundColor: site.theme.primary }} />
-                <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-6">{data.title || "Get in Touch"}</h2>
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-6">{data.title || "Get in Touch"}</h2>
                 <p className="text-white/40 text-lg font-light leading-relaxed mb-10">{data.subtitle}</p>
                 <div className="space-y-6">
                   {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
@@ -1809,7 +1809,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
                   <div className="h-1 w-10 rounded-full" style={{ backgroundColor: site.theme.accent }} />
                   <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: site.theme.accent }}>Contact</span>
                 </div>
-                <h2 className="text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
+                <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
                 <p className="text-white/60 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
                 <div className="space-y-4">
                   {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
@@ -1836,7 +1836,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
         <div className="max-w-4xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
-              <h2 className="text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
+              <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
               <p className="text-slate-500 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
               <div className="space-y-4">
                 {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
