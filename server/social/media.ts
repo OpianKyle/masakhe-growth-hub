@@ -11,8 +11,25 @@ import fs from "fs";
 import OpenAI from "openai";
 
 function getOpenAI() {
+  if (process.env.OPENROUTER_API_KEY) {
+    return new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: { "HTTP-Referer": process.env.APP_URL || "https://masakhegroup.co.za", "X-Title": "Masakhe" },
+    });
+  }
   const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OpenAI API key not configured.");
+  if (!apiKey) throw new Error("No AI API key configured.");
+  const opts: ConstructorParameters<typeof OpenAI>[0] = { apiKey };
+  if (!process.env.OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+    opts.baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+  }
+  return new OpenAI(opts);
+}
+
+function getOpenAIForImages() {
+  const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("AI image generation requires an OpenAI API key (OPENAI_API_KEY). OpenRouter does not support this feature.");
   const opts: ConstructorParameters<typeof OpenAI>[0] = { apiKey };
   if (!process.env.OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
     opts.baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
@@ -112,7 +129,7 @@ mediaRouter.post("/:workspaceId/media/generate", requireActiveSubscription, requ
       `Style: modern, vibrant, clean layout, suitable for Facebook and Instagram. No text overlays.`,
     ].filter(Boolean).join(" ");
 
-    const response = await getOpenAI().images.generate({
+    const response = await getOpenAIForImages().images.generate({
       model: "gpt-image-1",
       prompt: finalPrompt,
       n: 1,

@@ -4,13 +4,27 @@ import { randomUUID } from "crypto";
 import OpenAI from "openai";
 
 function getOpenAI() {
+  if (process.env.OPENROUTER_API_KEY) {
+    return new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: { "HTTP-Referer": process.env.APP_URL || "https://masakhegroup.co.za", "X-Title": "Masakhe" },
+    });
+  }
   const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OpenAI API key not configured. Please add OPENAI_API_KEY to your environment secrets.");
+  if (!apiKey) throw new Error("No AI API key configured. Please add OPENROUTER_API_KEY or OPENAI_API_KEY to your environment secrets.");
   const opts: ConstructorParameters<typeof OpenAI>[0] = { apiKey };
   if (!process.env.OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
     opts.baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
   }
   return new OpenAI(opts);
+}
+
+function getModel() {
+  if (process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
+  }
+  return process.env.AI_MODEL || "gpt-4o-mini";
 }
 
 function requireAuth(req: any, res: any, next: Function) {
@@ -103,7 +117,7 @@ Business Information:
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4.1",
+      model: getModel(),
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
@@ -194,7 +208,7 @@ Proposal Information:
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4.1",
+      model: getModel(),
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
@@ -418,7 +432,7 @@ Respond ONLY in JSON:
 }`;
 
     const aiRes = await getOpenAI().chat.completions.create({
-      model: "gpt-4.1",
+      model: getModel(),
       messages: [{ role: "user", content: aiPrompt }],
       response_format: { type: "json_object" },
     });
@@ -579,7 +593,7 @@ ADDITIONAL NOTES: ${fd.notes || "None"}
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4.1",
+      model: getModel(),
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
