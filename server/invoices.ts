@@ -226,29 +226,41 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     if (user?.logo_url) {
       try {
-        const logoPath = path.join(process.cwd(), "public", user.logo_url);
-        if (fs.existsSync(logoPath)) {
-          const logoBytes = fs.readFileSync(logoPath);
-          const ext = path.extname(logoPath).toLowerCase();
+        let logoBytes: Buffer | null = null;
+        let logoMime = "";
+
+        if (user.logo_url.startsWith("data:image/")) {
+          const matches = user.logo_url.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          if (matches) {
+            logoMime = matches[1].toLowerCase();
+            logoBytes = Buffer.from(matches[2], "base64");
+          }
+        } else {
+          const logoPath = path.join(process.cwd(), "public", user.logo_url);
+          if (fs.existsSync(logoPath)) {
+            logoBytes = fs.readFileSync(logoPath);
+            logoMime = path.extname(logoPath).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+          }
+        }
+
+        if (logoBytes) {
           let logoImage;
-          if (ext === ".png") {
+          if (logoMime === "image/png") {
             logoImage = await pdfDoc.embedPng(logoBytes);
-          } else if (ext === ".jpg" || ext === ".jpeg") {
+          } else {
             logoImage = await pdfDoc.embedJpg(logoBytes);
           }
-          if (logoImage) {
-            const logoDim = logoImage.scale(1);
-            const maxLogoHeight = 80;
-            const maxLogoWidth = 200;
-            let logoWidth = (logoDim.width / logoDim.height) * maxLogoHeight;
-            let logoHeight = maxLogoHeight;
-            if (logoWidth > maxLogoWidth) {
-              logoWidth = maxLogoWidth;
-              logoHeight = (logoDim.height / logoDim.width) * maxLogoWidth;
-            }
-            page.drawImage(logoImage, { x: 50, y: y - logoHeight + 10, width: logoWidth, height: logoHeight });
-            y -= logoHeight + 15;
+          const logoDim = logoImage.scale(1);
+          const maxLogoHeight = 70;
+          const maxLogoWidth = 180;
+          let logoWidth = (logoDim.width / logoDim.height) * maxLogoHeight;
+          let logoHeight = maxLogoHeight;
+          if (logoWidth > maxLogoWidth) {
+            logoWidth = maxLogoWidth;
+            logoHeight = (logoDim.height / logoDim.width) * maxLogoWidth;
           }
+          page.drawImage(logoImage, { x: 50, y: y - logoHeight, width: logoWidth, height: logoHeight });
+          y -= logoHeight + 10;
         }
       } catch (logoErr) {
         console.error("Failed to embed logo in PDF:", logoErr);
