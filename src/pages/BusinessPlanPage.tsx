@@ -134,10 +134,8 @@ export default function BusinessPlanPage() {
   };
 
   const printPDF = () => {
-    const win = window.open("", "_blank");
-    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); return; }
     if (!generated) return;
-    win.document.write(`<!DOCTYPE html><html><head><title>${form.businessName || "Business Plan"}</title>
+    const html = `<!DOCTYPE html><html><head><title>${form.businessName || "Business Plan"}</title>
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
       body { font-family: Georgia, serif; font-size: 12pt; color: #1a1a1a; line-height: 1.7; padding: 60px; max-width: 800px; margin: 0 auto; }
@@ -157,8 +155,13 @@ export default function BusinessPlanPage() {
       <p style="margin-top:24px;color:#888;">${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
     ${SECTIONS.map(s => `<div class="section"><h2>${s.label}</h2>${((generated as any)[s.key] || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`).join("")}
-    </body></html>`);
-    win.document.close(); setTimeout(() => win.print(), 500);
+    <script>window.onload = function() { window.print(); }<\/script>
+    </body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); URL.revokeObjectURL(url); return; }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   if (view === "list") return (

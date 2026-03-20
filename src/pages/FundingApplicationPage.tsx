@@ -136,10 +136,8 @@ export default function FundingApplicationPage() {
 
   const printPDF = () => {
     if (!generated) return;
-    const win = window.open("", "_blank");
-    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); return; }
     const prog = PROGRAMS.find(p => p.key === selectedProgram);
-    win.document.write(`<!DOCTYPE html><html><head><title>Funding Application — ${selectedProgram}</title>
+    const html = `<!DOCTYPE html><html><head><title>Funding Application — ${selectedProgram}</title>
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
       body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 50px; max-width: 800px; margin: 0 auto; }
@@ -157,8 +155,13 @@ export default function FundingApplicationPage() {
       <p style="color:#888;font-size:9pt;margin-top:4px;">Submitted: ${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
     ${APP_SECTIONS.filter(s => s.key !== "applicationTitle").map(s => `<h2>${s.label}</h2>${((generated as any)[s.key] || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}`).join("")}
-    </body></html>`);
-    win.document.close(); setTimeout(() => win.print(), 500);
+    <script>window.onload = function() { window.print(); }<\/script>
+    </body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win2 = window.open(url, "_blank");
+    if (!win2) { toast.error("Popup blocked — please allow popups for this site and try again."); URL.revokeObjectURL(url); return; }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   if (view === "list") return (
