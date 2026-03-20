@@ -100,7 +100,7 @@ Business Information:
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-5.1",
+      model: "gpt-4.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
@@ -191,7 +191,7 @@ Proposal Information:
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-5.1",
+      model: "gpt-4.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
@@ -576,7 +576,7 @@ ADDITIONAL NOTES: ${fd.notes || "None"}
 Return ONLY valid JSON.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-5.1",
+      model: "gpt-4.1",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });

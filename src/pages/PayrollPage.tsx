@@ -380,7 +380,7 @@ export default function PayrollPage() {
 </body></html>`;
 
     const win = window.open("", "_blank");
-    if (!win) return;
+    if (!win) { toast({ title: "Popup blocked", description: "Please allow popups for this site and try again.", variant: "destructive" }); return; }
     win.document.write(html);
     win.document.close();
   };

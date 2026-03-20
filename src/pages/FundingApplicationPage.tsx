@@ -137,7 +137,7 @@ export default function FundingApplicationPage() {
   const printPDF = () => {
     if (!generated) return;
     const win = window.open("", "_blank");
-    if (!win) return;
+    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); return; }
     const prog = PROGRAMS.find(p => p.key === selectedProgram);
     win.document.write(`<!DOCTYPE html><html><head><title>Funding Application — ${selectedProgram}</title>
     <style>

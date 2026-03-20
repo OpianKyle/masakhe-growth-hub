@@ -135,7 +135,8 @@ export default function BusinessPlanPage() {
 
   const printPDF = () => {
     const win = window.open("", "_blank");
-    if (!win || !generated) return;
+    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); return; }
+    if (!generated) return;
     win.document.write(`<!DOCTYPE html><html><head><title>${form.businessName || "Business Plan"}</title>
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
