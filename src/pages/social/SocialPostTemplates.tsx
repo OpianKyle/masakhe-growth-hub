@@ -807,7 +807,7 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Post copied & image downloaded!");
+      toast.success("Text copied! Image saved to Downloads — attach it when posting.");
     } catch {
       toast.success("Post copied to clipboard!");
     }
@@ -940,6 +940,7 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
                       variant="outline"
                       onClick={() => handleCopy(template)}
                       className={copiedId === template.id ? "border-green-300 text-green-600" : ""}
+                      title="Copies text to clipboard and downloads the image — paste the text in Facebook, then attach the image"
                     >
                       {copiedId === template.id ? (
                         <><RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" /> Copied!</>
