@@ -254,7 +254,15 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       }
     }
 
-    page.drawText(user?.business_name || user?.full_name || "Business", { x: 50, y, size: 20, font: fontBold, color: green });
+    const bizName = user?.business_name || user?.full_name || "Business";
+    const maxNameWidth = 335; // space from x=50 to just before x=400 (TAX INVOICE)
+    let nameSize = 20;
+    while (nameSize > 10 && fontBold.widthOfTextAtSize(bizName, nameSize) > maxNameWidth) {
+      nameSize -= 1;
+    }
+    // vertically centre the business name with "TAX INVOICE" (size 14)
+    const nameOffset = Math.max(0, Math.round((nameSize - 14) / 2));
+    page.drawText(bizName, { x: 50, y: y - nameOffset, size: nameSize, font: fontBold, color: green });
     page.drawText("TAX INVOICE", { x: 400, y, size: 14, font: fontBold, color: green });
     y -= 20;
 
