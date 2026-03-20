@@ -154,11 +154,11 @@ export default function ComplianceDocsGate() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={goToSettings} className="flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={goToSettings} className="w-full sm:flex-1">
                 <Upload className="h-4 w-4 mr-2" /> Upload Now
               </Button>
-              <Button variant="ghost" onClick={dismissModal} className="flex-none">
+              <Button variant="ghost" onClick={dismissModal} className="w-full sm:w-auto">
                 Remind me later
               </Button>
             </div>
