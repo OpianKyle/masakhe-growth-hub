@@ -795,7 +795,23 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
   const handleCopy = async (template: PostTemplate) => {
     await navigator.clipboard.writeText(template.content);
     setCopiedId(template.id);
-    toast.success("Post copied to clipboard!");
+
+    try {
+      const res = await fetch(template.templateImage);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = template.templateImageName || "template-image.jpg";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Post copied & image downloaded!");
+    } catch {
+      toast.success("Post copied to clipboard!");
+    }
+
     setTimeout(() => setCopiedId(null), 2000);
   };
 
