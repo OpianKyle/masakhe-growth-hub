@@ -17,6 +17,14 @@ interface GeneratedContent {
   jobCreationPlan: string; transformationImpact: string; declarationStatement: string;
 }
 
+function flattenSection(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) return val.map(flattenSection).join("\n\n");
+  if (typeof val === "object") return Object.values(val).map(flattenSection).join("\n\n");
+  return String(val);
+}
+
 const PROGRAMS = [
   { key: "SEFA", name: "SEFA", full: "Small Enterprise Finance Agency", color: "bg-green-50 border-green-200 text-green-800", description: "Loans and equity for SMMEs and co-operatives", range: "R10k – R15m" },
   { key: "NEF", name: "NEF", full: "National Empowerment Fund", color: "bg-blue-50 border-blue-200 text-blue-800", description: "Funding for black-owned businesses", range: "R250k – R75m" },
@@ -154,7 +162,7 @@ export default function FundingApplicationPage() {
       <p style="color:#555;margin-top:6px;">${prog?.full || selectedProgram}</p>
       <p style="color:#888;font-size:9pt;margin-top:4px;">Submitted: ${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
-    ${APP_SECTIONS.filter(s => s.key !== "applicationTitle").map(s => `<h2>${s.label}</h2>${((generated as any)[s.key] || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}`).join("")}
+    ${APP_SECTIONS.filter(s => s.key !== "applicationTitle").map(s => `<h2>${s.label}</h2>${flattenSection((generated as any)[s.key]).split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}`).join("")}
     <script>window.onload = function() { window.print(); }<\/script>
     </body></html>`;
     const blob = new Blob([html], { type: "text/html" });
@@ -235,7 +243,7 @@ export default function FundingApplicationPage() {
       <Card className="p-8">
         <div className="mb-8 pb-8 border-b-2 border-primary/20">
           <div className={`inline-block text-sm font-bold rounded-full px-3 py-1 border mb-3 ${PROGRAMS.find(p => p.key === selectedProgram)?.color}`}>{selectedProgram} Application</div>
-          <h1 className="text-2xl font-bold font-heading text-primary">{generated.applicationTitle}</h1>
+          <h1 className="text-2xl font-bold font-heading text-primary">{flattenSection(generated.applicationTitle)}</h1>
           <p className="text-muted-foreground text-sm mt-1">{PROGRAMS.find(p => p.key === selectedProgram)?.full}</p>
           <p className="text-xs text-muted-foreground mt-2">{new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
         </div>
@@ -243,7 +251,7 @@ export default function FundingApplicationPage() {
           {APP_SECTIONS.filter(s => s.key !== "applicationTitle").map(s => (
             <div key={s.key} className="space-y-3">
               <h2 className="text-lg font-bold font-heading text-primary border-b border-primary/20 pb-2">{s.label}</h2>
-              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{(generated as any)[s.key] || ""}</div>
+              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{flattenSection((generated as any)[s.key])}</div>
             </div>
           ))}
         </div>

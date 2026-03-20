@@ -47,6 +47,14 @@ const empty: FormData = {
 
 const INDUSTRIES = ["Technology", "Retail", "Agriculture", "Manufacturing", "Construction", "Professional Services", "Healthcare", "Education", "Food & Beverage", "Transport & Logistics", "Tourism & Hospitality", "Finance & Insurance", "Media & Creative", "Other"];
 
+function flattenSection(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) return val.map(flattenSection).join("\n\n");
+  if (typeof val === "object") return Object.values(val).map(flattenSection).join("\n\n");
+  return String(val);
+}
+
 export default function BusinessPlanPage() {
   const [view, setView] = useState<"list" | "form" | "document">("list");
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -154,7 +162,7 @@ export default function BusinessPlanPage() {
       <p><strong>Reg No:</strong> ${form.registrationNumber || ""}</p>
       <p style="margin-top:24px;color:#888;">${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
-    ${SECTIONS.map(s => `<div class="section"><h2>${s.label}</h2>${((generated as any)[s.key] || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`).join("")}
+    ${SECTIONS.map(s => `<div class="section"><h2>${s.label}</h2>${flattenSection((generated as any)[s.key]).split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`).join("")}
     <script>window.onload = function() { window.print(); }<\/script>
     </body></html>`;
     const blob = new Blob([html], { type: "text/html" });
@@ -225,7 +233,7 @@ export default function BusinessPlanPage() {
           {SECTIONS.map(s => (
             <div key={s.key} className="space-y-3">
               <h2 className="text-lg font-bold font-heading text-primary border-b border-primary/20 pb-2">{s.label}</h2>
-              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{(generated as any)[s.key] || ""}</div>
+              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{flattenSection((generated as any)[s.key])}</div>
             </div>
           ))}
         </div>

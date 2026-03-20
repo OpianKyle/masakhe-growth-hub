@@ -94,7 +94,14 @@ documentsRouter.post("/business-plans/:id/generate", requireAuth, async (req, re
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
 
-    const prompt = `You are an expert South African business consultant. Write a comprehensive, professional business plan for a South African SMME based on the following information. Return a JSON object with exactly these keys: executiveSummary, companyOverview, marketAnalysis, productsServices, marketingStrategy, operationsPlan, financialPlan, fundingRequirements. Each value should be 2-5 paragraphs of well-written professional text appropriate for presentation to banks, investors, or the SEDA/SEFA/IDC.
+    const prompt = `You are an expert South African business consultant. Write a comprehensive, professional business plan for a South African SMME based on the following information.
+
+CRITICAL FORMATTING RULES:
+- Return a JSON object with EXACTLY these keys: executiveSummary, companyOverview, marketAnalysis, productsServices, marketingStrategy, operationsPlan, financialPlan, fundingRequirements
+- Every value MUST be a plain text STRING — 2 to 5 paragraphs of prose separated by newline characters
+- Do NOT nest objects inside any value. Do NOT use arrays. Every value must be a flat string of text.
+- Example of CORRECT format: { "executiveSummary": "Paragraph one text here.\n\nParagraph two text here." }
+- Example of WRONG format: { "executiveSummary": { "overview": "...", "mission": "..." } }
 
 Business Information:
 - Business Name: ${fd.businessName || "N/A"}
@@ -115,7 +122,7 @@ Business Information:
 - Year 2 Projection: R${fd.projectionYear2 || "0"}
 - Year 3 Projection: R${fd.projectionYear3 || "0"}
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON where every value is a plain text string.`;
 
     const completion = await getOpenAI().chat.completions.create({
       model: getModel(),
@@ -192,7 +199,14 @@ documentsRouter.post("/funding-proposals/:id/generate", requireAuth, async (req,
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
 
-    const prompt = `You are an expert South African funding consultant familiar with SEFA, IDC, NEF, SEDA and government SMME funding programmes. Write a professional funding proposal based on the following information. Return a JSON object with exactly these keys: coverPage, executiveSummary, businessOverview, problemOpportunity, fundingRequest, useOfFunds, economicImpact, financialSummary, closingStatement. Each value should be 2-4 paragraphs of compelling, professional text.
+    const prompt = `You are an expert South African funding consultant familiar with SEFA, IDC, NEF, SEDA and government SMME funding programmes. Write a professional funding proposal based on the following information.
+
+CRITICAL FORMATTING RULES:
+- Return a JSON object with EXACTLY these keys: coverPage, executiveSummary, businessOverview, problemOpportunity, fundingRequest, useOfFunds, economicImpact, financialSummary, closingStatement
+- Every value MUST be a plain text STRING — 2 to 4 paragraphs of prose separated by newline characters
+- Do NOT nest objects inside any value. Do NOT use arrays. Every value must be a flat string of text.
+- Example of CORRECT format: { "coverPage": "Cover page text here.\n\nConfidential document prepared for XYZ.", "executiveSummary": "Summary paragraph one.\n\nSummary paragraph two." }
+- Example of WRONG format: { "coverPage": { "businessName": "...", "date": "..." } }
 
 Proposal Information:
 - Business Name: ${fd.businessName || "N/A"}
@@ -207,7 +221,7 @@ Proposal Information:
 - Growth Plan: ${fd.growthPlan || "N/A"}
 - Government Programme: ${fd.governmentProgram || "N/A"}
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON where every value is a plain text string.`;
 
     const completion = await getOpenAI().chat.completions.create({
       model: getModel(),
@@ -560,9 +574,14 @@ documentsRouter.post("/funding-applications/:id/generate", requireAuth, async (r
 
     const prompt = `You are an expert South African funding consultant. Write a formal funding application for the ${appRow.program} programme (${programDetails[appRow.program] || appRow.program}).
 
-Use the following company and business data to write the application. Return a JSON object with exactly these keys: applicationTitle, coverLetter, applicantProfile, businessSummary, fundingRequest, projectDescription, financialOverview, jobCreationPlan, transformationImpact, declarationStatement.
+CRITICAL FORMATTING RULES:
+- Return a JSON object with EXACTLY these keys: applicationTitle, coverLetter, applicantProfile, businessSummary, fundingRequest, projectDescription, financialOverview, jobCreationPlan, transformationImpact, declarationStatement
+- Every value MUST be a plain text STRING. Do NOT use nested objects or arrays as values.
+- applicationTitle should be a short string like "SEFA Funding Application — Business Name"
+- All other keys: 2 to 4 paragraphs of formal, professional prose separated by newline characters
+- WRONG: { "coverLetter": { "greeting": "...", "body": "..." } } | CORRECT: { "coverLetter": "Dear Sir/Madam,\n\nParagraph..." }
 
-Each section should be 2-4 paragraphs of formal, professional text.
+Use the following company and business data to write the application.
 
 COMPANY INFORMATION:
 - Company Name: ${companyData.company_name || fd.businessName || "N/A"}
