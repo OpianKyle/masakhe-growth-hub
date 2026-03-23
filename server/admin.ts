@@ -1,8 +1,25 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAdmin } from "./auth";
+import { randomUUID } from "crypto";
 
 export const adminRouter = Router();
+
+async function ensureWorkspaceForUser(userId: string): Promise<string> {
+  const existing = await queryOne(
+    "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+    [userId]
+  );
+  if (existing) return existing.id;
+
+  const user = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+  const wsName = user?.full_name ? `${user.full_name}'s Business` : (user?.email || "Business");
+  const wsId = randomUUID();
+  const now = new Date().toISOString();
+  await execute("INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?,?,?,?,?)", [wsId, wsName, userId, now, now]);
+  await execute("INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)", [randomUUID(), wsId, userId, "owner", now]);
+  return wsId;
+}
 
 adminRouter.use(requireAdmin);
 
@@ -106,11 +123,8 @@ adminRouter.get("/clients/:id", async (req, res) => {
 
 adminRouter.post("/clients/:id/trial", async (req, res) => {
   try {
-    const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [req.params.id]
-    );
-    if (!workspace) return res.status(404).json({ error: "No workspace found for this user" });
+    const workspaceId = await ensureWorkspaceForUser(req.params.id);
+    const workspace = { id: workspaceId };
 
     const premiumPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium'");
     if (!premiumPlan) return res.status(404).json({ error: "Premium plan not found" });
@@ -147,11 +161,8 @@ adminRouter.post("/clients/:id/subscription", async (req, res) => {
     if (!["starter", "pro", "premium"].includes(plan)) {
       return res.status(400).json({ error: "Invalid plan. Use 'starter', 'pro', or 'premium'." });
     }
-    const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [req.params.id]
-    );
-    if (!workspace) return res.status(404).json({ error: "No workspace found for this user" });
+    const workspaceId = await ensureWorkspaceForUser(req.params.id);
+    const workspace = { id: workspaceId };
     const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [plan]);
     if (!billingPlan) return res.status(404).json({ error: "Billing plan not found" });
     const existing = await queryOne(
@@ -177,11 +188,8 @@ adminRouter.post("/clients/:id/subscription", async (req, res) => {
 
 adminRouter.delete("/clients/:id/subscription", async (req, res) => {
   try {
-    const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [req.params.id]
-    );
-    if (!workspace) return res.status(404).json({ error: "No workspace found" });
+    const workspaceId = await ensureWorkspaceForUser(req.params.id);
+    const workspace = { id: workspaceId };
     await execute(
       "UPDATE billing_subscriptions SET status = 'CANCELLED', updated_at = NOW() WHERE workspace_id = ? AND status IN ('ACTIVE','TRIAL')",
       [workspace.id]
