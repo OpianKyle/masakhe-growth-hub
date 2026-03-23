@@ -45,11 +45,13 @@ export default function SettingsPage() {
     email: u?.bp_email || u?.email || "",
     physicalAddress: u?.physical_address || "",
     bankName: u?.bank_name || "",
+    accountName: u?.account_name || "",
     accountType: u?.account_type || "",
     accountNumber: u?.account_number || "",
     branchCode: u?.branch_code || "",
     saId: u?.sa_id || "",
     cipcNumber: u?.cipc_number || "",
+    registrationNumber: u?.registration_number || "",
   });
 
   const [form, setForm] = useState(buildForm(user));
@@ -478,6 +480,9 @@ export default function SettingsPage() {
               <FieldGroup icon={Briefcase} label="CIPC Registration Number">
                 <Input value={form.cipcNumber} onChange={e => handleChange("cipcNumber", e.target.value)} placeholder="YYYY/NNNNNN/07" />
               </FieldGroup>
+              <FieldGroup icon={Briefcase} label="Company Registration Number">
+                <Input value={form.registrationNumber} onChange={e => handleChange("registrationNumber", e.target.value)} placeholder="e.g. 2024/123456/07" />
+              </FieldGroup>
             </div>
           </>
         )}
@@ -501,6 +506,9 @@ export default function SettingsPage() {
                   <option value="African Bank">African Bank</option>
                   <option value="Discovery Bank">Discovery Bank</option>
                 </select>
+              </FieldGroup>
+              <FieldGroup icon={CreditCard} label="Account Name">
+                <Input value={form.accountName} onChange={e => handleChange("accountName", e.target.value)} placeholder="Name on the bank account" />
               </FieldGroup>
               <FieldGroup icon={CreditCard} label="Account Type">
                 <select

@@ -148,7 +148,7 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { customerName, customerEmail, items, vatEnabled } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes } = req.body;
 
     if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "customerName and items are required" });
@@ -168,9 +168,9 @@ invoiceRouter.post("/", async (req, res) => {
     const now = new Date().toISOString();
 
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, vat_enabled, vat_cents, items_json, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
-      [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?)`,
+      [id, userId, invoiceNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), now]
     );
 
     res.json({ ok: true, id, invoiceNumber });
@@ -202,7 +202,8 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     const user = await queryOne(
       `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number,
-              bp.bank_name, bp.account_type, bp.account_number, bp.branch_code
+              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code,
+              bp.registration_number
        FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
        WHERE u.id = ?`,
       [userId]
@@ -295,6 +296,10 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       page.drawText(`VAT Reg No: ${user.vat_number}`, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
+    if (user?.registration_number) {
+      page.drawText(`Reg No: ${user.registration_number}`, { x: 50, y, size: 9, font, color: grey });
+      y -= 14;
+    }
 
     y -= 15;
     page.drawRectangle({ x: 50, y, width: 495, height: 1, color: rgb(0.85, 0.85, 0.85) });
@@ -304,9 +309,14 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     page.drawText(invoice.invoice_number, { x: 150, y, size: 9, font: fontBold, color: black });
     page.drawText("Date:", { x: 350, y, size: 9, font, color: grey });
     page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black });
-    y -= 18;
+    y -= 16;
+    if (invoice.reference) {
+      page.drawText("Reference:", { x: 50, y, size: 9, font, color: grey });
+      page.drawText(invoice.reference, { x: 150, y, size: 9, font: fontBold, color: black });
+      y -= 16;
+    }
 
-    y -= 10;
+    y -= 8;
     page.drawText("BILL TO:", { x: 50, y, size: 9, font: fontBold, color: green });
     y -= 15;
     page.drawText(invoice.customer_name, { x: 50, y, size: 10, font: fontBold, color: black });
@@ -315,8 +325,16 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       page.drawText(invoice.customer_email, { x: 50, y, size: 9, font, color: grey });
       y -= 14;
     }
+    if (invoice.customer_phone) {
+      page.drawText(`Tel: ${invoice.customer_phone}`, { x: 50, y, size: 9, font, color: grey });
+      y -= 14;
+    }
+    if (invoice.customer_address) {
+      page.drawText(invoice.customer_address, { x: 50, y, size: 9, font, color: grey });
+      y -= 14;
+    }
 
-    y -= 20;
+    y -= 14;
 
     page.drawRectangle({ x: 50, y: y - 2, width: 495, height: 22, color: rgb(0.95, 0.95, 0.95) });
     page.drawText("Description", { x: 55, y: y + 3, size: 9, font: fontBold, color: black });
@@ -367,6 +385,24 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       page.drawText(`R${totalRands.toFixed(2)}`, { x: 465, y, size: 11, font: fontBold, color: green });
     }
 
+    const paymentTerms = invoice.payment_terms || "Due within 7 days";
+    y -= 20;
+    page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
+    y -= 16;
+    page.drawText("Payment Terms:", { x: 50, y, size: 9, font: fontBold, color: grey });
+    page.drawText(paymentTerms, { x: 135, y, size: 9, font, color: black });
+    y -= 13;
+    page.drawText("Late payments may incur a 5% fee.", { x: 50, y, size: 8, font, color: grey });
+
+    if (invoice.notes) {
+      y -= 20;
+      page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
+      y -= 16;
+      page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
+      y -= 14;
+      page.drawText(invoice.notes, { x: 50, y, size: 9, font, color: black });
+    }
+
     const hasBankDetails = user?.bank_name || user?.account_number;
     if (hasBankDetails) {
       y -= 22;
@@ -378,6 +414,10 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       y -= 14;
       if (user.bank_name) {
         page.drawText(`Bank:  ${user.bank_name}`, { x: 50, y, size: 9, font, color: black });
+        y -= 13;
+      }
+      if (user.account_name) {
+        page.drawText(`Account Name:  ${user.account_name}`, { x: 50, y, size: 9, font, color: black });
         y -= 13;
       }
       if (user.account_type) {
@@ -393,7 +433,8 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
       }
     }
 
-    page.drawText("Thank you for your business!", { x: 50, y: 60, size: 9, font, color: grey });
+    page.drawText("Thank you for your business!", { x: 50, y: 75, size: 9, font, color: grey });
+    page.drawText("This invoice serves as a tax invoice in terms of Section 20 of the VAT Act.", { x: 50, y: 60, size: 8, font, color: grey });
     page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: rgb(0.7, 0.7, 0.7) });
 
     const pdfBytes = await pdfDoc.save();
@@ -414,7 +455,7 @@ invoiceRouter.put("/:id", async (req, res) => {
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [id, userId]);
     if (!existing) return res.status(404).json({ error: "Invoice not found" });
 
-    const { customer_name, customer_email, items, vat_enabled } = req.body;
+    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes } = req.body;
     if (!customer_name || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "customer_name and items are required" });
     }
@@ -428,8 +469,8 @@ invoiceRouter.put("/:id", async (req, res) => {
     const totalCents = subtotalCents + vatCents;
 
     await execute(
-      `UPDATE invoices SET customer_name = ?, customer_email = ?, items_json = ?, vat_enabled = ?, vat_cents = ?, total_cents = ? WHERE id = ?`,
-      [customer_name, customer_email || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, totalCents, id]
+      `UPDATE invoices SET customer_name = ?, customer_email = ?, customer_address = ?, customer_phone = ?, reference = ?, payment_terms = ?, notes = ?, items_json = ?, vat_enabled = ?, vat_cents = ?, total_cents = ? WHERE id = ?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, totalCents, id]
     );
     res.json({ ok: true });
   } catch (err: any) {

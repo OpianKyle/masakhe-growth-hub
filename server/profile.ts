@@ -36,7 +36,8 @@ profileRouter.put("/", async (req, res) => {
     const userId = req.session.userId!;
     const { fullName, businessName, tradingName, businessStatus, businessType, industrySector,
             yearsOperating, employeeCount, phone, whatsapp, email, physicalAddress,
-            bankName, accountType, accountNumber, branchCode, saId, cipcNumber } = req.body;
+            bankName, accountName, accountType, accountNumber, branchCode, saId, cipcNumber,
+            registrationNumber } = req.body;
 
     const now = new Date().toISOString();
 
@@ -52,15 +53,15 @@ profileRouter.put("/", async (req, res) => {
           business_name = ?, trading_name = ?, business_status = ?, business_type = ?,
           industry_sector = ?, years_operating = ?, employee_count = ?,
           phone = ?, whatsapp = ?, email = ?, physical_address = ?,
-          bank_name = ?, account_type = ?, account_number = ?, branch_code = ?,
-          sa_id = ?, cipc_number = ?, updated_at = ?
+          bank_name = ?, account_name = ?, account_type = ?, account_number = ?, branch_code = ?,
+          sa_id = ?, cipc_number = ?, registration_number = ?, updated_at = ?
          WHERE user_id = ?`,
         [
           businessName || null, tradingName || null, businessStatus || null, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
-          bankName || null, accountType || null, accountNumber || null, branchCode || null,
-          saId || null, cipcNumber || null, now, userId
+          bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
+          saId || null, cipcNumber || null, registrationNumber || null, now, userId
         ]
       );
     } else {
@@ -68,15 +69,16 @@ profileRouter.put("/", async (req, res) => {
       await execute(
         `INSERT INTO business_profiles (id, user_id, business_name, trading_name, business_status, business_type,
           industry_sector, years_operating, employee_count, phone, whatsapp, email, physical_address,
-          bank_name, account_type, account_number, branch_code, sa_id, cipc_number, popia_consent, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          bank_name, account_name, account_type, account_number, branch_code, sa_id, cipc_number,
+          registration_number, popia_consent, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
         [
           randomUUID(), userId,
           businessName || null, tradingName || null, businessStatus || null, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
-          bankName || null, accountType || null, accountNumber || null, branchCode || null,
-          saId || null, cipcNumber || null, now, now
+          bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
+          saId || null, cipcNumber || null, registrationNumber || null, now, now
         ]
       );
     }

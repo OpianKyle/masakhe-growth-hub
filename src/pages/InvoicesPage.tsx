@@ -18,6 +18,11 @@ interface Invoice {
   invoice_number: string;
   customer_name: string;
   customer_email: string | null;
+  customer_address: string | null;
+  customer_phone: string | null;
+  reference: string | null;
+  payment_terms: string | null;
+  notes: string | null;
   total_cents: number;
   vat_enabled: boolean;
   vat_cents: number;
@@ -31,6 +36,11 @@ export default function InvoicesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [reference, setReference] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("Due within 7 days");
+  const [notes, setNotes] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,16 +107,24 @@ export default function InvoicesPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ customerName, customerEmail: customerEmail || undefined, items, vatEnabled }),
+      body: JSON.stringify({
+        customerName,
+        customerEmail: customerEmail || undefined,
+        customerAddress: customerAddress || undefined,
+        customerPhone: customerPhone || undefined,
+        reference: reference || undefined,
+        paymentTerms: paymentTerms || undefined,
+        notes: notes || undefined,
+        items,
+        vatEnabled,
+      }),
     });
 
     if (res.ok) {
       const data = await res.json();
       toast.success(`Invoice ${data.invoiceNumber} created`);
+      resetForm();
       setShowCreate(false);
-      setCustomerName(""); setCustomerEmail("");
-      setItems([{ name: "", qty: 1, unitPrice: 0 }]);
-      setVatEnabled(true);
       loadInvoices();
     } else {
       const data = await res.json();
@@ -118,6 +136,11 @@ export default function InvoicesPage() {
     setEditingId(inv.id);
     setCustomerName(inv.customer_name);
     setCustomerEmail(inv.customer_email || "");
+    setCustomerAddress(inv.customer_address || "");
+    setCustomerPhone(inv.customer_phone || "");
+    setReference(inv.reference || "");
+    setPaymentTerms(inv.payment_terms || "Due within 7 days");
+    setNotes(inv.notes || "");
     setItems(inv.items.length > 0 ? inv.items : [{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(inv.vat_enabled);
     setShowCreate(false);
@@ -128,6 +151,11 @@ export default function InvoicesPage() {
     setShowCreate(false);
     setCustomerName("");
     setCustomerEmail("");
+    setCustomerAddress("");
+    setCustomerPhone("");
+    setReference("");
+    setPaymentTerms("Due within 7 days");
+    setNotes("");
     setItems([{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(true);
   };
@@ -141,7 +169,17 @@ export default function InvoicesPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ customer_name: customerName, customer_email: customerEmail || undefined, items, vat_enabled: vatEnabled }),
+      body: JSON.stringify({
+        customer_name: customerName,
+        customer_email: customerEmail || undefined,
+        customer_address: customerAddress || undefined,
+        customer_phone: customerPhone || undefined,
+        reference: reference || undefined,
+        payment_terms: paymentTerms || undefined,
+        notes: notes || undefined,
+        items,
+        vat_enabled: vatEnabled,
+      }),
     });
 
     if (res.ok) {
@@ -196,7 +234,7 @@ export default function InvoicesPage() {
               <Button variant="ghost" size="icon" onClick={resetForm}><X className="h-4 w-4" /></Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <Label className="text-xs">Customer Name *</Label>
                 <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name" />
@@ -204,6 +242,22 @@ export default function InvoicesPage() {
               <div>
                 <Label className="text-xs">Customer Email</Label>
                 <Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer Phone</Label>
+                <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer Address</Label>
+                <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Reference / PO Number</Label>
+                <Input value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
+              </div>
+              <div>
+                <Label className="text-xs">Payment Terms</Label>
+                <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. Due within 7 days" />
               </div>
             </div>
 
@@ -243,6 +297,16 @@ export default function InvoicesPage() {
             <Button variant="outline" size="sm" onClick={addItem} className="mb-4">
               <Plus className="h-3 w-3 mr-1" /> Add Item
             </Button>
+
+            <div className="mb-4">
+              <Label className="text-xs">Notes / Additional Information</Label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="e.g. delivery instructions, payment reference, thank-you message..."
+              />
+            </div>
 
             <div className="border-t pt-4 flex flex-col items-end gap-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer mb-2 self-start">

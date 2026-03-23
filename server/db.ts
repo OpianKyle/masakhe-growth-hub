@@ -868,6 +868,13 @@ export async function runMigrations() {
 
     await addColumnIfMissing("invoices", "vat_enabled", "TINYINT(1) NOT NULL DEFAULT 0");
     await addColumnIfMissing("invoices", "vat_cents", "INT NOT NULL DEFAULT 0");
+    await addColumnIfMissing("invoices", "customer_address", "TEXT NULL");
+    await addColumnIfMissing("invoices", "customer_phone", "VARCHAR(50) NULL");
+    await addColumnIfMissing("invoices", "reference", "VARCHAR(255) NULL");
+    await addColumnIfMissing("invoices", "payment_terms", "VARCHAR(255) NULL");
+    await addColumnIfMissing("invoices", "notes", "TEXT NULL");
+    await addColumnIfMissing("business_profiles", "account_name", "VARCHAR(255) NULL");
+    await addColumnIfMissing("business_profiles", "registration_number", "VARCHAR(100) NULL");
 
     await addColumnIfMissing("social_accounts", "facebook_user_id", "VARCHAR(50) NULL");
 
