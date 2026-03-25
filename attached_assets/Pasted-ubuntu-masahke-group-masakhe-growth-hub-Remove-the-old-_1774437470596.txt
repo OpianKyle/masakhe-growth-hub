@@ -1,0 +1,43 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ # Remove the old apt version
+sudo apt remove certbot python3-certbot-nginx -y
+
+# Install the current snap version
+sudo snap install --classic certbot
+sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+
+# Run it again
+sudo certbot --nginx -d masakhegroup.co.za -d www.masakhegroup.co.za
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+  python3-acme python3-certbot python3-configargparse python3-icu
+  python3-josepy python3-parsedatetime python3-requests-toolbelt
+  python3-rfc3339 python3-zope.component python3-zope.event
+  python3-zope.hookable
+Use 'sudo apt autoremove' to remove them.
+The following packages will be REMOVED:
+  certbot python3-certbot-nginx
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+After this operation, 225 kB disk space will be freed.
+(Reading database ... 100885 files and directories currently installed.)
+Removing python3-certbot-nginx (1.21.0-1) ...
+Removing certbot (1.21.0-1build1) ...
+Processing triggers for man-db (2.10.2-1) ...
+certbot 5.4.0 from Certbot Project (certbot-eff✓) installed
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for masakhegroup.co.za and www.masakhegroup.co.za
+
+Certbot failed to authenticate some domains (authenticator: nginx). The Certificate Authority reported these problems:
+  Identifier: masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://masakhegroup.co.za/.well-known/acme-challenge/A9cyso3PzSpXNoB7NOm8JPvHIVrOHvbdhwCaHtHu08c: Timeout during connect (likely firewall problem)
+
+  Identifier: www.masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://www.masakhegroup.co.za/.well-known/acme-challenge/nZWrBjM8BMw44NuUGfjWaX-zhwoYA-2ldeXndTPHCAc: Timeout during connect (likely firewall problem)
+
+Hint: The Certificate Authority failed to verify the temporary nginx configuration changes made by Certbot. Ensure the listed domains point to this nginx server and that it is accessible from the internet.
+
+Some challenges have failed.
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
