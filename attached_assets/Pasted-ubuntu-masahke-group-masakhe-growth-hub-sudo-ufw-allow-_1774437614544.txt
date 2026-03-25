@@ -1,0 +1,42 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 22
+sudo ufw enable
+sudo ufw status
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated (v6)
+Command may disrupt existing ssh connections. Proceed with operation (y|n)? y
+Firewall is active and enabled on system startup
+Status: active
+
+To                         Action      From
+--                         ------      ----
+80                         ALLOW       Anywhere
+443                        ALLOW       Anywhere
+22                         ALLOW       Anywhere
+80 (v6)                    ALLOW       Anywhere (v6)
+443 (v6)                   ALLOW       Anywhere (v6)
+22 (v6)                    ALLOW       Anywhere (v6)
+
+ubuntu@masahke-group:~/masakhe-growth-hub$ sudo certbot --nginx -d masakhegroup.co.za -d www.masakhegroup.co.za
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for masakhegroup.co.za and www.masakhegroup.co.za
+
+Certbot failed to authenticate some domains (authenticator: nginx). The Certificate Authority reported these problems:
+  Identifier: masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://masakhegroup.co.za/.well-known/acme-challenge/BSnP6WLXi0Imtdx53fisFb_xrZ95xSR8RVrgKRbdsiM: Timeout during connect (likely firewall problem)
+
+  Identifier: www.masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://www.masakhegroup.co.za/.well-known/acme-challenge/fijbuEDxhcF2VHLOPCwakLdDayo6qfzXyd6tbFHy9Ac: Timeout during connect (likely firewall problem)
+
+Hint: The Certificate Authority failed to verify the temporary nginx configuration changes made by Certbot. Ensure the listed domains point to this nginx server and that it is accessible from the internet.
+
+Some challenges have failed.
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
+ubuntu@masahke-group:~/masakhe-growth-hub$
