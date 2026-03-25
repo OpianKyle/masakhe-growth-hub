@@ -2,13 +2,14 @@ import mysql from "mysql2/promise";
 import fs from "fs";
 import path from "path";
 
-const sslConfig: any = {};
-const caPath = process.env.XNEELO_DB_SSL_CA_PATH;
-if (caPath && fs.existsSync(caPath)) {
-  sslConfig.ca = fs.readFileSync(caPath);
-  sslConfig.rejectUnauthorized = true;
-} else {
-  sslConfig.rejectUnauthorized = false;
+let sslConfig: any = false;
+if (process.env.XNEELO_DB_SSL !== "false") {
+  const caPath = process.env.XNEELO_DB_SSL_CA_PATH;
+  if (caPath && fs.existsSync(caPath)) {
+    sslConfig = { ca: fs.readFileSync(caPath), rejectUnauthorized: true };
+  } else {
+    sslConfig = { rejectUnauthorized: false };
+  }
 }
 
 export const pool = mysql.createPool({
