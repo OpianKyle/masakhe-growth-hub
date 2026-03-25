@@ -1,0 +1,92 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ git pull
+pm2 delete masakhe
+pm2 start "npx tsx server/index.ts" --name masakhe
+pm2 save
+sleep 5 && pm2 logs masakhe --lines 30 --nostream
+remote: Enumerating objects: 50, done.
+remote: Counting objects: 100% (50/50), done.
+remote: Compressing objects: 100% (8/8), done.
+remote: Total 46 (delta 38), reused 46 (delta 38), pack-reused 0 (from 0)
+Unpacking objects: 100% (46/46), 127.35 KiB | 3.11 MiB/s, done.
+From https://github.com/OpianKyle/masakhe-growth-hub
+   e7b7f02..6c266c7  main       -> origin/main
+Updating e7b7f02..6c266c7
+Fast-forward
+ ...he-growth-hub-Remove-the-old-_1774437470596.txt |  43 ++++++
+ ...he-growth-hub-curl-v-https-ac_1774437115443.txt |  88 +++++++++++
+ ...he-growth-hub-git-pull-remote_1774434332667.txt | 170 +++++++++++++++++++++
+ ...he-growth-hub-pm2-delete-masa_1774439330866.txt |  52 +++++++
+ ...he-growth-hub-pm2-status-pm2-_1774439243797.txt |  61 ++++++++
+ ...he-growth-hub-sudo-certbot-ng_1774439071294.txt |  38 +++++
+ ...he-growth-hub-sudo-ufw-allow-_1774437614544.txt |  42 +++++
+ attached_assets/image_1774438592623.png            | Bin 0 -> 78021 bytes
+ attached_assets/image_1774438867147.png            | Bin 0 -> 18325 bytes
+ attached_assets/image_1774438949283.png            | Bin 0 -> 27439 bytes
+ attached_assets/image_1774439205422.png            | Bin 0 -> 16566 bytes
+ server/index.ts                                    |   1 +
+ 12 files changed, 495 insertions(+)
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-Remove-the-old-_1774437470596.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-curl-v-https-ac_1774437115443.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-git-pull-remote_1774434332667.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-pm2-delete-masa_1774439330866.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-pm2-status-pm2-_1774439243797.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-sudo-certbot-ng_1774439071294.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-masahke-group-masakhe-growth-hub-sudo-ufw-allow-_1774437614544.txt
+ create mode 100644 attached_assets/image_1774438592623.png
+ create mode 100644 attached_assets/image_1774438867147.png
+ create mode 100644 attached_assets/image_1774438949283.png
+ create mode 100644 attached_assets/image_1774439205422.png
+[PM2] Applying action deleteProcessId on app [masakhe](ids: [ 0 ])
+[PM2] [masakhe](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2] Starting /usr/bin/bash in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ masakhe            │ fork     │ 0    │ online    │ 0%       │ 4.0kb    │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /home/ubuntu/.pm2/dump.pm2
+[TAILING] Tailing last 30 lines for [masakhe] process (change the value with --lines option)
+/home/ubuntu/.pm2/logs/masakhe-error.log last 30 lines:
+0|masakhe  |     at TLSSocket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:395:25)
+0|masakhe  |     at TLSSocket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'admin'@'154.65.110.84' (using password: NO)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+0|masakhe  | SMTP_PASSWORD not set — welcome emails disabled
+0|masakhe  | Failed to start server: Error: Access denied for user 'admin'@'154.65.110.84' (using password: NO)
+0|masakhe  |     at Packet.asError (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packets/packet.js:739:17)
+0|masakhe  |     at ClientHandshake.execute (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/commands/command.js:29:26)
+0|masakhe  |     at PoolConnection.handlePacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:508:34)
+0|masakhe  |     at PacketParser.onPacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:93:12)
+0|masakhe  |     at PacketParser.executeStart (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packet_parser.js:75:16)
+0|masakhe  |     at TLSSocket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:395:25)
+0|masakhe  |     at TLSSocket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'admin'@'154.65.110.84' (using password: NO)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+0|masakhe  | SMTP_PASSWORD not set — welcome emails disabled
+
+/home/ubuntu/.pm2/logs/masakhe-out.log last 30 lines:
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | API running on 0.0.0.0:3001
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+
+ubuntu@masahke-group:~/masakhe-growth-hub$
