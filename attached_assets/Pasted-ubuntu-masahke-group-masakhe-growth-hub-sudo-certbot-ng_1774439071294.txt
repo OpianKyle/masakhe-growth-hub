@@ -1,0 +1,38 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ sudo certbot --nginx -d masakhegroup.co.za -d www.masakhegroup.co.za
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for masakhegroup.co.za and www.masakhegroup.co.za
+
+Certbot failed to authenticate some domains (authenticator: nginx). The Certificate Authority reported these problems:
+  Identifier: masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://masakhegroup.co.za/.well-known/acme-challenge/BSnP6WLXi0Imtdx53fisFb_xrZ95xSR8RVrgKRbdsiM: Timeout during connect (likely firewall problem)
+
+  Identifier: www.masakhegroup.co.za
+  Type:   connection
+  Detail: 154.65.110.84: Fetching http://www.masakhegroup.co.za/.well-known/acme-challenge/fijbuEDxhcF2VHLOPCwakLdDayo6qfzXyd6tbFHy9Ac: Timeout during connect (likely firewall problem)
+
+Hint: The Certificate Authority failed to verify the temporary nginx configuration changes made by Certbot. Ensure the listed domains point to this nginx server and that it is accessible from the internet.
+
+Some challenges have failed.
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
+ubuntu@masahke-group:~/masakhe-growth-hub$ sudo certbot --nginx -d masakhegroup.co.za -d www.masakhegroup.co.za
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for masakhegroup.co.za and www.masakhegroup.co.za
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/masakhegroup.co.za/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/masakhegroup.co.za/privkey.pem
+This certificate expires on 2026-06-23.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+Deploying certificate
+Could not install certificate
+
+NEXT STEPS:
+- The certificate was saved, but could not be installed (installer: nginx). After fixing the error shown below, try installing it again by running:
+  certbot install --cert-name masakhegroup.co.za
+
+Could not automatically find a matching server block for masakhegroup.co.za. Set the `server_name` directive to use the Nginx installer.
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
+ubuntu@masahke-group:~/masakhe-growth-hub$
