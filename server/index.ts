@@ -28,6 +28,7 @@ import { campaignsRouter } from "./campaigns";
 import { emailSettingsRouter } from "./email-settings";
 import { ficaDocsRouter } from "./fica-docs";
 import path from "path";
+import { queryOne } from "./db";
 
 async function main() {
   await runMigrations();

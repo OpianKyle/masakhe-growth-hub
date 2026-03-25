@@ -336,6 +336,9 @@ export default function WebsiteBuilder() {
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
+  const [customDomain, setCustomDomain] = useState("");
+  const [savedDomain, setSavedDomain] = useState<string | null>(null);
+  const [savingDomain, setSavingDomain] = useState(false);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -355,6 +358,10 @@ export default function WebsiteBuilder() {
         setSiteId(existing.id);
         if (existing.status === "published") {
           setPublishedUrl(`${window.location.origin}/site/${existing.slug}`);
+        }
+        if (existing.custom_domain) {
+          setSavedDomain(existing.custom_domain);
+          setCustomDomain(existing.custom_domain);
         }
         setLastSaved(new Date(existing.updated_at || existing.created_at).toLocaleTimeString());
       }
@@ -459,6 +466,30 @@ export default function WebsiteBuilder() {
       }
     } catch {
       toast.error("Network error saving draft");
+    }
+  };
+
+  const saveDomain = async () => {
+    if (!siteId) { toast.error("Save your site first before setting a custom domain"); return; }
+    setSavingDomain(true);
+    try {
+      const res = await fetch(`/api/websites/${siteId}/domain`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ customDomain: customDomain.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSavedDomain(data.customDomain || null);
+        toast.success(data.customDomain ? "Custom domain saved!" : "Custom domain removed");
+      } else {
+        toast.error(data.error || "Failed to save domain");
+      }
+    } catch {
+      toast.error("Network error saving domain");
+    } finally {
+      setSavingDomain(false);
     }
   };
 
@@ -619,6 +650,44 @@ export default function WebsiteBuilder() {
             </div>
           </div>
         )}
+
+        <div className="mx-4 mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+          <p className="text-[10px] font-bold text-blue-800 uppercase">Custom Domain</p>
+          <div className="flex gap-1">
+            <Input
+              value={customDomain}
+              onChange={(e) => setCustomDomain(e.target.value.replace(/^https?:\/\//, "").replace(/\/$/, ""))}
+              className="bg-white text-[11px] h-7"
+              placeholder="e.g. www.mybusiness.co.za"
+            />
+            <Button size="sm" className="h-7 text-[11px] px-2 shrink-0" onClick={saveDomain} disabled={savingDomain}>
+              {savingDomain ? "..." : "Save"}
+            </Button>
+          </div>
+          {savedDomain && (
+            <div className="space-y-1.5 pt-1 border-t border-blue-200">
+              <p className="text-[10px] font-semibold text-blue-700">DNS Records to add in Xneelo / your registrar:</p>
+              <div className="rounded bg-white border border-blue-100 p-2 font-mono text-[10px] space-y-1 text-slate-700">
+                <div className="flex gap-2">
+                  <span className="text-blue-500 w-10 shrink-0">Type</span>
+                  <span className="text-blue-500 w-14 shrink-0">Name</span>
+                  <span className="text-blue-500">Value</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="w-10 shrink-0">CNAME</span>
+                  <span className="w-14 shrink-0">{savedDomain.startsWith("www.") ? "www" : savedDomain.split(".")[0]}</span>
+                  <span className="break-all">masakhegroup.co.za</span>
+                </div>
+                <div className="flex gap-2 text-slate-400">
+                  <span className="w-10 shrink-0">A</span>
+                  <span className="w-14 shrink-0">@</span>
+                  <span>{"<Your Xneelo server IP>"}</span>
+                </div>
+              </div>
+              <p className="text-[9px] text-blue-600">After saving DNS records, allow up to 24 hours for propagation.</p>
+            </div>
+          )}
+        </div>
 
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
