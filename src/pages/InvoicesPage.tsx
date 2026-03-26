@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw } from "lucide-react";
 
 interface InvoiceItem {
   name: string;
@@ -28,12 +28,27 @@ interface Invoice {
   vat_cents: number;
   items: InvoiceItem[];
   status: string;
+  type: string;
+  template: number;
   created_at: string;
 }
 
+const TEMPLATES = [
+  { id: 1, name: "Classic", color: "#156C41", bg: "bg-emerald-700" },
+  { id: 2, name: "Modern", color: "#173872", bg: "bg-blue-900" },
+  { id: 3, name: "Bold", color: "#272727", bg: "bg-neutral-800", accent: "#D96508" },
+  { id: 4, name: "Corporate", color: "#1E59B8", bg: "bg-blue-600" },
+  { id: 5, name: "Elegant", color: "#841212", bg: "bg-red-800" },
+  { id: 6, name: "Vibrant", color: "#6B21B0", bg: "bg-purple-700" },
+];
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [activeTab, setActiveTab] = useState<"invoice" | "quote">("invoice");
   const [showCreate, setShowCreate] = useState(false);
+  const [docType, setDocType] = useState<"invoice" | "quote">("invoice");
+  const [selectedTemplate, setSelectedTemplate] = useState(1);
+
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
@@ -48,7 +63,7 @@ export default function InvoicesPage() {
 
   const handleExport = async () => {
     const res = await fetch("/api/invoices/export", { credentials: "include" });
-    if (!res.ok) { toast.error("Failed to export invoices"); return; }
+    if (!res.ok) { toast.error("Failed to export"); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -63,18 +78,14 @@ export default function InvoicesPage() {
     if (!file) return;
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/invoices/import", {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
+    const res = await fetch("/api/invoices/import", { method: "POST", credentials: "include", body: formData });
     if (res.ok) {
       const data = await res.json();
       toast.success(`Imported ${data.count} invoice${data.count !== 1 ? "s" : ""}`);
       loadInvoices();
     } else {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Failed to import invoices");
+      toast.error(data.error || "Failed to import");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -98,6 +109,15 @@ export default function InvoicesPage() {
   const vatAmount = vatEnabled ? subtotal * 0.15 : 0;
   const total = subtotal + vatAmount;
 
+  const openCreate = (type: "invoice" | "quote") => {
+    setDocType(type);
+    setActiveTab(type);
+    setSelectedTemplate(1);
+    setPaymentTerms(type === "quote" ? "30 days" : "Due within 7 days");
+    setShowCreate(true);
+    setEditingId(null);
+  };
+
   const handleCreate = async () => {
     if (!customerName.trim()) { toast.error("Customer name is required"); return; }
     if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
@@ -108,38 +128,40 @@ export default function InvoicesPage() {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
-        customerName,
-        customerEmail: customerEmail || undefined,
+        customerName, customerEmail: customerEmail || undefined,
         customerAddress: customerAddress || undefined,
         customerPhone: customerPhone || undefined,
         reference: reference || undefined,
         paymentTerms: paymentTerms || undefined,
         notes: notes || undefined,
-        items,
-        vatEnabled,
+        items, vatEnabled,
+        type: docType,
+        template: selectedTemplate,
       }),
     });
 
     if (res.ok) {
       const data = await res.json();
-      toast.success(`Invoice ${data.invoiceNumber} created`);
+      toast.success(`${docType === "quote" ? "Quote" : "Invoice"} ${data.invoiceNumber} created`);
       resetForm();
       setShowCreate(false);
       loadInvoices();
     } else {
       const data = await res.json();
-      toast.error(data.error || "Failed to create invoice");
+      toast.error(data.error || "Failed to create");
     }
   };
 
   const handleEdit = (inv: Invoice) => {
     setEditingId(inv.id);
+    setDocType(inv.type as "invoice" | "quote");
+    setSelectedTemplate(inv.template || 1);
     setCustomerName(inv.customer_name);
     setCustomerEmail(inv.customer_email || "");
     setCustomerAddress(inv.customer_address || "");
     setCustomerPhone(inv.customer_phone || "");
     setReference(inv.reference || "");
-    setPaymentTerms(inv.payment_terms || "Due within 7 days");
+    setPaymentTerms(inv.payment_terms || (inv.type === "quote" ? "30 days" : "Due within 7 days"));
     setNotes(inv.notes || "");
     setItems(inv.items.length > 0 ? inv.items : [{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(inv.vat_enabled);
@@ -149,15 +171,12 @@ export default function InvoicesPage() {
   const resetForm = () => {
     setEditingId(null);
     setShowCreate(false);
-    setCustomerName("");
-    setCustomerEmail("");
-    setCustomerAddress("");
-    setCustomerPhone("");
-    setReference("");
+    setCustomerName(""); setCustomerEmail(""); setCustomerAddress("");
+    setCustomerPhone(""); setReference(""); setNotes("");
     setPaymentTerms("Due within 7 days");
-    setNotes("");
     setItems([{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(true);
+    setSelectedTemplate(1);
   };
 
   const handleUpdate = async () => {
@@ -177,18 +196,31 @@ export default function InvoicesPage() {
         reference: reference || undefined,
         payment_terms: paymentTerms || undefined,
         notes: notes || undefined,
-        items,
-        vat_enabled: vatEnabled,
+        items, vat_enabled: vatEnabled,
+        template: selectedTemplate,
       }),
     });
 
     if (res.ok) {
-      toast.success("Invoice updated");
+      toast.success(`${docType === "quote" ? "Quote" : "Invoice"} updated`);
       resetForm();
       loadInvoices();
     } else {
       const data = await res.json();
-      toast.error(data.error || "Failed to update invoice");
+      toast.error(data.error || "Failed to update");
+    }
+  };
+
+  const handleConvert = async (inv: Invoice) => {
+    const res = await fetch(`/api/invoices/${inv.id}/convert`, { method: "POST", credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      toast.success(`Quote converted to Invoice ${data.invoiceNumber}`);
+      setActiveTab("invoice");
+      loadInvoices();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || "Failed to convert");
     }
   };
 
@@ -204,12 +236,14 @@ export default function InvoicesPage() {
     URL.revokeObjectURL(url);
   };
 
+  const filtered = invoices.filter(inv => (inv.type || "invoice") === activeTab);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-heading">Quotes/Invoices</h2>
-          <p className="text-muted-foreground">Create and manage your invoices</p>
+          <h2 className="text-2xl font-bold font-heading">Quotes & Invoices</h2>
+          <p className="text-muted-foreground">Create and manage your quotes and invoices</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport}>
@@ -218,20 +252,68 @@ export default function InvoicesPage() {
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
-          <Button onClick={() => setShowCreate(true)} className="gradient-hero text-white">
+          <Button variant="outline" onClick={() => openCreate("quote")} className="border-primary text-primary">
+            <Plus className="h-4 w-4 mr-2" /> New Quote
+          </Button>
+          <Button onClick={() => openCreate("invoice")} className="gradient-hero text-white">
             <Plus className="h-4 w-4 mr-2" /> New Invoice
           </Button>
         </div>
         <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
       </div>
 
-      {/* Create / Edit Invoice Form */}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        {(["invoice", "quote"] as const).map((tab) => {
+          const count = invoices.filter(i => (i.type || "invoice") === tab).length;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab === "invoice" ? "Invoices" : "Quotes"} <span className="ml-1 text-xs opacity-70">({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Create / Edit Form */}
       {(showCreate || editingId !== null) && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
           <Card className="p-6 border-primary/20">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">{editingId ? "Edit Invoice" : "Create Invoice"}</h3>
+              <h3 className="text-lg font-bold">
+                {editingId
+                  ? `Edit ${docType === "quote" ? "Quote" : "Invoice"}`
+                  : `Create ${docType === "quote" ? "Quote" : "Invoice"}`}
+              </h3>
               <Button variant="ghost" size="icon" onClick={resetForm}><X className="h-4 w-4" /></Button>
+            </div>
+
+            {/* Template Selector */}
+            <div className="mb-6">
+              <Label className="text-xs mb-2 block">Choose Template</Label>
+              <div className="flex gap-3 flex-wrap">
+                {TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => setSelectedTemplate(tpl.id)}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${
+                      selectedTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <div className={`w-16 h-10 rounded ${tpl.bg} flex items-end pb-1 px-1`}>
+                      <div className="w-full h-1 bg-white/30 rounded-sm" />
+                    </div>
+                    <span className="text-xs font-medium">{tpl.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -256,8 +338,8 @@ export default function InvoicesPage() {
                 <Input value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
               </div>
               <div>
-                <Label className="text-xs">Payment Terms</Label>
-                <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. Due within 7 days" />
+                <Label className="text-xs">{docType === "quote" ? "Quote Valid For" : "Payment Terms"}</Label>
+                <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder={docType === "quote" ? "e.g. 30 days" : "e.g. Due within 7 days"} />
               </div>
             </div>
 
@@ -280,9 +362,7 @@ export default function InvoicesPage() {
                   <div className="col-span-2">
                     <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-9 text-sm" placeholder="0.00" />
                   </div>
-                  <div className="col-span-2 text-right font-semibold text-sm">
-                    R{(item.qty * item.unitPrice).toFixed(2)}
-                  </div>
+                  <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
                   <div className="col-span-1 text-right">
                     {items.length > 1 && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => removeItem(i)}>
@@ -310,24 +390,16 @@ export default function InvoicesPage() {
 
             <div className="border-t pt-4 flex flex-col items-end gap-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer mb-2 self-start">
-                <input
-                  type="checkbox"
-                  checked={vatEnabled}
-                  onChange={(e) => setVatEnabled(e.target.checked)}
-                  className="rounded"
-                />
+                <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} className="rounded" />
                 <span>Include VAT (15%)</span>
               </label>
-
               <div className="w-full max-w-xs space-y-1 text-sm">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>R{subtotal.toFixed(2)}</span>
+                  <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
                 </div>
                 {vatEnabled && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>VAT (15%)</span>
-                    <span>R{vatAmount.toFixed(2)}</span>
+                    <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base border-t pt-1">
@@ -335,13 +407,14 @@ export default function InvoicesPage() {
                   <span className="text-primary">R{total.toFixed(2)}</span>
                 </div>
               </div>
-
               <div className="flex gap-2 mt-3">
                 <Button variant="ghost" onClick={resetForm}>Cancel</Button>
                 {editingId ? (
                   <Button onClick={handleUpdate} className="gradient-hero text-white">Save Changes</Button>
                 ) : (
-                  <Button onClick={handleCreate} className="gradient-hero text-white">Create Invoice</Button>
+                  <Button onClick={handleCreate} className="gradient-hero text-white">
+                    Create {docType === "quote" ? "Quote" : "Invoice"}
+                  </Button>
                 )}
               </div>
             </div>
@@ -349,52 +422,74 @@ export default function InvoicesPage() {
         </motion.div>
       )}
 
-      {/* Invoice List */}
+      {/* List */}
       <Card className="overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left p-3 font-semibold">Invoice #</th>
+              <th className="text-left p-3 font-semibold">{activeTab === "quote" ? "Quote #" : "Invoice #"}</th>
               <th className="text-left p-3 font-semibold">Customer</th>
+              <th className="text-left p-3 font-semibold">Template</th>
               <th className="text-left p-3 font-semibold">Items</th>
-              <th className="text-right p-3 font-semibold">Total (incl. VAT)</th>
+              <th className="text-right p-3 font-semibold">Total</th>
               <th className="text-left p-3 font-semibold">Date</th>
               <th className="text-right p-3 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
-              <tr key={inv.id} className="border-b hover:bg-muted/30 transition-colors">
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="font-mono font-medium">{inv.invoice_number}</span>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <div className="font-medium">{inv.customer_name}</div>
-                  {inv.customer_email && <div className="text-xs text-muted-foreground">{inv.customer_email}</div>}
-                </td>
-                <td className="p-3 text-muted-foreground">
-                  {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
-                  {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
-                </td>
-                <td className="p-3 text-right font-bold text-primary">R{(inv.total_cents / 100).toFixed(2)}</td>
-                <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("en-ZA")}</td>
-                <td className="p-3 text-right">
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
-                      <Download className="h-3.5 w-3.5 mr-1" /> PDF
-                    </Button>
-                  </div>
+            {filtered.map((inv) => {
+              const tpl = TEMPLATES.find(t => t.id === (inv.template || 1)) || TEMPLATES[0];
+              return (
+                <tr key={inv.id} className="border-b hover:bg-muted/30 transition-colors">
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="font-mono font-medium">{inv.invoice_number}</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="font-medium">{inv.customer_name}</div>
+                    {inv.customer_email && <div className="text-xs text-muted-foreground">{inv.customer_email}</div>}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-sm ${tpl.bg}`} />
+                      <span className="text-xs text-muted-foreground">{tpl.name}</span>
+                    </div>
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
+                    {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
+                  </td>
+                  <td className="p-3 text-right font-bold text-primary">R{(inv.total_cents / 100).toFixed(2)}</td>
+                  <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("en-ZA")}</td>
+                  <td className="p-3 text-right">
+                    <div className="flex gap-1 justify-end">
+                      {inv.type === "quote" && (
+                        <Button variant="outline" size="sm" onClick={() => handleConvert(inv)} title="Convert to Invoice">
+                          <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
+                        <Download className="h-3.5 w-3.5 mr-1" /> PDF
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  No {activeTab === "quote" ? "quotes" : "invoices"} yet.
+                  <button onClick={() => openCreate(activeTab)} className="ml-2 text-primary underline underline-offset-2">
+                    Create your first {activeTab === "quote" ? "quote" : "invoice"}.
+                  </button>
                 </td>
               </tr>
-            ))}
-            {invoices.length === 0 && (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No invoices yet. Create your first invoice above.</td></tr>
             )}
           </tbody>
         </table>
