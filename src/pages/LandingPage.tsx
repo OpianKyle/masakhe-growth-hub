@@ -1,9 +1,8 @@
 import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
 import {
-  ArrowRight, Globe, Smartphone, BarChart3, Bot, FileText, Shield,
-  Megaphone, Check, Wallet, Headphones, ClipboardCheck,
-  TrendingUp, ChevronRight, Users, Zap, Lock
+  ArrowRight, Globe, Smartphone, BarChart3, FileText, Shield,
+  Megaphone, Check, Headphones, Users, Zap, Lock, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -21,25 +20,18 @@ const fadeUp = {
 };
 
 const modules = [
-  { icon: Bot,        title: "AI Smart Registration",  description: "CIPC integration, auto-fill business profiles, and intelligent onboarding in minutes.", tag: "Registration" },
-  { icon: Globe,      title: "AI Website Builder",      description: "Generate a professional website in minutes with AI-powered content and design.",           tag: "Online Presence" },
-  { icon: Smartphone, title: "Social Media Launch",     description: "Automated social media setup with AI-generated content calendars and visuals.",           tag: "Marketing" },
-  { icon: Megaphone,  title: "AI Campaign Builder",     description: "Set-and-forget advertising across Google, Facebook, and Instagram with AI optimisation.", tag: "Advertising" },
-  { icon: BarChart3,  title: "AI Bookkeeping Lite",     description: "Bank integration, smart categorisation, invoicing, and cash flow projections.",           tag: "Finance" },
-  { icon: FileText,   title: "Tax & Compliance",        description: "Automated SARS submissions, VAT201 generation, and compliance monitoring.",               tag: "Compliance" },
-];
-
-const stats = [
-  { value: "15,000+", label: "SMMEs Registered" },
-  { value: "85%",     label: "Tax Compliance Rate" },
-  { value: "R2.3B",   label: "Revenue Generated" },
-  { value: "12,000+", label: "Jobs Created" },
+  { icon: Globe,      title: "AI Website Builder",      description: "Generate a professional business website in minutes. Choose from industry templates, answer a few questions, and go live.", tag: "Online Presence" },
+  { icon: Smartphone, title: "Social Media Hub",         description: "Create, schedule, and publish posts across your social media pages from a single dashboard.", tag: "Marketing" },
+  { icon: FileText,   title: "Invoicing & Quotes",       description: "Create branded invoices and quotes, choose from 6 professional PDF templates, and track outstanding payments.", tag: "Finance" },
+  { icon: Wallet,     title: "Financial Tracking",       description: "Log income and expenses, categorise transactions, and get a clear picture of your business finances.", tag: "Finance" },
+  { icon: Users,      title: "Client Management",        description: "Keep track of all your clients, manage contacts, and build lasting business relationships from one place.", tag: "CRM" },
+  { icon: Headphones, title: "Payroll Management",       description: "Manage employee salaries, generate payslips, and keep your payroll records organised and accurate.", tag: "HR" },
 ];
 
 const howItWorks = [
-  { step: "01", title: "Register your business", desc: "Create your account and complete our guided onboarding in under 10 minutes.", icon: Lock },
-  { step: "02", title: "Set up your digital presence", desc: "Choose a template, answer five questions, and your professional website goes live ", icon: Globe },
-  { step: "03", title: "Access funding & grow", desc: "Use your compliance score to unlock SEFA, SEDA, and DTI funding. Manage payroll, invoices, and social media from one dashboard.", icon: TrendingUp },
+  { step: "01", title: "Create your account", desc: "Sign up in minutes and complete your business profile with guided onboarding.", icon: Lock },
+  { step: "02", title: "Set up your digital presence", desc: "Use the AI website builder to create a professional site. Connect your social media and start publishing content.", icon: Globe },
+  { step: "03", title: "Run your business", desc: "Manage invoices, track finances, handle payroll, and grow your client base — all from one dashboard.", icon: Zap },
 ];
 
 const pricingPlans = [
@@ -49,7 +41,7 @@ const pricingPlans = [
     price: "R599",
     period: "/month",
     description: "Everything to get your SMME online and running.",
-    features: ["Overview Dashboard", "Website Builder", "Social Media Builder", "Transactions", "Basic Support"],
+    features: ["Overview Dashboard", "Website Builder", "Social Media Hub", "Financial Tracking", "Basic Support"],
     popular: false,
   },
   {
@@ -57,8 +49,8 @@ const pricingPlans = [
     name: "Enterprise Plus",
     price: "R899",
     period: "/month",
-    description: "Enterprise plus business tools and employee management.",
-    features: ["Everything in Enterprise", "Business Toolkit", "Employee Management", "Priority Support"],
+    description: "Business tools and employee management included.",
+    features: ["Everything in Enterprise", "Invoicing & Quotes", "Client Management", "Payroll Management", "Priority Support"],
     popular: true,
   },
   {
@@ -66,75 +58,26 @@ const pricingPlans = [
     name: "Enterprise Premium",
     price: "R1,499",
     period: "/month",
-    description: "Full suite with payroll, client and campaign management.",
-    features: ["Everything in Enterprise Plus", "Payroll Management", "Client Management", "Campaign Management", "Dedicated Support"],
+    description: "Full suite with all modules and dedicated support.",
+    features: ["Everything in Enterprise Plus", "Unlimited Invoices & Quotes", "Advanced Payroll", "Premium Support"],
     popular: false,
   },
-];
-
-const testimonials = [
-  { name: "Sipho Dlamini",   role: "Construction Business, Pretoria",    text: "The funding toolkit alone is worth it. We accessed R600,000 in SEFA funding within two months of signing up.", initials: "SD", gradient: "from-emerald-500 to-teal-600" },
-  { name: "Priya Naidoo",    role: "Accounting Practice, Durban",        text: "The payroll module saves us 8 hours a month. PAYE calculations are accurate and the payslips look professional.", initials: "PN", gradient: "from-purple-500 to-violet-600" },
-  { name: "Marcus Petersen", role: "Retail Shop Owner, Cape Town",       text: "My website was live on a Monday. By Friday I had three new customer enquiries through the WhatsApp button.", initials: "MP", gradient: "from-blue-500 to-indigo-600" },
-  { name: "Nomsa Khumalo",   role: "Catering & Events, Johannesburg",    text: "I used to dread tax season. Now my VAT returns are automated and I always know where my business stands financially.", initials: "NK", gradient: "from-rose-500 to-pink-600" },
-  { name: "Andile Mokoena",  role: "IT Services, Midrand",               text: "The social media scheduler is a game-changer. My clients see consistent content even when I'm out on site.", initials: "AM", gradient: "from-amber-500 to-orange-600" },
-  { name: "Fatima Essop",    role: "Beauty & Wellness Studio, Bellville", text: "Within three weeks I had a professional website, branded invoices, and my first Google Business review. Incredible.", initials: "FE", gradient: "from-cyan-500 to-sky-600" },
-];
-
-const complianceBadges = [
-  { label: "POPIA Compliant", color: "border-blue-200 text-blue-700 bg-blue-50" },
-  { label: "SARS Ready", color: "border-emerald-200 text-emerald-700 bg-emerald-50" },
-  { label: "BEE Verified", color: "border-amber-200 text-amber-700 bg-amber-50" },
-  { label: "CIPC Integrated", color: "border-purple-200 text-purple-700 bg-purple-50" },
-  { label: "SEFA Partner", color: "border-red-200 text-red-700 bg-red-50" },
-  { label: "SEDA Aligned", color: "border-teal-200 text-teal-700 bg-teal-50" },
 ];
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Helmet>
-        <title>Masakhe | South Africa's #1 SMME Business Platform</title>
-        <meta name="description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media tools — all in one platform. From R599/month." />
-        <meta name="keywords" content="SMME South Africa, business registration, CIPC, SARS compliance, tax, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
+        <title>Masakhe | South African SMME Business Platform</title>
+        <meta name="description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media management and client tools — all in one platform. From R599/month." />
+        <meta name="keywords" content="SMME South Africa, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
         <link rel="canonical" href="https://masakhegroup.co.za/" />
-        <meta property="og:title" content="Masakhe | South Africa's #1 SMME Business Platform" />
-        <meta property="og:description" content="Run your South African SMME smarter. Business registration, tax compliance, invoicing, payroll, AI website builder & social media — all in one." />
+        <meta property="og:title" content="Masakhe | South African SMME Business Platform" />
+        <meta property="og:description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media — all in one." />
         <meta property="og:url" content="https://masakhegroup.co.za/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:title" content="Masakhe | South Africa's SMME Business Platform" />
-        <meta name="twitter:description" content="All-in-one platform for South African SMMEs. Register, comply, grow." />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "What is Masakhe?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe is South Africa's all-in-one SMME business platform offering business registration, tax compliance, invoicing, payroll, AI website builder, social media management, and access to funding." }
-            },
-            {
-              "@type": "Question",
-              "name": "How much does Masakhe cost?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Masakhe plans start from R599/month for the Basic plan, with Pro at R2,500/month and Enterprise at R5,500/month." }
-            },
-            {
-              "@type": "Question",
-              "name": "Does Masakhe help with CIPC business registration?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe integrates with CIPC to help South African entrepreneurs register their businesses quickly with AI-assisted onboarding." }
-            },
-            {
-              "@type": "Question",
-              "name": "Can I use Masakhe for SARS tax compliance?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe automates SARS submissions, VAT201 generation, and compliance monitoring to keep your business tax-compliant." }
-            },
-            {
-              "@type": "Question",
-              "name": "Does Masakhe have a website builder?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Masakhe includes an AI-powered website builder with 44 industry-specific templates. Answer five questions and your professional website goes live in minutes." }
-            }
-          ]
-        })}</script>
+        <meta name="twitter:description" content="All-in-one platform for South African SMMEs. Build, invoice, grow." />
       </Helmet>
 
       {/* ── Nav ── */}
@@ -145,7 +88,7 @@ export default function LandingPage() {
             <span className="text-xl font-bold font-heading text-slate-900">Masakhe</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {["Platform", "Features", "Pricing", "Impact"].map((item) => (
+            {["Platform", "Features", "Pricing"].map((item) => (
               <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-slate-500 hover:text-slate-900 transition-colors">{item}</a>
             ))}
           </div>
@@ -160,7 +103,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero: full-bleed cinematic ── */}
+      {/* ── Hero ── */}
       <section className="relative pt-16 min-h-screen flex items-center overflow-hidden bg-slate-950">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/30" />
@@ -170,7 +113,7 @@ export default function LandingPage() {
           <motion.div initial="hidden" animate="visible" className="max-w-2xl space-y-8">
             <motion.div variants={fadeUp} custom={0}>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-1.5 text-xs font-semibold text-blue-300 backdrop-blur-sm">
-                <Shield className="h-3 w-3" /> South Africa's #1 SMME Platform
+                <Shield className="h-3 w-3" /> Built for South African SMMEs
               </span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-5xl md:text-7xl font-bold font-heading leading-[1.05] text-white">
@@ -180,7 +123,7 @@ export default function LandingPage() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">together</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-lg md:text-xl text-white/60 max-w-xl leading-relaxed">
-              From registration to digital presence, invoicing, payroll and social media to business plans — everything your SMME needs to thrive in the digital economy.
+              Website builder, invoicing, payroll, social media, and client management — everything your SMME needs to grow, in one place.
             </motion.p>
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 pt-2">
               <Link to="/register">
@@ -194,18 +137,6 @@ export default function LandingPage() {
                 </Button>
               </Link>
             </motion.div>
-            <motion.div variants={fadeUp} custom={4} className="flex items-center gap-4 pt-4">
-              <div className="flex -space-x-2">
-                {["bg-blue-500","bg-emerald-500","bg-purple-500","bg-amber-500"].map((c, i) => (
-                  <div key={i} className={`h-8 w-8 rounded-full border-2 border-slate-950 ${c} flex items-center justify-center text-white text-xs font-bold`}>
-                    {["T","S","P","M"][i]}
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-white/50">
-                <strong className="text-white font-semibold">15,000+</strong> South African businesses growing with Masakhe
-              </p>
-            </motion.div>
           </motion.div>
         </div>
 
@@ -215,34 +146,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats: dark numbered strip ── */}
-      <section id="impact" className="bg-slate-900 py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x divide-white/10">
-            {stats.map((stat, i) => (
-              <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center md:px-10">
-                <p className="text-4xl md:text-5xl font-bold font-heading text-white">{stat.value}</p>
-                <p className="text-sm text-slate-400 mt-2 font-medium">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Compliance Badges strip ── */}
-      <section className="bg-slate-50 border-y border-slate-100 py-5">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {complianceBadges.map((b) => (
-              <span key={b.label} className={`inline-flex items-center gap-1.5 text-xs font-semibold border rounded-full px-3 py-1.5 ${b.color}`}>
-                <Check className="h-3 w-3" /> {b.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Platform Modules: large numbered editorial rows ── */}
+      {/* ── Platform Modules ── */}
       <section id="platform" className="py-28 bg-white">
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-[1fr_2fr] gap-16 items-start">
@@ -252,7 +156,7 @@ export default function LandingPage() {
                 Six tools.<br />One dashboard.
               </h2>
               <p className="text-slate-500 mt-5 text-lg leading-relaxed">
-                Every module built exclusively for South African SMMEs — no global generic software, no complexity.
+                Every module built for South African SMMEs — no complexity, no generic software.
               </p>
               <Link to="/register" className="mt-8 inline-block">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold h-11 px-6">
@@ -284,7 +188,6 @@ export default function LandingPage() {
                     </div>
                     <p className="text-sm text-slate-500 leading-relaxed">{mod.description}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-slate-200 group-hover:text-blue-400 flex-shrink-0 mt-3 group-hover:translate-x-0.5 transition-all" />
                 </motion.div>
               ))}
             </div>
@@ -292,7 +195,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── How It Works: horizontal timeline ── */}
+      {/* ── How It Works ── */}
       <section className="py-24 bg-gradient-to-br from-slate-900 to-blue-950 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-blue-400 blur-3xl" />
@@ -305,7 +208,6 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-0 relative">
-            <div className="hidden md:block absolute top-10 left-1/6 right-1/6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             {howItWorks.map((step, i) => (
               <motion.div
                 key={step.step}
@@ -340,7 +242,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Website Builder: full-bleed image + overlay text ── */}
+      {/* ── Website Builder feature ── */}
       <section id="features" className="relative min-h-[80vh] flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${smmeOwner})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/20" />
@@ -360,10 +262,11 @@ export default function LandingPage() {
               </p>
               <ul className="space-y-3">
                 {[
-                  { label: "34 industry templates",      sub: "Bakeries, law firms, salons & more" },
-                  { label: "AI-generated content",       sub: "Hero, services, gallery, testimonials" },
-                  { label: "Multiple section types",     sub: "Mix and match to suit your business" },
-                  { label: "Instant live preview",       sub: "See your site before publishing" },
+                  { label: "Industry-specific templates",  sub: "Bakeries, law firms, salons & more" },
+                  { label: "AI-generated content",         sub: "Hero, services, gallery, testimonials" },
+                  { label: "Multiple section types",       sub: "Mix and match to suit your business" },
+                  { label: "Instant live preview",         sub: "See your site before publishing" },
+                  { label: "Custom domain support",        sub: "Connect your own .co.za domain" },
                 ].map((item) => (
                   <li key={item.label} className="flex items-start gap-3">
                     <div className="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -392,50 +295,44 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Finance & Compliance: dark left | image right ── */}
+      {/* ── Invoicing & Finance feature ── */}
       <section className="grid lg:grid-cols-2 min-h-[70vh]">
         <div className="bg-slate-900 flex items-center py-20">
           <div className="px-8 lg:px-14 xl:px-20 max-w-xl w-full">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-8">
               <div>
-                <p className="text-emerald-400 text-sm font-semibold uppercase tracking-widest mb-3">Finance & Compliance</p>
+                <p className="text-emerald-400 text-sm font-semibold uppercase tracking-widest mb-3">Invoicing & Finance</p>
                 <h2 className="text-4xl font-bold font-heading text-white leading-tight">
-                  Stay compliant.<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">Unlock funding.</span>
+                  Get paid faster.<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">Stay organised.</span>
                 </h2>
               </div>
               <p className="text-white/60 leading-relaxed text-lg">
-                Generate financial records, automate SARS submissions, and maintain a compliance score that opens doors to government funding.
+                Create professional invoices and quotes in seconds, track your income and expenses, and keep your business finances in order.
               </p>
 
-              <div className="space-y-4">
+              <ul className="space-y-4">
                 {[
-                  { label: "Tax Health Score",  value: "85/100", bar: 85,  color: "bg-emerald-500" },
-                  { label: "On-Time Rate",       value: "100%",  bar: 100, color: "bg-blue-500" },
-                  { label: "Returns Filed",      value: "24/24", bar: 100, color: "bg-purple-500" },
-                  { label: "Funding Readiness",  value: "9/10",  bar: 90,  color: "bg-amber-500" },
-                ].map((m) => (
-                  <div key={m.label}>
-                    <div className="flex justify-between text-sm mb-1.5">
-                      <span className="text-white/70 font-medium">{m.label}</span>
-                      <span className="text-white font-bold">{m.value}</span>
+                  { icon: FileText, label: "6 professional PDF templates", sub: "Classic, Modern, Bold, Corporate, Elegant, Vibrant" },
+                  { icon: Check,    label: "Quotes that convert to invoices", sub: "One click to convert any quote" },
+                  { icon: BarChart3, label: "Transaction tracking", sub: "Log and categorise income & expenses" },
+                  { icon: Wallet,   label: "VAT-inclusive invoicing", sub: "15% VAT auto-calculated" },
+                ].map((item) => (
+                  <li key={item.label} className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <item.icon className="h-4 w-4 text-emerald-400" />
                     </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${m.bar}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                        className={`h-full rounded-full ${m.color}`}
-                      />
+                    <div>
+                      <p className="text-sm font-semibold text-white">{item.label}</p>
+                      <p className="text-xs text-white/40 mt-0.5">{item.sub}</p>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
               <Link to="/register">
-                <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold h-11 px-6 mt-[30px]">
-                  Improve My Score <ArrowRight className="ml-2 h-4 w-4" />
+                <Button className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold h-11 px-6">
+                  Start Invoicing <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </motion.div>
@@ -445,145 +342,10 @@ export default function LandingPage() {
         <div className="relative overflow-hidden min-h-[50vh] lg:min-h-0">
           <img src={marketStall} alt="Market vendor" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-l from-transparent to-slate-900/20" />
-          <div className="absolute bottom-8 left-8">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-400 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-slate-900" />
-              </div>
-              <div>
-                <p className="text-white/60 text-xs">Average revenue growth</p>
-                <p className="text-white text-lg font-bold">+47% per year</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section className="py-28 relative overflow-hidden bg-white">
-        {/* subtle background decoration */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-blue-50 opacity-60 blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-indigo-50 opacity-50 blur-3xl" />
-        </div>
-
-        <div className="container mx-auto px-6 relative">
-          {/* Header */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-700 mb-5 uppercase tracking-widest">
-              ★ Customer Stories
-            </span>
-            <h2 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 mb-4">
-              Real businesses. <span className="text-blue-600">Real results.</span>
-            </h2>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              Join 15,000+ South African SMMEs already growing with Masakhe.
-            </p>
-          </motion.div>
-
-          {/* Featured testimonial */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative rounded-3xl overflow-hidden mb-8"
-            style={{ background: "linear-gradient(135deg, #1a56db 0%, #1e3a8a 60%, #0f172a 100%)" }}
-          >
-            {/* decorative large quote */}
-            <div className="absolute top-6 right-10 text-white/10 font-serif leading-none select-none pointer-events-none" style={{ fontSize: "18rem", lineHeight: 1 }}>"</div>
-            <div className="relative z-10 grid lg:grid-cols-[1fr_auto] gap-8 items-end p-10 md:p-14">
-              <div>
-                <div className="flex gap-1 mb-6">
-                  {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-2xl">★</span>)}
-                </div>
-                <p className="text-white text-xl md:text-2xl lg:text-3xl font-medium leading-relaxed max-w-3xl">
-                  "Masakhe got my business online in one day. I had my first website enquiry the same week — and the funding toolkit helped us access <span className="text-amber-300 font-bold">R800,000 from government</span> that we didn't even know was available."
-                </p>
-                <div className="mt-8 flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-base font-bold shadow-lg flex-shrink-0">TN</div>
-                  <div>
-                    <p className="text-white font-bold text-base">Thandi Nkosi</p>
-                    <p className="text-blue-200 text-sm">Fashion Designer & Owner · Soweto</p>
-                  </div>
-                </div>
-              </div>
-              <div className="hidden lg:flex flex-col gap-3 text-right shrink-0">
-                <div className="bg-white/10 backdrop-blur rounded-2xl px-6 py-4 border border-white/10">
-                  <p className="text-amber-300 text-3xl font-bold">R800k</p>
-                  <p className="text-white/70 text-xs mt-1">Funding accessed</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-2xl px-6 py-4 border border-white/10">
-                  <p className="text-emerald-300 text-3xl font-bold">1 day</p>
-                  <p className="text-white/70 text-xs mt-1">To go online</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* 6-card grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="group bg-white border border-slate-200 rounded-2xl p-7 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
-              >
-                {/* Quote mark */}
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center mb-5 flex-shrink-0`}>
-                  <span className="text-white text-2xl font-serif leading-none">"</span>
-                </div>
-
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(5)].map((_, j) => <span key={j} className="text-amber-400 text-sm">★</span>)}
-                </div>
-
-                {/* Quote */}
-                <p className="text-slate-600 text-sm leading-relaxed flex-1 mb-6">"{t.text}"</p>
-
-                {/* Divider */}
-                <div className="h-px bg-slate-100 mb-5" />
-
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm`}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-slate-900 text-sm font-semibold">{t.name}</p>
-                    <p className="text-slate-400 text-xs">{t.role}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Social proof bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4"
-          >
-            {[
-              { value: "15,000+", label: "Active businesses" },
-              { value: "4.9 / 5", label: "Average rating" },
-              { value: "R2.4B+", label: "Revenue processed" },
-              { value: "98%",    label: "Customer satisfaction" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-slate-50 rounded-2xl px-6 py-5 text-center border border-slate-100">
-                <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                <p className="text-slate-500 text-xs mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Pricing: dark full-section ── */}
+      {/* ── Pricing ── */}
       <section id="pricing" className="py-24 bg-slate-950">
         <div className="container mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
@@ -591,7 +353,7 @@ export default function LandingPage() {
               <Shield className="h-3 w-3" /> Secure Monthly Billing — Cancel Anytime
             </span>
             <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">Simple, transparent pricing</h2>
-            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start free, upgrade when ready. Cancel anytime.</p>
+            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start with a 3-day free trial. Cancel anytime.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -638,8 +400,8 @@ export default function LandingPage() {
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-3 text-sm">
                         <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 font-bold ${
-                          plan.popular 
-                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white" 
+                          plan.popular
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
                             : "bg-white/20 text-white"
                         }`}>
                           <Check className="h-3.5 w-3.5" />
@@ -665,7 +427,7 @@ export default function LandingPage() {
           </div>
 
           <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center text-sm text-slate-500 mt-8">
-            All prices in South African Rand (ZAR). Billed monthly via debit order. Cancel anytime.
+            All prices in South African Rand (ZAR). Billed monthly. Cancel anytime.
           </motion.p>
         </div>
       </section>
@@ -677,7 +439,6 @@ export default function LandingPage() {
           <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-green-600/20 blur-[120px]" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-blue-600/25 blur-[100px]" />
           <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-amber-500/15 blur-[120px]" />
-          <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-red-600/10 blur-[80px]" />
         </div>
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
         <div className="absolute top-0 left-0 right-0 flex h-1">
@@ -695,17 +456,6 @@ export default function LandingPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl mx-auto"
           >
-            <motion.span
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-5 py-2 text-xs font-semibold text-blue-300 mb-8 tracking-wider uppercase"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-              Join 15,000+ South African Entrepreneurs
-            </motion.span>
-
             <h2 className="text-5xl md:text-6xl font-black font-heading text-white leading-tight mb-6">
               Ready to grow your{" "}
               <span className="relative inline-block">
@@ -718,13 +468,13 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-lg text-slate-400 mb-10 leading-relaxed max-w-xl mx-auto">
-              Registration takes less than 5 minutes. Everything your SMME needs — website, payroll, invoicing, compliance — all in one place.
+              Sign up in minutes. Website, payroll, invoicing, and client management — all in one place.
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Link to="/register">
                 <Button className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-base h-14 px-10 rounded-xl shadow-2xl shadow-blue-600/40 hover:shadow-blue-500/50 transition-all duration-300 group">
-                  Start Free Registration
+                  Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Button>
               </Link>
@@ -736,7 +486,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-wrap gap-6 justify-center text-sm text-slate-500">
-              {["Secure monthly billing", "Cancel anytime", "POPIA compliant"].map((item) => (
+              {["3-day free trial", "Cancel anytime", "Secure monthly billing"].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-500" /> {item}
                 </span>
@@ -766,17 +516,21 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: "Platform", links: [{ label: "AI Registration", href: "#" }, { label: "Website Builder", href: "#" }, { label: "Social Media Hub", href: "#" }, { label: "Campaign Builder", href: "#" }, { label: "Payroll & HR", href: "#" }] },
-              { title: "Resources", links: [{ label: "Getting Started", href: "#" }, { label: "Funding Toolkit", href: "#" }, { label: "SARS Guide", href: "#" }, { label: "Support Centre", href: "#" }] },
-              { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Security", href: "#" }, { label: "Contact Us", href: "#" }] },
+              { title: "Platform", links: [{ label: "Website Builder", href: "#" }, { label: "Social Media Hub", href: "#" }, { label: "Invoicing & Quotes", href: "#" }, { label: "Payroll", href: "#" }, { label: "Client Management", href: "#" }] },
+              { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Pricing", href: "#pricing" }, { label: "Support", href: "#" }] },
+              { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#" }] },
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="text-xs font-bold text-white mb-4 uppercase tracking-widest">{col.title}</h4>
                 <ul className="space-y-3">
                   {col.links.map((link) => (
                     <li key={link.label}>
-                      {link.href.startsWith("/") ? (
-                        <Link to={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</Link>
+                      {link.href.startsWith("/") || link.href.startsWith("#") ? (
+                        link.href.startsWith("/") ? (
+                          <Link to={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</Link>
+                        ) : (
+                          <a href={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</a>
+                        )
                       ) : (
                         <a href={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</a>
                       )}
@@ -791,7 +545,7 @@ export default function LandingPage() {
               <img src="/masakhe-logo.png" alt="Masakhe" className="h-5 w-5 object-contain opacity-50" />
               <p className="text-sm text-slate-500">© {new Date().getFullYear()} Masakhe Business Solutions (Pty) Ltd. All rights reserved.</p>
             </div>
-            <p className="text-xs text-slate-600">Registered in South Africa · POPIA Compliant · BEE Verified</p>
+            <p className="text-xs text-slate-600">Registered in South Africa · POPIA Compliant</p>
           </div>
         </div>
       </footer>
