@@ -34,12 +34,128 @@ interface Invoice {
 }
 
 const TEMPLATES = [
-  { id: 1, name: "Classic", color: "#156C41", bg: "bg-emerald-700" },
-  { id: 2, name: "Modern", color: "#173872", bg: "bg-blue-900" },
-  { id: 3, name: "Bold", color: "#272727", bg: "bg-neutral-800", accent: "#D96508" },
-  { id: 4, name: "Corporate", color: "#1E59B8", bg: "bg-blue-600" },
-  { id: 5, name: "Elegant", color: "#841212", bg: "bg-red-800" },
-  { id: 6, name: "Vibrant", color: "#6B21B0", bg: "bg-purple-700" },
+  {
+    id: 1, name: "Classic",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="5" height="40" fill="#156C41"/>
+        <rect x="8" y="4" width="30" height="4" rx="1" fill="#156C41" opacity="0.9"/>
+        <rect x="8" y="10" width="20" height="2" rx="0.5" fill="#aaa"/>
+        <rect x="8" y="13" width="15" height="2" rx="0.5" fill="#aaa"/>
+        <rect x="8" y="18" width="54" height="1" fill="#156C41"/>
+        <rect x="8" y="22" width="54" height="5" rx="0.5" fill="#156C41"/>
+        <rect x="8" y="29" width="36" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="8" y="33" width="36" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="46" y="29" width="16" height="8" rx="1" fill="#156C41"/>
+      </svg>
+    ),
+    badgeBg: "bg-emerald-700",
+  },
+  {
+    id: 2, name: "Modern",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect x="4" y="4" width="32" height="4" rx="1" fill="#173872" opacity="0.85"/>
+        <rect x="4" y="10" width="22" height="2" rx="0.5" fill="#aaa"/>
+        <rect x="4" y="13" width="16" height="2" rx="0.5" fill="#aaa"/>
+        <rect x="40" y="3" width="20" height="16" rx="1" fill="#173872"/>
+        <rect x="43" y="6" width="14" height="3" rx="0.5" fill="#fff" opacity="0.9"/>
+        <rect x="43" y="11" width="10" height="2" rx="0.5" fill="#fff" opacity="0.6"/>
+        <rect x="43" y="14" width="12" height="2" rx="0.5" fill="#fff" opacity="0.5"/>
+        <rect x="4" y="21" width="60" height="1.5" fill="#173872"/>
+        <rect x="4" y="25" width="24" height="8" rx="1" fill="#eef0f7"/>
+        <rect x="31" y="25" width="33" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="31" y="29" width="33" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="31" y="33" width="33" height="2" rx="0.5" fill="#e5e5e5"/>
+      </svg>
+    ),
+    badgeBg: "bg-blue-900",
+  },
+  {
+    id: 3, name: "Bold",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="64" height="16" fill="#1e1e1e"/>
+        <rect y="16" width="64" height="3" fill="#D96508"/>
+        <rect x="4" y="4" width="22" height="4" rx="1" fill="#fff" opacity="0.9"/>
+        <rect x="4" y="9" width="14" height="2" rx="0.5" fill="#888"/>
+        <rect x="36" y="3" width="24" height="10" rx="0.5" fill="none"/>
+        <text x="36" y="13" fontSize="11" fontWeight="bold" fill="#D96508" fontFamily="sans-serif">BOLD</text>
+        <rect x="4" y="22" width="56" height="5" rx="0.5" fill="#1e1e1e"/>
+        <rect x="4" y="29" width="40" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="4" y="33" width="40" height="2" rx="0.5" fill="#e5e5e5"/>
+        <rect x="46" y="28" width="14" height="9" rx="1" fill="#D96508"/>
+      </svg>
+    ),
+    badgeBg: "bg-neutral-800",
+  },
+  {
+    id: 4, name: "Corporate",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="64" height="14" fill="#1E59B8"/>
+        <rect x="4" y="3" width="24" height="4" rx="1" fill="#fff" opacity="0.9"/>
+        <rect x="4" y="9" width="16" height="2" rx="0.5" fill="#8baee0"/>
+        <rect x="44" y="4" width="16" height="6" rx="0.5" fill="#fff" opacity="0.2"/>
+        <rect x="4" y="17" width="27" height="11" rx="1" fill="#EBF1FB"/>
+        <rect x="4" y="17" width="27" height="3" fill="#1E59B8"/>
+        <rect x="6" y="22" width="18" height="2" rx="0.5" fill="#999"/>
+        <rect x="6" y="25" width="14" height="2" rx="0.5" fill="#bbb"/>
+        <rect x="34" y="17" width="26" height="11" rx="1" fill="#EBF1FB"/>
+        <rect x="34" y="17" width="26" height="3" fill="#1E59B8"/>
+        <rect x="36" y="22" width="18" height="2" rx="0.5" fill="#999"/>
+        <rect x="36" y="25" width="12" height="2" rx="0.5" fill="#bbb"/>
+        <rect x="4" y="31" width="56" height="4" rx="0.5" fill="#1E59B8"/>
+      </svg>
+    ),
+    badgeBg: "bg-blue-600",
+  },
+  {
+    id: 5, name: "Elegant",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="64" height="3" fill="#841212"/>
+        <rect y="3.5" width="64" height="0.7" fill="#841212"/>
+        <rect x="10" y="7" width="44" height="4" rx="1" fill="#841212" opacity="0.85"/>
+        <rect x="18" y="12" width="28" height="1" fill="#841212"/>
+        <rect x="18" y="13.5" width="28" height="1" fill="#841212"/>
+        <rect x="16" y="17" width="32" height="3" rx="0.5" fill="#841212" opacity="0.7"/>
+        <rect x="4" y="22" width="20" height="2" rx="0.5" fill="#ddd"/>
+        <rect x="4" y="26" width="56" height="0.7" fill="#841212"/>
+        <rect x="4" y="28" width="40" height="2" rx="0.5" fill="#f5e8e8"/>
+        <rect x="4" y="32" width="40" height="2" rx="0.5" fill="#eee"/>
+        <rect x="46" y="28" width="14" height="8" rx="1" fill="none" stroke="#841212" strokeWidth="0.8"/>
+      </svg>
+    ),
+    badgeBg: "bg-red-800",
+  },
+  {
+    id: 6, name: "Vibrant",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="64" height="18" fill="#6B21B0"/>
+        <rect x="24" y="0" width="40" height="18" fill="#7c2fc0"/>
+        <rect x="40" y="0" width="24" height="18" fill="#7a29bd"/>
+        <rect x="3" y="18" width="4" height="22" fill="#6B21B0"/>
+        <rect x="9" y="4" width="24" height="4" rx="1" fill="#fff" opacity="0.9"/>
+        <rect x="9" y="10" width="16" height="2" rx="0.5" fill="#c084fc"/>
+        <rect x="36" y="2" width="16" height="8" rx="0.5" fill="none"/>
+        <text x="36" y="10" fontSize="9" fontWeight="bold" fill="#fff" fontFamily="sans-serif">VIBRANT</text>
+        <rect x="36" y="11" width="22" height="4" rx="1" fill="#200038"/>
+        <rect x="9" y="21" width="52" height="5" rx="0.5" fill="#6B21B0"/>
+        <rect x="9" y="29" width="36" height="2" rx="0.5" fill="#ead5ff"/>
+        <rect x="9" y="33" width="36" height="2" rx="0.5" fill="#ead5ff"/>
+        <rect x="47" y="29" width="14" height="8" rx="1" fill="#6B21B0"/>
+      </svg>
+    ),
+    badgeBg: "bg-purple-700",
+  },
 ];
 
 export default function InvoicesPage() {
@@ -307,8 +423,8 @@ export default function InvoicesPage() {
                       selectedTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"
                     }`}
                   >
-                    <div className={`w-16 h-10 rounded ${tpl.bg} flex items-end pb-1 px-1`}>
-                      <div className="w-full h-1 bg-white/30 rounded-sm" />
+                    <div className="w-16 h-10 rounded overflow-hidden border border-gray-100 shadow-sm">
+                      {tpl.preview}
                     </div>
                     <span className="text-xs font-medium">{tpl.name}</span>
                   </button>
@@ -453,7 +569,7 @@ export default function InvoicesPage() {
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-sm ${tpl.bg}`} />
+                      <div className={`w-4 h-4 rounded-sm ${tpl.badgeBg}`} />
                       <span className="text-xs text-muted-foreground">{tpl.name}</span>
                     </div>
                   </td>

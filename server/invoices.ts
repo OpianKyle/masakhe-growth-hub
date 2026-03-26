@@ -2,7 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
-import { PDFDocument, StandardFonts, rgb, RGB } from "pdf-lib";
+import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb, RGB } from "pdf-lib";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 export const invoiceRouter = Router();
 invoiceRouter.use(requireAuth);
 
-function getTemplateColors(template: number): { primary: RGB; accent: RGB; headerBg: RGB | null; headerText: RGB } {
+export function getTemplateColors(template: number): { primary: RGB; accent: RGB; headerBg: RGB | null; headerText: RGB } {
   switch (template) {
     case 2: return { primary: rgb(0.09, 0.22, 0.45), accent: rgb(0.09, 0.22, 0.45), headerBg: null, headerText: rgb(0, 0, 0) };
     case 3: return { primary: rgb(0.15, 0.15, 0.15), accent: rgb(0.85, 0.40, 0.05), headerBg: rgb(0.15, 0.15, 0.15), headerText: rgb(1, 1, 1) };
@@ -23,39 +23,533 @@ function getTemplateColors(template: number): { primary: RGB; accent: RGB; heade
   }
 }
 
+interface TemplateCtx {
+  page: PDFPage;
+  font: PDFFont;
+  fontBold: PDFFont;
+  logo: { image: PDFImage; w: number; h: number } | null;
+  invoice: any;
+  user: any;
+  items: any[];
+  vatEnabled: boolean;
+  vatCents: number;
+  subtotalCents: number;
+  isQuote: boolean;
+}
+
+const W = 595;
+const black = rgb(0, 0, 0);
+const white = rgb(1, 1, 1);
+const grey = rgb(0.4, 0.4, 0.4);
+const lightGrey = rgb(0.85, 0.85, 0.85);
+
+function drawCustomerInfo(ctx: TemplateCtx, x: number, y: number, labelColor: RGB): number {
+  const { page, font, fontBold, invoice, isQuote } = ctx;
+  const label = isQuote ? "QUOTE FOR:" : "BILL TO:";
+  page.drawText(label, { x, y, size: 8, font: fontBold, color: labelColor });
+  y -= 14;
+  page.drawText(invoice.customer_name, { x, y, size: 10, font: fontBold, color: black });
+  y -= 13;
+  if (invoice.customer_email) { page.drawText(invoice.customer_email, { x, y, size: 8, font, color: grey }); y -= 12; }
+  if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x, y, size: 8, font, color: grey }); y -= 12; }
+  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x, y, size: 8, font, color: grey }); y -= 12; }
+  return y;
+}
+
+function drawStandardTable(ctx: TemplateCtx, y: number, headerBg: RGB, headerText: RGB, altRowBg: RGB | null): number {
+  const { page, font, fontBold, items } = ctx;
+  page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 22, color: headerBg });
+  page.drawText("Description", { x: 56, y: y + 3, size: 9, font: fontBold, color: headerText });
+  page.drawText("Qty", { x: 325, y: y + 3, size: 9, font: fontBold, color: headerText });
+  page.drawText("Unit Price", { x: 378, y: y + 3, size: 9, font: fontBold, color: headerText });
+  page.drawText("Amount", { x: 478, y: y + 3, size: 9, font: fontBold, color: headerText });
+  y -= 26;
+  items.forEach((item: any, idx: number) => {
+    const qty = item.qty || 1;
+    const up = item.unitPrice || 0;
+    const amt = qty * up;
+    if (altRowBg && idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 18, color: altRowBg });
+    page.drawText(item.name || "Item", { x: 56, y, size: 9, font, color: black });
+    page.drawText(String(qty), { x: 330, y, size: 9, font, color: black });
+    page.drawText(`R${up.toFixed(2)}`, { x: 378, y, size: 9, font, color: black });
+    page.drawText(`R${amt.toFixed(2)}`, { x: 478, y, size: 9, font, color: black });
+    y -= 18;
+    page.drawRectangle({ x: 50, y: y + 8, width: 495, height: 0.5, color: lightGrey });
+  });
+  return y;
+}
+
+function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | null): number {
+  const { page, font, fontBold, invoice, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
+  y -= 10;
+  if (vatEnabled) {
+    page.drawText("Subtotal:", { x: 365, y, size: 9, font, color: grey });
+    page.drawText(`R${(subtotalCents / 100).toFixed(2)}`, { x: 472, y, size: 9, font, color: black }); y -= 14;
+    page.drawText("VAT (15%):", { x: 365, y, size: 9, font, color: grey });
+    page.drawText(`R${(vatCents / 100).toFixed(2)}`, { x: 472, y, size: 9, font, color: black }); y -= 6;
+    page.drawRectangle({ x: 350, y, width: 195, height: 0.5, color: grey }); y -= 4;
+    if (boxBg) {
+      page.drawRectangle({ x: 350, y: y - 8, width: 195, height: 26, color: boxBg });
+      const label = isQuote ? "ESTIMATE (incl. VAT):" : "TOTAL (incl. VAT):";
+      page.drawText(label, { x: 356, y: y + 5, size: 8, font: fontBold, color: white });
+      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 9, font: fontBold, color: white });
+    } else {
+      const label = isQuote ? "ESTIMATE (incl. VAT):" : "TOTAL (incl. VAT):";
+      page.drawText(label, { x: 356, y: y + 5, size: 10, font: fontBold, color: black });
+      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 10, font: fontBold, color: accentColor });
+    }
+    y -= 22;
+  } else {
+    page.drawRectangle({ x: 350, y, width: 195, height: 0.5, color: grey }); y -= 4;
+    if (boxBg) {
+      page.drawRectangle({ x: 350, y: y - 8, width: 195, height: 26, color: boxBg });
+      const label = isQuote ? "TOTAL ESTIMATE:" : "TOTAL:";
+      page.drawText(label, { x: 356, y: y + 5, size: 9, font: fontBold, color: white });
+      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 9, font: fontBold, color: white });
+    } else {
+      const label = isQuote ? "TOTAL ESTIMATE:" : "TOTAL:";
+      page.drawText(label, { x: 365, y: y + 5, size: 10, font: fontBold, color: black });
+      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 468, y: y + 5, size: 10, font: fontBold, color: accentColor });
+    }
+    y -= 22;
+  }
+  return y;
+}
+
+function drawFooter(ctx: TemplateCtx, y: number) {
+  const { page, font, fontBold, invoice, user, isQuote } = ctx;
+  page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: lightGrey }); y -= 16;
+  const termLabel = isQuote ? "Valid For:" : "Payment Terms:";
+  const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
+  page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
+  page.drawText(termValue, { x: 120, y, size: 9, font, color: black }); y -= 14;
+  if (invoice.notes) {
+    page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey }); y -= 12;
+    page.drawText(invoice.notes, { x: 50, y, size: 9, font, color: black }); y -= 14;
+  }
+  if (!isQuote && (user?.bank_name || user?.account_number)) {
+    page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: lightGrey }); y -= 14;
+    page.drawText("BANKING DETAILS", { x: 50, y, size: 9, font: fontBold, color: grey }); y -= 13;
+    if (user.bank_name) { page.drawText(`Bank: ${user.bank_name}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
+    if (user.account_name) { page.drawText(`Account Name: ${user.account_name}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
+    if (user.account_type) { page.drawText(`Account Type: ${user.account_type}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
+    if (user.account_number) { page.drawText(`Account Number: ${user.account_number}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
+    if (user.branch_code) { page.drawText(`Branch Code: ${user.branch_code}`, { x: 50, y, size: 8, font, color: black }); }
+  }
+  page.drawText(isQuote ? "Thank you for the opportunity!" : "Thank you for your business!", { x: 50, y: 75, size: 9, font, color: grey });
+  const footerMsg = isQuote
+    ? "This quote is valid for the period stated above. Prices are subject to change after expiry."
+    : "This invoice serves as a tax invoice in terms of Section 20 of the VAT Act.";
+  page.drawText(footerMsg, { x: 50, y: 60, size: 8, font, color: grey });
+  page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: lightGrey });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 1 — CLASSIC (Green left stripe, clean white body)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate1(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const green = rgb(0.08, 0.45, 0.27);
+  const mintBg = rgb(0.93, 0.98, 0.95);
+
+  // Thick green left accent stripe (full height)
+  page.drawRectangle({ x: 0, y: 0, width: 8, height: 842, color: green });
+
+  let y = 800;
+  if (logo) { page.drawImage(logo.image, { x: 25, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 6; }
+
+  // Business name + doc title on same line
+  const biz = user?.business_name || user?.full_name || "Business";
+  page.drawText(biz, { x: 25, y, size: 18, font: fontBold, color: green });
+  const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
+  const dtW = fontBold.widthOfTextAtSize(docTitle, 22);
+  page.drawText(docTitle, { x: W - 30 - dtW, y, size: 22, font: fontBold, color: green });
+  y -= 18;
+  if (user?.physical_address) { page.drawText(user.physical_address, { x: 25, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 25, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 25, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT No: ${user.vat_number}`, { x: 25, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg No: ${user.registration_number}`, { x: 25, y, size: 8, font, color: grey }); y -= 11; }
+
+  // Green divider line
+  y -= 6;
+  page.drawRectangle({ x: 25, y, width: 547, height: 2, color: green });
+  y -= 18;
+
+  // Meta row
+  const numLabel = isQuote ? "Quote No:" : "Invoice No:";
+  page.drawText(numLabel, { x: 25, y, size: 9, font, color: grey });
+  page.drawText(invoice.invoice_number, { x: 100, y, size: 9, font: fontBold, color: black });
+  page.drawText("Date:", { x: 370, y, size: 9, font, color: grey });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black }); y -= 14;
+  if (invoice.reference) {
+    page.drawText("Reference:", { x: 25, y, size: 9, font, color: grey });
+    page.drawText(invoice.reference, { x: 100, y, size: 9, font: fontBold, color: black }); y -= 14;
+  }
+  if (isQuote) {
+    page.drawText("Valid For:", { x: 370, y: y + 14, size: 9, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 420, y: y + 14, size: 9, font: fontBold, color: black });
+  }
+  y -= 12;
+  y = drawCustomerInfo(ctx, 25, y, green);
+  y -= 14;
+  y = drawStandardTable(ctx, y, green, white, mintBg);
+  y = drawTotals(ctx, y, green, green);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 2 — MODERN (Navy, invoice info in a navy box top-right)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate2(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const navy = rgb(0.09, 0.22, 0.45);
+  const navyLight = rgb(0.92, 0.94, 0.98);
+
+  let y = 800;
+  if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 8; }
+
+  // Navy invoice info box — top right, overlapping biz info area
+  const boxY = 800;
+  const boxH = 90;
+  page.drawRectangle({ x: 360, y: boxY - boxH, width: 185, height: boxH, color: navy });
+  const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
+  page.drawText(docTitle, { x: 380, y: boxY - 20, size: 13, font: fontBold, color: white });
+  page.drawText(invoice.invoice_number, { x: 380, y: boxY - 38, size: 10, font: fontBold, color: rgb(0.75, 0.87, 1) });
+  page.drawText("Dated:", { x: 380, y: boxY - 52, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 420, y: boxY - 52, size: 8, font: fontBold, color: white });
+  if (invoice.reference) {
+    page.drawText("Ref:", { x: 380, y: boxY - 66, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+    page.drawText(invoice.reference, { x: 404, y: boxY - 66, size: 8, font: fontBold, color: white });
+  }
+  if (isQuote) {
+    page.drawText("Valid:", { x: 380, y: boxY - 80, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+    page.drawText(invoice.payment_terms || "30 days", { x: 410, y: boxY - 80, size: 8, font: fontBold, color: white });
+  }
+
+  // Business info left side
+  const biz = user?.business_name || user?.full_name || "Business";
+  page.drawText(biz, { x: 50, y, size: 19, font: fontBold, color: navy }); y -= 19;
+  if (user?.physical_address) { page.drawText(user.physical_address, { x: 50, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 50, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 50, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 50, y, size: 8, font, color: grey }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 50, y, size: 8, font, color: grey }); y -= 11; }
+
+  // Navy bottom divider under header zone
+  const divY = Math.min(y, boxY - boxH) - 10;
+  page.drawRectangle({ x: 50, y: divY, width: 495, height: 2.5, color: navy });
+  y = divY - 18;
+
+  // Customer box (light navy background)
+  const custBoxH = 72;
+  page.drawRectangle({ x: 50, y: y - custBoxH, width: 230, height: custBoxH, color: navyLight });
+  const billLabel = isQuote ? "QUOTE FOR" : "BILL TO";
+  page.drawText(billLabel, { x: 58, y: y - 10, size: 8, font: fontBold, color: navy });
+  page.drawText(invoice.customer_name, { x: 58, y: y - 24, size: 10, font: fontBold, color: black });
+  let cy = y - 38;
+  if (invoice.customer_email) { page.drawText(invoice.customer_email, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 58, y: cy, size: 8, font, color: grey }); }
+  y -= custBoxH + 16;
+
+  y = drawStandardTable(ctx, y, navy, white, navyLight);
+  y = drawTotals(ctx, y, navy, null);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 3 — BOLD (Dark header + orange stripe, high contrast)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate3(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const dark = rgb(0.12, 0.12, 0.12);
+  const orange = rgb(0.85, 0.40, 0.05);
+  const warmTint = rgb(1.0, 0.96, 0.90);
+
+  // Full dark header
+  const headerH = 120;
+  page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: dark });
+  // Orange stripe below header
+  page.drawRectangle({ x: 0, y: 842 - headerH - 7, width: W, height: 7, color: orange });
+
+  let y = 824;
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 4; }
+
+  const biz = user?.business_name || user?.full_name || "Business";
+  page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); }
+
+  // Large doc title right side in orange
+  const docTitle = isQuote ? "QUOTE" : "INVOICE";
+  const dtW = fontBold.widthOfTextAtSize(docTitle, 34);
+  page.drawText(docTitle, { x: W - 35 - dtW, y: 824, size: 34, font: fontBold, color: orange });
+  page.drawText(invoice.invoice_number, { x: W - 35 - fontBold.widthOfTextAtSize(invoice.invoice_number, 10), y: 790, size: 10, font: fontBold, color: rgb(0.88, 0.88, 0.88) });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: W - 35 - font.widthOfTextAtSize(new Date(invoice.created_at).toLocaleDateString("en-ZA"), 9), y: 777, size: 9, font, color: rgb(0.65, 0.65, 0.65) });
+  if (invoice.reference) { page.drawText(`Ref: ${invoice.reference}`, { x: W - 35 - font.widthOfTextAtSize(`Ref: ${invoice.reference}`, 9), y: 764, size: 9, font, color: rgb(0.65, 0.65, 0.65) }); }
+
+  y = 842 - headerH - 7 - 18;
+
+  // Customer info
+  y = drawCustomerInfo(ctx, 50, y, orange);
+  y -= 14;
+
+  // Items table with dark header
+  y = drawStandardTable(ctx, y, dark, white, warmTint);
+  y = drawTotals(ctx, y, orange, orange);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 4 — CORPORATE (Blue header, two bordered info boxes)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate4(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const blue = rgb(0.12, 0.35, 0.72);
+  const skyBlue = rgb(0.91, 0.95, 1.0);
+  const midBlue = rgb(0.60, 0.75, 0.95);
+
+  const headerH = 108;
+  page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: blue });
+
+  let y = 822;
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); }
+
+  const biz = user?.business_name || user?.full_name || "Business";
+  page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 30, y, size: 8, font, color: midBlue }); }
+
+  const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
+  const dtW = fontBold.widthOfTextAtSize(docTitle, 15);
+  page.drawText(docTitle, { x: W - 35 - dtW, y: 822, size: 15, font: fontBold, color: white });
+
+  y = 842 - headerH - 15;
+
+  // Two side-by-side info boxes
+  const boxH = 80;
+  const boxY = y - boxH;
+
+  // Bill To box
+  page.drawRectangle({ x: 50, y: boxY, width: 232, height: boxH, color: skyBlue });
+  page.drawRectangle({ x: 50, y: boxY + boxH - 10, width: 232, height: 10, color: blue });
+  const billLabel = isQuote ? "QUOTE FOR" : "BILL TO";
+  page.drawText(billLabel, { x: 56, y: boxY + boxH - 8, size: 8, font: fontBold, color: white });
+  page.drawText(invoice.customer_name, { x: 56, y: boxY + boxH - 24, size: 10, font: fontBold, color: black });
+  let cy = boxY + boxH - 38;
+  if (invoice.customer_email) { page.drawText(invoice.customer_email, { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 56, y: cy, size: 8, font, color: grey }); }
+
+  // Invoice Details box
+  page.drawRectangle({ x: 313, y: boxY, width: 232, height: boxH, color: skyBlue });
+  page.drawRectangle({ x: 313, y: boxY + boxH - 10, width: 232, height: 10, color: blue });
+  page.drawText("INVOICE DETAILS", { x: 319, y: boxY + boxH - 8, size: 8, font: fontBold, color: white });
+  const numLabel = isQuote ? "Quote No:" : "Invoice No:";
+  page.drawText(numLabel, { x: 319, y: boxY + boxH - 22, size: 8, font, color: grey });
+  page.drawText(invoice.invoice_number, { x: 395, y: boxY + boxH - 22, size: 8, font: fontBold, color: black });
+  page.drawText("Date:", { x: 319, y: boxY + boxH - 34, size: 8, font, color: grey });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 395, y: boxY + boxH - 34, size: 8, font: fontBold, color: black });
+  if (invoice.reference) {
+    page.drawText("Ref:", { x: 319, y: boxY + boxH - 46, size: 8, font, color: grey });
+    page.drawText(invoice.reference, { x: 395, y: boxY + boxH - 46, size: 8, font: fontBold, color: black });
+  }
+  if (isQuote) {
+    page.drawText("Valid For:", { x: 319, y: boxY + boxH - 58, size: 8, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 395, y: boxY + boxH - 58, size: 8, font: fontBold, color: black });
+  }
+
+  y = boxY - 16;
+  y = drawStandardTable(ctx, y, blue, white, skyBlue);
+  y = drawTotals(ctx, y, blue, blue);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 5 — ELEGANT (Burgundy, centered header, spaced layout, no fill table)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate5(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const burg = rgb(0.52, 0.07, 0.07);
+  const creamBg = rgb(0.99, 0.96, 0.96);
+
+  // Top decorative bars
+  page.drawRectangle({ x: 0, y: 836, width: W, height: 6, color: burg });
+  page.drawRectangle({ x: 0, y: 831, width: W, height: 1.5, color: burg });
+
+  let y = 816;
+  if (logo) {
+    const lx = (W - logo.w) / 2;
+    page.drawImage(logo.image, { x: lx, y: y - logo.h, width: logo.w, height: logo.h });
+    y -= logo.h + 8;
+  }
+
+  // Centered business name
+  const biz = user?.business_name || user?.full_name || "Business";
+  const bizW = fontBold.widthOfTextAtSize(biz, 20);
+  page.drawText(biz, { x: (W - bizW) / 2, y, size: 20, font: fontBold, color: burg }); y -= 18;
+
+  const contactParts: string[] = [];
+  if (user?.phone) contactParts.push(`Tel: ${user.phone}`);
+  if (user?.email) contactParts.push(user.email);
+  if (user?.physical_address) contactParts.push(user.physical_address);
+  const contactStr = contactParts.join("  |  ");
+  if (contactStr) {
+    const cw = font.widthOfTextAtSize(contactStr, 8);
+    page.drawText(contactStr, { x: (W - cw) / 2, y, size: 8, font, color: grey }); y -= 12;
+  }
+  if (user?.vat_number) {
+    const s = `VAT No: ${user.vat_number}`;
+    page.drawText(s, { x: (W - font.widthOfTextAtSize(s, 8)) / 2, y, size: 8, font, color: grey }); y -= 12;
+  }
+  if (user?.registration_number) {
+    const s = `Reg No: ${user.registration_number}`;
+    page.drawText(s, { x: (W - font.widthOfTextAtSize(s, 8)) / 2, y, size: 8, font, color: grey }); y -= 12;
+  }
+
+  y -= 4;
+  // Double rule
+  page.drawRectangle({ x: 50, y: y + 3, width: 495, height: 1, color: burg });
+  page.drawRectangle({ x: 50, y, width: 495, height: 1, color: burg });
+  y -= 16;
+
+  // Centered spaced doc title
+  const docTitle = isQuote ? "Q U O T E" : "T A X   I N V O I C E";
+  const dtW = fontBold.widthOfTextAtSize(docTitle, 13);
+  page.drawText(docTitle, { x: (W - dtW) / 2, y, size: 13, font: fontBold, color: burg }); y -= 20;
+
+  // Meta row
+  const numLabel = isQuote ? "Quote No:" : "Invoice No:";
+  page.drawText(numLabel, { x: 50, y, size: 9, font, color: grey });
+  page.drawText(invoice.invoice_number, { x: 120, y, size: 9, font: fontBold, color: black });
+  page.drawText("Date:", { x: 370, y, size: 9, font, color: grey });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black }); y -= 14;
+  if (invoice.reference) {
+    page.drawText("Reference:", { x: 50, y, size: 9, font, color: grey });
+    page.drawText(invoice.reference, { x: 120, y, size: 9, font: fontBold, color: black }); y -= 14;
+  }
+  if (isQuote) {
+    page.drawText("Valid For:", { x: 370, y: y + 14, size: 9, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 420, y: y + 14, size: 9, font: fontBold, color: black });
+  }
+
+  // Dotted divider
+  y -= 10;
+  for (let dotX = 50; dotX < 545; dotX += 8) {
+    page.drawRectangle({ x: dotX, y, width: 4, height: 0.7, color: lightGrey });
+  }
+  y -= 14;
+
+  y = drawCustomerInfo(ctx, 50, y, burg);
+  y -= 14;
+
+  // Elegant table — no fill header, just bold burgund text with underline
+  page.drawText("Description", { x: 50, y, size: 9, font: fontBold, color: burg });
+  page.drawText("Qty", { x: 325, y, size: 9, font: fontBold, color: burg });
+  page.drawText("Unit Price", { x: 375, y, size: 9, font: fontBold, color: burg });
+  page.drawText("Amount", { x: 478, y, size: 9, font: fontBold, color: burg });
+  y -= 4;
+  page.drawRectangle({ x: 50, y, width: 495, height: 1, color: burg });
+  y -= 16;
+  ctx.items.forEach((item: any, idx: number) => {
+    const qty = item.qty || 1;
+    const up = item.unitPrice || 0;
+    const amt = qty * up;
+    if (idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 17, color: creamBg });
+    page.drawText(item.name || "Item", { x: 50, y, size: 9, font, color: black });
+    page.drawText(String(qty), { x: 330, y, size: 9, font, color: black });
+    page.drawText(`R${up.toFixed(2)}`, { x: 375, y, size: 9, font, color: black });
+    page.drawText(`R${amt.toFixed(2)}`, { x: 478, y, size: 9, font, color: black });
+    y -= 18;
+    page.drawRectangle({ x: 50, y: y + 8, width: 495, height: 0.5, color: lightGrey });
+  });
+
+  y = drawTotals(ctx, y, burg, null);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Template 6 — VIBRANT (Purple, layered header, left sidebar, bold contrast)
+// ────────────────────────────────────────────────────────────────────────────
+function renderTemplate6(ctx: TemplateCtx) {
+  const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
+  const purple = rgb(0.42, 0.13, 0.69);
+  const purpleMid = rgb(0.50, 0.22, 0.76);
+  const purpleDark = rgb(0.20, 0.02, 0.38);
+  const lavender = rgb(0.95, 0.89, 1.0);
+  const midPurple = rgb(0.72, 0.54, 0.92);
+
+  const headerH = 132;
+  // Base header
+  page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: purple });
+  // Layered accent shapes for depth
+  page.drawRectangle({ x: 260, y: 842 - headerH, width: 335, height: headerH, color: purpleMid });
+  page.drawRectangle({ x: 340, y: 842 - headerH, width: 255, height: headerH, color: rgb(0.48, 0.19, 0.74) });
+
+  let y = 824;
+  if (logo) { page.drawImage(logo.image, { x: 28, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 4; }
+
+  const biz = user?.business_name || user?.full_name || "Business";
+  page.drawText(biz, { x: 28, y, size: 19, font: fontBold, color: white }); y -= 19;
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 28, y, size: 8, font, color: midPurple }); }
+
+  // Large doc title right
+  const docTitle = isQuote ? "QUOTE" : "INVOICE";
+  const dtW = fontBold.widthOfTextAtSize(docTitle, 32);
+  page.drawText(docTitle, { x: W - 35 - dtW, y: 824, size: 32, font: fontBold, color: white });
+
+  // Invoice number badge (dark pill)
+  page.drawRectangle({ x: W - 205, y: 785, width: 175, height: 20, color: purpleDark });
+  page.drawText(invoice.invoice_number, { x: W - 198, y: 790, size: 10, font: fontBold, color: white });
+  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: W - 198, y: 775, size: 8, font, color: midPurple });
+  if (invoice.reference) { page.drawText(`Ref: ${invoice.reference}`, { x: W - 198, y: 763, size: 8, font, color: midPurple }); }
+
+  // Left purple sidebar (body only, below header)
+  page.drawRectangle({ x: 0, y: 40, width: 8, height: 842 - headerH - 40, color: purple });
+
+  y = 842 - headerH - 18;
+  y = drawCustomerInfo(ctx, 25, y, purple);
+  y -= 14;
+  y = drawStandardTable(ctx, y, purple, white, lavender);
+  y = drawTotals(ctx, y, purple, purple);
+  y -= 10;
+  drawFooter(ctx, y);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Route handlers (unchanged from before)
+// ────────────────────────────────────────────────────────────────────────────
+
 invoiceRouter.get("/export", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const invoices = await queryAll(
-      "SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC",
-      [userId]
-    );
-
+    const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     const header = "Number,Type,Customer Name,Customer Email,Items,Subtotal,VAT (15%),Total,Status,Date";
     const rows = invoices.map((inv: any) => {
       const items = JSON.parse(inv.items_json || "[]");
-      const itemsSummary = items
-        .map((item: any) => {
-          const qty = item.qty || 1;
-          const unitPrice = (item.unitPrice || 0).toFixed(2);
-          return `${qty}x ${item.name || "Item"} @ R${unitPrice}`;
-        })
-        .join("; ");
+      const itemsSummary = items.map((item: any) => `${item.qty || 1}x ${item.name || "Item"} @ R${(item.unitPrice || 0).toFixed(2)}`).join("; ");
       const subtotal = ((inv.total_cents - (inv.vat_cents || 0)) / 100).toFixed(2);
       const vat = ((inv.vat_cents || 0) / 100).toFixed(2);
       const total = (inv.total_cents / 100).toFixed(2);
       const date = inv.created_at ? inv.created_at.split("T")[0] : "";
-      const custName = (inv.customer_name || "").replace(/"/g, '""');
-      const custEmail = (inv.customer_email || "").replace(/"/g, '""');
-      const docType = inv.type || "invoice";
-      return `${inv.invoice_number},"${docType}","${custName}","${custEmail}","${itemsSummary.replace(/"/g, '""')}",${subtotal},${vat},${total},${inv.status || "final"},${date}`;
+      return `${inv.invoice_number},"${inv.type || "invoice"}","${(inv.customer_name || "").replace(/"/g, '""')}","${(inv.customer_email || "").replace(/"/g, '""')}","${itemsSummary.replace(/"/g, '""')}",${subtotal},${vat},${total},${inv.status || "final"},${date}`;
     });
-
     const csv = [header, ...rows].join("\n");
-    const today = new Date().toISOString().split("T")[0];
-
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename="invoices-export-${today}.csv"`);
+    res.setHeader("Content-Disposition", `attachment; filename="invoices-export-${new Date().toISOString().split("T")[0]}.csv"`);
     res.send(csv);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });
@@ -67,60 +561,33 @@ invoiceRouter.post("/import", upload.single("file"), async (req, res) => {
     const userId = req.session.userId!;
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
-
     const content = file.buffer.toString("utf-8");
     const lines = content.split(/\r?\n/).filter((l) => l.trim());
-
     if (lines.length < 2) return res.status(400).json({ error: "CSV must have a header and at least one data row" });
-
     let imported = 0;
     const now = new Date().toISOString();
-
     const existingCount = ((await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ?", [userId]))?.c || 0) as number;
-
     for (let i = 1; i < lines.length; i++) {
       const parts = parseCSVLine(lines[i]);
       if (parts.length < 3) continue;
-
       const [customerName, customerEmail, itemsStr, totalStr] = parts;
       if (!customerName) continue;
-
       const items: { name: string; qty: number; unitPrice: number }[] = [];
       if (itemsStr) {
-        const itemParts = itemsStr.split(";").map((s) => s.trim()).filter(Boolean);
-        for (const part of itemParts) {
+        for (const part of itemsStr.split(";").map((s) => s.trim()).filter(Boolean)) {
           const match = part.match(/^(\d+)\s*x\s+(.+?)\s+@\s+(\d+(?:\.\d+)?)$/i);
-          if (match) {
-            items.push({
-              qty: parseInt(match[1]),
-              name: match[2].trim(),
-              unitPrice: parseFloat(match[3]),
-            });
-          }
+          if (match) items.push({ qty: parseInt(match[1]), name: match[2].trim(), unitPrice: parseFloat(match[3]) });
         }
       }
-
-      let totalCents: number;
-      if (totalStr && totalStr.trim()) {
-        totalCents = Math.round(parseFloat(totalStr) * 100);
-        if (isNaN(totalCents)) {
-          totalCents = items.reduce((sum, item) => sum + Math.round(item.qty * item.unitPrice * 100), 0);
-        }
-      } else {
-        totalCents = items.reduce((sum, item) => sum + Math.round(item.qty * item.unitPrice * 100), 0);
-      }
-
+      let totalCents = totalStr && totalStr.trim() ? Math.round(parseFloat(totalStr) * 100) : 0;
+      if (isNaN(totalCents) || !totalCents) totalCents = items.reduce((sum, it) => sum + Math.round(it.qty * it.unitPrice * 100), 0);
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(existingCount + imported + 1).padStart(3, "0")}`;
-      const id = randomUUID();
-
       await execute(
-        `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, vat_enabled, vat_cents, items_json, status, type, template, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 'final', 'invoice', 1, ?)`,
-        [id, userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
+        `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, total_cents, vat_enabled, vat_cents, items_json, status, type, template, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 'final', 'invoice', 1, ?)`,
+        [randomUUID(), userId, invoiceNumber, customerName, customerEmail || null, totalCents, JSON.stringify(items), now]
       );
       imported++;
     }
-
     res.json({ ok: true, imported });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to import" });
@@ -151,34 +618,23 @@ invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template } = req.body;
-
-    if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
+    if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
-    }
-
     const docType = type === "quote" ? "quote" : "invoice";
     const docTemplate = Math.min(6, Math.max(1, parseInt(template) || 1));
-
-    const subtotalCents = items.reduce((sum: number, item: any) => {
-      return sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100);
-    }, 0);
-
+    const subtotalCents = items.reduce((sum: number, item: any) => sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100), 0);
     const vatCents = vatEnabled ? Math.round(subtotalCents * 0.15) : 0;
     const totalCents = subtotalCents + vatCents;
-
     const prefix = docType === "quote" ? "QUO" : "INV";
     const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = ?", [userId, docType]))?.c || 0;
     const docNumber = `${prefix}-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
-
     const id = randomUUID();
     const now = new Date().toISOString();
-
     await execute(
       `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?)`,
       [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, now]
     );
-
     res.json({ ok: true, id, invoiceNumber: docNumber });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to create" });
@@ -208,14 +664,9 @@ invoiceRouter.post("/:id/convert", async (req, res) => {
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Not found" });
     if (invoice.type !== "quote") return res.status(400).json({ error: "Only quotes can be converted" });
-
     const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
-
-    await execute(
-      "UPDATE invoices SET type = 'invoice', invoice_number = ? WHERE id = ?",
-      [invoiceNumber, invoice.id]
-    );
+    await execute("UPDATE invoices SET type = 'invoice', invoice_number = ? WHERE id = ?", [invoiceNumber, invoice.id]);
     res.json({ ok: true, invoiceNumber });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to convert" });
@@ -230,10 +681,8 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     const user = await queryOne(
       `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number,
-              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code,
-              bp.registration_number
-       FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id
-       WHERE u.id = ?`,
+              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code, bp.registration_number
+       FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?`,
       [userId]
     );
 
@@ -243,7 +692,6 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     const subtotalCents = invoice.total_cents - vatCents;
     const docType = invoice.type || "invoice";
     const templateNum = invoice.template || 1;
-    const colors = getTemplateColors(templateNum);
     const isQuote = docType === "quote";
 
     const pdfDoc = await PDFDocument.create();
@@ -251,17 +699,8 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const black = rgb(0, 0, 0);
-    const grey = rgb(0.4, 0.4, 0.4);
-    const white = rgb(1, 1, 1);
-
-    let y = 800;
-    const hasHeaderBg = colors.headerBg !== null;
-
-    if (hasHeaderBg) {
-      page.drawRectangle({ x: 0, y: 742, width: 595, height: 110, color: colors.headerBg! });
-    }
-
+    // Embed logo
+    let logo: { image: PDFImage; w: number; h: number } | null = null;
     if (user?.logo_url) {
       try {
         let logoBytes: Buffer | null = null;
@@ -277,170 +716,34 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
           }
         }
         if (logoBytes) {
-          let logoImage = logoMime === "image/png" ? await pdfDoc.embedPng(logoBytes) : await pdfDoc.embedJpg(logoBytes);
-          const logoDim = logoImage.scale(1);
-          const maxLogoHeight = 60;
-          const maxLogoWidth = 160;
-          let logoWidth = (logoDim.width / logoDim.height) * maxLogoHeight;
-          let logoHeight = maxLogoHeight;
-          if (logoWidth > maxLogoWidth) { logoWidth = maxLogoWidth; logoHeight = (logoDim.height / logoDim.width) * maxLogoWidth; }
-          page.drawImage(logoImage, { x: 50, y: y - logoHeight, width: logoWidth, height: logoHeight });
-          y -= logoHeight + 8;
+          const img = logoMime === "image/png" ? await pdfDoc.embedPng(logoBytes) : await pdfDoc.embedJpg(logoBytes);
+          const dim = img.scale(1);
+          const maxH = 55, maxW = 150;
+          let lw = (dim.width / dim.height) * maxH;
+          let lh = maxH;
+          if (lw > maxW) { lw = maxW; lh = (dim.height / dim.width) * maxW; }
+          logo = { image: img, w: lw, h: lh };
         }
-      } catch (logoErr) {
-        console.error("Failed to embed logo:", logoErr);
-      }
+      } catch (_) {}
     }
 
-    const bizName = user?.business_name || user?.full_name || "Business";
-    const maxNameWidth = 335;
-    let nameSize = 20;
-    while (nameSize > 10 && fontBold.widthOfTextAtSize(bizName, nameSize) > maxNameWidth) nameSize -= 1;
-    const nameOffset = Math.max(0, Math.round((nameSize - 14) / 2));
-    const nameColor = hasHeaderBg ? white : colors.primary;
-    const titleColor = hasHeaderBg ? white : colors.primary;
+    const ctx: TemplateCtx = { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote };
 
-    page.drawText(bizName, { x: 50, y: y - nameOffset, size: nameSize, font: fontBold, color: nameColor });
-    const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
-    page.drawText(docTitle, { x: 400, y, size: 14, font: fontBold, color: titleColor });
-    y -= 20;
-
-    const detailColor = hasHeaderBg ? rgb(0.9, 0.9, 0.9) : grey;
-    if (user?.physical_address) { page.drawText(user.physical_address, { x: 50, y, size: 9, font, color: detailColor }); y -= 14; }
-    if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 50, y, size: 9, font, color: detailColor }); y -= 14; }
-    if (user?.email) { page.drawText(`Email: ${user.email}`, { x: 50, y, size: 9, font, color: detailColor }); y -= 14; }
-    if (user?.vat_number) { page.drawText(`VAT Reg No: ${user.vat_number}`, { x: 50, y, size: 9, font, color: detailColor }); y -= 14; }
-    if (user?.registration_number) { page.drawText(`Reg No: ${user.registration_number}`, { x: 50, y, size: 9, font, color: detailColor }); y -= 14; }
-
-    if (hasHeaderBg) y = Math.min(y, 738);
-
-    y -= 15;
-    page.drawRectangle({ x: 50, y, width: 495, height: 1, color: rgb(0.85, 0.85, 0.85) });
-    y -= 25;
-
-    const numLabel = isQuote ? "Quote Number:" : "Invoice Number:";
-    page.drawText(numLabel, { x: 50, y, size: 9, font, color: grey });
-    page.drawText(invoice.invoice_number, { x: 160, y, size: 9, font: fontBold, color: black });
-    page.drawText("Date:", { x: 350, y, size: 9, font, color: grey });
-    page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black });
-    y -= 16;
-    if (invoice.reference) {
-      page.drawText("Reference:", { x: 50, y, size: 9, font, color: grey });
-      page.drawText(invoice.reference, { x: 160, y, size: 9, font: fontBold, color: black });
-      y -= 16;
+    switch (templateNum) {
+      case 2: renderTemplate2(ctx); break;
+      case 3: renderTemplate3(ctx); break;
+      case 4: renderTemplate4(ctx); break;
+      case 5: renderTemplate5(ctx); break;
+      case 6: renderTemplate6(ctx); break;
+      default: renderTemplate1(ctx);
     }
-
-    if (isQuote) {
-      page.drawText("Valid For:", { x: 350, y: y + 16, size: 9, font, color: grey });
-      page.drawText(invoice.payment_terms || "30 days", { x: 400, y: y + 16, size: 9, font: fontBold, color: black });
-    }
-
-    y -= 8;
-    const billLabel = isQuote ? "QUOTE FOR:" : "BILL TO:";
-    page.drawText(billLabel, { x: 50, y, size: 9, font: fontBold, color: colors.primary });
-    y -= 15;
-    page.drawText(invoice.customer_name, { x: 50, y, size: 10, font: fontBold, color: black });
-    y -= 14;
-    if (invoice.customer_email) { page.drawText(invoice.customer_email, { x: 50, y, size: 9, font, color: grey }); y -= 14; }
-    if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 50, y, size: 9, font, color: grey }); y -= 14; }
-    if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 50, y, size: 9, font, color: grey }); y -= 14; }
-
-    y -= 14;
-
-    page.drawRectangle({ x: 50, y: y - 2, width: 495, height: 22, color: colors.primary });
-    page.drawText("Description", { x: 55, y: y + 3, size: 9, font: fontBold, color: white });
-    page.drawText("Qty", { x: 320, y: y + 3, size: 9, font: fontBold, color: white });
-    page.drawText("Unit Price", { x: 380, y: y + 3, size: 9, font: fontBold, color: white });
-    page.drawText("Amount", { x: 480, y: y + 3, size: 9, font: fontBold, color: white });
-    y -= 25;
-
-    for (const item of items) {
-      const qty = item.qty || 1;
-      const unitPrice = item.unitPrice || 0;
-      const amount = qty * unitPrice;
-      page.drawText(item.name || "Item", { x: 55, y, size: 9, font, color: black });
-      page.drawText(String(qty), { x: 325, y, size: 9, font, color: black });
-      page.drawText(`R${unitPrice.toFixed(2)}`, { x: 380, y, size: 9, font, color: black });
-      page.drawText(`R${amount.toFixed(2)}`, { x: 480, y, size: 9, font, color: black });
-      y -= 18;
-      page.drawRectangle({ x: 50, y: y + 10, width: 495, height: 0.5, color: rgb(0.9, 0.9, 0.9) });
-    }
-
-    y -= 10;
-    page.drawRectangle({ x: 350, y: y - 2, width: 195, height: 1, color: rgb(0.7, 0.7, 0.7) });
-    y -= 18;
-
-    if (vatEnabled) {
-      const subtotalRands = subtotalCents / 100;
-      const vatRands = vatCents / 100;
-      const totalRands = invoice.total_cents / 100;
-      page.drawText("Subtotal:", { x: 360, y, size: 9, font, color: grey });
-      page.drawText(`R${subtotalRands.toFixed(2)}`, { x: 465, y, size: 9, font, color: black });
-      y -= 16;
-      page.drawText("VAT (15%):", { x: 360, y, size: 9, font, color: grey });
-      page.drawText(`R${vatRands.toFixed(2)}`, { x: 465, y, size: 9, font, color: black });
-      y -= 16;
-      page.drawRectangle({ x: 350, y: y + 8, width: 195, height: 0.5, color: rgb(0.7, 0.7, 0.7) });
-      y -= 6;
-      page.drawText(isQuote ? "TOTAL ESTIMATE (incl. VAT):" : "TOTAL (incl. VAT):", { x: 310, y, size: 11, font: fontBold, color: black });
-      page.drawText(`R${totalRands.toFixed(2)}`, { x: 460, y, size: 11, font: fontBold, color: colors.accent });
-    } else {
-      const totalRands = invoice.total_cents / 100;
-      page.drawText(isQuote ? "TOTAL ESTIMATE:" : "TOTAL:", { x: 360, y, size: 11, font: fontBold, color: black });
-      page.drawText(`R${totalRands.toFixed(2)}`, { x: 465, y, size: 11, font: fontBold, color: colors.accent });
-    }
-
-    const termLabel = isQuote ? "Quote Valid For:" : "Payment Terms:";
-    const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
-    y -= 20;
-    page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
-    y -= 16;
-    page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
-    page.drawText(termValue, { x: 145, y, size: 9, font, color: black });
-    if (!isQuote) {
-      y -= 13;
-      page.drawText("Late payments may incur a 5% fee.", { x: 50, y, size: 8, font, color: grey });
-    }
-
-    if (invoice.notes) {
-      y -= 20;
-      page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
-      y -= 16;
-      page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
-      y -= 14;
-      page.drawText(invoice.notes, { x: 50, y, size: 9, font, color: black });
-    }
-
-    if (!isQuote) {
-      const hasBankDetails = user?.bank_name || user?.account_number;
-      if (hasBankDetails) {
-        y -= 22;
-        page.drawText("Please make payment to the following banking details:", { x: 50, y, size: 9, font, color: grey });
-        y -= 14;
-        page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: rgb(0.85, 0.85, 0.85) });
-        y -= 16;
-        page.drawText("BANKING DETAILS", { x: 50, y, size: 9, font: fontBold, color: grey });
-        y -= 14;
-        if (user.bank_name) { page.drawText(`Bank:  ${user.bank_name}`, { x: 50, y, size: 9, font, color: black }); y -= 13; }
-        if (user.account_name) { page.drawText(`Account Name:  ${user.account_name}`, { x: 50, y, size: 9, font, color: black }); y -= 13; }
-        if (user.account_type) { page.drawText(`Account Type:  ${user.account_type}`, { x: 50, y, size: 9, font, color: black }); y -= 13; }
-        if (user.account_number) { page.drawText(`Account Number:  ${user.account_number}`, { x: 50, y, size: 9, font, color: black }); y -= 13; }
-        if (user.branch_code) { page.drawText(`Branch Code:  ${user.branch_code}`, { x: 50, y, size: 9, font, color: black }); }
-      }
-    }
-
-    const footerMsg = isQuote
-      ? "This quote is valid for the period stated above. Prices are subject to change after expiry."
-      : "This invoice serves as a tax invoice in terms of Section 20 of the VAT Act.";
-    page.drawText(isQuote ? "Thank you for the opportunity!" : "Thank you for your business!", { x: 50, y: 75, size: 9, font, color: grey });
-    page.drawText(footerMsg, { x: 50, y: 60, size: 8, font, color: grey });
-    page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: rgb(0.7, 0.7, 0.7) });
 
     const pdfBytes = await pdfDoc.save();
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${invoice.invoice_number}.pdf"`);
     res.send(Buffer.from(pdfBytes));
   } catch (err: any) {
+    console.error("PDF error:", err);
     res.status(500).json({ error: err.message || "Failed to generate PDF" });
   }
 });
@@ -449,25 +752,19 @@ invoiceRouter.put("/:id", async (req, res) => {
   try {
     const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const { id } = req.params;
-    const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [id, userId]);
+    const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-
     const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template } = req.body;
-    if (!customer_name || !Array.isArray(items) || items.length === 0) {
+    if (!customer_name || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customer_name and items are required" });
-    }
-
     const docTemplate = Math.min(6, Math.max(1, parseInt(template) || 1));
     const vatOn = !!vat_enabled;
     let subtotalCents = 0;
     for (const it of items) subtotalCents += Math.round((it.qty || 1) * ((it.unitPrice || 0) * 100));
     const vatCents = vatOn ? Math.round(subtotalCents * 0.15) : 0;
-    const totalCents = subtotalCents + vatCents;
-
     await execute(
-      `UPDATE invoices SET customer_name = ?, customer_email = ?, customer_address = ?, customer_phone = ?, reference = ?, payment_terms = ?, notes = ?, items_json = ?, vat_enabled = ?, vat_cents = ?, total_cents = ?, template = ? WHERE id = ?`,
-      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, totalCents, docTemplate, id]
+      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=? WHERE id=?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, req.params.id]
     );
     res.json({ ok: true });
   } catch (err: any) {
