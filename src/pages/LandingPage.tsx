@@ -2,7 +2,9 @@ import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
 import {
   ArrowRight, Globe, Smartphone, BarChart3, FileText, Shield,
-  Megaphone, Check, Headphones, Users, Zap, Lock, Wallet
+  Megaphone, Check, Headphones, Users, Zap, Lock, Wallet,
+  Fingerprint, Tag, Building2, AlertTriangle, CreditCard,
+  PiggyBank, BadgeCheck, Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -32,6 +34,18 @@ const howItWorks = [
   { step: "01", title: "Create your account", desc: "Sign up in minutes and complete your business profile with guided onboarding.", icon: Lock },
   { step: "02", title: "Set up your digital presence", desc: "Use the AI website builder to create a professional site. Connect your social media and start publishing content.", icon: Globe },
   { step: "03", title: "Run your business", desc: "Manage invoices, track finances, handle payroll, and grow your client base — all from one dashboard.", icon: Zap },
+];
+
+const regSteps = [
+  { label: "Director Details",       icon: Users,          color: "bg-teal-500",   above: false },
+  { label: "Director Verification",  icon: Fingerprint,    color: "bg-teal-400",   above: true  },
+  { label: "Company Details",        icon: Building2,      color: "bg-teal-400",   above: false },
+  { label: "Company Name",           icon: Tag,            color: "bg-slate-400",  above: true  },
+  { label: "UIF & CF",               icon: AlertTriangle,  color: "bg-orange-400", above: false },
+  { label: "B-BBEE Certificate",     icon: Award,          color: "bg-sky-400",    above: true  },
+  { label: "Bank Account",           icon: PiggyBank,      color: "bg-orange-400", above: false },
+  { label: "Payment",                icon: CreditCard,     color: "bg-amber-400",  above: true  },
+  { label: "Registration",           icon: BadgeCheck,     color: "bg-orange-500", above: false },
 ];
 
 const pricingPlans = [
@@ -239,6 +253,96 @@ export default function LandingPage() {
               </Button>
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Registration Process ── */}
+      <section className="py-20 bg-[#efefef]">
+        <div className="container mx-auto px-6">
+          <div className="mb-14">
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest">Registration Process</h2>
+            <div className="w-14 h-0.5 bg-slate-500 mt-3" />
+          </div>
+
+          {/* Desktop timeline */}
+          <div className="hidden lg:block">
+            <div className="relative flex items-stretch" style={{ minHeight: 220 }}>
+              {/* Coloured line — sits at vertical centre */}
+              <div className="absolute left-14 right-14 top-1/2 -translate-y-1/2 h-2 rounded-full overflow-hidden pointer-events-none">
+                <div className="h-full w-full bg-gradient-to-r from-green-400 via-teal-400 via-purple-400 via-blue-400 to-amber-400" />
+              </div>
+
+              {/* START label */}
+              <div className="relative z-10 flex-shrink-0 w-14 flex items-center">
+                <span className="text-green-600 font-black text-sm tracking-widest uppercase">START</span>
+              </div>
+
+              {/* Step columns */}
+              {regSteps.map((step) => (
+                <div key={step.label} className="relative z-10 flex-1 flex flex-col items-center">
+                  {/* Above area */}
+                  <div className="h-[90px] flex flex-col items-center justify-end pb-0">
+                    {step.above ? (
+                      <>
+                        <p className="text-[10px] font-bold text-slate-500 text-center uppercase tracking-wide leading-tight mb-2 px-1">
+                          {step.label}
+                        </p>
+                        <div className={`h-12 w-12 rounded-xl ${step.color} flex items-center justify-center shadow-md`}>
+                          <step.icon className="h-5 w-5 text-white" />
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+
+                  {/* Connector + dot */}
+                  <div className="flex flex-col items-center" style={{ height: 20 }}>
+                    {step.above && <div className="w-px flex-1 bg-slate-400" />}
+                    <div className="w-3.5 h-3.5 rounded-full bg-white border-2 border-slate-400 flex-shrink-0" />
+                    {!step.above && <div className="w-px flex-1 bg-slate-400" />}
+                  </div>
+
+                  {/* Below area */}
+                  <div className="h-[90px] flex flex-col items-center justify-start pt-0">
+                    {!step.above ? (
+                      <>
+                        <div className={`h-12 w-12 rounded-xl ${step.color} flex items-center justify-center shadow-md`}>
+                          <step.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 text-center uppercase tracking-wide leading-tight mt-2 px-1">
+                          {step.label}
+                        </p>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+
+              {/* END label */}
+              <div className="relative z-10 flex-shrink-0 w-14 flex items-center justify-end">
+                <span className="text-amber-600 font-black text-sm tracking-widest uppercase">END</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: vertical list */}
+          <div className="lg:hidden grid grid-cols-2 gap-4">
+            {regSteps.map((step, i) => (
+              <div key={step.label} className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-xl ${step.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                  <step.icon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold">Step {i + 1}</p>
+                  <p className="text-xs font-bold text-slate-700 uppercase leading-tight">{step.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs font-bold text-slate-600 mt-12 uppercase tracking-wide">
+            Register your company in 1 (one) day for only R175!{" "}
+            <span className="font-normal normal-case text-slate-500">Terms and conditions apply.</span>
+          </p>
         </div>
       </section>
 
