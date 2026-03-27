@@ -15,6 +15,8 @@ interface ComplianceStatus {
 
 const REMINDER_SESSION_KEY = "compliance_reminder_dismissed";
 
+const FICA_ENFORCEMENT_ENABLED = false;
+
 export default function ComplianceDocsGate() {
   const { user } = useAuth();
   const location = useLocation();
@@ -23,6 +25,7 @@ export default function ComplianceDocsGate() {
   const [showModal, setShowModal] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+    if (!FICA_ENFORCEMENT_ENABLED) return;
     if (!user || user.role === "admin") return;
     try {
       const res = await fetch("/api/fica-docs/status", { credentials: "include" });
@@ -38,6 +41,8 @@ export default function ComplianceDocsGate() {
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  if (!FICA_ENFORCEMENT_ENABLED) return null;
 
   const dismissModal = () => {
     sessionStorage.setItem(REMINDER_SESSION_KEY, "1");
