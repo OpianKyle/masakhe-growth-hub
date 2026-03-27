@@ -156,7 +156,7 @@ function renderTemplate1(ctx: TemplateCtx) {
   page.drawRectangle({ x: 0, y: 0, width: 8, height: 842, color: green });
 
   let y = 800;
-  if (logo) { page.drawImage(logo.image, { x: 25, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 6; }
+  if (logo) { page.drawImage(logo.image, { x: 25, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 18; }
 
   // Business name + doc title on same line
   const biz = user?.business_name || user?.full_name || "Business";
@@ -208,7 +208,7 @@ function renderTemplate2(ctx: TemplateCtx) {
   const navyLight = rgb(0.92, 0.94, 0.98);
 
   let y = 800;
-  if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 8; }
+  if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 18; }
 
   // Navy invoice info box — top right, overlapping biz info area
   const boxY = 800;
@@ -276,7 +276,7 @@ function renderTemplate3(ctx: TemplateCtx) {
   page.drawRectangle({ x: 0, y: 842 - headerH - 7, width: W, height: 7, color: orange });
 
   let y = 824;
-  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 4; }
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
@@ -319,7 +319,7 @@ function renderTemplate4(ctx: TemplateCtx) {
   page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: blue });
 
   let y = 822;
-  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); }
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
@@ -390,7 +390,7 @@ function renderTemplate5(ctx: TemplateCtx) {
   if (logo) {
     const lx = (W - logo.w) / 2;
     page.drawImage(logo.image, { x: lx, y: y - logo.h, width: logo.w, height: logo.h });
-    y -= logo.h + 8;
+    y -= logo.h + 18;
   }
 
   // Centered business name
@@ -497,7 +497,7 @@ function renderTemplate6(ctx: TemplateCtx) {
   page.drawRectangle({ x: 340, y: 842 - headerH, width: 255, height: headerH, color: rgb(0.48, 0.19, 0.74) });
 
   let y = 824;
-  if (logo) { page.drawImage(logo.image, { x: 28, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 4; }
+  if (logo) { page.drawImage(logo.image, { x: 28, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 28, y, size: 19, font: fontBold, color: white }); y -= 19;
