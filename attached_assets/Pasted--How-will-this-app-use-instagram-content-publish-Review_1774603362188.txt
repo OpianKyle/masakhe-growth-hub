@@ -1,0 +1,65 @@
+
+How will this app use instagram_content_publish?
+Review the policies for instagram_content_publish and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+Your submission must include instagram_basic to use instagram_content_publish
+How will this app use pages_manage_posts?
+Review the policies for pages_manage_posts and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+Your submission must include pages_show_list and pages_read_engagement to use pages_manage_posts
+How will this app use pages_show_list?
+Review the policies for pages_show_list and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Agree that you will comply with allowed usage
+How will this app use pages_manage_ads?
+Review the policies for pages_manage_ads and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+Your submission must include pages_show_list to use pages_manage_ads
+How will this app use business_management?
+Review the policies for business_management and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+How will this app use ads_read?
+Review the policies for ads_read and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+How will this app use pages_read_engagement?
+Review the policies for pages_read_engagement and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+Your submission must include pages_show_list to use pages_read_engagement
+How will this app use public_profile?
+Review the policies for public_profile and tell us how you intend to use it
+Agree that you will comply with allowed usage
+How will this app use leads_retrieval?
+Review the policies for leads_retrieval and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Agree that you will comply with allowed usage
+How will this app use ads_management?
+Review the policies for ads_management and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Ensure that you have performed required API test calls
+Agree that you will comply with allowed usage
+Your submission must include pages_read_engagement to use ads_management
+How will this app use Ads Management Standard Access?
+Review the policies for Ads Management Standard Access and tell us how you intend to use it
+Describe how your app uses this permission or feature
+Upload screencast showing the end-to-end user experience
+Agree that you will comply with allowed usage
