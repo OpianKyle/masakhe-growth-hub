@@ -15,7 +15,7 @@ interface ComplianceStatus {
 
 const REMINDER_SESSION_KEY = "compliance_reminder_dismissed";
 
-const FICA_ENFORCEMENT_ENABLED = false;
+const FICA_ENFORCEMENT_ENABLED = true;
 
 export default function ComplianceDocsGate() {
   const { user } = useAuth();
