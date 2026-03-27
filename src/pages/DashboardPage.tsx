@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -69,6 +69,7 @@ const baseNavItems: NavItem[] = [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices" },
       { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
+      { icon: Landmark, label: "Managed Accounts", path: "/dashboard/managed-accounts", comingSoon: true },
     ],
   },
   {
