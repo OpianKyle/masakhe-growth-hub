@@ -116,7 +116,7 @@ export default function RegisterPage() {
         <meta name="description" content="Create your account. Register your South African SMME on Masakhe — business registration, compliance, website builder, invoicing & payroll in one place." />
         <link rel="canonical" href="https://masakhegroup.co.za/register" />
         <meta property="og:title" content="Create Your SMME Account | Masakhe" />
-        <meta property="og:description" content="Join 15,000+ South African businesses on Masakhe. Create your account today." />
+        <meta property="og:description" content="Create your Masakhe account. Website builder, invoicing, payroll, and client management for South African SMMEs." />
         <meta property="og:url" content="https://masakhegroup.co.za/register" />
       </Helmet>
       <div
@@ -140,17 +140,18 @@ export default function RegisterPage() {
               Everything your<br />business needs
             </h2>
             <p className="text-white/55 text-base leading-relaxed">
-              Join thousands of South African SMMEs using Masakhe to grow, manage, and fund their businesses.
+              One platform to manage your website, invoices, payroll, clients, and social media — built for South African SMMEs.
             </p>
           </div>
 
           <div className="space-y-3">
             {[
-              "Subscribe after sign-up to unlock all features",
-              "Business funding toolkit worth R50,000+",
-              "Professional website builder included",
-              "Full payroll & HR management",
-              "Dedicated South African support team",
+              "AI website builder — go live in minutes",
+              "Invoicing & quotes with 6 PDF templates",
+              "Payroll management & payslip generation",
+              "Client management (CRM) built-in",
+              "Social media scheduling & publishing",
+              "Financial transaction tracking",
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-3">
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/25 flex-shrink-0">
@@ -162,16 +163,10 @@ export default function RegisterPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
-            <p className="text-white/80 text-sm italic leading-relaxed mb-3">
-              "Masakhe helped us secure R800,000 in government funding and launch our online store in one week. It's transformed our business."
+            <p className="text-white/80 text-sm leading-relaxed mb-2">
+              Start with a <span className="text-white font-semibold">3-day free trial</span> — no credit card required. Cancel anytime.
             </p>
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">TN</div>
-              <div>
-                <p className="text-white text-xs font-semibold">Thandi Nkosi</p>
-                <p className="text-white/40 text-xs">Owner, TN Fashion & Design, Soweto</p>
-              </div>
-            </div>
+            <p className="text-white/45 text-xs">Plans from R599/month after your trial.</p>
           </div>
         </div>
 

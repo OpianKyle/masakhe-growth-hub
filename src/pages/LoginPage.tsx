@@ -6,15 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { ArrowRight, Eye, EyeOff, Building2, TrendingUp, Users, Globe } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Globe, FileText, Users, Wallet, Smartphone, Headphones } from "lucide-react";
 
 const BG_IMAGE = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1400";
 
-const stats = [
-  { icon: Building2, value: "12,000+", label: "Businesses registered" },
-  { icon: TrendingUp, value: "R2.4B+", label: "Funding facilitated" },
-  { icon: Users, value: "95%", label: "Client satisfaction" },
-  { icon: Globe, value: "9", label: "Provinces served" },
+const features = [
+  { icon: Globe,       label: "AI Website Builder",    desc: "Go live in minutes" },
+  { icon: FileText,    label: "Invoicing & Quotes",    desc: "6 professional templates" },
+  { icon: Wallet,      label: "Financial Tracking",    desc: "Income & expense management" },
+  { icon: Users,       label: "Client Management",     desc: "Full CRM built-in" },
+  { icon: Smartphone,  label: "Social Media Hub",      desc: "Schedule & publish posts" },
+  { icon: Headphones,  label: "Payroll Management",    desc: "Salaries & payslips" },
 ];
 
 export default function LoginPage() {
@@ -80,19 +82,19 @@ export default function LoginPage() {
               Grow your business<br />with confidence
             </h1>
             <p className="text-white/60 text-lg leading-relaxed max-w-md">
-              Access funding tools, manage payroll, build your website, and run your business from a single powerful dashboard.
+              Manage invoices, payroll, your website, clients, and social media — all from a single powerful dashboard built for South African SMMEs.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+          <div className="grid grid-cols-2 gap-3 pt-4">
+            {features.map((f) => (
+              <div key={f.label} className="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 flex-shrink-0">
-                  <stat.icon className="h-4 w-4 text-blue-300" />
+                  <f.icon className="h-4 w-4 text-blue-300" />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-lg leading-none">{stat.value}</p>
-                  <p className="text-white/50 text-xs mt-1">{stat.label}</p>
+                  <p className="text-white font-semibold text-sm leading-tight">{f.label}</p>
+                  <p className="text-white/45 text-xs mt-1">{f.desc}</p>
                 </div>
               </div>
             ))}

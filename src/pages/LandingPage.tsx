@@ -496,6 +496,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── B-BEE Banner ── */}
+      <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-700 py-5">
+        <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 flex-shrink-0">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="text-white font-black text-lg tracking-wide leading-tight">
+                B-BBEE LEVEL 1 CONTRIBUTOR
+              </p>
+              <p className="text-green-100 font-semibold text-sm tracking-widest uppercase">
+                135% Procurement Recognition
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Footer ── */}
       <footer className="bg-slate-950 py-16">
         <div className="container mx-auto px-6">
