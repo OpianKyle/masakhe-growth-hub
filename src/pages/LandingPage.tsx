@@ -4,7 +4,7 @@ import {
   ArrowRight, Globe, Smartphone, BarChart3, FileText, Shield,
   Megaphone, Check, Headphones, Users, Zap, Lock, Wallet,
   Fingerprint, Tag, Building2, AlertTriangle, CreditCard,
-  PiggyBank, BadgeCheck, Award
+  PiggyBank, BadgeCheck, Award, MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -37,15 +37,12 @@ const howItWorks = [
 ];
 
 const regSteps = [
-  { label: "Director Details",       icon: Users,          color: "bg-teal-500",   above: false },
-  { label: "Director Verification",  icon: Fingerprint,    color: "bg-teal-400",   above: true  },
-  { label: "Company Details",        icon: Building2,      color: "bg-teal-400",   above: false },
-  { label: "Company Name",           icon: Tag,            color: "bg-slate-400",  above: true  },
-  { label: "UIF & CF",               icon: AlertTriangle,  color: "bg-orange-400", above: false },
-  { label: "B-BBEE Certificate",     icon: Award,          color: "bg-sky-400",    above: true  },
-  { label: "Bank Account",           icon: PiggyBank,      color: "bg-orange-400", above: false },
-  { label: "Payment",                icon: CreditCard,     color: "bg-amber-400",  above: true  },
-  { label: "Registration",           icon: BadgeCheck,     color: "bg-orange-500", above: false },
+  { label: "Create Account",         icon: Lock,           color: "bg-blue-500",   above: true  },
+  { label: "Business Status",        icon: Building2,      color: "bg-teal-500",   above: false },
+  { label: "Identity Verification",  icon: Fingerprint,    color: "bg-green-500",  above: true  },
+  { label: "Business Details",       icon: FileText,       color: "bg-slate-500",  above: false },
+  { label: "Contact & Location",     icon: MapPin,         color: "bg-orange-400", above: true  },
+  { label: "Confirmation",           icon: BadgeCheck,     color: "bg-emerald-500",above: false },
 ];
 
 const pricingPlans = [
@@ -340,8 +337,8 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center text-xs font-bold text-slate-600 mt-12 uppercase tracking-wide">
-            Register your company in 1 (one) day for only R175!{" "}
-            <span className="font-normal normal-case text-slate-500">Terms and conditions apply.</span>
+            Get started with a 3-day free trial · Plans from R599/month{" "}
+            <span className="font-normal normal-case text-slate-500">· Cancel anytime. Terms and conditions apply.</span>
           </p>
         </div>
       </section>
