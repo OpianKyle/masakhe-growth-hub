@@ -142,11 +142,6 @@ export default function LandingPage() {
                   Get Started <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/dashboard">
-                <Button variant="outline" className="border-white/20 text-white bg-white/8 hover:bg-white/15 backdrop-blur-sm text-base h-12 px-7">
-                  View Demo
-                </Button>
-              </Link>
             </motion.div>
           </motion.div>
         </div>

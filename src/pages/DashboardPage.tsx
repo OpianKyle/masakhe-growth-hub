@@ -69,7 +69,7 @@ const baseNavItems: NavItem[] = [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices" },
       { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
-      { icon: Landmark, label: "Managed Accounts", path: "/dashboard/managed-accounts", comingSoon: true },
+      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true },
     ],
   },
   {
