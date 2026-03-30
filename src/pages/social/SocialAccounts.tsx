@@ -125,24 +125,35 @@ export default function SocialAccounts({ workspaceId }: Props) {
     platformId === "META_FACEBOOK" || platformId === "META_INSTAGRAM";
 
   const handleMetaOAuth = async () => {
+    if (!workspaceId) {
+      toast.error("No workspace found. Please refresh and try again.");
+      return;
+    }
     setOauthLoading(true);
     try {
       const res = await fetch(`/api/social/ws/${workspaceId}/accounts/oauth/meta/start`, {
         method: "POST",
         credentials: "include",
       });
-      const data = await res.json();
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        toast.error(`Server error (${res.status}). Please try again.`);
+        setOauthLoading(false);
+        return;
+      }
       if (data.authUrl) {
         window.location.href = data.authUrl;
       } else if (data.mockMode) {
         toast.info("Meta API not configured. Use manual linking instead.");
         setOauthLoading(false);
       } else {
-        toast.error("Could not start Meta connection");
+        toast.error(data.error || "Could not start Meta connection");
         setOauthLoading(false);
       }
     } catch {
-      toast.error("Failed to start Meta connection");
+      toast.error("Network error. Please check your connection and try again.");
       setOauthLoading(false);
     }
   };
