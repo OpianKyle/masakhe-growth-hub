@@ -678,10 +678,10 @@ export default function WebsiteBuilder() {
                   <span className="w-14 shrink-0">{savedDomain.startsWith("www.") ? "www" : savedDomain.split(".")[0]}</span>
                   <span className="break-all">masakhegroup.co.za</span>
                 </div>
-                <div className="flex gap-2 text-slate-400">
+                <div className="flex gap-2">
                   <span className="w-10 shrink-0">A</span>
                   <span className="w-14 shrink-0">@</span>
-                  <span>{"<Your Xneelo server IP>"}</span>
+                  <span>154.65.110.84</span>
                 </div>
               </div>
               <p className="text-[9px] text-blue-600">After saving DNS records, allow up to 24 hours for propagation.</p>
