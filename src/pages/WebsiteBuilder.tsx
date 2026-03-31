@@ -685,6 +685,17 @@ export default function WebsiteBuilder() {
                 </div>
               </div>
               <p className="text-[9px] text-blue-600">After saving DNS records, allow up to 24 hours for propagation.</p>
+              <div className="rounded bg-amber-50 border border-amber-200 p-2 space-y-1">
+                <p className="text-[10px] font-semibold text-amber-800">🔒 Enable HTTPS (Secure Site)</p>
+                <p className="text-[9px] text-amber-700">Your site will show "Not Secure" until you add a free SSL certificate via Cloudflare:</p>
+                <ol className="text-[9px] text-amber-700 space-y-0.5 list-decimal list-inside">
+                  <li>Create a free account at <span className="font-mono font-semibold">cloudflare.com</span></li>
+                  <li>Add your domain and follow the setup wizard</li>
+                  <li>Update your domain's nameservers to the two Cloudflare gives you (done at your registrar)</li>
+                  <li>In Cloudflare DNS, add the A record above with the <span className="font-semibold">orange cloud (Proxy) ON</span></li>
+                  <li>Cloudflare handles HTTPS automatically — no extra cost</li>
+                </ol>
+              </div>
             </div>
           )}
         </div>
