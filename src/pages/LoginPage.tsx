@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-900/88 to-blue-950/92" />
 
         <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/?home=1" className="flex items-center gap-3">
             <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain" />
             <span className="text-2xl font-bold font-heading text-white">Masakhe</span>
           </Link>
@@ -112,7 +112,7 @@ export default function LoginPage() {
             <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold font-heading text-slate-900">Masakhe</span>
           </Link>
-          <Link to="/" className="text-sm text-slate-500 hover:text-slate-900">← Back to Home</Link>
+          <Link to="/?home=1" className="text-sm text-slate-500 hover:text-slate-900">← Back to Home</Link>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-8 py-12">
