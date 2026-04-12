@@ -68,7 +68,7 @@ adminRouter.get("/clients", async (req, res) => {
               bp.industry_sector, bp.phone, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
               bs.status as subscription_status, bs.trial_end_at,
-              bpl.code as plan_code, bpl.name as plan_name
+              bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
        LEFT JOIN workspace_members wm ON wm.user_id = u.id

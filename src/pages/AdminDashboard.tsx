@@ -48,6 +48,7 @@ interface Client {
   trial_end_at?: string | null;
   plan_code?: string | null;
   plan_name?: string | null;
+  plan_price_cents?: number | null;
 }
 
 const adminNavItems = [
@@ -284,7 +285,11 @@ function ClientList() {
     setInvReference("");
     setInvPaymentTerms("Due within 7 days");
     setInvNotes("");
-    setInvItems([{ name: client.plan_name ? `${client.plan_name} Subscription` : "", qty: 1, unitPrice: 0 }]);
+    setInvItems([{
+      name: client.plan_name ? `${client.plan_name} Subscription` : "",
+      qty: 1,
+      unitPrice: client.plan_price_cents ? client.plan_price_cents / 100 : 0,
+    }]);
     setInvVatEnabled(true);
   };
 
