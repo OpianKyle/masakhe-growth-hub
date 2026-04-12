@@ -110,3 +110,29 @@ export async function getUserTransporter(userId: string) {
     replyTo: settings.reply_to || undefined,
   };
 }
+
+export async function getTransporterForUser(userId: string) {
+  const userResult = await getUserTransporter(userId);
+  if (userResult) return userResult;
+
+  const smtpPass = process.env.SMTP_PASSWORD;
+  if (!smtpPass) return null;
+
+  const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+  const nodemailer = await import("nodemailer");
+  const transporter = nodemailer.default.createTransport({
+    host: process.env.SMTP_HOST || "smtp.masakhegroup.co.za",
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: process.env.SMTP_USER || "admin@masakhegroup.co.za",
+      pass: smtpPass,
+    },
+  });
+  return {
+    transporter,
+    fromName: process.env.SMTP_FROM_NAME || "Masakhe",
+    fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakhegroup.co.za",
+    replyTo: undefined,
+  };
+}

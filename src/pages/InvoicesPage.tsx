@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2 } from "lucide-react";
 
 interface InvoiceItem {
   name: string;
@@ -340,6 +340,8 @@ export default function InvoicesPage() {
     }
   };
 
+  const [emailingId, setEmailingId] = useState<string | null>(null);
+
   const downloadPdf = async (id: string, num: string) => {
     const res = await fetch(`/api/invoices/${id}/pdf`, { credentials: "include" });
     if (!res.ok) { toast.error("Failed to download PDF"); return; }
@@ -350,6 +352,26 @@ export default function InvoicesPage() {
     a.download = `${num}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const emailInvoice = async (id: string, customerEmail: string) => {
+    setEmailingId(id);
+    try {
+      const res = await fetch(`/api/invoices/${id}/email`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Invoice emailed to ${data.sentTo}`);
+      } else {
+        toast.error(data.error || "Failed to send email");
+      }
+    } catch {
+      toast.error("Network error sending email");
+    } finally {
+      setEmailingId(null);
+    }
   };
 
   const filtered = invoices.filter(inv => (inv.type || "invoice") === activeTab);
@@ -592,6 +614,20 @@ export default function InvoicesPage() {
                       <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
                         <Download className="h-3.5 w-3.5 mr-1" /> PDF
                       </Button>
+                      {inv.customer_email && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={emailingId === inv.id}
+                          onClick={() => emailInvoice(inv.id, inv.customer_email!)}
+                          title={`Email to ${inv.customer_email}`}
+                        >
+                          {emailingId === inv.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            : <Mail className="h-3.5 w-3.5 mr-1" />}
+                          Email
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

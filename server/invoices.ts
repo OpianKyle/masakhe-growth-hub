@@ -6,6 +6,7 @@ import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb, RGB } from
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import { getTransporterForUser } from "./email-settings";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -745,6 +746,129 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
   } catch (err: any) {
     console.error("PDF error:", err);
     res.status(500).json({ error: err.message || "Failed to generate PDF" });
+  }
+});
+
+invoiceRouter.post("/:id/email", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    if (!invoice.customer_email) return res.status(400).json({ error: "This invoice has no customer email address." });
+
+    const mailer = await getTransporterForUser(userId);
+    if (!mailer) return res.status(400).json({ error: "No email account configured. Go to Settings → Email Sending to set up your SMTP." });
+
+    const user = await queryOne(
+      `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number,
+              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code, bp.registration_number
+       FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?`,
+      [userId]
+    );
+
+    const items = JSON.parse(invoice.items_json);
+    const vatEnabled = !!invoice.vat_enabled;
+    const vatCents = invoice.vat_cents || 0;
+    const subtotalCents = invoice.total_cents - vatCents;
+    const docType = invoice.type || "invoice";
+    const templateNum = invoice.template || 1;
+    const isQuote = docType === "quote";
+
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    let logo: { image: PDFImage; w: number; h: number } | null = null;
+    if (user?.logo_url) {
+      try {
+        let logoBytes: Buffer | null = null;
+        let logoMime = "";
+        if (user.logo_url.startsWith("data:image/")) {
+          const matches = user.logo_url.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          if (matches) { logoMime = matches[1].toLowerCase(); logoBytes = Buffer.from(matches[2], "base64"); }
+        } else {
+          const logoPath = path.join(process.cwd(), "public", user.logo_url);
+          if (fs.existsSync(logoPath)) {
+            logoBytes = fs.readFileSync(logoPath);
+            logoMime = path.extname(logoPath).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+          }
+        }
+        if (logoBytes) {
+          const img = logoMime === "image/png" ? await pdfDoc.embedPng(logoBytes) : await pdfDoc.embedJpg(logoBytes);
+          const dim = img.scale(1);
+          const maxH = 55, maxW = 150;
+          let lw = (dim.width / dim.height) * maxH;
+          let lh = maxH;
+          if (lw > maxW) { lw = maxW; lh = (dim.height / dim.width) * maxW; }
+          logo = { image: img, w: lw, h: lh };
+        }
+      } catch (_) {}
+    }
+
+    const ctx: TemplateCtx = { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote };
+    switch (templateNum) {
+      case 2: renderTemplate2(ctx); break;
+      case 3: renderTemplate3(ctx); break;
+      case 4: renderTemplate4(ctx); break;
+      case 5: renderTemplate5(ctx); break;
+      case 6: renderTemplate6(ctx); break;
+      default: renderTemplate1(ctx);
+    }
+    const pdfBytes = await pdfDoc.save();
+
+    const businessName = user?.business_name || mailer.fromName;
+    const label = isQuote ? "Quote" : "Invoice";
+    const totalFormatted = `R${(invoice.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
+    const dateStr = new Date(invoice.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+<table width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 20px;"><tr><td align="center">
+<table width="600" cellspacing="0" cellpadding="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:32px 40px;">
+  <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;">${businessName}</h1>
+  <p style="margin:8px 0 0;color:rgba(255,255,255,0.7);font-size:14px;">${label} #${invoice.invoice_number}</p>
+</td></tr>
+<tr><td style="padding:40px;">
+  <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+    Dear ${invoice.customer_name},<br><br>
+    Please find your ${label.toLowerCase()} attached to this email. A summary is provided below.
+  </p>
+  <table width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+    <tr style="background:#f9fafb;"><td style="padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #e5e7eb;">${label} Details</td><td style="padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #e5e7eb;text-align:right;"></td></tr>
+    <tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">${label} Number</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.invoice_number}</td></tr>
+    <tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Date</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${dateStr}</td></tr>
+    ${invoice.reference ? `<tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Reference</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.reference}</td></tr>` : ""}
+    ${invoice.payment_terms ? `<tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Payment Terms</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.payment_terms}</td></tr>` : ""}
+    <tr style="background:#f9fafb;"><td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a1a2e;">Total</td><td style="padding:14px 16px;font-size:18px;font-weight:700;color:#007749;text-align:right;">${totalFormatted}</td></tr>
+  </table>
+  ${invoice.notes ? `<p style="margin:0 0 20px;color:#6b7280;font-size:13px;font-style:italic;">${invoice.notes}</p>` : ""}
+  <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have any questions, please reply to this email or contact us at ${mailer.fromEmail}.</p>
+  <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Thank you for your business!<br><strong style="color:#1a1a2e;">${businessName}</strong></p>
+</td></tr>
+<tr><td style="background:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
+  <p style="margin:0;color:#9a9aaa;font-size:12px;">Powered by Masakhe · South African SMME Platform</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+
+    await mailer.transporter.sendMail({
+      from: `"${mailer.fromName}" <${mailer.fromEmail}>`,
+      to: invoice.customer_email,
+      ...(mailer.replyTo ? { replyTo: mailer.replyTo } : {}),
+      subject: `${label} #${invoice.invoice_number} from ${businessName}`,
+      html,
+      attachments: [{
+        filename: `${invoice.invoice_number}.pdf`,
+        content: Buffer.from(pdfBytes),
+        contentType: "application/pdf",
+      }],
+    });
+
+    res.json({ ok: true, sentTo: invoice.customer_email });
+  } catch (err: any) {
+    console.error("Invoice email error:", err);
+    res.status(500).json({ error: err.message || "Failed to send email" });
   }
 });
 

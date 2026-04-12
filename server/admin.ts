@@ -2,7 +2,8 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
-import { sendSubscriptionInvoiceEmail, getBaseUrl } from "./email";
+import { getBaseUrl } from "./email";
+import { getTransporterForUser } from "./email-settings";
 
 export const adminRouter = Router();
 
@@ -301,19 +302,53 @@ adminRouter.post("/clients/:id/invoice", async (req, res) => {
 
     const invoiceNumber = merchantRef;
     const descText = description || `Monthly ${planName} subscription`;
+    const appUrl = getBaseUrl(req.get("origin") || undefined);
+    const firstName = (clientUser.full_name || clientUser.email).split(" ")[0];
+    const amountFormatted = `R${(amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 
-    await sendSubscriptionInvoiceEmail(
-      clientUser.email,
-      clientUser.full_name || clientUser.email,
-      invoiceNumber,
-      planName,
-      amountCents,
-      descText,
-      dueDate,
-      getBaseUrl(req.get("origin") || undefined)
-    );
+    let emailSent = false;
+    const mailer = await getTransporterForUser(req.session.userId!);
+    if (mailer) {
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+<table width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 20px;"><tr><td align="center">
+<table width="600" cellspacing="0" cellpadding="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#007749,#005C3A);padding:32px 40px;text-align:center;">
+  <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">Masakhe</h1>
+  <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Subscription Invoice</p>
+</td></tr>
+<tr><td style="padding:40px;">
+  <h2 style="margin:0 0 8px;color:#1a1a2e;font-size:22px;">Invoice #${invoiceNumber}</h2>
+  <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Hi ${firstName}, please find your subscription invoice below.</p>
+  <table width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+    <tr style="background:#f9fafb;"><td style="padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #e5e7eb;">Description</td><td style="padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #e5e7eb;text-align:right;">Amount</td></tr>
+    <tr><td style="padding:16px;color:#1a1a2e;font-size:15px;"><strong>${planName} Subscription</strong><br><span style="color:#6b7280;font-size:13px;">${descText}</span></td><td style="padding:16px;color:#1a1a2e;font-size:15px;font-weight:700;text-align:right;">${amountFormatted}</td></tr>
+    <tr style="background:#f9fafb;border-top:2px solid #e5e7eb;"><td style="padding:12px 16px;font-size:14px;font-weight:700;color:#1a1a2e;">Total Due</td><td style="padding:12px 16px;font-size:16px;font-weight:700;color:#007749;text-align:right;">${amountFormatted}</td></tr>
+  </table>
+  <p style="margin:0 0 16px;color:#6b7280;font-size:13px;">Due Date: <strong style="color:#1a1a2e;">${dueDate}</strong></p>
+  <table cellspacing="0" cellpadding="0" style="margin:0 0 24px;"><tr><td style="background:#007749;border-radius:8px;"><a href="${appUrl}/dashboard/billing" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now</a></td></tr></table>
+  <p style="margin:0;color:#6b7280;font-size:13px;">If you have questions, contact us at ${mailer.fromEmail}.</p>
+</td></tr>
+<tr><td style="background:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
+  <p style="margin:0;color:#9a9aaa;font-size:12px;">&copy; ${new Date().getFullYear()} Masakhe. A digital platform for South African SMMEs.</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
 
-    res.json({ ok: true, invoiceNumber, emailSent: true });
+      try {
+        await mailer.transporter.sendMail({
+          from: `"${mailer.fromName}" <${mailer.fromEmail}>`,
+          to: clientUser.email,
+          ...(mailer.replyTo ? { replyTo: mailer.replyTo } : {}),
+          subject: `Invoice #${invoiceNumber} — ${planName} Subscription`,
+          html,
+        });
+        emailSent = true;
+      } catch (mailErr: any) {
+        console.error("Invoice email failed:", mailErr.message);
+      }
+    }
+
+    res.json({ ok: true, invoiceNumber, emailSent });
   } catch (err: any) {
     console.error("Admin invoice creation error:", err);
     res.status(500).json({ error: "Failed to create invoice" });
