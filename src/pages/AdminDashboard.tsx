@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
-  CreditCard, BadgeCheck, BanknoteIcon
+  CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -141,15 +141,38 @@ interface InvoiceTarget {
   priceCents: number | null;
 }
 
+interface InvoiceItem {
+  name: string;
+  qty: number;
+  unitPrice: number;
+}
+
+const INV_TEMPLATES = [
+  { id: 1, name: "Classic", badgeBg: "bg-emerald-700", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect width="5" height="40" fill="#156C41"/><rect x="8" y="4" width="30" height="4" rx="1" fill="#156C41" opacity="0.9"/><rect x="8" y="10" width="20" height="2" rx="0.5" fill="#aaa"/><rect x="8" y="13" width="15" height="2" rx="0.5" fill="#aaa"/><rect x="8" y="18" width="54" height="1" fill="#156C41"/><rect x="8" y="22" width="54" height="5" rx="0.5" fill="#156C41"/><rect x="8" y="29" width="36" height="2" rx="0.5" fill="#e5e5e5"/><rect x="8" y="33" width="36" height="2" rx="0.5" fill="#e5e5e5"/><rect x="46" y="29" width="16" height="8" rx="1" fill="#156C41"/></svg>) },
+  { id: 2, name: "Modern", badgeBg: "bg-blue-900", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect x="4" y="4" width="32" height="4" rx="1" fill="#173872" opacity="0.85"/><rect x="4" y="10" width="22" height="2" rx="0.5" fill="#aaa"/><rect x="4" y="13" width="16" height="2" rx="0.5" fill="#aaa"/><rect x="40" y="3" width="20" height="16" rx="1" fill="#173872"/><rect x="43" y="6" width="14" height="3" rx="0.5" fill="#fff" opacity="0.9"/><rect x="43" y="11" width="10" height="2" rx="0.5" fill="#fff" opacity="0.6"/><rect x="43" y="14" width="12" height="2" rx="0.5" fill="#fff" opacity="0.5"/><rect x="4" y="21" width="60" height="1.5" fill="#173872"/><rect x="4" y="25" width="24" height="8" rx="1" fill="#eef0f7"/><rect x="31" y="25" width="33" height="2" rx="0.5" fill="#e5e5e5"/><rect x="31" y="29" width="33" height="2" rx="0.5" fill="#e5e5e5"/><rect x="31" y="33" width="33" height="2" rx="0.5" fill="#e5e5e5"/></svg>) },
+  { id: 3, name: "Bold", badgeBg: "bg-neutral-800", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect width="64" height="16" fill="#1e1e1e"/><rect y="16" width="64" height="3" fill="#D96508"/><rect x="4" y="4" width="22" height="4" rx="1" fill="#fff" opacity="0.9"/><rect x="4" y="9" width="14" height="2" rx="0.5" fill="#888"/><rect x="4" y="22" width="56" height="5" rx="0.5" fill="#1e1e1e"/><rect x="4" y="29" width="40" height="2" rx="0.5" fill="#e5e5e5"/><rect x="4" y="33" width="40" height="2" rx="0.5" fill="#e5e5e5"/><rect x="46" y="28" width="14" height="9" rx="1" fill="#D96508"/></svg>) },
+  { id: 4, name: "Corporate", badgeBg: "bg-blue-600", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect width="64" height="14" fill="#1E59B8"/><rect x="4" y="3" width="24" height="4" rx="1" fill="#fff" opacity="0.9"/><rect x="4" y="9" width="16" height="2" rx="0.5" fill="#8baee0"/><rect x="4" y="17" width="27" height="11" rx="1" fill="#EBF1FB"/><rect x="4" y="17" width="27" height="3" fill="#1E59B8"/><rect x="6" y="22" width="18" height="2" rx="0.5" fill="#999"/><rect x="34" y="17" width="26" height="11" rx="1" fill="#EBF1FB"/><rect x="34" y="17" width="26" height="3" fill="#1E59B8"/><rect x="36" y="22" width="18" height="2" rx="0.5" fill="#999"/><rect x="4" y="31" width="56" height="4" rx="0.5" fill="#1E59B8"/></svg>) },
+  { id: 5, name: "Elegant", badgeBg: "bg-red-800", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect width="64" height="3" fill="#841212"/><rect x="10" y="7" width="44" height="4" rx="1" fill="#841212" opacity="0.85"/><rect x="18" y="12" width="28" height="1" fill="#841212"/><rect x="16" y="17" width="32" height="3" rx="0.5" fill="#841212" opacity="0.7"/><rect x="4" y="22" width="20" height="2" rx="0.5" fill="#ddd"/><rect x="4" y="26" width="56" height="0.7" fill="#841212"/><rect x="4" y="28" width="40" height="2" rx="0.5" fill="#f5e8e8"/><rect x="4" y="32" width="40" height="2" rx="0.5" fill="#eee"/><rect x="46" y="28" width="14" height="8" rx="1" fill="none" stroke="#841212" strokeWidth="0.8"/></svg>) },
+  { id: 6, name: "Vibrant", badgeBg: "bg-purple-700", preview: (<svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="40" fill="#fff"/><rect width="64" height="18" fill="#6B21B0"/><rect x="24" y="0" width="40" height="18" fill="#7c2fc0"/><rect x="3" y="18" width="4" height="22" fill="#6B21B0"/><rect x="9" y="4" width="24" height="4" rx="1" fill="#fff" opacity="0.9"/><rect x="9" y="10" width="16" height="2" rx="0.5" fill="#c084fc"/><rect x="9" y="21" width="52" height="5" rx="0.5" fill="#6B21B0"/><rect x="9" y="29" width="36" height="2" rx="0.5" fill="#ead5ff"/><rect x="9" y="33" width="36" height="2" rx="0.5" fill="#ead5ff"/><rect x="47" y="29" width="14" height="8" rx="1" fill="#6B21B0"/></svg>) },
+];
+
 function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   const [invoiceTarget, setInvoiceTarget] = useState<InvoiceTarget | null>(null);
-  const [invoiceAmount, setInvoiceAmount] = useState("");
-  const [invoiceDesc, setInvoiceDesc] = useState("");
-  const [invoiceSending, setInvoiceSending] = useState(false);
+  const [invTemplate, setInvTemplate] = useState(1);
+  const [invCustomerName, setInvCustomerName] = useState("");
+  const [invCustomerEmail, setInvCustomerEmail] = useState("");
+  const [invCustomerPhone, setInvCustomerPhone] = useState("");
+  const [invCustomerAddress, setInvCustomerAddress] = useState("");
+  const [invReference, setInvReference] = useState("");
+  const [invPaymentTerms, setInvPaymentTerms] = useState("Due within 7 days");
+  const [invNotes, setInvNotes] = useState("");
+  const [invItems, setInvItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
+  const [invVatEnabled, setInvVatEnabled] = useState(true);
+  const [invSending, setInvSending] = useState(false);
 
   const loadClients = () => {
     fetch("/api/admin/clients", { credentials: "include" })
@@ -252,46 +275,71 @@ function ClientList() {
   };
 
   const openInvoiceModal = (client: Client) => {
-    setInvoiceTarget({
-      id: client.id,
-      name: client.full_name,
-      email: client.email,
-      planName: client.plan_name || null,
-      priceCents: null,
-    });
-    setInvoiceAmount(client.plan_name ? "" : "");
-    setInvoiceDesc("");
+    setInvoiceTarget({ id: client.id, name: client.full_name, email: client.email, planName: client.plan_name || null, priceCents: null });
+    setInvTemplate(1);
+    setInvCustomerName(client.full_name);
+    setInvCustomerEmail(client.email);
+    setInvCustomerPhone("");
+    setInvCustomerAddress("");
+    setInvReference("");
+    setInvPaymentTerms("Due within 7 days");
+    setInvNotes("");
+    setInvItems([{ name: client.plan_name ? `${client.plan_name} Subscription` : "", qty: 1, unitPrice: 0 }]);
+    setInvVatEnabled(true);
   };
 
-  const sendInvoice = async () => {
+  const updateInvItem = (i: number, field: keyof InvoiceItem, value: string | number) => {
+    setInvItems(prev => prev.map((it, idx) => idx === i ? { ...it, [field]: value } : it));
+  };
+
+  const handleAdminCreateInvoice = async (sendEmail: boolean) => {
     if (!invoiceTarget) return;
-    const amountNum = parseFloat(invoiceAmount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    setInvoiceSending(true);
+    if (!invCustomerName.trim()) { toast.error("Customer name is required"); return; }
+    if (invItems.some(it => !it.name.trim() || it.unitPrice <= 0)) { toast.error("Fill in all line items with a name and price"); return; }
+    const subtotal = invItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+    const vatAmount = invVatEnabled ? subtotal * 0.15 : 0;
+    const total = subtotal + vatAmount;
+    setInvSending(true);
     try {
-      const res = await fetch(`/api/admin/clients/${invoiceTarget.id}/invoice`, {
+      const res = await fetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          amountCents: Math.round(amountNum * 100),
-          description: invoiceDesc || undefined,
+          type: "invoice",
+          template: invTemplate,
+          customer_name: invCustomerName,
+          customer_email: invCustomerEmail || null,
+          customer_phone: invCustomerPhone || null,
+          customer_address: invCustomerAddress || null,
+          reference: invReference || null,
+          payment_terms: invPaymentTerms || null,
+          notes: invNotes || null,
+          items: invItems,
+          vat_enabled: invVatEnabled,
+          total_cents: Math.round(total * 100),
+          vat_cents: Math.round(vatAmount * 100),
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success(`Invoice ${data.invoiceNumber} created and emailed to ${invoiceTarget.email}`);
-        setInvoiceTarget(null);
+      if (!res.ok) { toast.error(data.error || "Failed to create invoice"); return; }
+      if (sendEmail && invCustomerEmail) {
+        const emailRes = await fetch(`/api/invoices/${data.id}/email`, { method: "POST", credentials: "include" });
+        const emailData = await emailRes.json();
+        if (emailRes.ok) {
+          toast.success(`Invoice ${data.invoice_number} created and emailed to ${invCustomerEmail}`);
+        } else {
+          toast.success(`Invoice ${data.invoice_number} created`);
+          toast.error(emailData.error || "Email failed — check your SMTP settings");
+        }
       } else {
-        toast.error(data.error || "Failed to create invoice");
+        toast.success(`Invoice ${data.invoice_number} created`);
       }
+      setInvoiceTarget(null);
     } catch {
-      toast.error("Network error sending invoice");
+      toast.error("Network error creating invoice");
     } finally {
-      setInvoiceSending(false);
+      setInvSending(false);
     }
   };
 
@@ -447,64 +495,134 @@ function ClientList() {
       </div>
 
       <Dialog open={!!invoiceTarget} onOpenChange={(open) => { if (!open) setInvoiceTarget(null); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-emerald-600" />
-              Create Invoice
+              Create Invoice for {invoiceTarget?.name}
             </DialogTitle>
             <DialogDescription>
-              Create and email a subscription invoice to {invoiceTarget?.name} ({invoiceTarget?.email}).
+              Build a professional invoice and optionally email the PDF directly to {invoiceTarget?.email}.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            {invoiceTarget?.planName && (
-              <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm">
-                <span className="text-muted-foreground">Plan: </span>
-                <strong>{invoiceTarget.planName}</strong>
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="inv-amount">Amount (R)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">R</span>
-                <Input
-                  id="inv-amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className="pl-8"
-                  value={invoiceAmount}
-                  onChange={(e) => setInvoiceAmount(e.target.value)}
-                />
+
+          <div className="space-y-5 py-2">
+            {/* Template picker */}
+            <div>
+              <Label className="text-xs mb-2 block">Template</Label>
+              <div className="flex gap-3 flex-wrap">
+                {INV_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setInvTemplate(tpl.id)}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${invTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"}`}
+                  >
+                    <div className="w-16 h-10 rounded overflow-hidden border border-gray-100 shadow-sm">{tpl.preview}</div>
+                    <span className="text-xs font-medium">{tpl.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="inv-desc">Description (optional)</Label>
-              <Textarea
-                id="inv-desc"
-                placeholder="Monthly subscription — June 2025"
-                rows={2}
-                value={invoiceDesc}
-                onChange={(e) => setInvoiceDesc(e.target.value)}
-              />
+
+            {/* Customer fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Customer Name *</Label>
+                <Input value={invCustomerName} onChange={(e) => setInvCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer Email</Label>
+                <Input value={invCustomerEmail} onChange={(e) => setInvCustomerEmail(e.target.value)} className="mt-1" placeholder="email@example.com" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer Phone</Label>
+                <Input value={invCustomerPhone} onChange={(e) => setInvCustomerPhone(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer Address</Label>
+                <Input value={invCustomerAddress} onChange={(e) => setInvCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Reference / PO Number</Label>
+                <Input value={invReference} onChange={(e) => setInvReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
+              </div>
+              <div>
+                <Label className="text-xs">Payment Terms</Label>
+                <Input value={invPaymentTerms} onChange={(e) => setInvPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. Due within 7 days" />
+              </div>
+            </div>
+
+            {/* Line items */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1">
+                <div className="col-span-5">Item</div>
+                <div className="col-span-2">Qty</div>
+                <div className="col-span-2">Unit Price (R)</div>
+                <div className="col-span-2 text-right">Amount</div>
+                <div className="col-span-1" />
+              </div>
+              {invItems.map((item, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-5">
+                    <Input value={item.name} onChange={(e) => updateInvItem(i, "name", e.target.value)} className="h-9 text-sm" placeholder="Item description" />
+                  </div>
+                  <div className="col-span-2">
+                    <Input type="number" min="1" value={item.qty} onChange={(e) => updateInvItem(i, "qty", parseInt(e.target.value) || 1)} className="h-9 text-sm" />
+                  </div>
+                  <div className="col-span-2">
+                    <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateInvItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-9 text-sm" placeholder="0.00" />
+                  </div>
+                  <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
+                  <div className="col-span-1 text-right">
+                    {invItems.length > 1 && (
+                      <Button variant="ghost" size="icon" type="button" className="h-7 w-7 text-red-500" onClick={() => setInvItems(prev => prev.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" type="button" onClick={() => setInvItems(prev => [...prev, { name: "", qty: 1, unitPrice: 0 }])}>
+                <Plus className="h-3 w-3 mr-1" /> Add Item
+              </Button>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <Label className="text-xs">Notes / Additional Information</Label>
+              <Textarea value={invNotes} onChange={(e) => setInvNotes(e.target.value)} rows={2} className="mt-1 text-sm" placeholder="e.g. payment instructions, thank-you message..." />
+            </div>
+
+            {/* VAT + totals */}
+            <div className="border-t pt-4 flex flex-col items-end gap-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer mb-2 self-start">
+                <input type="checkbox" checked={invVatEnabled} onChange={(e) => setInvVatEnabled(e.target.checked)} className="rounded" />
+                <span>Include VAT (15%)</span>
+              </label>
+              {(() => {
+                const sub = invItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+                const vat = invVatEnabled ? sub * 0.15 : 0;
+                return (
+                  <div className="w-full max-w-xs space-y-1 text-sm">
+                    <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>R{sub.toFixed(2)}</span></div>
+                    {invVatEnabled && <div className="flex justify-between text-muted-foreground"><span>VAT (15%)</span><span>R{vat.toFixed(2)}</span></div>}
+                    <div className="flex justify-between font-bold text-base border-t pt-1"><span>{invVatEnabled ? "Total (incl. VAT)" : "Total"}</span><span className="text-primary">R{(sub + vat).toFixed(2)}</span></div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInvoiceTarget(null)} disabled={invoiceSending}>
-              Cancel
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            <Button variant="outline" onClick={() => setInvoiceTarget(null)} disabled={invSending}>Cancel</Button>
+            <Button variant="outline" onClick={() => handleAdminCreateInvoice(false)} disabled={invSending}>
+              {invSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Receipt className="h-4 w-4 mr-2" />}
+              Save Invoice
             </Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={sendInvoice}
-              disabled={invoiceSending || !invoiceAmount}
-            >
-              {invoiceSending ? (
-                <><span className="animate-spin mr-2 inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full" />Sending...</>
-              ) : (
-                <><Receipt className="h-4 w-4 mr-2" />Send Invoice</>
-              )}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleAdminCreateInvoice(true)} disabled={invSending || !invCustomerEmail}>
+              {invSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+              Save & Email PDF
             </Button>
           </DialogFooter>
         </DialogContent>
