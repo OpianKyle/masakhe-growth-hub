@@ -8,6 +8,7 @@ import {
   CreditCard, Calendar, AlertTriangle,
   Loader2, Shield, CalendarDays, Wallet,
   User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
+  BellRing, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -862,12 +863,30 @@ function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: st
   );
 }
 
+interface AccessStatus {
+  blocked: boolean;
+  showPayNow: boolean;
+  daysUntilBilling: number | null;
+  nextBillingDate: string | null;
+  subscriptionStatus: string | null;
+  planName?: string;
+  amountCents?: number;
+}
+
 export default function BillingPage() {
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
   const { toast } = useToast();
+
+  const fetchAccessStatus = async () => {
+    try {
+      const res = await fetch("/api/billing/access-status", { credentials: "include" });
+      if (res.ok) setAccessStatus(await res.json());
+    } catch {}
+  };
 
   const fetchBilling = async () => {
     setLoading(true);
@@ -886,7 +905,7 @@ export default function BillingPage() {
     }
   };
 
-  useEffect(() => { fetchBilling(); }, []);
+  useEffect(() => { fetchBilling(); fetchAccessStatus(); }, []);
 
   useEffect(() => {
     const paymentResult = searchParams.get("payment");
@@ -934,12 +953,71 @@ export default function BillingPage() {
 
   const { subscription, plan, invoices } = data || {};
 
+  const payNowRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPayNow = () => {
+    payNowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-2xl font-bold font-heading text-foreground">Billing</h2>
         <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
       </motion.div>
+
+      {accessStatus?.blocked && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 flex items-start gap-4"
+        >
+          <div className="mt-0.5 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+            <Lock className="h-5 w-5 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-destructive text-sm">Account Access Suspended</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your account has been suspended because payment is overdue. Please settle your outstanding balance to restore full access to all features.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {accessStatus?.showPayNow && !accessStatus?.blocked && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 p-5 flex items-start gap-4"
+        >
+          <div className="mt-0.5 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+            <BellRing className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-amber-700 dark:text-amber-400 text-sm">
+              {accessStatus.daysUntilBilling !== null && accessStatus.daysUntilBilling > 0
+                ? `Subscription renews in ${accessStatus.daysUntilBilling} day${accessStatus.daysUntilBilling === 1 ? "" : "s"}`
+                : "Subscription renewal due"}
+            </h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your {accessStatus.planName || ""} subscription
+              {accessStatus.nextBillingDate
+                ? ` renews on ${new Date(accessStatus.nextBillingDate).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}`
+                : " is due for renewal"}.
+              {accessStatus.amountCents
+                ? ` Amount: R${(accessStatus.amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}.`
+                : ""}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
+            onClick={scrollToPayNow}
+          >
+            Pay Now
+          </Button>
+        </motion.div>
+      )}
 
       {!subscription ? (
         <>
@@ -964,6 +1042,7 @@ export default function BillingPage() {
       ) : (
         <>
           <motion.div
+            ref={payNowRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}

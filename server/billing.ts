@@ -266,6 +266,94 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
   }
 });
 
+billingRouter.get("/access-status", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+
+    if (user?.role === "admin") {
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "ACTIVE" });
+    }
+
+    const workspace = await queryOne(
+      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
+      [userId]
+    );
+    if (!workspace) {
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: null });
+    }
+
+    const subscription = await queryOne(
+      `SELECT bs.status, bs.next_billing_at, bs.trial_end_at, bs.plan_id,
+              bp.name as plan_name, bp.price_cents
+       FROM billing_subscriptions bs
+       JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.workspace_id = ?
+       ORDER BY bs.created_at DESC LIMIT 1`,
+      [workspace.id]
+    );
+
+    if (!subscription) {
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: null });
+    }
+
+    const now = new Date();
+    const status = subscription.status;
+
+    if (status === "TRIAL") {
+      const trialEnd = subscription.trial_end_at ? new Date(subscription.trial_end_at) : null;
+      const expired = trialEnd && trialEnd < now;
+      return res.json({ blocked: !!expired, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "TRIAL" });
+    }
+
+    if (status === "CANCELLED") {
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "CANCELLED" });
+    }
+
+    const nextBilling = subscription.next_billing_at ? new Date(subscription.next_billing_at) : null;
+    let daysUntilBilling: number | null = null;
+    let blocked = false;
+    let showPayNow = false;
+
+    if (nextBilling) {
+      const msUntil = nextBilling.getTime() - now.getTime();
+      daysUntilBilling = Math.ceil(msUntil / (1000 * 60 * 60 * 24));
+
+      if (daysUntilBilling <= 5) showPayNow = true;
+
+      if (daysUntilBilling < -3) blocked = true;
+    }
+
+    if (status === "PAST_DUE") {
+      const pendingInvoice = await queryOne(
+        `SELECT created_at FROM billing_invoices
+         WHERE workspace_id = ? AND status = 'PENDING'
+         ORDER BY created_at DESC LIMIT 1`,
+        [workspace.id]
+      );
+      if (pendingInvoice) {
+        const daysOverdue = Math.floor((now.getTime() - new Date(pendingInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysOverdue >= 3) blocked = true;
+      } else {
+        blocked = true;
+      }
+      showPayNow = true;
+    }
+
+    res.json({
+      blocked,
+      showPayNow,
+      daysUntilBilling,
+      nextBillingDate: nextBilling ? nextBilling.toISOString() : null,
+      subscriptionStatus: status,
+      planName: subscription.plan_name,
+      amountCents: subscription.price_cents,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

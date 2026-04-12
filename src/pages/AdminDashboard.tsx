@@ -11,6 +11,11 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -128,10 +133,23 @@ function AdminOverview() {
   );
 }
 
+interface InvoiceTarget {
+  id: string;
+  name: string;
+  email: string;
+  planName: string | null;
+  priceCents: number | null;
+}
+
 function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  const [invoiceTarget, setInvoiceTarget] = useState<InvoiceTarget | null>(null);
+  const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [invoiceDesc, setInvoiceDesc] = useState("");
+  const [invoiceSending, setInvoiceSending] = useState(false);
 
   const loadClients = () => {
     fetch("/api/admin/clients", { credentials: "include" })
@@ -230,6 +248,50 @@ function ClientList() {
     } else {
       const data = await res.json();
       toast.error(data.error || "Failed to delete");
+    }
+  };
+
+  const openInvoiceModal = (client: Client) => {
+    setInvoiceTarget({
+      id: client.id,
+      name: client.full_name,
+      email: client.email,
+      planName: client.plan_name || null,
+      priceCents: null,
+    });
+    setInvoiceAmount(client.plan_name ? "" : "");
+    setInvoiceDesc("");
+  };
+
+  const sendInvoice = async () => {
+    if (!invoiceTarget) return;
+    const amountNum = parseFloat(invoiceAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    setInvoiceSending(true);
+    try {
+      const res = await fetch(`/api/admin/clients/${invoiceTarget.id}/invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          amountCents: Math.round(amountNum * 100),
+          description: invoiceDesc || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Invoice ${data.invoiceNumber} created and emailed to ${invoiceTarget.email}`);
+        setInvoiceTarget(null);
+      } else {
+        toast.error(data.error || "Failed to create invoice");
+      }
+    } catch {
+      toast.error("Network error sending invoice");
+    } finally {
+      setInvoiceSending(false);
     }
   };
 
@@ -356,9 +418,14 @@ function ClientList() {
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-1">
                     {client.role !== "admin" && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Login as user" onClick={() => impersonateUser(client.id, client.full_name)}>
-                        <LogIn className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Login as user" onClick={() => impersonateUser(client.id, client.full_name)}>
+                          <LogIn className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Create invoice" onClick={() => openInvoiceModal(client)}>
+                          <Receipt className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Toggle role" onClick={() => toggleRole(client.id, client.role)}>
                       <Shield className="h-4 w-4" />
@@ -378,6 +445,70 @@ function ClientList() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={!!invoiceTarget} onOpenChange={(open) => { if (!open) setInvoiceTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-emerald-600" />
+              Create Invoice
+            </DialogTitle>
+            <DialogDescription>
+              Create and email a subscription invoice to {invoiceTarget?.name} ({invoiceTarget?.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {invoiceTarget?.planName && (
+              <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm">
+                <span className="text-muted-foreground">Plan: </span>
+                <strong>{invoiceTarget.planName}</strong>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="inv-amount">Amount (R)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">R</span>
+                <Input
+                  id="inv-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="pl-8"
+                  value={invoiceAmount}
+                  onChange={(e) => setInvoiceAmount(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inv-desc">Description (optional)</Label>
+              <Textarea
+                id="inv-desc"
+                placeholder="Monthly subscription — June 2025"
+                rows={2}
+                value={invoiceDesc}
+                onChange={(e) => setInvoiceDesc(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInvoiceTarget(null)} disabled={invoiceSending}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={sendInvoice}
+              disabled={invoiceSending || !invoiceAmount}
+            >
+              {invoiceSending ? (
+                <><span className="animate-spin mr-2 inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full" />Sending...</>
+              ) : (
+                <><Receipt className="h-4 w-4 mr-2" />Send Invoice</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

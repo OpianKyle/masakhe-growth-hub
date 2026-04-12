@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
+import { sendSubscriptionInvoiceEmail, getBaseUrl } from "./email";
 
 export const adminRouter = Router();
 
@@ -255,6 +256,87 @@ adminRouter.get("/websites", async (req, res) => {
     res.json(websites);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch websites" });
+  }
+});
+
+adminRouter.post("/clients/:id/invoice", async (req, res) => {
+  try {
+    const { amountCents, description, planOverride } = req.body;
+    if (!amountCents || amountCents < 1) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const clientUser = await queryOne(
+      `SELECT u.id, u.email, u.full_name,
+              bp.business_name
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       WHERE u.id = ?`,
+      [req.params.id]
+    );
+    if (!clientUser) return res.status(404).json({ error: "Client not found" });
+
+    const workspaceId = await ensureWorkspaceForUser(req.params.id);
+
+    const subscription = await queryOne(
+      `SELECT bs.id, bs.status, bs.plan_id, bp.code as plan_code, bp.name as plan_name, bp.price_cents
+       FROM billing_subscriptions bs
+       JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.workspace_id = ? AND bs.status IN ('ACTIVE','TRIAL')
+       ORDER BY bs.created_at DESC LIMIT 1`,
+      [workspaceId]
+    );
+
+    const planName = planOverride || subscription?.plan_name || "Subscription";
+    const merchantRef = `INV-ADM-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+
+    await execute(
+      `INSERT INTO billing_invoices (workspace_id, subscription_id, plan_id, amount_cents, currency, status, merchant_ref, created_at)
+       VALUES (?, ?, ?, ?, 'ZAR', 'PENDING', ?, ?)`,
+      [workspaceId, subscription?.id || null, subscription?.plan_id || null, amountCents, merchantRef, now]
+    );
+
+    const invoiceNumber = merchantRef;
+    const descText = description || `Monthly ${planName} subscription`;
+
+    await sendSubscriptionInvoiceEmail(
+      clientUser.email,
+      clientUser.full_name || clientUser.email,
+      invoiceNumber,
+      planName,
+      amountCents,
+      descText,
+      dueDate,
+      getBaseUrl(req.get("origin") || undefined)
+    );
+
+    res.json({ ok: true, invoiceNumber, emailSent: true });
+  } catch (err: any) {
+    console.error("Admin invoice creation error:", err);
+    res.status(500).json({ error: "Failed to create invoice" });
+  }
+});
+
+adminRouter.get("/clients/subscribed", async (req, res) => {
+  try {
+    const clients = await queryAll(
+      `SELECT u.id, u.email, u.full_name,
+              bp.business_name,
+              bs.status as subscription_status,
+              bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       JOIN workspace_members wm ON wm.user_id = u.id
+       JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status IN ('ACTIVE','TRIAL')
+       JOIN billing_plans bpl ON bpl.id = bs.plan_id
+       ORDER BY u.full_name ASC`
+    );
+    res.json(clients);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch subscribed clients" });
   }
 });
 
