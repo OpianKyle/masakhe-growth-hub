@@ -880,6 +880,11 @@ export default function BillingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
   const { toast } = useToast();
+  const payNowRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPayNow = () => {
+    payNowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const fetchAccessStatus = async () => {
     try {
@@ -952,12 +957,6 @@ export default function BillingPage() {
   }
 
   const { subscription, plan, invoices } = data || {};
-
-  const payNowRef = useRef<HTMLDivElement>(null);
-
-  const scrollToPayNow = () => {
-    payNowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
