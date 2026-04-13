@@ -553,6 +553,40 @@ const changePlanSchema = z.object({
 
 type ChangePlanFormData = z.infer<typeof changePlanSchema>;
 
+function PayNowSection({ onSuccess }: { onSuccess: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className="rounded-xl border border-border bg-card p-6 shadow-card space-y-4"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold font-heading text-foreground flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            Pay Now
+          </h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Set up or update your monthly debit order payment.</p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setOpen(v => !v)}
+          className="shrink-0"
+        >
+          {open ? "Hide" : "Pay Now"}
+        </Button>
+      </div>
+      {open && (
+        <div className="pt-2 border-t border-border">
+          <InlineSubscribeForm onSuccess={() => { setOpen(false); onSuccess(); }} />
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: string; onSuccess: () => void }) {
   const { user } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
@@ -1108,6 +1142,10 @@ export default function BillingPage() {
               </div>
               <InlineSubscribeForm onSuccess={fetchBilling} />
             </motion.div>
+          )}
+
+          {subscription.status === "ACTIVE" && (
+            <PayNowSection onSuccess={fetchBilling} />
           )}
 
           {subscription.status === "ACTIVE" && plan?.code && (
