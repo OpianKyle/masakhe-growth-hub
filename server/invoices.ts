@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { getTransporterForUser } from "./email-settings";
-import { getBaseUrl } from "./email";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -869,7 +868,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     const label = isQuote ? "Quote" : "Invoice";
     const totalFormatted = `R${(invoice.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
     const dateStr = new Date(invoice.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
-    const appUrl = getBaseUrl(req.get("origin") || undefined);
+    const appUrl = process.env.APP_URL || "https://masakhegroup.co.za";
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">

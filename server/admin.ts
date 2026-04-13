@@ -2,7 +2,6 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
-import { getBaseUrl } from "./email";
 import { getTransporterForUser } from "./email-settings";
 
 export const adminRouter = Router();
@@ -302,7 +301,7 @@ adminRouter.post("/clients/:id/invoice", async (req, res) => {
 
     const invoiceNumber = merchantRef;
     const descText = description || `Monthly ${planName} subscription`;
-    const appUrl = getBaseUrl(req.get("origin") || undefined);
+    const appUrl = process.env.APP_URL || "https://masakhegroup.co.za";
     const firstName = (clientUser.full_name || clientUser.email).split(" ")[0];
     const amountFormatted = `R${(amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 

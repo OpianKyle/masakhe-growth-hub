@@ -2,7 +2,7 @@ import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendPasswordResetEmail, getBaseUrl } from "./email";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "./email";
 
 export const authRouter = Router();
 
@@ -112,7 +112,7 @@ authRouter.post("/register", async (req, res) => {
     req.session.userId = userId;
     req.session.save(async () => {
       const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [userId]);
-      sendWelcomeEmail(email.toLowerCase(), fullName, getBaseUrl(req.headers.origin)).catch(() => {});
+      sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
       res.json({ ok: true, user });
     });
   } catch (err: any) {
@@ -186,7 +186,7 @@ authRouter.post("/forgot-password", async (req, res) => {
         [randomUUID(), user.id, token, expiresAt]
       );
 
-      sendPasswordResetEmail(email.toLowerCase(), user.full_name, token, getBaseUrl(req.headers.origin)).catch(() => {});
+      sendPasswordResetEmail(email.toLowerCase(), user.full_name, token).catch(() => {});
     }
   } catch (err: any) {
     res.status(500).json({ error: "Something went wrong" });
