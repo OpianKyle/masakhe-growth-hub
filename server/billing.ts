@@ -475,6 +475,68 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   }
 });
 
+billingRouter.post("/manual-payment", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { planCode, recipientName, email, contactNumber } = req.body;
+
+    if (!planCode || !["starter", "pro", "premium"].includes(planCode)) {
+      return res.status(400).json({ error: "Invalid plan code" });
+    }
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const plan = await queryOne("SELECT * FROM billing_plans WHERE code = ?", [planCode]);
+    if (!plan) return res.status(404).json({ error: "Plan not found" });
+
+    const workspaceId = await ensureDefaultWorkspace(userId);
+    const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
+    const merchantRef = `PAY_${refSuffix}`;
+    const amount = (plan.price_cents / 100).toFixed(2);
+    const puid = randomUUID();
+
+    await execute(
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, ?, 'PENDING', ?)",
+      [workspaceId, plan.id, plan.price_cents, plan.currency, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: plan.currency || "ZAR",
+      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "ManualPayment",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: plan.code,
+      ItemDescr1: `${plan.name} – Monthly Subscription`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: recipientName || userRecord?.full_name || "Customer",
+      contactNumber: contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Billing] Manual payment session created:", { MerchantReference: merchantRef, Amount: amount });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Billing] Manual payment error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function handleReturnRedirect(req: any, res: any) {
   try {
     const q = { ...req.body, ...req.query };
@@ -548,19 +610,39 @@ async function handleReturnRedirect(req: any, res: any) {
         [invoice.workspace_id]
       );
 
+      const isManualPayment = merchantRef.startsWith("PAY_");
+      const nextBillingAt = isManualPayment
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ")
+        : null;
+
       let subscriptionId;
       if (existingSub) {
-        await execute(
-          "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
-          [plan.id, adumoSubId || null, existingSub.id]
-        );
+        if (isManualPayment) {
+          await execute(
+            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, next_billing_at = ?, updated_at = NOW() WHERE id = ?",
+            [plan.id, nextBillingAt, existingSub.id]
+          );
+        } else {
+          await execute(
+            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+            [plan.id, adumoSubId || null, existingSub.id]
+          );
+        }
         subscriptionId = existingSub.id;
       } else {
-        const subResult = await execute(
-          "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, adumo_subscription_id) VALUES (?, ?, 'ACTIVE', ?)",
-          [invoice.workspace_id, plan.id, adumoSubId || null]
-        );
-        subscriptionId = subResult.insertId;
+        if (isManualPayment) {
+          const subResult = await execute(
+            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, next_billing_at) VALUES (?, ?, 'ACTIVE', ?)",
+            [invoice.workspace_id, plan.id, nextBillingAt]
+          );
+          subscriptionId = subResult.insertId;
+        } else {
+          const subResult = await execute(
+            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, adumo_subscription_id) VALUES (?, ?, 'ACTIVE', ?)",
+            [invoice.workspace_id, plan.id, adumoSubId || null]
+          );
+          subscriptionId = subResult.insertId;
+        }
       }
 
       await execute("UPDATE billing_invoices SET subscription_id = ? WHERE id = ?", [subscriptionId, invoice.id]);

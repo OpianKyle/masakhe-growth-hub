@@ -145,6 +145,131 @@ function ordinal(n: number) {
   return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
 }
 
+const manualPaySchema = z.object({
+  planCode: z.enum(["starter", "pro", "premium"]),
+  recipientName: z.string().min(2, "Full name is required"),
+  email: z.string().email("A valid email address is required"),
+  contactNumber: z.string().min(7, "Contact number is required"),
+});
+type ManualPayFormData = z.infer<typeof manualPaySchema>;
+
+function ManualPayNowForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const { toast } = useToast();
+
+  const form = useForm<ManualPayFormData>({
+    resolver: zodResolver(manualPaySchema),
+    defaultValues: {
+      planCode: "starter",
+      recipientName: user?.full_name || "",
+      email: user?.email || "",
+      contactNumber: "",
+    },
+  });
+
+  useEffect(() => {
+    if (paymentData && formRef.current) formRef.current.submit();
+  }, [paymentData]);
+
+  const selectedPlanCode = form.watch("planCode");
+  const plan = planOptions.find((p) => p.code === selectedPlanCode)!;
+
+  const onSubmit = async (data: ManualPayFormData) => {
+    try {
+      const res = await fetch("/api/billing/manual-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: "Error", description: json.error || "Failed to start payment.", variant: "destructive" });
+        return;
+      }
+      if (json.formAction && json.fields) setPaymentData(json);
+    } catch {
+      toast({ title: "Error", description: "Failed to process payment.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <>
+      {paymentData && (
+        <form ref={formRef} action={paymentData.formAction} method="POST" style={{ display: "none" }}>
+          {Object.entries(paymentData.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={String(value)} />
+          ))}
+        </form>
+      )}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <div>
+            <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Wallet className="h-3.5 w-3.5 text-primary" /> Choose a Plan
+            </p>
+            <FormField
+              control={form.control}
+              name="planCode"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="grid gap-2">
+                    {planOptions.map((p) => (
+                      <label key={p.code} className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${field.value === p.code ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                        <input type="radio" name="manualPlan" value={p.code} checked={field.value === p.code} onChange={() => field.onChange(p.code)} className="accent-primary" />
+                        <div className="flex-1 min-w-0 flex items-center justify-between">
+                          <span className="font-semibold text-sm text-foreground">{p.name}</span>
+                          <span className="text-sm font-bold text-foreground">{p.price}<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Separator />
+          <div className="space-y-3">
+            <FormField control={form.control} name="recipientName" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs flex items-center gap-1.5"><User className="h-3 w-3" /> Full Name</FormLabel>
+                <FormControl><Input placeholder="John Smith" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs flex items-center gap-1.5"><Mail className="h-3 w-3" /> Email</FormLabel>
+                <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="contactNumber" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs flex items-center gap-1.5"><Phone className="h-3 w-3" /> Contact Number</FormLabel>
+                <FormControl><Input placeholder="+27211234567" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+            You will be redirected to Adumo Online to complete your {plan?.price}/month payment securely. Your subscription will be activated for 30 days once payment is confirmed.
+          </div>
+          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !!paymentData}>
+            {form.formState.isSubmitting || paymentData
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
+              : <><CreditCard className="h-4 w-4 mr-2" />Pay {plan?.price} Now</>}
+          </Button>
+        </form>
+      </Form>
+    </>
+  );
+}
+
 function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
   const { user } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
@@ -553,8 +678,29 @@ const changePlanSchema = z.object({
 
 type ChangePlanFormData = z.infer<typeof changePlanSchema>;
 
+function SubscribeTabSection({ onSuccess }: { onSuccess: () => void }) {
+  const [tab, setTab] = useState<"manual" | "debit">("manual");
+  return (
+    <div className="space-y-4">
+      <div className="flex rounded-lg border border-border overflow-hidden">
+        <button type="button" onClick={() => setTab("manual")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
+          Pay This Month
+        </button>
+        <button type="button" onClick={() => setTab("debit")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
+          Set Up Debit Order
+        </button>
+      </div>
+      {tab === "manual"
+        ? <ManualPayNowForm onSuccess={onSuccess} />
+        : <InlineSubscribeForm onSuccess={onSuccess} />
+      }
+    </div>
+  );
+}
+
 function PayNowSection({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"manual" | "debit">("manual");
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -566,21 +712,36 @@ function PayNowSection({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <h3 className="text-lg font-bold font-heading text-foreground flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
-            Pay Now
+            Pay Subscription
           </h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Set up or update your monthly debit order payment.</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Pay this month manually or set up a debit order.</p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setOpen(v => !v)}
-          className="shrink-0"
-        >
+        <Button size="sm" onClick={() => setOpen(v => !v)} className="shrink-0">
           {open ? "Hide" : "Pay Now"}
         </Button>
       </div>
       {open && (
-        <div className="pt-2 border-t border-border">
-          <InlineSubscribeForm onSuccess={() => { setOpen(false); onSuccess(); }} />
+        <div className="pt-2 border-t border-border space-y-4">
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setTab("manual")}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}
+            >
+              Pay This Month
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("debit")}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}
+            >
+              Set Up Debit Order
+            </button>
+          </div>
+          {tab === "manual"
+            ? <ManualPayNowForm onSuccess={() => { setOpen(false); onSuccess(); }} />
+            : <InlineSubscribeForm onSuccess={() => { setOpen(false); onSuccess(); }} />
+          }
         </div>
       )}
     </motion.div>
@@ -1068,12 +1229,10 @@ export default function BillingPage() {
                 {subscription?.status === "CANCELLED" ? "Re-activate Your Subscription" : "Activate Your Subscription"}
               </h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                {subscription?.status === "CANCELLED"
-                  ? "Your subscription was cancelled. Select a plan below to re-subscribe and restore full access."
-                  : "Select a plan to unlock all Masakhe features. Billed monthly via debit order. Cancel anytime."}
+                Pay this month manually or set up an automatic monthly debit order.
               </p>
             </div>
-            <InlineSubscribeForm onSuccess={fetchBilling} />
+            <SubscribeTabSection onSuccess={fetchBilling} />
           </motion.div>
         </>
       ) : (
