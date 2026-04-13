@@ -1068,12 +1068,104 @@ interface AccessStatus {
   amountCents?: number;
 }
 
+interface InvoiceInfo {
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  total_cents: number;
+  type: string;
+}
+
+function InvoicePayForm({ invoice, onSuccess }: { invoice: InvoiceInfo; onSuccess: () => void }) {
+  const { user } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+  const [name, setName] = useState(user?.full_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => { if (paymentData && formRef.current) formRef.current.submit(); }, [paymentData]);
+
+  const handlePay = async () => {
+    if (!name.trim() || !email.trim()) {
+      toast({ title: "Required", description: "Please enter your name and email.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/billing/invoice-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ invoiceId: invoice.id, recipientName: name, email, contactNumber: phone }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast({ title: "Error", description: json.error || "Failed to start payment.", variant: "destructive" }); return; }
+      if (json.formAction && json.fields) setPaymentData(json);
+    } catch {
+      toast({ title: "Error", description: "Failed to process payment.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const amountFormatted = `R${(invoice.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border-2 border-primary/30 bg-primary/5 p-6 shadow-card space-y-5">
+      {paymentData && (
+        <form ref={formRef} action={paymentData.formAction} method="POST" style={{ display: "none" }}>
+          {Object.entries(paymentData.fields).map(([k, v]) => <input key={k} type="hidden" name={k} value={String(v)} />)}
+        </form>
+      )}
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <CreditCard className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold font-heading text-foreground">Pay Invoice {invoice.invoice_number}</h3>
+          <p className="text-sm text-muted-foreground">Complete payment for {invoice.customer_name}</p>
+        </div>
+        <div className="ml-auto text-right">
+          <p className="text-2xl font-bold text-primary">{amountFormatted}</p>
+          <p className="text-xs text-muted-foreground">Amount due</p>
+        </div>
+      </div>
+      <Separator />
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><User className="h-3 w-3" /> Full Name</label>
+          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
+        </div>
+        <div>
+          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><Mail className="h-3 w-3" /> Email</label>
+          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
+        </div>
+        <div>
+          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><Phone className="h-3 w-3" /> Contact Number</label>
+          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+27211234567" />
+        </div>
+      </div>
+      <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+        <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+        You will be redirected to Adumo Online to pay {amountFormatted} securely.
+      </div>
+      <Button className="w-full" onClick={handlePay} disabled={submitting || !!paymentData}>
+        {submitting || paymentData ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting...</> : <><CreditCard className="h-4 w-4 mr-2" />Pay {amountFormatted} Now</>}
+      </Button>
+    </motion.div>
+  );
+}
+
 export default function BillingPage() {
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
+  const [invoiceInfo, setInvoiceInfo] = useState<InvoiceInfo | null>(null);
   const { toast } = useToast();
   const payNowRef = useRef<HTMLDivElement>(null);
 
@@ -1105,7 +1197,17 @@ export default function BillingPage() {
     }
   };
 
-  useEffect(() => { fetchBilling(); fetchAccessStatus(); }, []);
+  useEffect(() => {
+    fetchBilling();
+    fetchAccessStatus();
+    const invId = searchParams.get("invId");
+    if (invId) {
+      fetch(`/api/billing/invoice-info/${invId}`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setInvoiceInfo(d); })
+        .catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const paymentResult = searchParams.get("payment");
@@ -1159,6 +1261,10 @@ export default function BillingPage() {
         <h2 className="text-2xl font-bold font-heading text-foreground">Billing</h2>
         <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
       </motion.div>
+
+      {invoiceInfo && (
+        <InvoicePayForm invoice={invoiceInfo} onSuccess={fetchBilling} />
+      )}
 
       {accessStatus?.blocked && (
         <motion.div

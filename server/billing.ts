@@ -475,6 +475,83 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
   }
 });
 
+billingRouter.get("/invoice-info/:id", requireAuth, async (req, res) => {
+  try {
+    const invoice = await queryOne(
+      "SELECT id, invoice_number, customer_name, total_cents, type FROM invoices WHERE id = ?",
+      [req.params.id]
+    );
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    res.json(invoice);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+billingRouter.post("/invoice-payment", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { invoiceId, recipientName, email, contactNumber } = req.body;
+
+    if (!invoiceId) return res.status(400).json({ error: "Invoice ID is required" });
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const srcInvoice = await queryOne("SELECT * FROM invoices WHERE id = ?", [invoiceId]);
+    if (!srcInvoice) return res.status(404).json({ error: "Invoice not found" });
+
+    const amountCents = srcInvoice.total_cents;
+    const amount = (amountCents / 100).toFixed(2);
+    const workspaceId = await ensureDefaultWorkspace(userId);
+    const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
+    const merchantRef = `INV_${refSuffix}`;
+    const puid = randomUUID();
+
+    const plan = await queryOne("SELECT * FROM billing_plans WHERE price_cents = ?", [amountCents])
+      || await queryOne("SELECT * FROM billing_plans ORDER BY ABS(price_cents - ?) LIMIT 1", [amountCents]);
+
+    await execute(
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, 'ZAR', 'PENDING', ?)",
+      [workspaceId, plan?.id || null, amountCents, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: "ZAR",
+      RedirectSuccessfulURL: `${APP_URL}/api/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "InvoicePayment",
+      Variable2: srcInvoice.invoice_number,
+      Qty1: "1",
+      ItemRef1: srcInvoice.invoice_number,
+      ItemDescr1: `Invoice ${srcInvoice.invoice_number}`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: recipientName || srcInvoice.customer_name || userRecord?.full_name || "Customer",
+      contactNumber: contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Billing] Invoice payment session:", { MerchantReference: merchantRef, Amount: amount, Invoice: srcInvoice.invoice_number });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Billing] Invoice payment error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 billingRouter.post("/manual-payment", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

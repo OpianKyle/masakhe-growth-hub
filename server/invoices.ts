@@ -891,7 +891,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     ${invoice.payment_terms ? `<tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Payment Terms</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.payment_terms}</td></tr>` : ""}
     <tr style="background:#f9fafb;"><td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a1a2e;">Total</td><td style="padding:14px 16px;font-size:18px;font-weight:700;color:#007749;text-align:right;">${totalFormatted}</td></tr>
   </table>
-  <table cellspacing="0" cellpadding="0" style="margin:0 0 24px;"><tr><td style="background:#007749;border-radius:8px;"><a href="${appUrl}/dashboard/billing" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now — ${totalFormatted}</a></td></tr></table>
+  <table cellspacing="0" cellpadding="0" style="margin:0 0 24px;"><tr><td style="background:#007749;border-radius:8px;"><a href="${appUrl}/dashboard/billing?invId=${invoice.id}" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now — ${totalFormatted}</a></td></tr></table>
   ${invoice.notes ? `<p style="margin:0 0 20px;color:#6b7280;font-size:13px;font-style:italic;">${invoice.notes}</p>` : ""}
   <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have any questions, please reply to this email or contact us at ${mailer.fromEmail}.</p>
   <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Thank you for your business!<br><strong style="color:#1a1a2e;">${businessName}</strong></p>
