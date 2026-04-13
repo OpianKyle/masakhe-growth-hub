@@ -1018,7 +1018,7 @@ export default function BillingPage() {
         </motion.div>
       )}
 
-      {!subscription ? (
+      {(!subscription || subscription.status === "CANCELLED") ? (
         <>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1030,9 +1030,13 @@ export default function BillingPage() {
               <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
                 <CreditCard className="h-7 w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold font-heading text-foreground">Activate Your Subscription</h3>
+              <h3 className="text-xl font-bold font-heading text-foreground">
+                {subscription?.status === "CANCELLED" ? "Re-activate Your Subscription" : "Activate Your Subscription"}
+              </h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                Select a plan to unlock all Masakhe features. Billed monthly via debit order. Cancel anytime.
+                {subscription?.status === "CANCELLED"
+                  ? "Your subscription was cancelled. Select a plan below to re-subscribe and restore full access."
+                  : "Select a plan to unlock all Masakhe features. Billed monthly via debit order. Cancel anytime."}
               </p>
             </div>
             <InlineSubscribeForm onSuccess={fetchBilling} />
