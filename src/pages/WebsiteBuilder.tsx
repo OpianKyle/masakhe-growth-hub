@@ -676,7 +676,7 @@ export default function WebsiteBuilder() {
                 <div className="flex gap-2">
                   <span className="w-10 shrink-0">CNAME</span>
                   <span className="w-14 shrink-0">{savedDomain.startsWith("www.") ? "www" : savedDomain.split(".")[0]}</span>
-                  <span className="break-all">masakhegroup.co.za</span>
+                  <span className="break-all">masakheportal.co.za</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="w-10 shrink-0">A</span>

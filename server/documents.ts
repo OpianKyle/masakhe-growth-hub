@@ -8,7 +8,7 @@ function getOpenAI() {
     return new OpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",
-      defaultHeaders: { "HTTP-Referer": process.env.APP_URL || "https://masakhegroup.co.za", "X-Title": "Masakhe" },
+      defaultHeaders: { "HTTP-Referer": process.env.APP_URL || "https://masakheportal.co.za", "X-Title": "Masakhe" },
     });
   }
   const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;

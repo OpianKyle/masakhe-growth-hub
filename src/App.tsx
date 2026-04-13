@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
 
-const MAIN_DOMAINS = ["masakhegroup.co.za", "localhost", "127.0.0.1"];
+const MAIN_DOMAINS = ["masakheportal.co.za", "localhost", "127.0.0.1"];
 
 function CustomDomainGate({ children }: { children: React.ReactNode }) {
   const [domainSlug, setDomainSlug] = useState<string | null | undefined>(undefined);

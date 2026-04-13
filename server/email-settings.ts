@@ -121,18 +121,18 @@ export async function getTransporterForUser(userId: string) {
   const smtpPort = parseInt(process.env.SMTP_PORT || "465");
   const nodemailer = await import("nodemailer");
   const transporter = nodemailer.default.createTransport({
-    host: process.env.SMTP_HOST || "smtp.masakhegroup.co.za",
+    host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
     port: smtpPort,
     secure: smtpPort === 465,
     auth: {
-      user: process.env.SMTP_USER || "admin@masakhegroup.co.za",
+      user: process.env.SMTP_USER || "admin@masakheportal.co.za",
       pass: smtpPass,
     },
   });
   return {
     transporter,
     fromName: process.env.SMTP_FROM_NAME || "Masakhe",
-    fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakhegroup.co.za",
+    fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za",
     replyTo: undefined,
   };
 }

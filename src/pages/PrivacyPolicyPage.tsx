@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
       <Helmet>
         <title>Privacy Policy | Masakhe SMME Platform</title>
         <meta name="description" content="Read the Masakhe privacy policy. Learn how we collect, use, and protect your personal and business data on the Masakhe SMME platform." />
-        <link rel="canonical" href="https://masakhegroup.co.za/privacy" />
+        <link rel="canonical" href="https://masakheportal.co.za/privacy" />
       </Helmet>
       {/* Header */}
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10">

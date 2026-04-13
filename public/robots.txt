@@ -5,4 +5,4 @@ Disallow: /admin/
 Disallow: /onboarding/
 Disallow: /api/
 
-Sitemap: https://masakhegroup.co.za/sitemap.xml
+Sitemap: https://masakheportal.co.za/sitemap.xml

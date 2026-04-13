@@ -12,7 +12,7 @@ const ADUMO_URL = process.env.ADUMO_ENV === "production"
   : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
 
 const APP_URL = process.env.ADUMO_ENV === "production"
-  ? (process.env.APP_URL || "https://masakhegroup.co.za")
+  ? (process.env.APP_URL || "https://masakheportal.co.za")
   : `https://${process.env.REPLIT_DEV_DOMAIN || `localhost:${process.env.PORT || 5000}`}`;
 
 async function ensureDefaultWorkspace(userId: string): Promise<string> {

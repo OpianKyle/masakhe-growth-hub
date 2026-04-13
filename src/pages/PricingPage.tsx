@@ -81,10 +81,10 @@ export default function PricingPage() {
       <Helmet>
         <title>Pricing Plans | Masakhe SMME Platform — From R599/month</title>
         <meta name="description" content="Simple, transparent pricing for South African SMMEs. Basic from R599/month — includes website builder, invoicing, compliance & more. No hidden fees." />
-        <link rel="canonical" href="https://masakhegroup.co.za/pricing" />
+        <link rel="canonical" href="https://masakheportal.co.za/pricing" />
         <meta property="og:title" content="Masakhe Pricing | SMME Plans from R599/month" />
         <meta property="og:description" content="Affordable plans for South African small businesses. Website builder, tax compliance, social media & more — all in one place." />
-        <meta property="og:url" content="https://masakhegroup.co.za/pricing" />
+        <meta property="og:url" content="https://masakheportal.co.za/pricing" />
         <script type="application/ld+json">{JSON.stringify({
           "@context": "https://schema.org",
           "@type": "PriceSpecification",

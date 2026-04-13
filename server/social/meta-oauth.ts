@@ -245,7 +245,7 @@ metaOAuthRouter.post("/meta/data-deletion", async (req: Request, res: Response) 
 
     console.log(`[Meta Data Deletion] Deleted ${deletedCount} account(s) for FB user ${facebookUserId}, code: ${confirmationCode}`);
 
-    const appUrl = process.env.APP_URL || "https://masakhegroup.co.za";
+    const appUrl = process.env.APP_URL || "https://masakheportal.co.za";
 
     res.json({
       url: `${appUrl}/meta-deletion-status?code=${confirmationCode}`,

@@ -82,10 +82,10 @@ export default function LandingPage() {
         <title>Masakhe | South African SMME Business Platform</title>
         <meta name="description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media management and client tools — all in one platform. From R599/month." />
         <meta name="keywords" content="SMME South Africa, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
-        <link rel="canonical" href="https://masakhegroup.co.za/" />
+        <link rel="canonical" href="https://masakheportal.co.za/" />
         <meta property="og:title" content="Masakhe | South African SMME Business Platform" />
         <meta property="og:description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media — all in one." />
-        <meta property="og:url" content="https://masakhegroup.co.za/" />
+        <meta property="og:url" content="https://masakheportal.co.za/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:title" content="Masakhe | South Africa's SMME Business Platform" />
         <meta name="twitter:description" content="All-in-one platform for South African SMMEs. Build, invoice, grow." />

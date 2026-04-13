@@ -12,11 +12,11 @@ function getGlobalTransporter() {
   if (!process.env.SMTP_PASSWORD) return null;
   const smtpPort = parseInt(process.env.SMTP_PORT || "465");
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.masakhegroup.co.za",
+    host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
     port: smtpPort,
     secure: smtpPort === 465,
     auth: {
-      user: process.env.SMTP_USER || "admin@masakhegroup.co.za",
+      user: process.env.SMTP_USER || "admin@masakheportal.co.za",
       pass: process.env.SMTP_PASSWORD,
     },
   });
@@ -34,9 +34,9 @@ async function resolveTransporter(userId: string, campaign: any) {
   }
   return {
     transporter: getGlobalTransporter(),
-    fromEmail: campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za",
+    fromEmail: campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za",
     fromName: campaign.from_name || "Masakhe",
-    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || "admin@masakhegroup.co.za",
+    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za",
   };
 }
 

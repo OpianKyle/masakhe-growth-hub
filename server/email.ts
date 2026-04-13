@@ -4,11 +4,11 @@ const smtpPort = parseInt(process.env.SMTP_PORT || "465");
 
 const transporter = process.env.SMTP_PASSWORD
   ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.masakhegroup.co.za",
+      host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
       port: smtpPort,
       secure: smtpPort === 465,
       auth: {
-        user: process.env.SMTP_USER || "admin@masakhegroup.co.za",
+        user: process.env.SMTP_USER || "admin@masakheportal.co.za",
         pass: process.env.SMTP_PASSWORD,
       },
     })
@@ -19,7 +19,7 @@ if (!transporter) {
 }
 
 export function getBaseUrl(reqOrigin?: string): string {
-  return reqOrigin || process.env.APP_URL || "https://masakhegroup.co.za";
+  return reqOrigin || process.env.APP_URL || "https://masakheportal.co.za";
 }
 
 export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUrl?: string) {
@@ -132,7 +132,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
 
   try {
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakhegroup.co.za"}>`,
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `Welcome to Masakhe, ${firstName}!`,
       html,
@@ -216,7 +216,7 @@ export async function sendSubscriptionInvoiceEmail(
               </table>
 
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">
-                If you have any questions about this invoice, please contact us at admin@masakhegroup.co.za.
+                If you have any questions about this invoice, please contact us at admin@masakheportal.co.za.
               </p>
               <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">
                 Thank you for your business!<br>
@@ -243,7 +243,7 @@ export async function sendSubscriptionInvoiceEmail(
 
   try {
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakhegroup.co.za"}>`,
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `Invoice #${invoiceNumber} — ${planName} Subscription`,
       html,
@@ -328,7 +328,7 @@ export async function sendPaymentReminderEmail(
 
   try {
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakhegroup.co.za"}>`,
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `Subscription Renewal Due — ${dueDate}`,
       html,
@@ -406,7 +406,7 @@ export async function sendPasswordResetEmail(toEmail: string, fullName: string, 
 
   try {
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakhegroup.co.za"}>`,
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: "Reset your Masakhe password",
       html,

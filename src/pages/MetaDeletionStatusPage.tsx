@@ -109,8 +109,8 @@ export default function MetaDeletionStatusPage() {
 
             <p className="text-xs text-gray-400 text-center">
               Questions? Email{" "}
-              <a href="mailto:support@masakhegroup.co.za" className="underline">
-                support@masakhegroup.co.za
+              <a href="mailto:support@masakheportal.co.za" className="underline">
+                support@masakheportal.co.za
               </a>
             </p>
           </div>

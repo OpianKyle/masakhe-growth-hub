@@ -57,9 +57,9 @@ export default function LoginPage() {
       <Helmet>
         <title>Sign In | Masakhe SMME Platform</title>
         <meta name="description" content="Sign in to your Masakhe SMME account. Manage your business registration, compliance, invoicing, payroll, and more." />
-        <link rel="canonical" href="https://masakhegroup.co.za/login" />
+        <link rel="canonical" href="https://masakheportal.co.za/login" />
         <meta property="og:title" content="Sign In | Masakhe SMME Platform" />
-        <meta property="og:url" content="https://masakhegroup.co.za/login" />
+        <meta property="og:url" content="https://masakheportal.co.za/login" />
       </Helmet>
       <div
         className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden"
