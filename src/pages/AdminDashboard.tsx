@@ -313,17 +313,15 @@ function ClientList() {
         body: JSON.stringify({
           type: "invoice",
           template: invTemplate,
-          customer_name: invCustomerName,
-          customer_email: invCustomerEmail || null,
-          customer_phone: invCustomerPhone || null,
-          customer_address: invCustomerAddress || null,
+          customerName: invCustomerName,
+          customerEmail: invCustomerEmail || null,
+          customerPhone: invCustomerPhone || null,
+          customerAddress: invCustomerAddress || null,
           reference: invReference || null,
-          payment_terms: invPaymentTerms || null,
+          paymentTerms: invPaymentTerms || null,
           notes: invNotes || null,
           items: invItems,
-          vat_enabled: invVatEnabled,
-          total_cents: Math.round(total * 100),
-          vat_cents: Math.round(vatAmount * 100),
+          vatEnabled: invVatEnabled,
         }),
       });
       const data = await res.json();
