@@ -32,6 +32,23 @@ function requireAuth(req: any, res: any, next: Function) {
   next();
 }
 
+function safeJsonParse(raw: string): any {
+  let text = (raw || "{}").trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```[a-z]*\n?/i, "").replace(/```\s*$/, "").trim();
+  }
+  text = text.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, "")
+             .replace(/\n/g, "\\n")
+             .replace(/\r/g, "\\r")
+             .replace(/\t/g, "\\t");
+  try {
+    return JSON.parse(text);
+  } catch {
+    const fixed = text.replace(/\\n/g, " ").replace(/\\r/g, "").replace(/\\t/g, " ");
+    return JSON.parse(fixed);
+  }
+}
+
 export const documentsRouter = Router();
 
 // ─── BUSINESS PLANS ─────────────────────────────────────────────────────────
@@ -130,7 +147,7 @@ Return ONLY valid JSON where every value is a plain text string.`;
       response_format: { type: "json_object" },
     });
 
-    const content = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    const content = safeJsonParse(completion.choices[0]?.message?.content || "{}");
     await execute(
       "UPDATE business_plans SET generated_content = ?, status = 'generated', updated_at = ? WHERE id = ?",
       [JSON.stringify(content), new Date().toISOString(), req.params.id]
@@ -229,7 +246,7 @@ Return ONLY valid JSON where every value is a plain text string.`;
       response_format: { type: "json_object" },
     });
 
-    const content = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    const content = safeJsonParse(completion.choices[0]?.message?.content || "{}");
     await execute(
       "UPDATE funding_proposals SET generated_content = ?, status = 'generated', updated_at = ? WHERE id = ?",
       [JSON.stringify(content), new Date().toISOString(), req.params.id]
@@ -619,7 +636,7 @@ Return ONLY valid JSON.`;
       response_format: { type: "json_object" },
     });
 
-    const content = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    const content = safeJsonParse(completion.choices[0]?.message?.content || "{}");
     await execute(
       "UPDATE funding_applications SET generated_content=?, status='submitted', updated_at=? WHERE id=?",
       [JSON.stringify(content), new Date().toISOString(), req.params.id]
