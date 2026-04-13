@@ -44,105 +44,151 @@ const white = rgb(1, 1, 1);
 const grey = rgb(0.4, 0.4, 0.4);
 const lightGrey = rgb(0.85, 0.85, 0.85);
 
+const RIGHT = 545; // right margin for right-aligned text
+
+function rText(page: PDFPage, text: string, rightX: number, y: number, size: number, font: PDFFont, color: RGB) {
+  page.drawText(text, { x: rightX - font.widthOfTextAtSize(text, size), y, size, font, color });
+}
+
+function truncate(str: string, maxLen: number) {
+  return str.length > maxLen ? str.slice(0, maxLen - 1) + "…" : str;
+}
+
 function drawCustomerInfo(ctx: TemplateCtx, x: number, y: number, labelColor: RGB): number {
   const { page, font, fontBold, invoice, isQuote } = ctx;
   const label = isQuote ? "QUOTE FOR:" : "BILL TO:";
   page.drawText(label, { x, y, size: 8, font: fontBold, color: labelColor });
+  y -= 15;
+  page.drawText(invoice.customer_name, { x, y, size: 11, font: fontBold, color: black });
   y -= 14;
-  page.drawText(invoice.customer_name, { x, y, size: 10, font: fontBold, color: black });
-  y -= 13;
-  if (invoice.customer_email) { page.drawText(invoice.customer_email, { x, y, size: 8, font, color: grey }); y -= 12; }
-  if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x, y, size: 8, font, color: grey }); y -= 12; }
-  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x, y, size: 8, font, color: grey }); y -= 12; }
+  if (invoice.customer_email) { page.drawText(invoice.customer_email, { x, y, size: 8.5, font, color: grey }); y -= 12; }
+  if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x, y, size: 8.5, font, color: grey }); y -= 12; }
+  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 70), { x, y, size: 8.5, font, color: grey }); y -= 12; }
   return y;
 }
 
 function drawStandardTable(ctx: TemplateCtx, y: number, headerBg: RGB, headerText: RGB, altRowBg: RGB | null): number {
   const { page, font, fontBold, items } = ctx;
-  page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 22, color: headerBg });
-  page.drawText("Description", { x: 56, y: y + 3, size: 9, font: fontBold, color: headerText });
-  page.drawText("Qty", { x: 325, y: y + 3, size: 9, font: fontBold, color: headerText });
-  page.drawText("Unit Price", { x: 378, y: y + 3, size: 9, font: fontBold, color: headerText });
-  page.drawText("Amount", { x: 478, y: y + 3, size: 9, font: fontBold, color: headerText });
-  y -= 26;
+  const ROW_H = 20;
+  const COL_QTY = 358;
+  const COL_UNIT = 435;
+  const COL_AMT = RIGHT;
+
+  // Header
+  page.drawRectangle({ x: 50, y: y - 6, width: 495, height: 26, color: headerBg });
+  page.drawText("Description", { x: 58, y: y + 5, size: 9, font: fontBold, color: headerText });
+  rText(page, "Qty", COL_QTY, y + 5, 9, fontBold, headerText);
+  rText(page, "Unit Price", COL_UNIT, y + 5, 9, fontBold, headerText);
+  rText(page, "Amount", COL_AMT, y + 5, 9, fontBold, headerText);
+  y -= 30;
+
   items.forEach((item: any, idx: number) => {
     const qty = item.qty || 1;
     const up = item.unitPrice || 0;
     const amt = qty * up;
-    if (altRowBg && idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 18, color: altRowBg });
-    page.drawText(item.name || "Item", { x: 56, y, size: 9, font, color: black });
-    page.drawText(String(qty), { x: 330, y, size: 9, font, color: black });
-    page.drawText(`R${up.toFixed(2)}`, { x: 378, y, size: 9, font, color: black });
-    page.drawText(`R${amt.toFixed(2)}`, { x: 478, y, size: 9, font, color: black });
-    y -= 18;
-    page.drawRectangle({ x: 50, y: y + 8, width: 495, height: 0.5, color: lightGrey });
+    if (altRowBg && idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 5, width: 495, height: ROW_H, color: altRowBg });
+    page.drawText(truncate(item.name || "Item", 52), { x: 58, y: y + 2, size: 9, font, color: black });
+    rText(page, String(qty), COL_QTY, y + 2, 9, font, black);
+    rText(page, `R${up.toFixed(2)}`, COL_UNIT, y + 2, 9, font, black);
+    rText(page, `R${amt.toFixed(2)}`, COL_AMT, y + 2, 9, fontBold, black);
+    y -= ROW_H;
+    page.drawRectangle({ x: 50, y: y + 10, width: 495, height: 0.4, color: lightGrey });
   });
   return y;
 }
 
 function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | null): number {
   const { page, font, fontBold, invoice, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
-  y -= 10;
+  const labelX = 350;
+  y -= 12;
+
   if (vatEnabled) {
-    page.drawText("Subtotal:", { x: 365, y, size: 9, font, color: grey });
-    page.drawText(`R${(subtotalCents / 100).toFixed(2)}`, { x: 472, y, size: 9, font, color: black }); y -= 14;
-    page.drawText("VAT (15%):", { x: 365, y, size: 9, font, color: grey });
-    page.drawText(`R${(vatCents / 100).toFixed(2)}`, { x: 472, y, size: 9, font, color: black }); y -= 6;
-    page.drawRectangle({ x: 350, y, width: 195, height: 0.5, color: grey }); y -= 4;
-    if (boxBg) {
-      page.drawRectangle({ x: 350, y: y - 8, width: 195, height: 26, color: boxBg });
-      const label = isQuote ? "ESTIMATE (incl. VAT):" : "TOTAL (incl. VAT):";
-      page.drawText(label, { x: 356, y: y + 5, size: 8, font: fontBold, color: white });
-      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 9, font: fontBold, color: white });
-    } else {
-      const label = isQuote ? "ESTIMATE (incl. VAT):" : "TOTAL (incl. VAT):";
-      page.drawText(label, { x: 356, y: y + 5, size: 10, font: fontBold, color: black });
-      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 10, font: fontBold, color: accentColor });
-    }
-    y -= 22;
+    page.drawText("Subtotal:", { x: labelX, y, size: 9, font, color: grey });
+    rText(page, `R${(subtotalCents / 100).toFixed(2)}`, RIGHT, y, 9, font, black); y -= 14;
+    page.drawText("VAT (15%):", { x: labelX, y, size: 9, font, color: grey });
+    rText(page, `R${(vatCents / 100).toFixed(2)}`, RIGHT, y, 9, font, black); y -= 8;
+    page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: grey }); y -= 5;
+  }
+
+  const totalStr = `R${(invoice.total_cents / 100).toFixed(2)}`;
+  const totalLabel = vatEnabled
+    ? (isQuote ? "TOTAL ESTIMATE (incl. VAT):" : "TOTAL DUE (incl. VAT):")
+    : (isQuote ? "TOTAL ESTIMATE:" : "TOTAL DUE:");
+
+  if (boxBg) {
+    page.drawRectangle({ x: labelX, y: y - 10, width: RIGHT - labelX, height: 30, color: boxBg });
+    page.drawText(totalLabel, { x: labelX + 6, y: y + 6, size: 8, font: fontBold, color: white });
+    rText(page, totalStr, RIGHT - 6, y + 5, 13, fontBold, white);
+    y -= 30;
   } else {
-    page.drawRectangle({ x: 350, y, width: 195, height: 0.5, color: grey }); y -= 4;
-    if (boxBg) {
-      page.drawRectangle({ x: 350, y: y - 8, width: 195, height: 26, color: boxBg });
-      const label = isQuote ? "TOTAL ESTIMATE:" : "TOTAL:";
-      page.drawText(label, { x: 356, y: y + 5, size: 9, font: fontBold, color: white });
-      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 461, y: y + 5, size: 9, font: fontBold, color: white });
-    } else {
-      const label = isQuote ? "TOTAL ESTIMATE:" : "TOTAL:";
-      page.drawText(label, { x: 365, y: y + 5, size: 10, font: fontBold, color: black });
-      page.drawText(`R${(invoice.total_cents / 100).toFixed(2)}`, { x: 468, y: y + 5, size: 10, font: fontBold, color: accentColor });
-    }
-    y -= 22;
+    page.drawText(totalLabel, { x: labelX, y: y + 6, size: 8.5, font: fontBold, color: black });
+    rText(page, totalStr, RIGHT, y + 5, 14, fontBold, accentColor);
+    y -= 26;
   }
   return y;
 }
 
-function drawFooter(ctx: TemplateCtx, y: number) {
+function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
   const { page, font, fontBold, invoice, user, isQuote } = ctx;
-  page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: lightGrey }); y -= 16;
+
+  page.drawRectangle({ x: 50, y: y + 2, width: 495, height: 0.5, color: lightGrey });
+  y -= 14;
+
   const termLabel = isQuote ? "Valid For:" : "Payment Terms:";
   const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
   page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
-  page.drawText(termValue, { x: 120, y, size: 9, font, color: black }); y -= 14;
+  page.drawText(termValue, { x: 128, y, size: 9, font, color: black });
+  y -= 13;
+
   if (invoice.notes) {
-    page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey }); y -= 12;
-    page.drawText(invoice.notes, { x: 50, y, size: 9, font, color: black }); y -= 14;
+    page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
+    page.drawText(truncate(invoice.notes, 90), { x: 98, y, size: 9, font, color: black });
+    y -= 13;
   }
+
+  // Banking details — styled card
   if (!isQuote && (user?.bank_name || user?.account_number)) {
-    page.drawRectangle({ x: 50, y, width: 495, height: 0.5, color: lightGrey }); y -= 14;
-    page.drawText("BANKING DETAILS", { x: 50, y, size: 9, font: fontBold, color: grey }); y -= 13;
-    if (user.bank_name) { page.drawText(`Bank: ${user.bank_name}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
-    if (user.account_name) { page.drawText(`Account Name: ${user.account_name}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
-    if (user.account_type) { page.drawText(`Account Type: ${user.account_type}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
-    if (user.account_number) { page.drawText(`Account Number: ${user.account_number}`, { x: 50, y, size: 8, font, color: black }); y -= 12; }
-    if (user.branch_code) { page.drawText(`Branch Code: ${user.branch_code}`, { x: 50, y, size: 8, font, color: black }); }
+    y -= 8;
+    const bankRows: Array<[string, string]> = [];
+    if (user.bank_name) bankRows.push(["Bank", user.bank_name]);
+    if (user.account_name) bankRows.push(["Account Name", user.account_name]);
+    if (user.account_type) bankRows.push(["Account Type", user.account_type]);
+    if (user.account_number) bankRows.push(["Account Number", user.account_number]);
+    if (user.branch_code) bankRows.push(["Branch Code", user.branch_code]);
+
+    const cardW = 255;
+    const headerH = 16;
+    const rowH = 13;
+    const bodyH = bankRows.length * rowH + 10;
+
+    // Header bar
+    page.drawRectangle({ x: 50, y: y - headerH + 4, width: cardW, height: headerH, color: accentColor });
+    page.drawText("BANKING DETAILS", { x: 60, y: y - headerH + 8, size: 8.5, font: fontBold, color: white });
+
+    // Body
+    page.drawRectangle({ x: 50, y: y - headerH - bodyH + 4, width: cardW, height: bodyH, color: rgb(0.96, 0.96, 0.97) });
+
+    let by = y - headerH - 4;
+    bankRows.forEach(([lbl, val]) => {
+      page.drawText(`${lbl}:`, { x: 60, y: by, size: 8, font: fontBold, color: grey });
+      page.drawText(val, { x: 148, y: by, size: 8, font, color: black });
+      by -= rowH;
+    });
+
+    y -= headerH + bodyH + 4;
   }
-  page.drawText(isQuote ? "Thank you for the opportunity!" : "Thank you for your business!", { x: 50, y: 75, size: 9, font, color: grey });
-  const footerMsg = isQuote
+
+  // Bottom thank-you + legal note pinned near page bottom
+  const noteY = Math.max(y - 8, 80);
+  page.drawText(
+    isQuote ? "Thank you for the opportunity!" : "Thank you for your business!",
+    { x: 50, y: noteY, size: 9, font: fontBold, color: grey }
+  );
+  const legal = isQuote
     ? "This quote is valid for the period stated above. Prices are subject to change after expiry."
-    : "This invoice serves as a tax invoice in terms of Section 20 of the VAT Act.";
-  page.drawText(footerMsg, { x: 50, y: 60, size: 8, font, color: grey });
-  page.drawText("Generated by Masakhe Growth Hub", { x: 50, y: 45, size: 8, font, color: lightGrey });
+    : "This document serves as a tax invoice in terms of Section 20 of the VAT Act, No. 89 of 1991.";
+  page.drawText(legal, { x: 50, y: noteY - 13, size: 7.5, font, color: lightGrey });
+  page.drawText("Generated by Masakhe SMME Growth Hub  ·  masakhegroup.co.za", { x: 50, y: 32, size: 7.5, font, color: lightGrey });
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -197,7 +243,7 @@ function renderTemplate1(ctx: TemplateCtx) {
   y = drawStandardTable(ctx, y, green, white, mintBg);
   y = drawTotals(ctx, y, green, green);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, green);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -258,7 +304,7 @@ function renderTemplate2(ctx: TemplateCtx) {
   y = drawStandardTable(ctx, y, navy, white, navyLight);
   y = drawTotals(ctx, y, navy, null);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, navy);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -270,41 +316,41 @@ function renderTemplate3(ctx: TemplateCtx) {
   const orange = rgb(0.85, 0.40, 0.05);
   const warmTint = rgb(1.0, 0.96, 0.90);
 
-  // Full dark header
-  const headerH = 120;
+  // Full dark header (taller to fit address)
+  const headerH = 140;
   page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: dark });
   // Orange stripe below header
   page.drawRectangle({ x: 0, y: 842 - headerH - 7, width: W, height: 7, color: orange });
 
-  let y = 824;
-  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
+  const dimGrey = rgb(0.75, 0.75, 0.75);
+  let y = 826;
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 10; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
-  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
-  if (user?.email) { page.drawText(user.email, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
-  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); y -= 11; }
-  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 30, y, size: 8, font, color: rgb(0.75, 0.75, 0.75) }); }
+  if (user?.physical_address) { page.drawText(truncate(user.physical_address, 55), { x: 30, y, size: 8, font, color: dimGrey }); y -= 11; }
+  if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 30, y, size: 8, font, color: dimGrey }); y -= 11; }
+  if (user?.email) { page.drawText(user.email, { x: 30, y, size: 8, font, color: dimGrey }); y -= 11; }
+  if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 30, y, size: 8, font, color: dimGrey }); y -= 11; }
+  if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 30, y, size: 8, font, color: dimGrey }); }
 
   // Large doc title right side in orange
   const docTitle = isQuote ? "QUOTE" : "INVOICE";
   const dtW = fontBold.widthOfTextAtSize(docTitle, 34);
-  page.drawText(docTitle, { x: W - 35 - dtW, y: 824, size: 34, font: fontBold, color: orange });
-  page.drawText(invoice.invoice_number, { x: W - 35 - fontBold.widthOfTextAtSize(invoice.invoice_number, 10), y: 790, size: 10, font: fontBold, color: rgb(0.88, 0.88, 0.88) });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: W - 35 - font.widthOfTextAtSize(new Date(invoice.created_at).toLocaleDateString("en-ZA"), 9), y: 777, size: 9, font, color: rgb(0.65, 0.65, 0.65) });
-  if (invoice.reference) { page.drawText(`Ref: ${invoice.reference}`, { x: W - 35 - font.widthOfTextAtSize(`Ref: ${invoice.reference}`, 9), y: 764, size: 9, font, color: rgb(0.65, 0.65, 0.65) }); }
+  page.drawText(docTitle, { x: W - 35 - dtW, y: 826, size: 34, font: fontBold, color: orange });
+  rText(page, invoice.invoice_number, W - 30, 791, 10, fontBold, rgb(0.88, 0.88, 0.88));
+  rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 30, 777, 9, font, rgb(0.65, 0.65, 0.65));
+  if (invoice.reference) rText(page, `Ref: ${invoice.reference}`, W - 30, 763, 9, font, rgb(0.65, 0.65, 0.65));
 
   y = 842 - headerH - 7 - 18;
 
-  // Customer info
   y = drawCustomerInfo(ctx, 50, y, orange);
   y -= 14;
 
-  // Items table with dark header
   y = drawStandardTable(ctx, y, dark, white, warmTint);
   y = drawTotals(ctx, y, orange, orange);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, orange);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -316,22 +362,22 @@ function renderTemplate4(ctx: TemplateCtx) {
   const skyBlue = rgb(0.91, 0.95, 1.0);
   const midBlue = rgb(0.60, 0.75, 0.95);
 
-  const headerH = 108;
+  const headerH = 124;
   page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: blue });
 
-  let y = 822;
-  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
+  let y = 826;
+  if (logo) { page.drawImage(logo.image, { x: 30, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 10; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 30, y, size: 18, font: fontBold, color: white }); y -= 18;
+  if (user?.physical_address) { page.drawText(truncate(user.physical_address, 55), { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
   if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
   if (user?.email) { page.drawText(user.email, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
   if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 30, y, size: 8, font, color: midBlue }); y -= 11; }
   if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 30, y, size: 8, font, color: midBlue }); }
 
   const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
-  const dtW = fontBold.widthOfTextAtSize(docTitle, 15);
-  page.drawText(docTitle, { x: W - 35 - dtW, y: 822, size: 15, font: fontBold, color: white });
+  rText(page, docTitle, W - 30, 826, 15, fontBold, white);
 
   y = 842 - headerH - 15;
 
@@ -372,7 +418,7 @@ function renderTemplate4(ctx: TemplateCtx) {
   y = drawStandardTable(ctx, y, blue, white, skyBlue);
   y = drawTotals(ctx, y, blue, blue);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, blue);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -453,11 +499,12 @@ function renderTemplate5(ctx: TemplateCtx) {
   y = drawCustomerInfo(ctx, 50, y, burg);
   y -= 14;
 
-  // Elegant table — no fill header, just bold burgund text with underline
+  // Elegant table — no fill header, column labels with underline
+  const COL_QTY5 = 358; const COL_UNIT5 = 435; const COL_AMT5 = RIGHT;
   page.drawText("Description", { x: 50, y, size: 9, font: fontBold, color: burg });
-  page.drawText("Qty", { x: 325, y, size: 9, font: fontBold, color: burg });
-  page.drawText("Unit Price", { x: 375, y, size: 9, font: fontBold, color: burg });
-  page.drawText("Amount", { x: 478, y, size: 9, font: fontBold, color: burg });
+  rText(page, "Qty", COL_QTY5, y, 9, fontBold, burg);
+  rText(page, "Unit Price", COL_UNIT5, y, 9, fontBold, burg);
+  rText(page, "Amount", COL_AMT5, y, 9, fontBold, burg);
   y -= 4;
   page.drawRectangle({ x: 50, y, width: 495, height: 1, color: burg });
   y -= 16;
@@ -465,18 +512,18 @@ function renderTemplate5(ctx: TemplateCtx) {
     const qty = item.qty || 1;
     const up = item.unitPrice || 0;
     const amt = qty * up;
-    if (idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 17, color: creamBg });
-    page.drawText(item.name || "Item", { x: 50, y, size: 9, font, color: black });
-    page.drawText(String(qty), { x: 330, y, size: 9, font, color: black });
-    page.drawText(`R${up.toFixed(2)}`, { x: 375, y, size: 9, font, color: black });
-    page.drawText(`R${amt.toFixed(2)}`, { x: 478, y, size: 9, font, color: black });
-    y -= 18;
-    page.drawRectangle({ x: 50, y: y + 8, width: 495, height: 0.5, color: lightGrey });
+    if (idx % 2 === 1) page.drawRectangle({ x: 50, y: y - 4, width: 495, height: 18, color: creamBg });
+    page.drawText(truncate(item.name || "Item", 52), { x: 50, y: y + 2, size: 9, font, color: black });
+    rText(page, String(qty), COL_QTY5, y + 2, 9, font, black);
+    rText(page, `R${up.toFixed(2)}`, COL_UNIT5, y + 2, 9, font, black);
+    rText(page, `R${amt.toFixed(2)}`, COL_AMT5, y + 2, 9, fontBold, black);
+    y -= 20;
+    page.drawRectangle({ x: 50, y: y + 10, width: 495, height: 0.4, color: lightGrey });
   });
 
   y = drawTotals(ctx, y, burg, null);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, burg);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -490,33 +537,33 @@ function renderTemplate6(ctx: TemplateCtx) {
   const lavender = rgb(0.95, 0.89, 1.0);
   const midPurple = rgb(0.72, 0.54, 0.92);
 
-  const headerH = 132;
+  const headerH = 152;
   // Base header
   page.drawRectangle({ x: 0, y: 842 - headerH, width: W, height: headerH, color: purple });
   // Layered accent shapes for depth
   page.drawRectangle({ x: 260, y: 842 - headerH, width: 335, height: headerH, color: purpleMid });
   page.drawRectangle({ x: 340, y: 842 - headerH, width: 255, height: headerH, color: rgb(0.48, 0.19, 0.74) });
 
-  let y = 824;
-  if (logo) { page.drawImage(logo.image, { x: 28, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 14; }
+  let y = 828;
+  if (logo) { page.drawImage(logo.image, { x: 28, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 10; }
 
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(biz, { x: 28, y, size: 19, font: fontBold, color: white }); y -= 19;
+  if (user?.physical_address) { page.drawText(truncate(user.physical_address, 50), { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
   if (user?.phone) { page.drawText(`Tel: ${user.phone}`, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
   if (user?.email) { page.drawText(user.email, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
   if (user?.vat_number) { page.drawText(`VAT: ${user.vat_number}`, { x: 28, y, size: 8, font, color: midPurple }); y -= 11; }
   if (user?.registration_number) { page.drawText(`Reg: ${user.registration_number}`, { x: 28, y, size: 8, font, color: midPurple }); }
 
-  // Large doc title right
+  // Large doc title right (in the lighter purple zone)
   const docTitle = isQuote ? "QUOTE" : "INVOICE";
-  const dtW = fontBold.widthOfTextAtSize(docTitle, 32);
-  page.drawText(docTitle, { x: W - 35 - dtW, y: 824, size: 32, font: fontBold, color: white });
+  rText(page, docTitle, W - 28, 828, 30, fontBold, white);
 
   // Invoice number badge (dark pill)
-  page.drawRectangle({ x: W - 205, y: 785, width: 175, height: 20, color: purpleDark });
-  page.drawText(invoice.invoice_number, { x: W - 198, y: 790, size: 10, font: fontBold, color: white });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: W - 198, y: 775, size: 8, font, color: midPurple });
-  if (invoice.reference) { page.drawText(`Ref: ${invoice.reference}`, { x: W - 198, y: 763, size: 8, font, color: midPurple }); }
+  page.drawRectangle({ x: W - 212, y: 793, width: 182, height: 20, color: purpleDark });
+  rText(page, invoice.invoice_number, W - 32, 798, 10, fontBold, white);
+  rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 32, 781, 8, font, midPurple);
+  if (invoice.reference) rText(page, `Ref: ${invoice.reference}`, W - 32, 769, 8, font, midPurple);
 
   // Left purple sidebar (body only, below header)
   page.drawRectangle({ x: 0, y: 40, width: 8, height: 842 - headerH - 40, color: purple });
@@ -527,7 +574,7 @@ function renderTemplate6(ctx: TemplateCtx) {
   y = drawStandardTable(ctx, y, purple, white, lavender);
   y = drawTotals(ctx, y, purple, purple);
   y -= 10;
-  drawFooter(ctx, y);
+  drawFooter(ctx, y, purple);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -719,7 +766,7 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
         if (logoBytes) {
           const img = logoMime === "image/png" ? await pdfDoc.embedPng(logoBytes) : await pdfDoc.embedJpg(logoBytes);
           const dim = img.scale(1);
-          const maxH = 55, maxW = 150;
+          const maxH = 70, maxW = 180;
           let lw = (dim.width / dim.height) * maxH;
           let lh = maxH;
           if (lw > maxW) { lw = maxW; lh = (dim.height / dim.width) * maxW; }
@@ -797,7 +844,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
         if (logoBytes) {
           const img = logoMime === "image/png" ? await pdfDoc.embedPng(logoBytes) : await pdfDoc.embedJpg(logoBytes);
           const dim = img.scale(1);
-          const maxH = 55, maxW = 150;
+          const maxH = 70, maxW = 180;
           let lw = (dim.width / dim.height) * maxH;
           let lh = maxH;
           if (lw > maxW) { lw = maxW; lh = (dim.height / dim.width) * maxW; }
