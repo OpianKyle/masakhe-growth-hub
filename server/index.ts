@@ -21,6 +21,7 @@ import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
 import { documentsRouter } from "./documents";
+import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
 import { payrollRouter } from "./payroll";
@@ -85,6 +86,7 @@ async function main() {
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
+  app.use("/api/documents", docPdfRouter);
   app.use("/api/vehicles", vehicleRouter);
   app.use("/api/leads", leadsRouter);
   app.use("/api/payroll", payrollRouter);

@@ -142,34 +142,12 @@ export default function FundingApplicationPage() {
 
   const progInfo = PROGRAMS.find(p => p.key === selectedProgram);
 
-  const printPDF = () => {
-    if (!generated) return;
-    const prog = PROGRAMS.find(p => p.key === selectedProgram);
-    const html = `<!DOCTYPE html><html><head><title>Funding Application — ${selectedProgram}</title>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 50px; max-width: 800px; margin: 0 auto; }
-      h1 { font-size: 22pt; color: #14684b; margin-bottom: 4px; }
-      h2 { font-size: 13pt; color: #14684b; margin-top: 32px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #14684b; }
-      .cover { margin-bottom: 36px; padding-bottom: 20px; border-bottom: 2px solid #14684b; }
-      .badge { display: inline-block; background: #14684b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 10pt; margin: 8px 0; }
-      p { margin-bottom: 10px; text-align: justify; }
-      @media print { body { padding: 30px; } }
-    </style></head><body>
-    <div class="cover">
-      <div class="badge">${selectedProgram} Application</div>
-      <h1>${generated.applicationTitle || "Funding Application"}</h1>
-      <p style="color:#555;margin-top:6px;">${prog?.full || selectedProgram}</p>
-      <p style="color:#888;font-size:9pt;margin-top:4px;">Submitted: ${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
-    </div>
-    ${APP_SECTIONS.filter(s => s.key !== "applicationTitle").map(s => `<h2>${s.label}</h2>${flattenSection((generated as any)[s.key]).split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}`).join("")}
-    <script>window.onload = function() { window.print(); }<\/script>
-    </body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const win2 = window.open(url, "_blank");
-    if (!win2) { toast.error("Popup blocked — please allow popups for this site and try again."); URL.revokeObjectURL(url); return; }
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const downloadPDF = () => {
+    if (!currentId) return;
+    const a = document.createElement("a");
+    a.href = `/api/documents/funding-applications/${currentId}/pdf`;
+    a.download = "";
+    a.click();
   };
 
   if (view === "list") return (
@@ -236,7 +214,7 @@ export default function FundingApplicationPage() {
         <Button variant="ghost" size="sm" onClick={() => setView("list")} className="gap-1.5"><ChevronLeft className="h-4 w-4" /> Back</Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setView("form")} className="gap-1.5"><Edit className="h-3.5 w-3.5" /> Edit</Button>
-          <Button onClick={printPDF} className="gradient-hero text-white gap-2"><Download className="h-4 w-4" /> Download PDF</Button>
+          <Button onClick={downloadPDF} className="gradient-hero text-white gap-2"><Download className="h-4 w-4" /> Download PDF</Button>
         </div>
       </div>
 

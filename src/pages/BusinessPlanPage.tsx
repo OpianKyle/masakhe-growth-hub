@@ -141,35 +141,12 @@ export default function BusinessPlanPage() {
     loadPlans(); toast.success("Deleted");
   };
 
-  const printPDF = () => {
-    if (!generated) return;
-    const html = `<!DOCTYPE html><html><head><title>${form.businessName || "Business Plan"}</title>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: Georgia, serif; font-size: 12pt; color: #1a1a1a; line-height: 1.7; padding: 60px; max-width: 800px; margin: 0 auto; }
-      h1 { font-size: 28pt; color: #14684b; margin-bottom: 8px; }
-      h2 { font-size: 16pt; color: #14684b; margin-top: 36px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #14684b; }
-      .cover { text-align: center; padding: 80px 0; border-bottom: 3px solid #14684b; margin-bottom: 48px; }
-      .cover p { color: #555; font-size: 13pt; margin: 6px 0; }
-      p { margin-bottom: 12px; text-align: justify; }
-      .section { margin-bottom: 32px; page-break-inside: avoid; }
-      @media print { body { padding: 40px; } }
-    </style></head><body>
-    <div class="cover">
-      <h1>${form.businessName || "Business Plan"}</h1>
-      <p><strong>Founder:</strong> ${form.founderName || ""}</p>
-      <p><strong>Industry:</strong> ${form.industry || ""}</p>
-      <p><strong>Reg No:</strong> ${form.registrationNumber || ""}</p>
-      <p style="margin-top:24px;color:#888;">${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
-    </div>
-    ${SECTIONS.map(s => `<div class="section"><h2>${s.label}</h2>${flattenSection((generated as any)[s.key]).split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`).join("")}
-    <script>window.onload = function() { window.print(); }<\/script>
-    </body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); URL.revokeObjectURL(url); return; }
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const downloadPDF = () => {
+    if (!currentId) return;
+    const a = document.createElement("a");
+    a.href = `/api/documents/business-plans/${currentId}/pdf`;
+    a.download = "";
+    a.click();
   };
 
   if (view === "list") return (
@@ -219,7 +196,7 @@ export default function BusinessPlanPage() {
         <Button variant="ghost" size="sm" onClick={() => setView("list")} className="gap-1.5"><ChevronLeft className="h-4 w-4" /> Back to plans</Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => { setStep(0); setView("form"); }} className="gap-1.5"><Edit className="h-3.5 w-3.5" /> Edit</Button>
-          <Button onClick={printPDF} className="gradient-hero text-white gap-2"><Download className="h-4 w-4" /> Download PDF</Button>
+          <Button onClick={downloadPDF} className="gradient-hero text-white gap-2"><Download className="h-4 w-4" /> Download PDF</Button>
         </div>
       </div>
       <Card className="p-8">

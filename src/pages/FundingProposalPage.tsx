@@ -137,37 +137,12 @@ export default function FundingProposalPage() {
 
   const formatR = (v: string) => v ? `R${Number(v).toLocaleString("en-ZA")}` : "R0";
 
-  const printPDF = () => {
-    if (!generated) return;
-    const html = `<!DOCTYPE html><html><head><title>${form.businessName || "Funding Proposal"}</title>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: Georgia, serif; font-size: 12pt; color: #1a1a1a; line-height: 1.7; padding: 60px; max-width: 800px; margin: 0 auto; }
-      h1 { font-size: 26pt; color: #14684b; margin-bottom: 8px; }
-      h2 { font-size: 15pt; color: #14684b; margin-top: 36px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #14684b; }
-      .cover { text-align: center; padding: 80px 0; border-bottom: 3px solid #14684b; margin-bottom: 48px; }
-      .cover .amount { font-size: 24pt; color: #e8b931; font-weight: bold; margin: 16px 0; }
-      .cover p { color: #555; font-size: 13pt; margin: 6px 0; }
-      p { margin-bottom: 12px; text-align: justify; }
-      .section { margin-bottom: 32px; page-break-inside: avoid; }
-      @media print { body { padding: 40px; } }
-    </style></head><body>
-    <div class="cover">
-      <h1>${form.businessName || "Funding Proposal"}</h1>
-      <div class="amount">${formatR(form.fundingAmount)}</div>
-      <p><strong>Owner:</strong> ${form.ownerName || ""}</p>
-      <p><strong>Programme:</strong> ${form.governmentProgram || ""}</p>
-      <p><strong>Stage:</strong> ${form.businessStage || ""}</p>
-      <p style="margin-top:24px;color:#888;">${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</p>
-    </div>
-    ${SECTIONS.map(s => `<div class="section"><h2>${s.label}</h2>${flattenSection((generated as any)[s.key]).split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`).join("")}
-    <script>window.onload = function() { window.print(); }<\/script>
-    </body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (!win) { toast.error("Popup blocked — please allow popups for this site and try again."); URL.revokeObjectURL(url); return; }
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const downloadPDF = () => {
+    if (!currentId) return;
+    const a = document.createElement("a");
+    a.href = `/api/documents/funding-proposals/${currentId}/pdf`;
+    a.download = "";
+    a.click();
   };
 
   if (view === "list") return (
@@ -228,8 +203,8 @@ export default function FundingProposalPage() {
           <Button variant="outline" size="sm" onClick={() => setView("form")} className="gap-1.5">
             <Edit className="h-3.5 w-3.5" /> Edit
           </Button>
-          <Button onClick={printPDF} className="gradient-hero text-white gap-2">
-            <Download className="h-4 w-4" /> Export PDF
+          <Button onClick={downloadPDF} className="gradient-hero text-white gap-2">
+            <Download className="h-4 w-4" /> Download PDF
           </Button>
         </div>
       </div>
