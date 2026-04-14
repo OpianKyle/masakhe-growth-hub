@@ -5,10 +5,17 @@ import { requireAuth } from "./auth";
 export const supportChatRouter = Router();
 
 function getOpenAI() {
-  return new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  });
+  if (process.env.OPENROUTER_API_KEY) {
+    return new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+  }
+  throw new Error("OPENROUTER_API_KEY not configured");
+}
+
+function getModel() {
+  return process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
 }
 
 const SYSTEM_PROMPT = `You are Nkosi, a friendly and knowledgeable AI assistant built into the Masakhe SMME Growth Hub — a South African business platform designed to help small and medium enterprises (SMMEs) grow.
@@ -112,8 +119,8 @@ supportChatRouter.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "messages array is required" });
     }
 
-    if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-      return res.status(500).json({ error: "AI service not configured" });
+    if (!process.env.OPENROUTER_API_KEY) {
+      return res.status(500).json({ error: "AI service not configured — OPENROUTER_API_KEY missing" });
     }
 
     const systemContent = currentPage
@@ -126,7 +133,7 @@ supportChatRouter.post("/", requireAuth, async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     const stream = await getOpenAI().chat.completions.create({
-      model: "gpt-4o-mini",
+      model: getModel(),
       messages: [
         { role: "system", content: systemContent },
         ...messages.slice(-12),
