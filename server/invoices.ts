@@ -72,7 +72,7 @@ function drawStandardTable(ctx: TemplateCtx, y: number, headerBg: RGB, headerTex
   const ROW_H = 20;
   const COL_QTY = 358;
   const COL_UNIT = 435;
-  const COL_AMT = RIGHT;
+  const COL_AMT = RIGHT - 10; // 10pt padding from right border
 
   // Header
   page.drawRectangle({ x: 50, y: y - 6, width: 495, height: 26, color: headerBg });
@@ -100,14 +100,15 @@ function drawStandardTable(ctx: TemplateCtx, y: number, headerBg: RGB, headerTex
 function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | null): number {
   const { page, font, fontBold, invoice, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
   const labelX = 350;
-  y -= 12;
+  const amtRight = RIGHT - 10; // 10pt padding from the right border
+  y -= 16;
 
   if (vatEnabled) {
     page.drawText("Subtotal:", { x: labelX, y, size: 9, font, color: grey });
-    rText(page, `R${(subtotalCents / 100).toFixed(2)}`, RIGHT, y, 9, font, black); y -= 14;
+    rText(page, `R${(subtotalCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 20;
     page.drawText("VAT (15%):", { x: labelX, y, size: 9, font, color: grey });
-    rText(page, `R${(vatCents / 100).toFixed(2)}`, RIGHT, y, 9, font, black); y -= 8;
-    page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: grey }); y -= 5;
+    rText(page, `R${(vatCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 14;
+    page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: grey }); y -= 8;
   }
 
   const totalStr = `R${(invoice.total_cents / 100).toFixed(2)}`;
@@ -116,14 +117,15 @@ function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | 
     : (isQuote ? "TOTAL ESTIMATE:" : "TOTAL DUE:");
 
   if (boxBg) {
-    page.drawRectangle({ x: labelX, y: y - 10, width: RIGHT - labelX, height: 30, color: boxBg });
-    page.drawText(totalLabel, { x: labelX + 6, y: y + 6, size: 8, font: fontBold, color: white });
-    rText(page, totalStr, RIGHT - 6, y + 5, 13, fontBold, white);
-    y -= 30;
+    const boxH = 38;
+    page.drawRectangle({ x: labelX, y: y - 8, width: RIGHT - labelX, height: boxH, color: boxBg });
+    page.drawText(totalLabel, { x: labelX + 8, y: y + 12, size: 8, font: fontBold, color: white });
+    rText(page, totalStr, amtRight, y + 11, 13, fontBold, white);
+    y -= boxH;
   } else {
-    page.drawText(totalLabel, { x: labelX, y: y + 6, size: 8.5, font: fontBold, color: black });
-    rText(page, totalStr, RIGHT, y + 5, 14, fontBold, accentColor);
-    y -= 26;
+    page.drawText(totalLabel, { x: labelX, y: y + 8, size: 8.5, font: fontBold, color: black });
+    rText(page, totalStr, amtRight, y + 7, 14, fontBold, accentColor);
+    y -= 30;
   }
   return y;
 }
