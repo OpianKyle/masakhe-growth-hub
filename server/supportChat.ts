@@ -73,7 +73,16 @@ You help users with:
 - Add employees, set salaries, PAYE, UIF
 - Run monthly payroll and download payslips
 
-### 10. Clients (CRM)
+### 10. Leave & HR
+- Submit leave requests for employees (Annual, Sick, Family Responsibility, Unpaid)
+- Working days are automatically calculated (excludes weekends)
+- Manager approves or rejects requests with an optional note
+- Leave balance overview per employee — tracks used, pending, and remaining days
+- Default SA Labour Law allocations: Annual (15 days), Sick (30 days/cycle), Family Responsibility (3 days)
+- Allocations can be customised per employee per year
+- Balance bars show used (solid) vs pending (light) vs remaining days visually
+
+### 11. Clients (CRM)
 - Manage client contacts
 - Track client history and interactions
 

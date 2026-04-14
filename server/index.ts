@@ -22,6 +22,7 @@ import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
 import { startInvoiceScheduler } from "./invoice-scheduler";
+import { leaveRouter, runLeaveMigrations } from "./leave";
 import { documentsRouter } from "./documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
@@ -86,6 +87,7 @@ async function main() {
   app.use("/api/social", socialRouter);
   app.use("/api/billing", billingRouter);
   app.use("/api/support-chat", supportChatRouter);
+  app.use("/api/leave", leaveRouter);
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
@@ -115,6 +117,7 @@ async function main() {
     startScheduler();
     startBillingScheduler();
     startInvoiceScheduler();
+    runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
   });
 }
 
