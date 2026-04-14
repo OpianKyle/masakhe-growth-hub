@@ -75,7 +75,7 @@ async function runReminderCheck() {
               i.total_cents, i.payment_terms, i.created_at,
               COALESCE(i.reminders_sent, 0) as reminders_sent,
               i.last_reminder_at,
-              COALESCE(u.is_admin, 0) as is_admin
+              CASE WHEN u.role = 'admin' THEN 1 ELSE 0 END as is_admin
        FROM invoices i
        JOIN users u ON u.id = i.user_id
        WHERE i.status = 'sent'
