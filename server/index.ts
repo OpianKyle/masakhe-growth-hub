@@ -21,6 +21,7 @@ import { supportChatRouter } from "./supportChat";
 import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
+import { startInvoiceScheduler } from "./invoice-scheduler";
 import { documentsRouter } from "./documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
@@ -113,6 +114,7 @@ async function main() {
     console.log(`API running on 0.0.0.0:${port}`);
     startScheduler();
     startBillingScheduler();
+    startInvoiceScheduler();
   });
 }
 

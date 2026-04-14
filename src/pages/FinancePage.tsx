@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Trash2, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight, Download, Upload
+  Plus, Trash2, TrendingUp, TrendingDown, DollarSign, Download, Upload, ScanLine, Loader2, CheckCircle2, X
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -44,12 +44,16 @@ export default function FinancePage() {
   const [month, setMonth] = useState(currentMonth());
   const [showForm, setShowForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const [formType, setFormType] = useState<"INCOME" | "EXPENSE">("INCOME");
   const [formAmount, setFormAmount] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+
+  const [scanning, setScanning] = useState(false);
+  const [scannedBanner, setScannedBanner] = useState(false);
 
   const loadEntries = async () => {
     const res = await fetch(`/api/finance/entries?month=${month}`, { credentials: "include" });
@@ -88,6 +92,7 @@ export default function FinancePage() {
     if (res.ok) {
       toast.success("Entry added");
       setFormAmount(""); setFormCategory(""); setFormDesc("");
+      setScannedBanner(false);
       setShowForm(false);
       loadEntries();
       loadSummary();
@@ -142,6 +147,44 @@ export default function FinancePage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (receiptInputRef.current) receiptInputRef.current.value = "";
+
+    setScanning(true);
+    setShowForm(true);
+    setFormType("EXPENSE");
+    setScannedBanner(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("/api/finance/scan-receipt", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "Could not read receipt");
+        return;
+      }
+      const { data } = json;
+      if (data.amount) setFormAmount(String(data.amount));
+      if (data.date) setFormDate(data.date);
+      if (data.description) setFormDesc(data.description);
+      if (data.category && EXPENSE_CATEGORIES.includes(data.category)) setFormCategory(data.category);
+      if (data.type === "INCOME") setFormType("INCOME");
+      setScannedBanner(true);
+      toast.success("Receipt scanned — please review and confirm the details");
+    } catch {
+      toast.error("Failed to scan receipt");
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const filtered = entries.filter((e) =>
     tab === "income" ? e.type === "INCOME" : tab === "expenses" ? e.type === "EXPENSE" : true
   );
@@ -165,19 +208,32 @@ export default function FinancePage() {
           <h2 className="text-2xl font-bold font-heading">Income/Expenses</h2>
           <p className="text-muted-foreground">Track your income and expenses</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
-          <Button onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setShowForm(true); }} className="gradient-hero text-white">
+          <Button
+            variant="outline"
+            onClick={() => receiptInputRef.current?.click()}
+            disabled={scanning}
+            className="border-primary/40 text-primary hover:bg-primary/5"
+          >
+            {scanning ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scanning...</>
+            ) : (
+              <><ScanLine className="h-4 w-4 mr-2" /> Scan Receipt</>
+            )}
+          </Button>
+          <Button onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setScannedBanner(false); setShowForm(true); }} className="gradient-hero text-white">
             <Plus className="h-4 w-4 mr-2" /> Add Entry
           </Button>
         </div>
       </div>
       <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
+      <input type="file" accept="image/*" capture="environment" ref={receiptInputRef} onChange={handleScanReceipt} className="hidden" />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -238,55 +294,98 @@ export default function FinancePage() {
       </div>
 
       {/* Add Entry Form */}
-      {showForm && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-          <Card className="p-5 border-primary/20">
-            <h3 className="font-bold mb-4">New {formType === "INCOME" ? "Income" : "Expense"} Entry</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div>
-                <Label className="text-xs">Type</Label>
-                <select
-                  value={formType}
-                  onChange={(e) => { setFormType(e.target.value as any); setFormCategory(""); }}
-                  className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                  <option value="INCOME">Income</option>
-                  <option value="EXPENSE">Expense</option>
-                </select>
+      <AnimatePresence>
+        {showForm && (
+          <motion.div key="entry-form" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <Card className="p-5 border-primary/20 overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold">New {formType === "INCOME" ? "Income" : "Expense"} Entry</h3>
+                  {scannedBanner && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                      <CheckCircle2 className="h-3 w-3" /> Receipt scanned — review details
+                    </span>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowForm(false); setScannedBanner(false); }}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <Label className="text-xs">Amount (R)</Label>
-                <Input type="number" step="0.01" min="0" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="mt-1 h-9" placeholder="0.00" />
+
+              {scanning && (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Reading your receipt…</p>
+                    <p className="text-xs text-muted-foreground">AI is extracting the amount, date, and vendor details</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div>
+                  <Label className="text-xs">Type</Label>
+                  <select
+                    value={formType}
+                    onChange={(e) => { setFormType(e.target.value as any); setFormCategory(""); }}
+                    className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="INCOME">Income</option>
+                    <option value="EXPENSE">Expense</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Amount (R)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formAmount}
+                    onChange={(e) => setFormAmount(e.target.value)}
+                    className={`mt-1 h-9 ${scannedBanner && formAmount ? "border-green-400 bg-green-50/30" : ""}`}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Category</Label>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className={`mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm ${scannedBanner && formCategory ? "border-green-400" : ""}`}
+                  >
+                    <option value="">Select...</option>
+                    {(formType === "INCOME" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Date</Label>
+                  <Input
+                    type="date"
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                    className={`mt-1 h-9 ${scannedBanner && formDate ? "border-green-400 bg-green-50/30" : ""}`}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Description</Label>
+                  <Input
+                    value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    className={`mt-1 h-9 ${scannedBanner && formDesc ? "border-green-400 bg-green-50/30" : ""}`}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
-              <div>
-                <Label className="text-xs">Category</Label>
-                <select
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                  className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                  <option value="">Select...</option>
-                  {(formType === "INCOME" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleAdd} className="gradient-hero text-white" disabled={scanning}>Save Entry</Button>
+                <Button variant="ghost" onClick={() => { setShowForm(false); setScannedBanner(false); }}>Cancel</Button>
               </div>
-              <div>
-                <Label className="text-xs">Date</Label>
-                <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="mt-1 h-9" />
-              </div>
-              <div>
-                <Label className="text-xs">Description</Label>
-                <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} className="mt-1 h-9" placeholder="Optional" />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <Button onClick={handleAdd} className="gradient-hero text-white">Save Entry</Button>
-              <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            </div>
-          </Card>
-        </motion.div>
-      )}
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Summary Chart */}
       {tab === "summary" && (

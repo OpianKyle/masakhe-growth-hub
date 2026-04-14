@@ -3,6 +3,7 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
+import OpenAI from "openai";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -198,6 +199,71 @@ financeRouter.delete("/entries/:id", async (req, res) => {
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to delete entry" });
+  }
+});
+
+financeRouter.post("/scan-receipt", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No image provided" });
+    if (!process.env.OPENROUTER_API_KEY) return res.status(500).json({ error: "AI not configured" });
+
+    const base64 = req.file.buffer.toString("base64");
+    const mimeType = req.file.mimetype || "image/jpeg";
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": process.env.APP_URL || "https://masakheportal.co.za",
+        "X-Title": "Masakhe",
+      },
+    });
+
+    const response = await client.chat.completions.create({
+      model: "google/gemini-2.0-flash-001",
+      messages: [{
+        role: "user",
+        content: [
+          {
+            type: "image_url",
+            image_url: { url: `data:${mimeType};base64,${base64}` },
+          } as any,
+          {
+            type: "text",
+            text: `You are an expense extraction assistant. Look at this receipt image and extract the key information.
+
+Return ONLY a valid JSON object (no markdown, no extra text) with these fields:
+{
+  "amount": <number in Rands, e.g. 150.00>,
+  "date": "<YYYY-MM-DD format, today if not visible>",
+  "description": "<store/vendor name and brief description of purchase>",
+  "category": "<one of exactly: Rent, Utilities, Transport, Stock, Salaries, Marketing, Equipment, Other Expense>",
+  "type": "EXPENSE"
+}
+
+If the amount includes VAT, use the total (VAT-inclusive) amount. If date is unclear use today's date. Pick the most appropriate category.`,
+          },
+        ],
+      }],
+      max_tokens: 300,
+      temperature: 0.1,
+    });
+
+    const raw = response.choices[0]?.message?.content || "";
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    let data: any;
+    try {
+      data = JSON.parse(cleaned);
+    } catch {
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) data = JSON.parse(match[0]);
+      else return res.status(422).json({ error: "Could not parse receipt data", raw: cleaned });
+    }
+
+    res.json({ ok: true, data });
+  } catch (err: any) {
+    console.error("[Finance] Receipt scan error:", err.message);
+    res.status(500).json({ error: err.message || "Failed to scan receipt" });
   }
 });
 
