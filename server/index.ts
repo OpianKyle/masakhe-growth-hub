@@ -17,6 +17,7 @@ import { dashboardRouter } from "./dashboard";
 import { socialRouter } from "./social/index";
 import { startScheduler } from "./social/scheduler";
 import { billingRouter } from "./billing";
+import { supportChatRouter } from "./supportChat";
 import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
@@ -83,6 +84,7 @@ async function main() {
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/social", socialRouter);
   app.use("/api/billing", billingRouter);
+  app.use("/api/support-chat", supportChatRouter);
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
