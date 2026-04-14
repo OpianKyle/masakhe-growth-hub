@@ -23,8 +23,9 @@ function reminderEmailHtml(opts: {
   invoiceId: string;
   daysOverdue: number;
   reminderNum: number;
+  isAdmin: boolean;
 }): string {
-  const { invoiceNumber, customerName, totalCents, dueDateStr, businessName, fromEmail, invoiceId, daysOverdue, reminderNum } = opts;
+  const { invoiceNumber, customerName, totalCents, dueDateStr, businessName, fromEmail, invoiceId, daysOverdue, reminderNum, isAdmin } = opts;
   const isUrgent = reminderNum >= 3;
   const accentColor = isUrgent ? "#dc2626" : "#007749";
   const subject = isUrgent
@@ -52,11 +53,11 @@ function reminderEmailHtml(opts: {
       <tr><td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e5e7eb;">Days Overdue</td><td style="padding:8px 0;color:${accentColor};font-weight:700;text-align:right;font-size:14px;border-top:1px solid #e5e7eb;">${daysOverdue} day${daysOverdue !== 1 ? "s" : ""}</td></tr>
       <tr style="background:#f0fdf4;"><td style="padding:12px;color:#1a1a2e;font-size:16px;font-weight:700;border-top:1px solid #e5e7eb;">Amount Due</td><td style="padding:12px;color:${accentColor};font-size:18px;font-weight:700;text-align:right;border-top:1px solid #e5e7eb;">${formatCents(totalCents)}</td></tr>
     </table>
-    <table cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
+    ${isAdmin ? `<table cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
       <tr><td style="background:${accentColor};border-radius:8px;">
         <a href="${APP_URL}/dashboard/billing?invId=${invoiceId}" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now — ${formatCents(totalCents)}</a>
       </td></tr>
-    </table>
+    </table>` : ""}
     <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have already made this payment, please disregard this notice. For any queries, please reply to this email or contact us at ${fromEmail}.</p>
     <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Kind regards,<br><strong style="color:#1a1a2e;">${businessName}</strong></p>
   </td></tr>
@@ -70,15 +71,17 @@ function reminderEmailHtml(opts: {
 async function runReminderCheck() {
   try {
     const invoices = await queryAll(
-      `SELECT id, user_id, invoice_number, customer_name, customer_email,
-              total_cents, payment_terms, created_at,
-              COALESCE(reminders_sent, 0) as reminders_sent,
-              last_reminder_at
-       FROM invoices
-       WHERE status = 'sent'
-         AND customer_email IS NOT NULL
-         AND customer_email != ''
-         AND COALESCE(reminders_sent, 0) < 3`,
+      `SELECT i.id, i.user_id, i.invoice_number, i.customer_name, i.customer_email,
+              i.total_cents, i.payment_terms, i.created_at,
+              COALESCE(i.reminders_sent, 0) as reminders_sent,
+              i.last_reminder_at,
+              COALESCE(u.is_admin, 0) as is_admin
+       FROM invoices i
+       JOIN users u ON u.id = i.user_id
+       WHERE i.status = 'sent'
+         AND i.customer_email IS NOT NULL
+         AND i.customer_email != ''
+         AND COALESCE(i.reminders_sent, 0) < 3`,
       []
     );
 
@@ -130,6 +133,7 @@ async function runReminderCheck() {
           invoiceId: inv.id,
           daysOverdue,
           reminderNum,
+          isAdmin: !!inv.is_admin,
         });
 
         const subjectPrefix = reminderNum >= 3 ? "FINAL NOTICE" : reminderNum === 2 ? "Second Reminder" : "Payment Reminder";
