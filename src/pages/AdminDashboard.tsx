@@ -4,7 +4,8 @@ import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
-  CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2
+  CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
+  Crown, Handshake
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -52,11 +53,12 @@ interface Client {
 }
 
 const adminNavItems = [
-  { icon: LayoutDashboard, label: "Overview", path: "/admin" },
-  { icon: Users, label: "Clients", path: "/admin/clients" },
-  { icon: FileText, label: "Tenders", path: "/admin/tenders" },
-  { icon: Globe, label: "Websites", path: "/admin/websites" },
-  { icon: Settings, label: "Settings", path: "/admin/settings" },
+  { icon: LayoutDashboard, label: "Overview",  path: "/admin" },
+  { icon: Users,           label: "Clients",   path: "/admin/clients" },
+  { icon: Handshake,       label: "Partners",  path: "/admin/partners" },
+  { icon: FileText,        label: "Tenders",   path: "/admin/tenders" },
+  { icon: Globe,           label: "Websites",  path: "/admin/websites" },
+  { icon: Settings,        label: "Settings",  path: "/admin/settings" },
 ];
 
 function AdminOverview() {
@@ -1057,13 +1059,327 @@ function WebsiteList() {
   );
 }
 
+// ─── Partner / Reseller Admin Panel ───────────────────────────────────────────
+
+interface ResellerAdmin {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  reseller_code: string;
+  status: "pending" | "active" | "suspended";
+  rank_key: string;
+  package_tier: string | null;
+  package_paid_at: string | null;
+  total_clients: number;
+  total_earnings: number;
+  created_at: string;
+  approved_at: string | null;
+}
+
+interface PartnerStats {
+  total: number;
+  active: number;
+  pending: number;
+  suspended: number;
+  pkg_affiliate: number;
+  pkg_reseller: number;
+  pkg_master: number;
+  pkg_none: number;
+  commissions_total_cents: number;
+  commissions_paid_cents: number;
+  commissions_pending_cents: number;
+  package_revenue_cents: number;
+}
+
+const RANK_LABELS: Record<string, string> = {
+  starter: "Starter", builder: "Builder", leader: "Leader",
+  manager: "Manager", director: "Director", executive: "Executive", diamond_elite: "Diamond Elite",
+};
+
+const PKG_LABELS: Record<string, { label: string; color: string }> = {
+  affiliate: { label: "Affiliate",       color: "text-gray-500 bg-gray-100" },
+  reseller:  { label: "Reseller",        color: "text-green-700 bg-green-100" },
+  master:    { label: "Master Reseller", color: "text-yellow-700 bg-yellow-100" },
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  active:    { label: "Active",    color: "text-green-700 bg-green-100" },
+  pending:   { label: "Pending",   color: "text-yellow-700 bg-yellow-100" },
+  suspended: { label: "Suspended", color: "text-red-700 bg-red-100" },
+};
+
+function fmt(cents: number) {
+  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function AdminPartners() {
+  const [stats, setStats] = useState<PartnerStats | null>(null);
+  const [resellers, setResellers] = useState<ResellerAdmin[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandData, setExpandData] = useState<Record<string, { clients: any[]; commissions: any[] }>>({});
+  const [loadingExpand, setLoadingExpand] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const loadAll = () => {
+    fetch("/api/reseller/admin/stats", { credentials: "include" })
+      .then(r => r.json()).then(setStats).catch(() => {});
+    fetch("/api/reseller/admin/all", { credentials: "include" })
+      .then(r => r.json()).then(d => setResellers(d.resellers || [])).catch(() => {});
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function toggleExpand(r: ResellerAdmin) {
+    if (expandedId === r.id) { setExpandedId(null); return; }
+    setExpandedId(r.id);
+    if (expandData[r.id]) return;
+    setLoadingExpand(r.id);
+    const [cRes, comRes] = await Promise.all([
+      fetch(`/api/reseller/admin/${r.id}/clients`, { credentials: "include" }).then(x => x.json()),
+      fetch(`/api/reseller/admin/${r.id}/commissions`, { credentials: "include" }).then(x => x.json()),
+    ]);
+    setExpandData(prev => ({ ...prev, [r.id]: { clients: cRes.clients || [], commissions: comRes.commissions || [] } }));
+    setLoadingExpand(null);
+  }
+
+  async function updateStatus(id: string, status: string) {
+    setUpdatingId(id);
+    await fetch(`/api/reseller/admin/${id}/status`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    loadAll();
+    setUpdatingId(null);
+    toast.success(`Partner ${status}`);
+  }
+
+  async function markCommissionPaid(commId: string, resellerId: string) {
+    await fetch(`/api/reseller/admin/commission/${commId}/pay`, { method: "PATCH", credentials: "include" });
+    const comRes = await fetch(`/api/reseller/admin/${resellerId}/commissions`, { credentials: "include" }).then(x => x.json());
+    setExpandData(prev => ({ ...prev, [resellerId]: { ...prev[resellerId], commissions: comRes.commissions || [] } }));
+    loadAll();
+    toast.success("Commission marked as paid");
+  }
+
+  const filtered = resellers.filter(r => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || r.full_name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || r.reseller_code.toLowerCase().includes(q);
+    const matchStatus = statusFilter === "all" || r.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-heading">Partner Programme</h2>
+        <p className="text-muted-foreground text-sm">Track and manage all reseller partners.</p>
+      </div>
+
+      {/* Stat cards */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Total Partners",      value: stats.total,               icon: Handshake,   color: "bg-blue-500/10 text-blue-600" },
+            { label: "Active",              value: stats.active,              icon: UserCheck,   color: "bg-green-500/10 text-green-600" },
+            { label: "Pending Approval",    value: stats.pending,             icon: Clock,       color: "bg-yellow-500/10 text-yellow-600" },
+            { label: "Package Revenue",     value: fmt(stats.package_revenue_cents), icon: CreditCard, color: "bg-purple-500/10 text-purple-600", isText: true },
+            { label: "Commissions Pending", value: fmt(stats.commissions_pending_cents), icon: DollarSign, color: "bg-orange-500/10 text-orange-600", isText: true },
+            { label: "Commissions Paid",    value: fmt(stats.commissions_paid_cents),   icon: BadgeCheck, color: "bg-teal-500/10 text-teal-600",  isText: true },
+            { label: "Affiliates",          value: stats.pkg_affiliate,       icon: Award,       color: "bg-gray-500/10 text-gray-600" },
+            { label: "No Package Yet",      value: stats.pkg_none,            icon: Ban,         color: "bg-red-500/10 text-red-600" },
+          ].map(card => (
+            <div key={card.label} className="rounded-xl border bg-card p-4 shadow-sm">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.color}`}>
+                <card.icon className="h-4 w-4" />
+              </div>
+              <p className="text-2xl font-bold mt-2">{card.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{card.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, email or code…"
+            className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none"
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="suspended">Suspended</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                {["Partner", "Code", "Package", "Status", "Rank", "Clients", "Earnings", "Joined", "Actions"].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filtered.length === 0 && (
+                <tr><td colSpan={9} className="p-10 text-center text-muted-foreground">No partners found.</td></tr>
+              )}
+              {filtered.map(r => {
+                const pkg = r.package_tier ? PKG_LABELS[r.package_tier] : null;
+                const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
+                const isExpanded = expandedId === r.id;
+                const expData = expandData[r.id];
+                return (
+                  <>
+                    <tr key={r.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-foreground leading-none">{r.full_name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{r.email}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{r.reseller_code}</code>
+                      </td>
+                      <td className="px-4 py-3">
+                        {pkg ? (
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pkg.color}`}>{pkg.label}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">None</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusCfg.color}`}>{statusCfg.label}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{RANK_LABELS[r.rank_key] || r.rank_key}</td>
+                      <td className="px-4 py-3 text-center font-semibold">{r.total_clients}</td>
+                      <td className="px-4 py-3 font-semibold">{fmt(r.total_earnings || 0)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(r.created_at).toLocaleDateString("en-ZA")}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {r.status !== "active" && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-green-700 border-green-200 hover:bg-green-50"
+                              disabled={updatingId === r.id}
+                              onClick={() => updateStatus(r.id, "active")}>
+                              Activate
+                            </Button>
+                          )}
+                          {r.status !== "suspended" && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-red-700 border-red-200 hover:bg-red-50"
+                              disabled={updatingId === r.id}
+                              onClick={() => updateStatus(r.id, "suspended")}>
+                              Suspend
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-7 text-xs"
+                            onClick={() => toggleExpand(r)}>
+                            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Expanded row */}
+                    {isExpanded && (
+                      <tr key={`${r.id}-expand`}>
+                        <td colSpan={9} className="px-4 pb-4 bg-muted/20">
+                          {loadingExpand === r.id ? (
+                            <div className="py-4 text-center text-muted-foreground text-sm">Loading…</div>
+                          ) : expData ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3">
+                              {/* Clients */}
+                              <div className="rounded-lg border bg-card p-4">
+                                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-primary" /> Clients ({expData.clients.length})
+                                </p>
+                                {expData.clients.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground">No clients yet.</p>
+                                ) : (
+                                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {expData.clients.map((c: any) => (
+                                      <div key={c.id} className="flex items-center justify-between text-xs">
+                                        <div>
+                                          <p className="font-medium">{c.full_name}</p>
+                                          <p className="text-muted-foreground">{c.email}</p>
+                                        </div>
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                          c.sub_status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                        }`}>{c.sub_status || "No Sub"}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Commissions */}
+                              <div className="rounded-lg border bg-card p-4">
+                                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                  <DollarSign className="h-4 w-4 text-primary" /> Commissions
+                                </p>
+                                {expData.commissions.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground">No commissions yet.</p>
+                                ) : (
+                                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {expData.commissions.map((c: any) => (
+                                      <div key={c.id} className="flex items-center justify-between text-xs">
+                                        <div>
+                                          <p className="font-medium">{fmt(c.amount_cents)}</p>
+                                          <p className="text-muted-foreground truncate max-w-[200px]">{c.description}</p>
+                                        </div>
+                                        {c.status === "pending" ? (
+                                          <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-700 border-green-200"
+                                            onClick={() => markCommissionPaid(c.id, r.id)}>
+                                            Mark Paid
+                                          </Button>
+                                        ) : (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">Paid</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
   const getPageTitle = () => {
-    const item = adminNavItems.find((item) => item.path === location.pathname);
+    const item = adminNavItems.find((item) => location.pathname.startsWith(item.path) && (item.path !== "/admin" || location.pathname === "/admin"));
     return item ? item.label : "Admin";
   };
 
@@ -1128,6 +1444,7 @@ export default function AdminDashboard() {
         <Routes>
           <Route index element={<AdminOverview />} />
           <Route path="clients" element={<ClientList />} />
+          <Route path="partners" element={<AdminPartners />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
           <Route path="*" element={<AdminOverview />} />

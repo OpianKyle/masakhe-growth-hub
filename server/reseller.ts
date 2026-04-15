@@ -555,6 +555,96 @@ resellerRouter.get("/billing/return-redirect", async (req, res) => {
 });
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
+
+// Admin summary stats
+resellerRouter.get("/admin/stats", requireAdmin, async (req, res) => {
+  try {
+    const counts = await queryOne(`
+      SELECT
+        COUNT(*) as total,
+        SUM(status = 'active') as active,
+        SUM(status = 'pending') as pending,
+        SUM(status = 'suspended') as suspended,
+        SUM(package_tier = 'affiliate') as pkg_affiliate,
+        SUM(package_tier = 'reseller') as pkg_reseller,
+        SUM(package_tier = 'master') as pkg_master,
+        SUM(package_tier IS NULL) as pkg_none
+      FROM resellers
+    `, []);
+
+    const commissions = await queryOne(`
+      SELECT
+        COALESCE(SUM(amount_cents), 0) as total_cents,
+        COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_cents ELSE 0 END), 0) as paid_cents,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN amount_cents ELSE 0 END), 0) as pending_cents
+      FROM reseller_commissions
+    `, []);
+
+    const packageRevenue = await queryOne(`
+      SELECT COALESCE(SUM(amount_cents), 0) as total_cents
+      FROM reseller_billing_invoices
+      WHERE status = 'PAID'
+    `, []);
+
+    res.json({
+      total: counts?.total || 0,
+      active: counts?.active || 0,
+      pending: counts?.pending || 0,
+      suspended: counts?.suspended || 0,
+      pkg_affiliate: counts?.pkg_affiliate || 0,
+      pkg_reseller: counts?.pkg_reseller || 0,
+      pkg_master: counts?.pkg_master || 0,
+      pkg_none: counts?.pkg_none || 0,
+      commissions_total_cents: commissions?.total_cents || 0,
+      commissions_paid_cents: commissions?.paid_cents || 0,
+      commissions_pending_cents: commissions?.pending_cents || 0,
+      package_revenue_cents: packageRevenue?.total_cents || 0,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: get commissions for a specific reseller
+resellerRouter.get("/admin/:id/commissions", requireAdmin, async (req, res) => {
+  try {
+    const commissions = await queryAll(
+      `SELECT c.*, u.full_name as client_name
+       FROM reseller_commissions c
+       LEFT JOIN users u ON u.id = c.client_user_id
+       WHERE c.reseller_id = ?
+       ORDER BY c.created_at DESC LIMIT 50`,
+      [req.params.id]
+    );
+    res.json({ commissions });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: get clients for a specific reseller
+resellerRouter.get("/admin/:id/clients", requireAdmin, async (req, res) => {
+  try {
+    const clients = await queryAll(
+      `SELECT rc.*, u.full_name, u.email,
+              bp.business_name, bp.phone,
+              s.status as sub_status, p.name as plan_name, p.price_cents
+       FROM reseller_clients rc
+       JOIN users u ON u.id = rc.client_user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = rc.client_user_id
+       LEFT JOIN workspaces w ON w.owner_id = rc.client_user_id
+       LEFT JOIN billing_subscriptions s ON s.workspace_id = w.id
+       LEFT JOIN billing_plans p ON p.id = s.plan_id
+       WHERE rc.reseller_id = ?
+       ORDER BY rc.registered_at DESC`,
+      [req.params.id]
+    );
+    res.json({ clients });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 resellerRouter.get("/admin/all", requireAdmin, async (req, res) => {
   try {
     const resellers = await queryAll(
