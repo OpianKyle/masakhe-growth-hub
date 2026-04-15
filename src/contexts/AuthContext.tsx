@@ -9,6 +9,7 @@ interface User {
   business_name?: string;
   trading_name?: string;
   business_status?: string;
+  is_reseller?: boolean;
   business_type?: string;
   industry_sector?: string;
   years_operating?: number;
@@ -32,7 +33,7 @@ interface AuthContextType {
   loading: boolean;
   isImpersonating: boolean;
   originalAdminName: string | null;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean; isReseller?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -87,7 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok && data.ok) {
         setUser(data.user);
         const needsOnboarding = !data.user.popia_consent;
-        return { ok: true, needsOnboarding };
+        const isReseller = !!data.user.is_reseller;
+        return { ok: true, needsOnboarding, isReseller };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {

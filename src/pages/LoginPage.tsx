@@ -40,9 +40,12 @@ export default function LoginPage() {
     const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
-      if (result.needsOnboarding) {
+      if (result.needsOnboarding && !result.isReseller) {
         toast.success("Welcome! Let's finish setting up your account.");
         navigate("/onboarding", { replace: true });
+      } else if (result.isReseller) {
+        toast.success("Welcome back, Partner!");
+        navigate("/partner", { replace: true });
       } else {
         toast.success("Welcome back!");
         navigate(from, { replace: true });

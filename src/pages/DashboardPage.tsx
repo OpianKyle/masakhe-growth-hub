@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, Routes, Route } from "react-router-dom";
+import { Link, useLocation, useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
@@ -114,6 +114,13 @@ export default function DashboardPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isImpersonating, originalAdminName, stopImpersonating } = useAuth();
+
+  // Resellers have their own portal — redirect them
+  useEffect(() => {
+    if (user?.is_reseller && user?.business_status === "reseller" && user?.role !== "admin") {
+      navigate("/partner", { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     if (user?.role === "admin") { setSubscriptionActive(true); return; }

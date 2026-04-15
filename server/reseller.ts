@@ -34,6 +34,18 @@ function generateResellerCode(name: string): string {
   return `${base}${suffix}`;
 }
 
+// Called from auth.ts when user registers with businessStatus = "reseller"
+export async function autoRegisterReseller(userId: string, fullName: string): Promise<void> {
+  const code = generateResellerCode(fullName);
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  await execute(
+    `INSERT IGNORE INTO resellers (id, user_id, reseller_code, status, rank_key, created_at, approved_at)
+     VALUES (?, ?, ?, 'active', 'starter', ?, ?)`,
+    [id, userId, code, now, now]
+  );
+}
+
 // ─── Migrations ──────────────────────────────────────────────────────────────
 export async function runResellerMigrations() {
   await execute(`

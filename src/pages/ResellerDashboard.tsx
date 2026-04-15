@@ -37,8 +37,15 @@ function initials(name: string) {
   return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export default function ResellerDashboard() {
-  const [tab, setTab] = useState<"overview"|"clients"|"commissions"|"tiers"|"leaderboard">("overview");
+interface Props {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}) {
+  const [internalTab, setInternalTab] = useState<string>("overview");
+  const tab = activeTab ?? internalTab;
+  const setTab = (t: string) => { setInternalTab(t); onTabChange?.(t); };
   const [reseller, setReseller] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
@@ -240,19 +247,21 @@ export default function ResellerDashboard() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b bg-white sticky top-0 z-10">
-        <div className="flex overflow-x-auto">
-          {TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key as any)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                tab === t.key ? "border-green-600 text-green-700" : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}>
-              <t.icon className="h-3.5 w-3.5" />{t.label}
-            </button>
-          ))}
+      {/* Tabs — hidden when controlled by parent (portal sidebar) */}
+      {!onTabChange && (
+        <div className="border-b bg-white sticky top-0 z-10">
+          <div className="flex overflow-x-auto">
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                  tab === t.key ? "border-green-600 text-green-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}>
+                <t.icon className="h-3.5 w-3.5" />{t.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="p-6">
         {/* ── OVERVIEW ── */}

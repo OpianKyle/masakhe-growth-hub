@@ -10,6 +10,7 @@ import LandingPage from "./pages/LandingPage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import ResellerPortal from "./pages/ResellerPortal";
 import AdminDashboard from "./pages/AdminDashboard";
 import Onboarding from "./pages/Onboarding";
 import PublishedSite from "./pages/PublishedSite";
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />

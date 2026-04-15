@@ -66,6 +66,9 @@ export default function RegisterPage() {
   const update = (field: string, value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
+  const isReseller = formData.businessStatus === "reseller";
+  const LAST = steps.length - 1;
+
   const next = () => {
     if (currentStep === 0) {
       if (!formData.fullName || !formData.email || !formData.password) {
@@ -81,10 +84,20 @@ export default function RegisterPage() {
         return;
       }
     }
-    setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
+    if (currentStep === 1 && isReseller) {
+      setCurrentStep(LAST);
+      return;
+    }
+    setCurrentStep((s) => Math.min(s + 1, LAST));
   };
 
-  const prev = () => setCurrentStep((s) => Math.max(s - 1, 0));
+  const prev = () => {
+    if (currentStep === LAST && isReseller) {
+      setCurrentStep(1);
+      return;
+    }
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -113,14 +126,18 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      toast.success("Account created! Please log in with your new credentials.");
-      navigate("/login");
+      if (isReseller) {
+        toast.success("Partner account created! Welcome to the Masakhe Partner Program.");
+        navigate("/partner");
+      } else {
+        toast.success("Account created! Please log in with your new credentials.");
+        navigate("/login");
+      }
     } else {
       toast.error(result.error || "Registration failed");
     }
   };
 
-  const LAST = steps.length - 1;
   const progress = ((currentStep) / (steps.length - 1)) * 100;
 
   return (
@@ -303,22 +320,42 @@ export default function RegisterPage() {
                     </div>
                     <RadioGroup value={formData.businessStatus} onValueChange={(v) => update("businessStatus", v)} className="space-y-3">
                       {[
-                        { value: "registered", label: "Formally registered business", desc: "I have a CIPC registration number" },
-                        { value: "registering", label: "Currently registering", desc: "In the process of CIPC registration" },
-                        { value: "informal", label: "Informal trader / spaza shop", desc: "Operating without formal registration" },
+                        { value: "registered",  label: "Formally registered business", desc: "I have a CIPC registration number", color: "border-blue-500 bg-blue-50", radio: "text-blue-600" },
+                        { value: "registering", label: "Currently registering",         desc: "In the process of CIPC registration", color: "border-blue-500 bg-blue-50", radio: "text-blue-600" },
+                        { value: "informal",    label: "Informal trader / spaza shop",  desc: "Operating without formal registration", color: "border-blue-500 bg-blue-50", radio: "text-blue-600" },
+                        { value: "reseller",    label: "Reseller / Referral Partner",   desc: "Earn commissions by referring businesses — no company needed", color: "border-green-500 bg-green-50", radio: "text-green-600" },
                       ].map((option) => (
                         <label
                           key={option.value}
                           className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${
                             formData.businessStatus === option.value
-                              ? "border-blue-500 bg-blue-50"
+                              ? option.color
                               : "border-slate-200 hover:border-slate-300 bg-white"
                           }`}
                         >
                           <RadioGroupItem value={option.value} className="mt-0.5" />
-                          <div>
-                            <p className="font-semibold text-slate-900 text-sm">{option.label}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-slate-900 text-sm">{option.label}</p>
+                              {option.value === "reseller" && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-600 text-white">PARTNER</span>
+                              )}
+                            </div>
                             <p className="text-sm text-slate-500 mt-0.5">{option.desc}</p>
+                            {option.value === "reseller" && formData.businessStatus === "reseller" && (
+                              <div className="mt-2 grid grid-cols-3 gap-2">
+                                {[
+                                  { v: "20%", l: "Direct commission" },
+                                  { v: "5 levels", l: "Network earnings" },
+                                  { v: "R50k", l: "Peak rank bonus" },
+                                ].map(s => (
+                                  <div key={s.l} className="bg-green-100 rounded-lg px-2 py-1.5 text-center">
+                                    <p className="text-sm font-bold text-green-800">{s.v}</p>
+                                    <p className="text-[10px] text-green-600 leading-tight">{s.l}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </label>
                       ))}
@@ -427,55 +464,119 @@ export default function RegisterPage() {
 
                 {currentStep === 5 && (
                   <div className="space-y-6">
-                    <div className="text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 mb-4">
-                        <Check className="h-8 w-8 text-green-600" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-slate-900 font-heading">Almost there!</h2>
-                      <p className="text-slate-500 mt-1.5 text-sm">Review your details and submit to create your account.</p>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 overflow-hidden">
-                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Account Summary</p>
-                      </div>
-                      <div className="divide-y divide-slate-100">
-                        {[
-                          { label: "Full Name", value: formData.fullName },
-                          { label: "Email", value: formData.email },
-                          formData.businessName && { label: "Business", value: formData.businessName },
-                          formData.industrySector && { label: "Industry", value: formData.industrySector },
-                          formData.phone && { label: "Phone", value: formData.phone },
-                          formData.physicalAddress && { label: "Address", value: formData.physicalAddress },
-                        ].filter(Boolean).map((row: any) => (
-                          <div key={row.label} className="flex items-center justify-between px-4 py-3">
-                            <span className="text-sm text-slate-500">{row.label}</span>
-                            <span className="text-sm font-medium text-slate-900 text-right max-w-xs truncate">{row.value}</span>
+                    {isReseller ? (
+                      <>
+                        <div className="text-center">
+                          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 mb-4">
+                            <Check className="h-8 w-8 text-green-600" />
                           </div>
-                        ))}
-                      </div>
-                      <div className="bg-green-50 border-t border-green-100 px-4 py-3 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-green-800">Subscription</span>
-                        <span className="text-sm font-bold text-green-700">Activate after sign-up to unlock all features</span>
-                      </div>
-                    </div>
+                          <h2 className="text-2xl font-bold text-slate-900 font-heading">You're almost in!</h2>
+                          <p className="text-slate-500 mt-1.5 text-sm">Create your Partner account and start earning immediately.</p>
+                        </div>
 
-                    <Button
-                      className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm text-sm"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Creating account...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          Complete Registration <ArrowRight className="h-4 w-4" />
-                        </span>
-                      )}
-                    </Button>
+                        <div className="rounded-xl border border-green-200 bg-green-50 overflow-hidden">
+                          <div className="bg-green-600 px-4 py-3">
+                            <p className="text-xs font-bold text-white uppercase tracking-wider">Partner Account Summary</p>
+                          </div>
+                          <div className="divide-y divide-green-100">
+                            {[
+                              { label: "Full Name", value: formData.fullName },
+                              { label: "Email", value: formData.email },
+                              { label: "Account Type", value: "Reseller / Referral Partner" },
+                              { label: "Starting Rank", value: "Starter (S1)" },
+                              { label: "Direct Commission", value: "20% per referred client" },
+                            ].map((row) => (
+                              <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                                <span className="text-sm text-green-700">{row.label}</span>
+                                <span className="text-sm font-semibold text-green-900 text-right max-w-xs truncate">{row.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                          {[
+                            { v: "20%", l: "Direct commission" },
+                            { v: "5 Levels", l: "Network earnings" },
+                            { v: "R50,000", l: "Diamond Elite bonus" },
+                          ].map(s => (
+                            <div key={s.l} className="rounded-xl border border-green-200 bg-white p-3">
+                              <p className="text-lg font-bold text-green-700">{s.v}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{s.l}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <Button
+                          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-sm text-sm"
+                          onClick={handleSubmit}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Creating partner account...
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              Join the Partner Program <ArrowRight className="h-4 w-4" />
+                            </span>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center">
+                          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 mb-4">
+                            <Check className="h-8 w-8 text-green-600" />
+                          </div>
+                          <h2 className="text-2xl font-bold text-slate-900 font-heading">Almost there!</h2>
+                          <p className="text-slate-500 mt-1.5 text-sm">Review your details and submit to create your account.</p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 overflow-hidden">
+                          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Account Summary</p>
+                          </div>
+                          <div className="divide-y divide-slate-100">
+                            {[
+                              { label: "Full Name", value: formData.fullName },
+                              { label: "Email", value: formData.email },
+                              formData.businessName && { label: "Business", value: formData.businessName },
+                              formData.industrySector && { label: "Industry", value: formData.industrySector },
+                              formData.phone && { label: "Phone", value: formData.phone },
+                              formData.physicalAddress && { label: "Address", value: formData.physicalAddress },
+                            ].filter(Boolean).map((row: any) => (
+                              <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                                <span className="text-sm text-slate-500">{row.label}</span>
+                                <span className="text-sm font-medium text-slate-900 text-right max-w-xs truncate">{row.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="bg-green-50 border-t border-green-100 px-4 py-3 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-green-800">Subscription</span>
+                            <span className="text-sm font-bold text-green-700">Activate after sign-up to unlock all features</span>
+                          </div>
+                        </div>
+
+                        <Button
+                          className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm text-sm"
+                          onClick={handleSubmit}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Creating account...
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              Complete Registration <ArrowRight className="h-4 w-4" />
+                            </span>
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </motion.div>
