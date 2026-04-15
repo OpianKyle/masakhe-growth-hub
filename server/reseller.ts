@@ -3,10 +3,22 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
 import { getTransporterForUser } from "./email-settings";
+import { generateSubscriptionToken, verifyResponseToken } from "./adumo";
 
 export const resellerRouter = Router();
 
 const APP_URL = process.env.APP_URL || "https://masakheportal.co.za";
+
+const ADUMO_URL = process.env.ADUMO_ENV === "production"
+  ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
+  : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
+
+// Partner package definitions
+const PARTNER_PACKAGES = {
+  affiliate: { label: "Affiliate",       amountCents: 0,      currency: "ZAR" },
+  reseller:  { label: "Reseller",        amountCents: 99900,  currency: "ZAR" },
+  master:    { label: "Master Reseller", amountCents: 499900, currency: "ZAR" },
+};
 
 // ─── Rank definitions ────────────────────────────────────────────────────────
 export const RANKS = [
@@ -94,6 +106,25 @@ export async function runResellerMigrations() {
 
   // Add referred_by column to users table
   await execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20) NULL`, []).catch(() => {});
+
+  // Add package_tier and package_paid_at to resellers
+  await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS package_tier ENUM('affiliate','reseller','master') NULL`, []).catch(() => {});
+  await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS package_paid_at TIMESTAMP NULL`, []).catch(() => {});
+
+  // Reseller once-off billing invoices
+  await execute(`
+    CREATE TABLE IF NOT EXISTS reseller_billing_invoices (
+      id VARCHAR(36) PRIMARY KEY,
+      reseller_id VARCHAR(36) NOT NULL,
+      package_tier VARCHAR(20) NOT NULL,
+      amount_cents INT NOT NULL,
+      currency VARCHAR(10) DEFAULT 'ZAR',
+      merchant_ref VARCHAR(80) NOT NULL UNIQUE,
+      status ENUM('PENDING','PAID','FAILED') DEFAULT 'PENDING',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      paid_at TIMESTAMP NULL
+    )
+  `, []).catch(() => {});
 
   console.log("[Reseller] Migrations complete");
 }
@@ -354,6 +385,173 @@ resellerRouter.post("/me/invite", async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── Billing: partner package selection ───────────────────────────────────────
+
+// Get current package status
+resellerRouter.get("/billing/status", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne(
+      "SELECT id, package_tier, package_paid_at FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+    res.json({ package_tier: r.package_tier || null, package_paid_at: r.package_paid_at || null });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Select the free "Affiliate" package — activates immediately
+resellerRouter.post("/billing/select-free", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne("SELECT id, package_tier FROM resellers WHERE user_id = ?", [userId]);
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+    if (r.package_tier) return res.status(400).json({ error: "Package already selected" });
+    await execute(
+      "UPDATE resellers SET package_tier = 'affiliate', package_paid_at = NOW() WHERE id = ?",
+      [r.id]
+    );
+    res.json({ ok: true, package_tier: "affiliate" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create Adumo once-off checkout for paid packages
+resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { tier, recipientName, email, contactNumber } = req.body;
+
+    if (!tier || !["reseller", "master"].includes(tier)) {
+      return res.status(400).json({ error: "Invalid package tier" });
+    }
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const r = await queryOne(
+      "SELECT id, package_tier FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+    if (r.package_tier) return res.status(400).json({ error: "Package already selected" });
+
+    const pkg = PARTNER_PACKAGES[tier as keyof typeof PARTNER_PACKAGES];
+    const amount = (pkg.amountCents / 100).toFixed(2);
+    const merchantRef = `RSEL_${tier.toUpperCase()}_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const puid = randomUUID();
+
+    await execute(
+      `INSERT INTO reseller_billing_invoices (id, reseller_id, package_tier, amount_cents, currency, merchant_ref, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING')`,
+      [randomUUID(), r.id, tier, pkg.amountCents, pkg.currency, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: pkg.currency,
+      RedirectSuccessfulURL: `${APP_URL}/api/reseller/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/reseller/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "PartnerPackage",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: tier,
+      ItemDescr1: `${pkg.label} Partner Package - Once-off setup`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: recipientName || userRecord?.full_name || "Partner",
+      ShippingAddress1: "",
+      ShippingAddress2: "",
+      ShippingAddress3: "",
+      frequency: "ONCE",
+      contactNumber: contactNumber || "",
+      mobileNumber: contactNumber || "",
+      emailAddress: email || userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Reseller Billing] Checkout created:", { merchantRef, amount, tier });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Reseller Billing] Checkout error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Adumo return redirect — activate package on successful payment
+resellerRouter.get("/billing/return-redirect", async (req, res) => {
+  const q = req.query as Record<string, string>;
+  const status = q.status || q._RESULT || "";
+  const merchantRef = (q.merchantRef || q._MERCHANTREFERENCE || q.MerchantReference || "") as string;
+
+  console.log(`[Reseller Billing] Return redirect: status=${status}, merchantRef=${merchantRef}`);
+
+  const redirectBase = `${APP_URL}/partner`;
+
+  if (!merchantRef) {
+    return res.redirect(`${redirectBase}?payment=error`);
+  }
+
+  const invoice = await queryOne(
+    "SELECT * FROM reseller_billing_invoices WHERE merchant_ref = ? AND status = 'PENDING'",
+    [merchantRef]
+  );
+
+  if (!invoice) {
+    console.warn(`[Reseller Billing] No pending invoice for merchantRef=${merchantRef}`);
+    return res.redirect(`${redirectBase}?payment=error`);
+  }
+
+  const failed = status === "failed" || status.toLowerCase().includes("fail") || status === "0";
+  if (failed) {
+    await execute(
+      "UPDATE reseller_billing_invoices SET status = 'FAILED' WHERE merchant_ref = ?",
+      [merchantRef]
+    );
+    return res.redirect(`${redirectBase}?payment=failed`);
+  }
+
+  // Verify response token if present
+  const responseToken = q._RESPONSETOKEN || q.ResponseToken || "";
+  if (responseToken) {
+    try {
+      const decoded = verifyResponseToken(responseToken);
+      if (decoded.mref && decoded.mref !== merchantRef) {
+        console.error(`[Reseller Billing] Token mref mismatch: expected ${merchantRef}, got ${decoded.mref}`);
+        return res.redirect(`${redirectBase}?payment=error`);
+      }
+    } catch (e: any) {
+      console.error(`[Reseller Billing] Token verify failed:`, e.message);
+    }
+  }
+
+  // Activate package
+  await execute(
+    "UPDATE reseller_billing_invoices SET status = 'PAID', paid_at = NOW() WHERE merchant_ref = ?",
+    [merchantRef]
+  );
+  await execute(
+    "UPDATE resellers SET package_tier = ?, package_paid_at = NOW() WHERE id = ?",
+    [invoice.package_tier, invoice.reseller_id]
+  );
+
+  console.log(`[Reseller Billing] Package activated: tier=${invoice.package_tier}, reseller_id=${invoice.reseller_id}`);
+  res.redirect(`${redirectBase}?payment=success`);
 });
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
