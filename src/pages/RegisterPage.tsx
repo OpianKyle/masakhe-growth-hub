@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, ArrowLeft, Building2, User, FileText, MapPin, Check,
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -27,8 +27,21 @@ const steps = [
 export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref") || undefined;
+
+  // Validate referral code on mount
+  React.useEffect(() => {
+    if (referralCode) {
+      fetch(`/api/reseller/check/${referralCode}`)
+        .then(r => r.json())
+        .then(d => { if (d.valid) setReferrerName(d.name); })
+        .catch(() => {});
+    }
+  }, [referralCode]);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -79,6 +92,7 @@ export default function RegisterPage() {
       email: formData.email,
       password: formData.password,
       fullName: formData.fullName,
+      referralCode,
       businessData: {
         businessName: formData.businessName,
         tradingName: formData.tradingName,
@@ -202,6 +216,17 @@ export default function RegisterPage() {
 
         <div className="flex-1 flex items-start justify-center px-8 py-10">
           <div className="w-full max-w-xl">
+            {referrerName && (
+              <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Referred by {referrerName}</p>
+                  <p className="text-xs text-green-600">You're signing up via a partner referral link.</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1">
               {steps.map((step, i) => (
                 <div key={step.title} className="flex items-center gap-2 flex-shrink-0">

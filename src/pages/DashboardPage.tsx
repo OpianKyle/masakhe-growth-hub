@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -27,6 +27,7 @@ import VehicleManagementPage from "./VehicleManagementPage";
 import LeadsPage from "./LeadsPage";
 import PayrollPage from "./PayrollPage";
 import LeavePage from "./LeavePage";
+import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
 import TrialBanner from "@/components/TrialBanner";
@@ -98,6 +99,7 @@ const baseNavItems: NavItem[] = [
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
   { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
+  { icon: Award, label: "Partner Program", path: "/dashboard/reseller" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
@@ -460,6 +462,7 @@ export default function DashboardPage() {
             <Route path="leads" element={<LeadsPage />} />
             <Route path="payroll" element={<PayrollPage />} />
             <Route path="leave" element={<LeavePage />} />
+            <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="billing" element={<BillingPage />} />

@@ -44,6 +44,7 @@ interface RegisterData {
   password: string;
   fullName: string;
   businessData?: Record<string, any>;
+  referralCode?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

@@ -60,6 +60,14 @@ Key architectural features include:
 - **Return Flow**: Adumo redirects to `GET /api/billing/return-redirect?status=success&merchantRef=SUB_xxx`. Server verifies `_RESPONSE_TOKEN` JWT (validates mref + amount match), marks invoice PAID, creates ACTIVE subscription immediately, extracts card details if available, then redirects to `/dashboard/billing?payment=success`
 - **Security**: Response token verification validates merchant reference and amount match before accepting payment. Invoice uses stored `plan_id` for subscription creation (not amount-based lookup). T&C acceptance checkbox required before form submission.
 
+## Reseller / Partner Program
+- **Backend**: `server/reseller.ts` — DB tables: `resellers`, `reseller_clients`, `reseller_commissions`. Column `referred_by` added to `users` by auth.ts at registration. `app.use("/api/reseller", resellerRouter)` wired in `server/index.ts`.
+- **7-Rank System**: Starter (S1) → Builder (B2) → Leader (L3) → Manager (M4) → Director (D5) → Executive (E6) → Diamond Elite (DE7). Rank auto-computed on each `/me` call from client count.
+- **Commission Rates**: Direct L1=20%, L2=10%, L3=5%, L4=3%, L5=3%. Binary bonus=10% weaker leg (capped). One-off rank bonuses: R500 → R50,000.
+- **Key Endpoints**: `GET /api/reseller/check/:code` (public — validates referral code), `POST /api/reseller/apply`, `GET /api/reseller/me`, `GET /api/reseller/me/clients`, `GET /api/reseller/me/commissions`, `GET /api/reseller/leaderboard`, `POST /api/reseller/me/invite` (send invite email), admin routes.
+- **Registration**: `auth.ts` POST `/api/auth/register` accepts `referralCode`, stores in `referred_by`, calls `linkResellerClient`. `RegisterPage.tsx` reads `?ref=` from URL via `useSearchParams`, validates via `/api/reseller/check/:code`, shows green referrer banner if valid, passes `referralCode` to register call.
+- **Frontend**: `src/pages/ResellerDashboard.tsx` — tabbed UI: Overview (stats, rank track, commission table), My Clients, Commissions, Ranks & Tiers (7 cards), Leaderboard (podium + table). Apply-to-join CTA shown for non-resellers. Invite dialog with email + optional name. Dark gradient header with referral link copy + invite button. Route: `/dashboard/reseller`. Nav item: "Partner Program" (Award icon) in sidebar.
+
 ## External Dependencies
 - **Database**: Remote MySQL hosted on Xneelo (`sql16.cpt3.host-h.net`).
 - **Payment Gateway**: Adumo Online (Virtual HPP form POST for debit order subscriptions).

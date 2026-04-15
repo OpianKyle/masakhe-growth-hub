@@ -3,6 +3,7 @@ import { queryOne, execute } from "./db";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendPasswordResetEmail } from "./email";
+import { linkResellerClient } from "./reseller";
 
 export const authRouter = Router();
 
@@ -33,7 +34,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
 authRouter.post("/register", async (req, res) => {
   try {
-    const { email, password, fullName, businessData } = req.body;
+    const { email, password, fullName, businessData, referralCode } = req.body;
 
     if (!email || !password || !fullName) {
       return res.status(400).json({ error: "Email, password, and full name are required" });
@@ -49,9 +50,9 @@ authRouter.post("/register", async (req, res) => {
     const now = new Date().toISOString();
 
     await execute(
-      `INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'user', ?, ?)`,
-      [userId, email.toLowerCase(), passwordHash, fullName, now, now]
+      `INSERT INTO users (id, email, password_hash, full_name, role, referred_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'user', ?, ?, ?)`,
+      [userId, email.toLowerCase(), passwordHash, fullName, referralCode || null, now, now]
     );
 
     if (businessData) {
@@ -113,6 +114,7 @@ authRouter.post("/register", async (req, res) => {
     req.session.save(async () => {
       const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [userId]);
       sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
+      if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
       res.json({ ok: true, user });
     });
   } catch (err: any) {
