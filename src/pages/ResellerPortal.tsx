@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ResellerDashboard from "./ResellerDashboard";
 import PartnerPackage from "./PartnerPackage";
 import {
-  Award, LogOut, ChevronLeft, Menu, X,
-  BarChart2, Users, DollarSign, Crown, Trophy, CreditCard, CheckCircle, AlertCircle,
+  Award, LogOut, Menu, X,
+  BarChart2, Users, DollarSign, Crown, Trophy, CreditCard, CheckCircle, ArrowUpCircle, Loader2, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -195,8 +195,11 @@ export default function ResellerPortal() {
                 .then(d => setPackageTier(d.package_tier ?? "affiliate"));
             }} />
           ) : activeTab === "billing" ? (
-            // Billing tab — show current package info
-            <BillingView packageTier={packageTier} />
+            // Billing tab — show current package info + upgrade options
+            <BillingView
+              packageTier={packageTier}
+              onUpgraded={(newTier) => setPackageTier(newTier)}
+            />
           ) : (
             // All other tabs — reseller dashboard
             <ResellerDashboard activeTab={activeTab} onTabChange={setActiveTab} />
@@ -207,85 +210,208 @@ export default function ResellerPortal() {
   );
 }
 
-function BillingView({ packageTier }: { packageTier: string }) {
+// ─── Upgrade option definitions ───────────────────────────────────────────────
+const UPGRADE_OPTIONS: Record<string, Array<{
+  targetTier: string;
+  label: string;
+  payToday: string;
+  description: string;
+  features: string[];
+  highlight: boolean;
+}>> = {
+  affiliate: [
+    {
+      targetTier: "reseller",
+      label: "Reseller",
+      payToday: "R999",
+      description: "White-label capability. Sell Masakhe under your own brand identity.",
+      features: ["White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+      highlight: true,
+    },
+    {
+      targetTier: "master",
+      label: "Master Reseller",
+      payToday: "R4,999",
+      description: "Recruit your own resellers. Earn overrides on your entire sub-network.",
+      features: ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool"],
+      highlight: false,
+    },
+  ],
+  reseller: [
+    {
+      targetTier: "master",
+      label: "Master Reseller",
+      payToday: "R4,000",
+      description: "Unlock the full network. You pay the difference — R4,999 minus your R999 setup.",
+      features: ["Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
+      highlight: true,
+    },
+  ],
+  master: [],
+};
+
+const CURRENT_FEATURES: Record<string, string[]> = {
+  affiliate: ["Unique referral link", "20% direct commissions", "Basic marketing materials", "Partner dashboard access"],
+  reseller:  ["Everything in Affiliate", "White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+  master:    ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
+};
+
+function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgraded: (tier: string) => void }) {
+  const { user } = useAuth();
   const pkg = PACKAGE_LABELS[packageTier];
-  const isAffiliate = packageTier === "affiliate";
-  const isMaster = packageTier === "master";
+  const upgrades = UPGRADE_OPTIONS[packageTier] || [];
+  const features = CURRENT_FEATURES[packageTier] || [];
+  const formRef = useRef<HTMLFormElement>(null);
+  const [paymentData, setPaymentData] = useState<{ formAction: string; fields: Record<string, string> } | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (paymentData && formRef.current) formRef.current.submit();
+  }, [paymentData]);
+
+  async function handleUpgrade(targetTier: string) {
+    if (loading) return;
+    setLoading(targetTier);
+    try {
+      const res = await fetch("/api/reseller/billing/upgrade", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetTier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start upgrade");
+      setPaymentData({ formAction: data.formAction, fields: data.fields });
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+      setLoading(null);
+    }
+  }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1">Billing & Package</h1>
-      <p className="text-white/50 text-sm mb-8">Your current partner package and payment history.</p>
+    <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-8">
+      {/* Hidden Adumo upgrade form */}
+      {paymentData && (
+        <form ref={formRef} action={paymentData.formAction} method="POST" className="hidden">
+          {Object.entries(paymentData.fields).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+        </form>
+      )}
+
+      <div>
+        <h1 className="text-2xl font-bold text-white mb-1">Billing & Package</h1>
+        <p className="text-white/50 text-sm">Your current partner package and upgrade options.</p>
+      </div>
 
       {/* Current package card */}
-      <div className="rounded-2xl bg-[#111827] border border-white/10 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-2xl bg-[#111827] border border-white/10 p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Active Package</p>
-            <p className={`text-xl font-bold ${pkg?.color || "text-white"}`}>{pkg?.label || packageTier}</p>
+            <p className={`text-2xl font-bold ${pkg?.color || "text-white"}`}>{pkg?.label || packageTier}</p>
+            <p className="text-white/40 text-sm mt-0.5">Setup fee: {pkg?.price || "—"}</p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
             <CheckCircle className="h-6 w-6 text-green-400" />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-white/30 text-sm">Setup fee:</span>
-          <span className="text-white text-sm font-semibold">{pkg?.price || "—"}</span>
-        </div>
-        {isAffiliate && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-white/50 text-sm">
-              Upgrade to <span className="text-green-400 font-semibold">Reseller (R999)</span> or <span className="text-yellow-400 font-semibold">Master Reseller (R4,999)</span> to unlock white-label branding, deeper commission levels, and dedicated support.
-            </p>
+
+        {features.length > 0 && (
+          <div className="mt-5 pt-5 border-t border-white/10">
+            <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Included in your plan</p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {features.map(f => (
+                <li key={f} className="flex items-center gap-2 text-sm text-white/65">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-400 shrink-0" /> {f}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-        {isMaster && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-white/50 text-sm">You are on the highest package tier. All features are unlocked.</p>
+
+        {packageTier === "master" && (
+          <div className="mt-5 pt-5 border-t border-white/10">
+            <p className="text-white/50 text-sm flex items-center gap-2">
+              <Star className="h-4 w-4 text-yellow-400" /> You are on the highest package tier. All features are unlocked.
+            </p>
           </div>
         )}
       </div>
 
-      {/* Features summary */}
-      <div className="rounded-2xl bg-[#111827] border border-white/10 p-6">
-        <p className="text-white/40 text-xs uppercase tracking-widest mb-4">What's Included</p>
-        <ul className="space-y-2.5">
-          {packageTier === "affiliate" && [
-            "Unique referral link",
-            "20% direct commissions",
-            "Basic marketing materials",
-            "Partner dashboard access",
-          ].map(f => (
-            <li key={f} className="flex items-center gap-2.5 text-sm text-white/70">
-              <CheckCircle className="h-4 w-4 text-green-400 shrink-0" /> {f}
-            </li>
-          ))}
-          {packageTier === "reseller" && [
-            "Everything in Affiliate",
-            "White-label branding kit",
-            "Custom sub-domain",
-            "Level 2-3 commissions",
-            "Dedicated support line",
-            "Client management portal",
-          ].map(f => (
-            <li key={f} className="flex items-center gap-2.5 text-sm text-white/70">
-              <CheckCircle className="h-4 w-4 text-green-400 shrink-0" /> {f}
-            </li>
-          ))}
-          {packageTier === "master" && [
-            "Everything in Reseller",
-            "Recruit & manage resellers",
-            "All 5 commission levels",
-            "Binary bonus unlocked",
-            "Revenue share pool",
-            "Co-branded marketing fund",
-          ].map(f => (
-            <li key={f} className="flex items-center gap-2.5 text-sm text-white/70">
-              <CheckCircle className="h-4 w-4 text-green-400 shrink-0" /> {f}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Upgrade options */}
+      {upgrades.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <ArrowUpCircle className="h-5 w-5 text-green-400" />
+            <h2 className="text-lg font-bold text-white">Upgrade Your Package</h2>
+          </div>
+          <p className="text-white/50 text-sm mb-5">
+            Upgrade anytime — you only pay the difference from your current package.
+          </p>
+
+          <div className={`grid gap-5 ${upgrades.length === 1 ? "grid-cols-1 max-w-md" : "grid-cols-1 md:grid-cols-2"}`}>
+            {upgrades.map(option => (
+              <div
+                key={option.targetTier}
+                className={`relative rounded-2xl p-6 flex flex-col ${
+                  option.highlight
+                    ? "bg-[#0f2a1a] border-2 border-green-500"
+                    : "bg-[#111827] border border-white/10"
+                }`}
+              >
+                {option.highlight && (
+                  <div className="absolute -top-3 left-5">
+                    <span className="inline-flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">
+                      <Star className="h-2.5 w-2.5 fill-white" /> Recommended
+                    </span>
+                  </div>
+                )}
+
+                <div className="mb-1">
+                  <p className="text-white/50 text-xs uppercase tracking-widest">Upgrade to</p>
+                  <p className="text-white text-xl font-bold">{option.label}</p>
+                </div>
+
+                <div className="flex items-baseline gap-1.5 mb-3">
+                  <span className="text-3xl font-extrabold text-green-400">{option.payToday}</span>
+                  <span className="text-white/40 text-sm">today</span>
+                </div>
+
+                <p className="text-white/50 text-sm mb-5 leading-relaxed">{option.description}</p>
+
+                <ul className="space-y-2 mb-6 flex-1">
+                  {option.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-white/70">
+                      <CheckCircle className="h-4 w-4 text-green-400 shrink-0 mt-0.5" /> {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => handleUpgrade(option.targetTier)}
+                  disabled={loading !== null}
+                  className={`w-full h-11 font-semibold ${
+                    option.highlight
+                      ? "bg-green-500 hover:bg-green-600 text-white"
+                      : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                  }`}
+                >
+                  {loading === option.targetTier ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `Upgrade to ${option.label}`
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-5 text-white/25 text-xs">
+            Payments are processed securely via Adumo Online. Once-off — no recurring charges.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

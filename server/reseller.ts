@@ -493,6 +493,88 @@ resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
   }
 });
 
+// Upgrade from current package to a higher tier
+resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { targetTier } = req.body;
+
+    if (!targetTier || !["reseller", "master"].includes(targetTier)) {
+      return res.status(400).json({ error: "Invalid target tier" });
+    }
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const r = await queryOne("SELECT id, package_tier FROM resellers WHERE user_id = ?", [userId]);
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+
+    const TIER_ORDER: Record<string, number> = { affiliate: 0, reseller: 1, master: 2 };
+    const currentOrder = TIER_ORDER[r.package_tier || ""] ?? -1;
+    const targetOrder  = TIER_ORDER[targetTier] ?? -1;
+
+    if (targetOrder <= currentOrder) {
+      return res.status(400).json({ error: "Target tier must be higher than current tier" });
+    }
+
+    // Differential pricing
+    const TIER_CENTS: Record<string, number> = { affiliate: 0, reseller: 99900, master: 499900 };
+    const currentCents = TIER_CENTS[r.package_tier || "affiliate"] ?? 0;
+    const targetCents  = TIER_CENTS[targetTier];
+    const diffCents    = targetCents - currentCents;
+
+    const pkg = PARTNER_PACKAGES[targetTier as keyof typeof PARTNER_PACKAGES];
+    const amount = (diffCents / 100).toFixed(2);
+    const merchantRef = `RUPG_${targetTier.toUpperCase()}_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const puid = randomUUID();
+
+    await execute(
+      `INSERT INTO reseller_billing_invoices (id, reseller_id, package_tier, amount_cents, currency, merchant_ref, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING')`,
+      [randomUUID(), r.id, targetTier, diffCents, pkg.currency, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: pkg.currency,
+      RedirectSuccessfulURL: `${APP_URL}/api/reseller/billing/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/reseller/billing/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "PartnerUpgrade",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: targetTier,
+      ItemDescr1: `Upgrade to ${pkg.label} - Once-off`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: userRecord?.full_name || "Partner",
+      ShippingAddress1: "",
+      ShippingAddress2: "",
+      ShippingAddress3: "",
+      frequency: "ONCE",
+      contactNumber: "",
+      mobileNumber: "",
+      emailAddress: userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Reseller Billing] Upgrade checkout:", { merchantRef, amount, from: r.package_tier, to: targetTier });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Reseller Billing] Upgrade error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Adumo return redirect — activate package on successful payment
 resellerRouter.get("/billing/return-redirect", async (req, res) => {
   const q = req.query as Record<string, string>;
