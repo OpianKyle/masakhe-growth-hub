@@ -189,6 +189,103 @@ resellerRouter.post("/apply", async (req, res) => {
   }
 });
 
+// ─── SMME user joins partner programme with a package ────────────────────────
+// Creates the reseller record (if missing) + selects/pays for the package in one step.
+// Returns immediately for "affiliate" (free); returns Adumo form fields for paid tiers.
+resellerRouter.post("/join", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { tier } = req.body;
+
+    if (!tier || !["affiliate", "reseller", "master"].includes(tier)) {
+      return res.status(400).json({ error: "Invalid tier" });
+    }
+
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    // Ensure reseller record exists
+    let r = await queryOne("SELECT id, package_tier FROM resellers WHERE user_id = ?", [userId]);
+    if (!r) {
+      const code = generateResellerCode(userRecord?.full_name || "RES");
+      const newId = randomUUID();
+      const now = new Date().toISOString();
+      await execute(
+        `INSERT INTO resellers (id, user_id, reseller_code, status, rank_key, created_at, approved_at)
+         VALUES (?, ?, ?, 'active', 'starter', ?, ?)`,
+        [newId, userId, code, now, now]
+      );
+      r = { id: newId, package_tier: null };
+    }
+
+    if (r.package_tier) {
+      return res.status(400).json({ error: "You have already selected a package." });
+    }
+
+    // Free affiliate tier — activate immediately
+    if (tier === "affiliate") {
+      await execute(
+        "UPDATE resellers SET package_tier = 'affiliate', package_paid_at = NOW() WHERE id = ?",
+        [r.id]
+      );
+      return res.json({ ok: true, package_tier: "affiliate" });
+    }
+
+    // Paid tiers — create Adumo checkout with return to dashboard
+    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const pkg = PARTNER_PACKAGES[tier as keyof typeof PARTNER_PACKAGES];
+    const amount = (pkg.amountCents / 100).toFixed(2);
+    const merchantRef = `RJOIN_${tier.toUpperCase()}_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const puid = randomUUID();
+
+    await execute(
+      `INSERT INTO reseller_billing_invoices (id, reseller_id, package_tier, amount_cents, currency, merchant_ref, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING')`,
+      [randomUUID(), r.id, tier, pkg.amountCents, pkg.currency, merchantRef]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_CUID!,
+      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: pkg.currency,
+      RedirectSuccessfulURL: `${APP_URL}/api/reseller/billing/return-redirect?status=success&merchantRef=${merchantRef}&returnPath=dashboard`,
+      RedirectFailedURL:     `${APP_URL}/api/reseller/billing/return-redirect?status=failed&merchantRef=${merchantRef}&returnPath=dashboard`,
+      Variable1: "PartnerJoin",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: tier,
+      ItemDescr1: `${pkg.label} Partner Package - Once-off setup`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: userRecord?.full_name || "Partner",
+      ShippingAddress1: "",
+      ShippingAddress2: "",
+      ShippingAddress3: "",
+      frequency: "ONCE",
+      contactNumber: "",
+      mobileNumber: "",
+      emailAddress: userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Reseller Join] Checkout created:", { merchantRef, amount, tier });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Reseller Join] Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get my reseller profile
 resellerRouter.get("/me", async (req, res) => {
   try {
@@ -583,7 +680,8 @@ resellerRouter.get("/billing/return-redirect", async (req, res) => {
 
   console.log(`[Reseller Billing] Return redirect: status=${status}, merchantRef=${merchantRef}`);
 
-  const redirectBase = `${APP_URL}/partner`;
+  const returnPath = q.returnPath === "dashboard" ? "/dashboard/reseller" : "/partner";
+  const redirectBase = `${APP_URL}${returnPath}`;
 
   if (!merchantRef) {
     return res.redirect(`${redirectBase}?payment=error`);

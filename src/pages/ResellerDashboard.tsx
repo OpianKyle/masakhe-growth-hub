@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Users, TrendingUp, DollarSign, Copy, Send, Star, Trophy,
@@ -52,6 +53,10 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [joiningTier, setJoiningTier] = useState<string | null>(null);
+  const [joinPayment, setJoinPayment] = useState<{ formAction: string; fields: Record<string, string> } | null>(null);
+  const joinFormRef = useRef<HTMLFormElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
@@ -84,6 +89,53 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
       if (r.ok) { toast.success(d.message); loadMe(); }
       else toast.error(d.error);
     } finally { setApplying(false); }
+  }
+
+  // Auto-submit Adumo join form when payment data is ready
+  useEffect(() => {
+    if (joinPayment && joinFormRef.current) joinFormRef.current.submit();
+  }, [joinPayment]);
+
+  // Handle Adumo return redirect params
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    if (payment === "success") {
+      toast.success("Payment successful! Your partner package is now active.");
+      loadMe();
+      setSearchParams({}, { replace: true });
+    } else if (payment === "failed") {
+      toast.error("Payment was not completed. Please try again.");
+      setSearchParams({}, { replace: true });
+    } else if (payment === "error") {
+      toast.error("An error occurred during payment. Please contact support.");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]);
+
+  async function handleJoin(tier: string) {
+    if (joiningTier) return;
+    setJoiningTier(tier);
+    try {
+      const res = await fetch("/api/reseller/join", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to join");
+      if (data.ok && data.package_tier) {
+        // Affiliate — free, activate immediately
+        toast.success("Welcome to the Masakhe Partner Programme!");
+        loadMe();
+      } else if (data.formAction) {
+        // Paid — redirect to Adumo
+        setJoinPayment({ formAction: data.formAction, fields: data.fields });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+      setJoiningTier(null);
+    }
   }
 
   async function loadClients() {
@@ -135,35 +187,136 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
     );
   }
 
-  // Not yet a reseller
-  if (!reseller) {
+  // Not yet a reseller OR has no package selected
+  if (!reseller || !reseller.package_tier) {
+    const JOIN_PACKAGES = [
+      {
+        tier: "affiliate",
+        label: "Affiliate",
+        price: "Free",
+        priceNote: "No upfront cost",
+        priceCents: 0,
+        recommended: false,
+        description: "Start earning referral commissions immediately with zero investment.",
+        features: ["Unique referral link", "20% direct commissions", "Basic marketing materials", "Partner dashboard access"],
+        btnLabel: "Join Free",
+      },
+      {
+        tier: "reseller",
+        label: "Reseller",
+        price: "R999",
+        priceNote: "Once-off setup",
+        priceCents: 99900,
+        recommended: true,
+        description: "White-label capability. Sell Masakhe under your own brand identity.",
+        features: ["Everything in Affiliate", "White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+        btnLabel: "Become a Reseller",
+      },
+      {
+        tier: "master",
+        label: "Master Reseller",
+        price: "R4,999",
+        priceNote: "Once-off setup",
+        priceCents: 499900,
+        recommended: false,
+        description: "Recruit your own resellers. Earn overrides on your entire sub-network.",
+        features: ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
+        btnLabel: "Go Master Reseller",
+      },
+    ];
+
     return (
-      <div className="max-w-2xl mx-auto py-16 px-4 text-center space-y-6">
-        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-          <Award className="h-8 w-8 text-green-600" />
+      <div className="py-10 px-4">
+        {/* Hidden Adumo form */}
+        {joinPayment && (
+          <form ref={joinFormRef} action={joinPayment.formAction} method="POST" className="hidden">
+            {Object.entries(joinPayment.fields).map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
+          </form>
+        )}
+
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <Award className="h-7 w-7 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Join the Masakhe Partner Programme</h1>
+          <p className="text-slate-500 text-sm mt-2 max-w-lg mx-auto leading-relaxed">
+            Pick the package that matches your ambition. Earn commissions, build your network, and grow with Masakhe.
+          </p>
+
+          {/* Key stats */}
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-6">
+            {[
+              { value: "20%", label: "Direct commission" },
+              { value: "5 Levels", label: "Multi-level earnings" },
+              { value: "R50,000", label: "Top rank bonus" },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50 py-3 px-2">
+                <p className="text-lg font-bold text-green-700">{s.value}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">Become a Masakhe Partner</h1>
-        <p className="text-slate-500 text-base leading-relaxed">
-          Earn recurring commissions by referring businesses to Masakhe. Get your own referral link, track your clients and earnings, and climb the ranks from Starter to Diamond Elite.
-        </p>
-        <div className="grid grid-cols-3 gap-4 text-left">
-          {[
-            { label: "Direct Commission", value: "20%", desc: "On every client you refer" },
-            { label: "Multi-level",        value: "5 Levels", desc: "Earn from your network" },
-            { label: "Top Rank Bonus",     value: "R50,000", desc: "Diamond Elite one-off" },
-          ].map(c => (
-            <div key={c.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xl font-bold text-green-700">{c.value}</p>
-              <p className="text-xs font-semibold text-slate-700 mt-0.5">{c.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{c.desc}</p>
+
+        {/* Package cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+          {JOIN_PACKAGES.map(pkg => (
+            <div
+              key={pkg.tier}
+              className={`relative rounded-2xl p-6 flex flex-col ${
+                pkg.recommended
+                  ? "border-2 border-green-600 bg-green-50 shadow-lg"
+                  : "border border-slate-200 bg-white"
+              }`}
+            >
+              {pkg.recommended && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                    <Star className="h-3 w-3 fill-white" /> Recommended
+                  </span>
+                </div>
+              )}
+
+              <h2 className="text-slate-900 font-bold text-lg mb-0.5">{pkg.label}</h2>
+              <div className="flex items-baseline gap-1.5 mb-1">
+                <span className={`text-2xl font-extrabold ${pkg.priceCents === 0 ? "text-slate-400" : "text-green-700"}`}>
+                  {pkg.price}
+                </span>
+                <span className="text-slate-400 text-xs">{pkg.priceNote}</span>
+              </div>
+              <p className="text-slate-500 text-sm mb-4 leading-relaxed">{pkg.description}</p>
+
+              <ul className="space-y-2 mb-6 flex-1">
+                {pkg.features.map(f => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                    <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                onClick={() => handleJoin(pkg.tier)}
+                disabled={joiningTier !== null}
+                className={`w-full h-10 font-semibold text-sm ${
+                  pkg.recommended
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                }`}
+              >
+                {joiningTier === pkg.tier
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : pkg.btnLabel}
+              </Button>
             </div>
           ))}
         </div>
-        <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8" onClick={apply} disabled={applying}>
-          {applying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Apply to Become a Partner
-        </Button>
-        <p className="text-xs text-slate-400">Applications are reviewed within 24 hours.</p>
+
+        <p className="text-center text-slate-400 text-xs mt-8">
+          Once-off fees are processed securely via Adumo Online. No recurring partner charges.
+        </p>
       </div>
     );
   }
