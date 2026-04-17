@@ -369,7 +369,7 @@ resellerRouter.get("/me/clients", async (req, res) => {
       `SELECT rc.*, u.full_name, u.email, u.created_at as user_created_at,
               bp.business_name, bp.phone,
               s.status as sub_status, s.plan_id,
-              p.name as plan_name, p.amount_cents as plan_amount_cents,
+              p.name as plan_name, p.price_cents as plan_amount_cents,
               (sub_r.id IS NOT NULL) as is_partner,
               sub_r.package_tier as partner_tier,
               sub_r.rank_key as partner_rank
