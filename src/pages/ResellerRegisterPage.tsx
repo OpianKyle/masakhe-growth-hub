@@ -24,7 +24,7 @@ const PARTNER_BENEFITS = [
   { icon: DollarSign, heading: "20% direct commission",    body: "Earn 20% on every client subscription you refer." },
   { icon: Users,      heading: "5-level network earnings", body: "Build a team and earn from your sub-partners too." },
   { icon: TrendingUp, heading: "Rank bonuses up to R50k",  body: "Climb the ranks and unlock one-off cash bonuses." },
-  { icon: Star,       heading: "White-label option",       body: "Upgrade to Reseller and brand the platform as your own." },
+  { icon: Star,       heading: "Custom domain included",    body: "Upgrade to Reseller and connect your own domain to the platform." },
 ];
 
 export default function ResellerRegisterPage() {
