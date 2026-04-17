@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import RegisterPage from "./pages/RegisterPage";
+import ResellerRegisterPage from "./pages/ResellerRegisterPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ResellerPortal from "./pages/ResellerPortal";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/partner/register" element={<ResellerRegisterPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
