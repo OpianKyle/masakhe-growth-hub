@@ -49,6 +49,7 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
   const setTab = (t: string) => { setInternalTab(t); onTabChange?.(t); };
   const [reseller, setReseller] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +67,7 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
   useEffect(() => {
     if (!reseller) return;
     if (tab === "clients") loadClients();
+    if (tab === "partners") loadPartners();
     if (tab === "commissions") loadCommissions();
     if (tab === "leaderboard") loadLeaderboard();
   }, [tab, reseller]);
@@ -142,6 +144,12 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
     const r = await fetch("/api/reseller/me/clients", { credentials: "include" });
     const d = await r.json();
     setClients(d.clients || []);
+  }
+
+  async function loadPartners() {
+    const r = await fetch("/api/reseller/me/partners", { credentials: "include" });
+    const d = await r.json();
+    setPartners(d.partners || []);
   }
 
   async function loadCommissions() {
@@ -390,13 +398,30 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
           </div>
         </div>
 
-        {/* Referral link bar */}
-        <div className="mt-4 flex gap-2 max-w-lg">
-          <Input readOnly value={reseller.referral_link} className="bg-white/10 border-white/20 text-white text-xs h-8 placeholder:text-white/40" />
-          <Button size="sm" variant="ghost" className="h-8 shrink-0 text-white hover:bg-white/10"
-            onClick={() => { navigator.clipboard.writeText(reseller.referral_link); toast.success("Copied!"); }}>
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
+        {/* Referral links */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl">
+          <div>
+            <p className="text-white/50 text-[10px] font-semibold uppercase tracking-widest mb-1">SMME Client Link</p>
+            <div className="flex gap-1.5">
+              <Input readOnly value={reseller.referral_link} className="bg-white/10 border-white/20 text-white text-xs h-8 placeholder:text-white/40" />
+              <Button size="sm" variant="ghost" className="h-8 shrink-0 text-white hover:bg-white/10"
+                onClick={() => { navigator.clipboard.writeText(reseller.referral_link); toast.success("Client link copied!"); }}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div>
+            <p className="text-green-400/70 text-[10px] font-semibold uppercase tracking-widest mb-1 flex items-center gap-1">
+              <Star className="h-2.5 w-2.5" /> Partner Invite Link
+            </p>
+            <div className="flex gap-1.5">
+              <Input readOnly value={reseller.partner_referral_link || ""} className="bg-green-900/30 border-green-600/30 text-white text-xs h-8" />
+              <Button size="sm" variant="ghost" className="h-8 shrink-0 text-green-400 hover:bg-green-900/30"
+                onClick={() => { navigator.clipboard.writeText(reseller.partner_referral_link || ""); toast.success("Partner invite link copied!"); }}>
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -568,11 +593,18 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
                       <tr key={c.id} className="border-b last:border-0 hover:bg-slate-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${c.is_partner ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
                               {initials(c.business_name || c.full_name || "?")}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-900">{c.business_name || c.full_name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-medium text-slate-900">{c.business_name || c.full_name}</p>
+                                {c.is_partner && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
+                                    <Star className="h-2.5 w-2.5 mr-0.5" />Partner
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-400">{c.email}</p>
                             </div>
                           </div>
@@ -596,6 +628,131 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MY PARTNERS ── */}
+        {tab === "partners" && (
+          <div className="space-y-4">
+            {/* Header + invite link */}
+            <div className="rounded-xl bg-slate-800 border border-slate-700 p-5 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h2 className="font-semibold text-white flex items-center gap-2">
+                    <Star className="h-4 w-4 text-green-400" />
+                    My Partner Recruits ({partners.length})
+                  </h2>
+                  <p className="text-slate-400 text-xs mt-0.5">
+                    Partners who registered using your partner invite link
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p className="text-green-400/70 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
+                  Partner Invite Link — share this to recruit new resellers
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={reseller?.partner_referral_link || ""}
+                    className="bg-white/5 border-white/10 text-white text-xs h-9 font-mono"
+                  />
+                  <Button
+                    size="sm"
+                    className="h-9 bg-green-600 hover:bg-green-700 text-white shrink-0 gap-1.5"
+                    onClick={() => {
+                      navigator.clipboard.writeText(reseller?.partner_referral_link || "");
+                      toast.success("Partner invite link copied!");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy Link
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {partners.length === 0 ? (
+              <div className="text-center py-16 text-slate-400">
+                <Star className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No partner recruits yet</p>
+                <p className="text-sm mt-1">Share your partner invite link to start building your network</p>
+                <Button
+                  className="mt-4 bg-green-700 hover:bg-green-800"
+                  onClick={() => {
+                    navigator.clipboard.writeText(reseller?.partner_referral_link || "");
+                    toast.success("Partner invite link copied!");
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-2" />Copy Partner Invite Link
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-xl border bg-white overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-slate-50">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Partner</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Package</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Their Clients</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partners.map(p => {
+                      const tierColors: Record<string, string> = {
+                        affiliate: "bg-slate-100 text-slate-600",
+                        reseller:  "bg-green-100 text-green-700",
+                        master:    "bg-yellow-100 text-yellow-700",
+                      };
+                      const tierLabel: Record<string, string> = {
+                        affiliate: "Affiliate",
+                        reseller:  "Reseller",
+                        master:    "Master",
+                      };
+                      return (
+                        <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
+                                {initials(p.display_name || p.full_name || "?")}
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-900">{p.display_name || p.full_name}</p>
+                                <p className="text-xs text-slate-400">{p.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${tierColors[p.package_tier] || "bg-slate-100 text-slate-500"}`}>
+                              {tierLabel[p.package_tier] || "Pending"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-600 font-medium uppercase">
+                            {p.rank_key || "starter"}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-700 font-semibold">
+                            {p.client_count}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                              p.status === "active"    ? "bg-green-100 text-green-700" :
+                              p.status === "pending"   ? "bg-amber-100 text-amber-700" :
+                              p.status === "suspended" ? "bg-red-100 text-red-600" :
+                              "bg-slate-100 text-slate-500"
+                            }`}>{p.status}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-500">
+                            {new Date(p.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

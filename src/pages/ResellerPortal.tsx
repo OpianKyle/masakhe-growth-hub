@@ -16,6 +16,7 @@ import { toast } from "sonner";
 const NAV_ITEMS = [
   { tab: "overview",    label: "Overview",      icon: BarChart2 },
   { tab: "clients",     label: "My Clients",    icon: Users },
+  { tab: "partners",    label: "My Partners",   icon: Star },
   { tab: "commissions", label: "Commissions",   icon: DollarSign },
   { tab: "tiers",       label: "Ranks & Tiers", icon: Crown },
   { tab: "leaderboard", label: "Leaderboard",   icon: Trophy },

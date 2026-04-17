@@ -47,14 +47,25 @@ function generateResellerCode(name: string): string {
 }
 
 // Called from auth.ts when user registers with businessStatus = "reseller"
-export async function autoRegisterReseller(userId: string, fullName: string): Promise<void> {
+export async function autoRegisterReseller(userId: string, fullName: string, sponsorCode?: string): Promise<void> {
   const code = generateResellerCode(fullName);
   const id = randomUUID();
   const now = new Date().toISOString();
+
+  // Resolve sponsor if a referral code was used during registration
+  let sponsorId: string | null = null;
+  if (sponsorCode) {
+    const sponsor = await queryOne(
+      "SELECT id FROM resellers WHERE reseller_code = ? AND status = 'active'",
+      [sponsorCode]
+    );
+    sponsorId = sponsor?.id ?? null;
+  }
+
   await execute(
-    `INSERT IGNORE INTO resellers (id, user_id, reseller_code, status, rank_key, created_at, approved_at)
-     VALUES (?, ?, ?, 'active', 'starter', ?, ?)`,
-    [id, userId, code, now, now]
+    `INSERT IGNORE INTO resellers (id, user_id, reseller_code, status, rank_key, sponsor_id, created_at, approved_at)
+     VALUES (?, ?, ?, 'active', 'starter', ?, ?, ?)`,
+    [id, userId, code, sponsorId, now, now]
   );
 }
 
@@ -332,6 +343,7 @@ resellerRouter.get("/me", async (req, res) => {
       reseller: {
         ...reseller,
         referral_link: `${APP_URL}/register?ref=${reseller.reseller_code}`,
+        partner_referral_link: `${APP_URL}/partner/register?ref=${reseller.reseller_code}`,
         total_clients: stats?.total_clients || 0,
         network_mrr_cents: stats?.network_mrr || 0,
         new_clients_this_month: stats?.new_this_month || 0,
@@ -357,18 +369,53 @@ resellerRouter.get("/me/clients", async (req, res) => {
       `SELECT rc.*, u.full_name, u.email, u.created_at as user_created_at,
               bp.business_name, bp.phone,
               s.status as sub_status, s.plan_id,
-              p.name as plan_name, p.amount_cents as plan_amount_cents
+              p.name as plan_name, p.amount_cents as plan_amount_cents,
+              (sub_r.id IS NOT NULL) as is_partner,
+              sub_r.package_tier as partner_tier,
+              sub_r.rank_key as partner_rank
        FROM reseller_clients rc
        JOIN users u ON u.id = rc.client_user_id
        LEFT JOIN business_profiles bp ON bp.user_id = rc.client_user_id
        LEFT JOIN workspaces w ON w.owner_id = rc.client_user_id
        LEFT JOIN billing_subscriptions s ON s.workspace_id = w.id
        LEFT JOIN billing_plans p ON p.id = s.plan_id
+       LEFT JOIN resellers sub_r ON sub_r.user_id = rc.client_user_id
        WHERE rc.reseller_id = ?
        ORDER BY rc.registered_at DESC`,
       [reseller.id]
     );
     res.json({ clients });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get my sub-partners (resellers who signed up via my referral link)
+resellerRouter.get("/me/partners", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const reseller = await queryOne("SELECT id FROM resellers WHERE user_id = ?", [userId]);
+    if (!reseller) return res.status(404).json({ error: "Not a reseller" });
+
+    const partners = await queryAll(
+      `SELECT r.id, r.reseller_code, r.status, r.rank_key, r.package_tier,
+              r.created_at, r.approved_at,
+              u.full_name, u.email,
+              COALESCE(bp.business_name, u.full_name) as display_name,
+              bp.phone,
+              COUNT(rc.id) as client_count,
+              COALESCE(SUM(rc.plan_amount_cents), 0) as mrr_cents
+       FROM resellers r
+       JOIN users u ON u.id = r.user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = r.user_id
+       LEFT JOIN reseller_clients rc ON rc.reseller_id = r.id AND rc.status = 'active'
+       WHERE r.sponsor_id = ?
+       GROUP BY r.id, r.reseller_code, r.status, r.rank_key, r.package_tier,
+                r.created_at, r.approved_at, u.full_name, u.email, bp.business_name, bp.phone
+       ORDER BY r.created_at DESC`,
+      [reseller.id]
+    );
+    res.json({ partners });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

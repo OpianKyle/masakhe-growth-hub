@@ -111,7 +111,7 @@ authRouter.post("/register", async (req, res) => {
     }
 
     if (businessData?.businessStatus === "reseller") {
-      await autoRegisterReseller(userId, fullName).catch(() => {});
+      await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});
     }
 
     req.session.userId = userId;
