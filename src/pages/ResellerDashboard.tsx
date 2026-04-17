@@ -208,8 +208,8 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
         priceNote: "Once-off setup",
         priceCents: 99900,
         recommended: true,
-        description: "White-label capability. Sell Masakhe under your own brand identity.",
-        features: ["Everything in Affiliate", "White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+        description: "Connect your own domain and brand. Sell Masakhe under your own identity.",
+        features: ["Everything in Affiliate", "Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
         btnLabel: "Become a Reseller",
       },
       {

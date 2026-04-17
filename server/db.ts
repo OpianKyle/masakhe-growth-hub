@@ -909,6 +909,13 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Reseller custom domain support
+    await addColumnIfMissing("resellers", "custom_domain", "VARCHAR(255) NULL");
+    await addColumnIfMissing("resellers", "domain_verified", "TINYINT(1) NOT NULL DEFAULT 0");
+    try {
+      await conn.query("CREATE UNIQUE INDEX IF NOT EXISTS uq_resellers_domain ON resellers(custom_domain)");
+    } catch (_) {}
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

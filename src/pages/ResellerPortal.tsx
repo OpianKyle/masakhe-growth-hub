@@ -6,7 +6,10 @@ import PartnerPackage from "./PartnerPackage";
 import {
   Award, LogOut, Menu, X,
   BarChart2, Users, DollarSign, Crown, Trophy, CreditCard, CheckCircle, ArrowUpCircle, Loader2, Star,
+  Globe, Lock, Clipboard, RefreshCw, Trash2, AlertCircle,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -16,6 +19,7 @@ const NAV_ITEMS = [
   { tab: "commissions", label: "Commissions",   icon: DollarSign },
   { tab: "tiers",       label: "Ranks & Tiers", icon: Crown },
   { tab: "leaderboard", label: "Leaderboard",   icon: Trophy },
+  { tab: "domain",      label: "Custom Domain", icon: Globe },
   { tab: "billing",     label: "Billing",       icon: CreditCard },
 ];
 
@@ -195,13 +199,13 @@ export default function ResellerPortal() {
                 .then(d => setPackageTier(d.package_tier ?? "affiliate"));
             }} />
           ) : activeTab === "billing" ? (
-            // Billing tab — show current package info + upgrade options
             <BillingView
               packageTier={packageTier}
               onUpgraded={(newTier) => setPackageTier(newTier)}
             />
+          ) : activeTab === "domain" ? (
+            <DomainView packageTier={packageTier} onUpgrade={() => setActiveTab("billing")} />
           ) : (
-            // All other tabs — reseller dashboard
             <ResellerDashboard activeTab={activeTab} onTabChange={setActiveTab} />
           )}
         </div>
@@ -224,8 +228,8 @@ const UPGRADE_OPTIONS: Record<string, Array<{
       targetTier: "reseller",
       label: "Reseller",
       payToday: "R999",
-      description: "White-label capability. Sell Masakhe under your own brand identity.",
-      features: ["White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+      description: "Connect your own domain and brand. Sell Masakhe under your own identity.",
+      features: ["Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
       highlight: true,
     },
     {
@@ -252,7 +256,7 @@ const UPGRADE_OPTIONS: Record<string, Array<{
 
 const CURRENT_FEATURES: Record<string, string[]> = {
   affiliate: ["Unique referral link", "20% direct commissions", "Basic marketing materials", "Partner dashboard access"],
-  reseller:  ["Everything in Affiliate", "White-label branding kit", "Custom sub-domain", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+  reseller:  ["Everything in Affiliate", "Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
   master:    ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
 };
 
@@ -412,6 +416,285 @@ function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgra
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Custom Domain View ────────────────────────────────────────────────────────
+function DomainView({ packageTier, onUpgrade }: { packageTier: string; onUpgrade: () => void }) {
+  const [domain, setDomain] = useState("");
+  const [savedDomain, setSavedDomain] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const PLATFORM_DOMAIN = "masakheportal.co.za";
+  const canUseDomain = packageTier === "reseller" || packageTier === "master";
+
+  useEffect(() => {
+    fetch("/api/reseller/me/domain", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        setSavedDomain(d.custom_domain ?? null);
+        setDomain(d.custom_domain ?? "");
+        setVerified(!!d.domain_verified);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  async function saveDomain() {
+    if (!domain.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/reseller/me/domain", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domain.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSavedDomain(data.custom_domain);
+      setDomain(data.custom_domain);
+      setVerified(false);
+      toast.success("Domain saved. Now add the CNAME record in your DNS provider.");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function verifyDomain() {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/reseller/me/domain/verify", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (data.verified) {
+        setVerified(true);
+        toast.success(data.message);
+      } else {
+        toast.info(data.message);
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function removeDomain() {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/reseller/me/domain", { method: "DELETE", credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSavedDomain(null);
+      setDomain("");
+      setVerified(false);
+      toast.success("Custom domain removed.");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setRemoving(false);
+    }
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => toast.success("Copied!"));
+  }
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-6 w-6 animate-spin text-green-400" />
+      </div>
+    );
+  }
+
+  // Locked for affiliate tier
+  if (!canUseDomain) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-6 text-center space-y-6">
+        <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+          <Lock className="h-7 w-7 text-white/30" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Custom Domain — Reseller feature</h2>
+        <p className="text-white/50 text-sm leading-relaxed">
+          Connect your own domain (e.g. <span className="text-white/70 font-mono">portal.mybrand.co.za</span>) so your clients see your brand — not Masakhe's.
+          This feature is included in the Reseller and Master Reseller packages.
+        </p>
+        <div className="grid grid-cols-2 gap-3 text-left">
+          {[
+            { tier: "Reseller",        price: "R999",   features: ["Custom domain", "Custom branding", "Sub-domain config"] },
+            { tier: "Master Reseller", price: "R4,999", features: ["Everything in Reseller", "Full sub-reseller network", "All 5 commission levels"] },
+          ].map(pkg => (
+            <div key={pkg.tier} className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <p className="text-white font-semibold text-sm">{pkg.tier}</p>
+              <p className="text-green-400 font-bold text-lg">{pkg.price}</p>
+              <ul className="mt-2 space-y-1">
+                {pkg.features.map(f => (
+                  <li key={f} className="flex items-center gap-1.5 text-xs text-white/50">
+                    <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <Button className="bg-green-600 hover:bg-green-700 text-white px-8 h-11" onClick={onUpgrade}>
+          Upgrade to unlock Custom Domain <ArrowUpCircle className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto py-10 px-6 space-y-8">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <Globe className="h-6 w-6 text-green-400" />
+          <h2 className="text-xl font-bold text-white">Custom Domain</h2>
+          {savedDomain && (
+            <Badge className={`ml-1 text-xs ${verified ? "bg-green-600 text-white" : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"}`}>
+              {verified ? "✓ Verified" : "Pending DNS"}
+            </Badge>
+          )}
+        </div>
+        <p className="text-white/50 text-sm">
+          Point your own domain to the Masakhe portal so clients see your brand when they log in.
+        </p>
+      </div>
+
+      {/* Domain input */}
+      <div className="rounded-xl bg-white/5 border border-white/10 p-5 space-y-4">
+        <p className="text-sm font-semibold text-white/80">Your custom domain</p>
+        <div className="flex gap-2">
+          <Input
+            value={domain}
+            onChange={e => setDomain(e.target.value)}
+            placeholder="portal.yourbrand.co.za"
+            className="h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 font-mono text-sm flex-1"
+            onKeyDown={e => e.key === "Enter" && saveDomain()}
+          />
+          <Button
+            onClick={saveDomain}
+            disabled={saving || !domain.trim() || domain.trim() === savedDomain}
+            className="h-11 bg-green-600 hover:bg-green-700 text-white px-5 shrink-0"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </Button>
+        </div>
+        <p className="text-xs text-white/35">
+          Enter the full subdomain or domain you want to use, e.g. <span className="font-mono text-white/50">portal.mybrand.co.za</span>
+        </p>
+      </div>
+
+      {/* DNS setup instructions */}
+      {savedDomain && (
+        <div className="rounded-xl bg-white/5 border border-white/10 p-5 space-y-4">
+          <p className="text-sm font-semibold text-white/80 flex items-center gap-2">
+            <span className={`inline-block h-2 w-2 rounded-full ${verified ? "bg-green-500" : "bg-yellow-400 animate-pulse"}`} />
+            DNS Setup Instructions
+          </p>
+
+          {verified ? (
+            <div className="flex items-center gap-3 rounded-xl bg-green-600/10 border border-green-600/20 p-4">
+              <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+              <div>
+                <p className="text-green-400 font-semibold text-sm">Domain verified and active</p>
+                <p className="text-white/50 text-xs mt-0.5">
+                  <span className="font-mono text-white/70">{savedDomain}</span> is pointing to Masakhe correctly.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 p-4">
+              <AlertCircle className="h-5 w-5 text-yellow-400 shrink-0 mt-0.5" />
+              <p className="text-yellow-300/80 text-sm leading-relaxed">
+                Add the CNAME record below in your domain registrar's DNS settings, then click Verify. DNS changes can take up to 48 hours to propagate.
+              </p>
+            </div>
+          )}
+
+          {/* CNAME table */}
+          <div className="rounded-lg border border-white/10 overflow-hidden text-sm">
+            <div className="grid grid-cols-3 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/40 uppercase tracking-wider">
+              <span>Type</span><span>Name / Host</span><span>Value / Target</span>
+            </div>
+            <div className="grid grid-cols-3 items-center px-4 py-3 gap-2">
+              <span className="text-white/70 font-mono font-bold">CNAME</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-white/80 text-xs truncate">{savedDomain}</span>
+                <button onClick={() => copyToClipboard(savedDomain)} className="text-white/30 hover:text-white/60 shrink-0">
+                  <Clipboard className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-green-400 text-xs truncate">{PLATFORM_DOMAIN}</span>
+                <button onClick={() => copyToClipboard(PLATFORM_DOMAIN)} className="text-white/30 hover:text-white/60 shrink-0">
+                  <Clipboard className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-white/35 leading-relaxed">
+            Popular DNS providers: <span className="text-white/50">Afrihost, Xneelo, Cloudflare, GoDaddy, Namecheap.</span> Look for "DNS Management" or "DNS Records" in your control panel.
+          </p>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-1">
+            {!verified && (
+              <Button
+                onClick={verifyDomain}
+                disabled={verifying}
+                className="h-10 bg-green-600/80 hover:bg-green-600 text-white text-sm"
+              >
+                {verifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                {verifying ? "Checking DNS…" : "Verify DNS"}
+              </Button>
+            )}
+            <Button
+              onClick={removeDomain}
+              disabled={removing}
+              variant="ghost"
+              className="h-10 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm"
+            >
+              {removing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Remove domain
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* How it works */}
+      <div className="rounded-xl bg-white/5 border border-white/10 p-5 space-y-3">
+        <p className="text-sm font-semibold text-white/80">How it works</p>
+        <ol className="space-y-2 text-sm text-white/50">
+          {[
+            "Enter the domain or subdomain you want to use (e.g. portal.mybrand.co.za).",
+            `Log in to your domain registrar and add a CNAME record pointing to ${PLATFORM_DOMAIN}.`,
+            "Click Verify DNS — once confirmed, your clients can access the platform via your domain.",
+            "Your clients will see your branding when they visit your custom domain.",
+          ].map((step, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-600/20 text-green-400 text-[10px] font-bold shrink-0 mt-0.5">
+                {i + 1}
+              </span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }

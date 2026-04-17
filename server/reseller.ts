@@ -734,6 +734,122 @@ resellerRouter.get("/billing/return-redirect", async (req, res) => {
   res.redirect(`${redirectBase}?payment=success`);
 });
 
+// ─── Custom Domain endpoints ───────────────────────────────────────────────────
+
+// GET current domain status
+resellerRouter.get("/me/domain", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne(
+      "SELECT custom_domain, domain_verified, package_tier FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Reseller record not found" });
+    res.json({
+      custom_domain:   r.custom_domain   ?? null,
+      domain_verified: !!r.domain_verified,
+      package_tier:    r.package_tier    ?? null,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST save/update custom domain (reseller/master tier only)
+resellerRouter.post("/me/domain", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne(
+      "SELECT id, package_tier FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Reseller record not found" });
+    if (!["reseller", "master"].includes(r.package_tier)) {
+      return res.status(403).json({ error: "Custom domain requires Reseller or Master Reseller package" });
+    }
+
+    let { domain } = req.body as { domain: string };
+    if (!domain) return res.status(400).json({ error: "Domain is required" });
+
+    // Sanitise: strip protocol and trailing slashes
+    domain = domain.replace(/^https?:\/\//i, "").replace(/\/+$/, "").trim().toLowerCase();
+
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) {
+      return res.status(400).json({ error: "Invalid domain format" });
+    }
+
+    // Check uniqueness against other resellers
+    const conflict = await queryOne(
+      "SELECT id FROM resellers WHERE custom_domain = ? AND id != ?",
+      [domain, r.id]
+    );
+    if (conflict) return res.status(409).json({ error: "This domain is already in use" });
+
+    await execute(
+      "UPDATE resellers SET custom_domain = ?, domain_verified = 0 WHERE id = ?",
+      [domain, r.id]
+    );
+    res.json({ ok: true, custom_domain: domain, domain_verified: false });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST verify domain — checks CNAME via dns.promises
+resellerRouter.post("/me/domain/verify", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne(
+      "SELECT id, custom_domain, package_tier FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Reseller record not found" });
+    if (!r.custom_domain) return res.status(400).json({ error: "No domain set" });
+
+    const dns = await import("dns");
+    const dnsPromises = dns.promises;
+    const TARGET = (process.env.APP_URL || "https://masakheportal.co.za")
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/+$/, "");
+
+    let verified = false;
+    try {
+      const cnames = await dnsPromises.resolveCname(r.custom_domain);
+      verified = cnames.some((c: string) => c.replace(/\.+$/, "") === TARGET);
+    } catch {
+      // No CNAME — try A record lookup as fallback (won't confirm our server, but domain resolves)
+      try {
+        await dnsPromises.resolve4(r.custom_domain);
+        // Domain resolves but CNAME mismatch — not verified
+      } catch {
+        return res.status(400).json({ ok: false, error: "Domain does not resolve in DNS. Please check your DNS settings." });
+      }
+    }
+
+    if (verified) {
+      await execute("UPDATE resellers SET domain_verified = 1 WHERE id = ?", [r.id]);
+      return res.json({ ok: true, verified: true, message: "Domain verified successfully!" });
+    }
+
+    res.json({ ok: true, verified: false, message: `CNAME not pointing to ${TARGET} yet. DNS changes can take up to 48 hours.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE remove custom domain
+resellerRouter.delete("/me/domain", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne("SELECT id FROM resellers WHERE user_id = ?", [userId]);
+    if (!r) return res.status(404).json({ error: "Reseller record not found" });
+    await execute("UPDATE resellers SET custom_domain = NULL, domain_verified = 0 WHERE id = ?", [r.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Admin routes ─────────────────────────────────────────────────────────────
 
 // Admin summary stats
