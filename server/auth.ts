@@ -102,7 +102,7 @@ authRouter.post("/register", async (req, res) => {
     if (starterPlan) {
       const trialStart = new Date();
       const trialEnd = new Date(trialStart);
-      trialEnd.setDate(trialEnd.getDate() + 3);
+      trialEnd.setDate(trialEnd.getDate() + 30);
       await execute(
         `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
          VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
