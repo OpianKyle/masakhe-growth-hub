@@ -154,6 +154,13 @@ export default function ResellerRegisterPage() {
             <p className="text-white/55 text-base leading-relaxed">
               Refer businesses to Masakhe and earn recurring commissions — with no cap on how much you can make.
             </p>
+            <div className="mt-4 inline-flex items-center gap-2 bg-green-400/10 border border-green-400/25 rounded-xl px-4 py-2.5">
+              <span className="text-2xl font-extrabold text-green-400">30</span>
+              <div>
+                <p className="text-white text-xs font-semibold leading-tight">days free trial</p>
+                <p className="text-white/40 text-[10px]">No credit card required</p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">

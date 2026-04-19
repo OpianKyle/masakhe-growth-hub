@@ -332,7 +332,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center text-xs font-bold text-slate-600 mt-12 uppercase tracking-wide">
-            Get started with a 3-day free trial · Plans from R599/month{" "}
+            Get started with a 14-day free trial · Plans from R599/month{" "}
             <span className="font-normal normal-case text-slate-500">· Cancel anytime. Terms and conditions apply.</span>
           </p>
         </div>
@@ -449,7 +449,7 @@ export default function LandingPage() {
               <Shield className="h-3 w-3" /> Secure Monthly Billing — Cancel Anytime
             </span>
             <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">Simple, transparent pricing</h2>
-            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start with a 3-day free trial. Cancel anytime.</p>
+            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start with a 14-day free trial. Cancel anytime.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -582,7 +582,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-wrap gap-6 justify-center text-sm text-slate-500">
-              {["3-day free trial", "Cancel anytime", "Secure monthly billing"].map((item) => (
+              {["14-day free trial", "Cancel anytime", "Secure monthly billing"].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-500" /> {item}
                 </span>

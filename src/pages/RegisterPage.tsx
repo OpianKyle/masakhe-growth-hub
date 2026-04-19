@@ -179,7 +179,7 @@ export default function RegisterPage() {
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
             <p className="text-white/80 text-sm leading-relaxed mb-2">
-              Start with a <span className="text-white font-semibold">3-day free trial</span> — no credit card required. Cancel anytime.
+              Start with a <span className="text-white font-semibold">14-day free trial</span> — no credit card required. Cancel anytime.
             </p>
             <p className="text-white/45 text-xs">Plans from R599/month after your trial.</p>
           </div>
