@@ -80,11 +80,11 @@ const baseNavItems: NavItem[] = [
     label: "Business Toolkit",
     groupId: "funding",
     children: [
-      { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan" },
-      { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal" },
-      { icon: ClipboardCheck, label: "Funding Scoring", path: "/dashboard/funding" },
-      { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify" },
-      { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications" },
+      { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan", comingSoon: true },
+      { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal", comingSoon: true },
+      { icon: ClipboardCheck, label: "Funding Scoring", path: "/dashboard/funding", comingSoon: true },
+      { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify", comingSoon: true },
+      { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications", comingSoon: true },
     ],
   },
   {
@@ -457,14 +457,14 @@ export default function DashboardPage() {
             <Route path="website" element={<WebsiteBuilder />} />
             <Route path="finance" element={<FinancePage />} />
             <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="funding" element={<GrantReadinessPage />} />
+            <Route path="funding" element={<Navigate to="/dashboard" replace />} />
             <Route path="social/*" element={<SocialHub />} />
             <Route path="tenders" element={<TendersPage />} />
-            <Route path="business-plan" element={<BusinessPlanPage />} />
-            <Route path="funding-proposal" element={<FundingProposalPage />} />
+            <Route path="business-plan" element={<Navigate to="/dashboard" replace />} />
+            <Route path="funding-proposal" element={<Navigate to="/dashboard" replace />} />
             <Route path="annual-statements" element={<FinancialStatementsPage />} />
-            <Route path="company-verify" element={<CompanyVerifyPage />} />
-            <Route path="funding-applications" element={<FundingApplicationPage />} />
+            <Route path="company-verify" element={<Navigate to="/dashboard" replace />} />
+            <Route path="funding-applications" element={<Navigate to="/dashboard" replace />} />
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="payroll" element={<PayrollPage />} />
