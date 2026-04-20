@@ -6,7 +6,7 @@ import PartnerPackage from "./PartnerPackage";
 import {
   Award, LogOut, Menu, X,
   BarChart2, Users, DollarSign, Crown, Trophy, CreditCard, CheckCircle, ArrowUpCircle, Loader2, Star,
-  Globe, Lock, Clipboard, RefreshCw, Trash2, AlertCircle,
+  Globe, Lock, Clipboard, RefreshCw, Trash2, AlertCircle, CalendarClock, ShieldCheck, Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,29 +37,40 @@ export default function ResellerPortal() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [packageTier, setPackageTier] = useState<string | null | undefined>(undefined);
+  const [subStatus, setSubStatus] = useState<string | null>(null);
+  const [subNextDate, setSubNextDate] = useState<string | null>(null);
+  const [monthlyCents, setMonthlyCents] = useState<number>(0);
 
-  // Fetch package status on mount
-  useEffect(() => {
+  function fetchBillingStatus() {
     fetch("/api/reseller/billing/status", { credentials: "include" })
       .then(r => r.json())
-      .then(d => setPackageTier(d.package_tier ?? null))
+      .then(d => {
+        setPackageTier(d.package_tier ?? null);
+        setSubStatus(d.sub_status ?? null);
+        setSubNextDate(d.sub_next_billing_date ?? null);
+        setMonthlyCents(d.monthly_cents ?? 0);
+      })
       .catch(() => setPackageTier(null));
-  }, []);
+  }
+
+  // Fetch package status on mount
+  useEffect(() => { fetchBillingStatus(); }, []);
 
   // Handle Adumo return redirect params
   useEffect(() => {
     const payment = searchParams.get("payment");
     if (payment === "success") {
       toast.success("Payment successful! Your partner package is now active.");
-      // Re-fetch package status
-      fetch("/api/reseller/billing/status", { credentials: "include" })
-        .then(r => r.json())
-        .then(d => setPackageTier(d.package_tier ?? null));
+      fetchBillingStatus();
       setSearchParams({}, { replace: true });
-    } else if (payment === "failed") {
+    } else if (payment === "sub_success") {
+      toast.success("Monthly subscription set up successfully!");
+      fetchBillingStatus();
+      setSearchParams({}, { replace: true });
+    } else if (payment === "failed" || payment === "sub_failed") {
       toast.error("Payment was not completed. Please try again.");
       setSearchParams({}, { replace: true });
-    } else if (payment === "error") {
+    } else if (payment === "error" || payment === "sub_error") {
       toast.error("An error occurred during payment. Please contact support.");
       setSearchParams({}, { replace: true });
     }
@@ -194,15 +205,15 @@ export default function ResellerPortal() {
         <div className="flex-1 overflow-y-auto bg-[#0a1628]">
           {!packageTier ? (
             // No package selected — show package selection screen
-            <PartnerPackage onActivated={() => {
-              fetch("/api/reseller/billing/status", { credentials: "include" })
-                .then(r => r.json())
-                .then(d => setPackageTier(d.package_tier ?? "affiliate"));
-            }} />
+            <PartnerPackage onActivated={() => fetchBillingStatus()} />
           ) : activeTab === "billing" ? (
             <BillingView
               packageTier={packageTier}
-              onUpgraded={(newTier) => setPackageTier(newTier)}
+              subStatus={subStatus}
+              subNextDate={subNextDate}
+              monthlyCents={monthlyCents}
+              onUpgraded={(newTier) => { setPackageTier(newTier); fetchBillingStatus(); }}
+              onSubscriptionSetup={() => fetchBillingStatus()}
             />
           ) : activeTab === "domain" ? (
             <DomainView packageTier={packageTier} onUpgrade={() => setActiveTab("billing")} />
@@ -261,18 +272,44 @@ const CURRENT_FEATURES: Record<string, string[]> = {
   master:    ["Everything in Reseller", "Custom website done for you", "Commissions paid on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads from Paid Campaign"],
 };
 
-function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgraded: (tier: string) => void }) {
+function BillingView({
+  packageTier,
+  subStatus,
+  subNextDate,
+  monthlyCents,
+  onUpgraded,
+  onSubscriptionSetup,
+}: {
+  packageTier: string;
+  subStatus: string | null;
+  subNextDate: string | null;
+  monthlyCents: number;
+  onUpgraded: (tier: string) => void;
+  onSubscriptionSetup: () => void;
+}) {
   const { user } = useAuth();
   const pkg = PACKAGE_LABELS[packageTier];
   const upgrades = UPGRADE_OPTIONS[packageTier] || [];
   const features = CURRENT_FEATURES[packageTier] || [];
   const formRef = useRef<HTMLFormElement>(null);
+  const subFormRef = useRef<HTMLFormElement>(null);
   const [paymentData, setPaymentData] = useState<{ formAction: string; fields: Record<string, string> } | null>(null);
+  const [subPaymentData, setSubPaymentData] = useState<{ formAction: string; fields: Record<string, string> } | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [subLoading, setSubLoading] = useState(false);
 
   useEffect(() => {
     if (paymentData && formRef.current) formRef.current.submit();
   }, [paymentData]);
+
+  useEffect(() => {
+    if (subPaymentData && subFormRef.current) subFormRef.current.submit();
+  }, [subPaymentData]);
+
+  // Calculate days until subscription is due
+  const daysUntilDue = subNextDate
+    ? Math.ceil((new Date(subNextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   async function handleUpgrade(targetTier: string) {
     if (loading) return;
@@ -293,6 +330,26 @@ function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgra
     }
   }
 
+  async function handleSetupSubscription() {
+    if (subLoading) return;
+    setSubLoading(true);
+    try {
+      const res = await fetch("/api/reseller/subscription/checkout", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start subscription setup");
+      setSubPaymentData({ formAction: data.formAction, fields: data.fields });
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+      setSubLoading(false);
+    }
+  }
+
+  const showSubSection = packageTier !== "affiliate" && monthlyCents > 0;
+  const monthlyDisplay = `R${(monthlyCents / 100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}/mo`;
+
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-8">
       {/* Hidden Adumo upgrade form */}
@@ -304,9 +361,18 @@ function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgra
         </form>
       )}
 
+      {/* Hidden Adumo subscription form */}
+      {subPaymentData && (
+        <form ref={subFormRef} action={subPaymentData.formAction} method="POST" className="hidden">
+          {Object.entries(subPaymentData.fields).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+        </form>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-white mb-1">Billing & Package</h1>
-        <p className="text-white/50 text-sm">Your current partner package and upgrade options.</p>
+        <p className="text-white/50 text-sm">Your current partner package and subscription status.</p>
       </div>
 
       {/* Current package card */}
@@ -315,7 +381,7 @@ function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgra
           <div>
             <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Active Package</p>
             <p className={`text-2xl font-bold ${pkg?.color || "text-white"}`}>{pkg?.label || packageTier}</p>
-            <p className="text-white/40 text-sm mt-0.5">Setup fee: {pkg?.price || "—"}</p>
+            <p className="text-white/40 text-sm mt-0.5">Once-off setup: {pkg?.price || "—"}</p>
           </div>
           <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
             <CheckCircle className="h-6 w-6 text-green-400" />
@@ -343,6 +409,105 @@ function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgra
           </div>
         )}
       </div>
+
+      {/* Monthly subscription section */}
+      {showSubSection && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarClock className="h-5 w-5 text-green-400" />
+            <h2 className="text-lg font-bold text-white">Monthly Subscription</h2>
+          </div>
+
+          {subStatus === "active" ? (
+            <div className="rounded-2xl bg-[#0f2a1a] border border-green-600/30 p-6 flex items-start gap-4">
+              <div className="h-11 w-11 rounded-full bg-green-600/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-5 w-5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-green-400 font-bold text-base">Subscription Active</p>
+                <p className="text-white/50 text-sm mt-0.5">
+                  Your monthly debit order of <span className="text-white font-semibold">{monthlyDisplay}</span> is active. Adumo will collect automatically each month.
+                </p>
+              </div>
+            </div>
+          ) : subStatus === "trial" && daysUntilDue !== null && daysUntilDue > 7 ? (
+            <div className="rounded-2xl bg-[#111827] border border-white/10 p-6 flex items-start gap-4">
+              <div className="h-11 w-11 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Clock className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-bold text-base">
+                  Free trial — {daysUntilDue} day{daysUntilDue !== 1 ? "s" : ""} remaining
+                </p>
+                <p className="text-white/50 text-sm mt-1 leading-relaxed">
+                  Your first monthly payment of <span className="text-white font-semibold">{monthlyDisplay}</span> will be due on{" "}
+                  <span className="text-white font-semibold">{new Date(subNextDate!).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}</span>.
+                  Set up your debit order early so there's no interruption.
+                </p>
+                <Button
+                  onClick={handleSetupSubscription}
+                  disabled={subLoading}
+                  className="mt-4 bg-green-600 hover:bg-green-700 text-white h-10 px-6"
+                >
+                  {subLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CalendarClock className="h-4 w-4 mr-2" />}
+                  Set up monthly debit order
+                </Button>
+              </div>
+            </div>
+          ) : (subStatus === "trial" && daysUntilDue !== null && daysUntilDue <= 7) || subStatus === "overdue" ? (
+            <div className="rounded-2xl bg-red-950/40 border border-red-500/40 p-6 flex items-start gap-4">
+              <div className="h-11 w-11 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-red-400 font-bold text-base">
+                  {subStatus === "overdue"
+                    ? "Subscription overdue — action required"
+                    : `Subscription due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}`}
+                </p>
+                <p className="text-white/50 text-sm mt-1 leading-relaxed">
+                  {subStatus === "overdue"
+                    ? `Your monthly subscription of `
+                    : `Your monthly subscription of `}
+                  <span className="text-white font-semibold">{monthlyDisplay}</span>{" "}
+                  {subStatus === "overdue"
+                    ? "is past due. Please set up your debit order to keep your partner access active."
+                    : `is due on ${new Date(subNextDate!).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}. Set up your debit order now.`}
+                </p>
+                <Button
+                  onClick={handleSetupSubscription}
+                  disabled={subLoading}
+                  className="mt-4 bg-red-600 hover:bg-red-700 text-white h-10 px-6"
+                >
+                  {subLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <AlertCircle className="h-4 w-4 mr-2" />}
+                  {subStatus === "overdue" ? "Pay now — set up debit order" : "Set up monthly debit order"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-[#111827] border border-white/10 p-6 flex items-start gap-4">
+              <div className="h-11 w-11 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                <CalendarClock className="h-5 w-5 text-white/40" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-bold text-base">Set up your monthly subscription</p>
+                <p className="text-white/50 text-sm mt-1 leading-relaxed">
+                  Monthly fee: <span className="text-white font-semibold">{monthlyDisplay}</span>.
+                  Set up a debit order to keep your partner access active.
+                </p>
+                <Button
+                  onClick={handleSetupSubscription}
+                  disabled={subLoading}
+                  className="mt-4 bg-green-600 hover:bg-green-700 text-white h-10 px-6"
+                >
+                  {subLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CalendarClock className="h-4 w-4 mr-2" />}
+                  Set up monthly debit order
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Upgrade options */}
       {upgrades.length > 0 && (

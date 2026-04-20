@@ -3,7 +3,7 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
 import { getTransporterForUser } from "./email-settings";
-import { generatePaymentToken, verifyResponseToken } from "./adumo";
+import { generatePaymentToken, generateSubscriptionToken, verifyResponseToken } from "./adumo";
 
 export const resellerRouter = Router();
 
@@ -121,6 +121,28 @@ export async function runResellerMigrations() {
   // Add package_tier and package_paid_at to resellers
   await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS package_tier ENUM('affiliate','reseller','master') NULL`, []).catch(() => {});
   await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS package_paid_at TIMESTAMP NULL`, []).catch(() => {});
+
+  // Add subscription tracking columns to resellers
+  await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS sub_status ENUM('trial','active','overdue','cancelled') NULL`, []).catch(() => {});
+  await execute(`ALTER TABLE resellers ADD COLUMN IF NOT EXISTS sub_next_billing_date DATE NULL`, []).catch(() => {});
+
+  // Reseller monthly subscriptions
+  await execute(`
+    CREATE TABLE IF NOT EXISTS reseller_subscriptions (
+      id VARCHAR(36) PRIMARY KEY,
+      reseller_id VARCHAR(36) NOT NULL,
+      package_tier VARCHAR(20) NOT NULL,
+      amount_cents INT NOT NULL,
+      currency VARCHAR(10) DEFAULT 'ZAR',
+      merchant_ref VARCHAR(80) NOT NULL UNIQUE,
+      status ENUM('PENDING','ACTIVE','CANCELLED','FAILED') DEFAULT 'PENDING',
+      collection_day INT DEFAULT 1,
+      start_date DATE NULL,
+      end_date DATE NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      activated_at TIMESTAMP NULL
+    )
+  `, []).catch(() => {});
 
   // Reseller once-off billing invoices
   await execute(`
@@ -538,11 +560,39 @@ resellerRouter.get("/billing/status", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const r = await queryOne(
-      "SELECT id, package_tier, package_paid_at FROM resellers WHERE user_id = ?",
+      "SELECT id, package_tier, package_paid_at, sub_status, sub_next_billing_date FROM resellers WHERE user_id = ?",
       [userId]
     );
     if (!r) return res.status(404).json({ error: "Not a reseller" });
-    res.json({ package_tier: r.package_tier || null, package_paid_at: r.package_paid_at || null });
+
+    // Determine monthly amount based on package tier
+    const pkg = PARTNER_PACKAGES[r.package_tier as keyof typeof PARTNER_PACKAGES];
+    const monthlyCents = pkg?.monthlyCents ?? 0;
+
+    // Check if subscription already active
+    const activeSub = await queryOne(
+      "SELECT id, status, start_date FROM reseller_subscriptions WHERE reseller_id = ? AND status = 'ACTIVE'",
+      [r.id]
+    );
+
+    // Auto-update sub_status to 'overdue' if trial has passed and no active subscription
+    if (r.sub_status === 'trial' && r.sub_next_billing_date) {
+      const dueDate = new Date(r.sub_next_billing_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dueDate < today && !activeSub) {
+        await execute("UPDATE resellers SET sub_status = 'overdue' WHERE id = ?", [r.id]);
+        r.sub_status = 'overdue';
+      }
+    }
+
+    res.json({
+      package_tier: r.package_tier || null,
+      package_paid_at: r.package_paid_at || null,
+      sub_status: activeSub ? 'active' : (r.sub_status || null),
+      sub_next_billing_date: r.sub_next_billing_date || null,
+      monthly_cents: monthlyCents,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -767,18 +817,170 @@ resellerRouter.get("/billing/return-redirect", async (req, res) => {
     }
   }
 
-  // Activate package
+  // Activate package and start 30-day trial for subscription
   await execute(
     "UPDATE reseller_billing_invoices SET status = 'PAID', paid_at = NOW() WHERE merchant_ref = ?",
     [merchantRef]
   );
   await execute(
-    "UPDATE resellers SET package_tier = ?, package_paid_at = NOW() WHERE id = ?",
+    `UPDATE resellers
+     SET package_tier = ?, package_paid_at = NOW(),
+         sub_status = 'trial',
+         sub_next_billing_date = DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+     WHERE id = ?`,
     [invoice.package_tier, invoice.reseller_id]
   );
 
-  console.log(`[Reseller Billing] Package activated: tier=${invoice.package_tier}, reseller_id=${invoice.reseller_id}`);
+  console.log(`[Reseller Billing] Package activated: tier=${invoice.package_tier}, reseller_id=${invoice.reseller_id}, subscription trial starts now`);
   res.redirect(`${redirectBase}?payment=success`);
+});
+
+// ─── Reseller monthly subscription checkout ────────────────────────────────────
+
+// POST /api/reseller/subscription/checkout — create Adumo monthly debit order
+resellerRouter.post("/subscription/checkout", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
+      return res.status(500).json({ error: "Payment gateway not configured" });
+    }
+
+    const r = await queryOne(
+      "SELECT id, package_tier, sub_status, sub_next_billing_date FROM resellers WHERE user_id = ?",
+      [userId]
+    );
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+    if (!r.package_tier || r.package_tier === "affiliate") {
+      return res.status(400).json({ error: "Affiliate tier has no monthly subscription" });
+    }
+
+    // Block if already has active subscription
+    const existing = await queryOne(
+      "SELECT id FROM reseller_subscriptions WHERE reseller_id = ? AND status = 'ACTIVE'",
+      [r.id]
+    );
+    if (existing) return res.status(400).json({ error: "You already have an active subscription" });
+
+    const pkg = PARTNER_PACKAGES[r.package_tier as keyof typeof PARTNER_PACKAGES];
+    const amount = (pkg.monthlyCents / 100).toFixed(2);
+    const merchantRef = `RSUB_${r.package_tier.toUpperCase()}_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const puid = randomUUID();
+
+    // startDate = sub_next_billing_date or today if overdue/missing
+    const startDateObj = r.sub_next_billing_date
+      ? new Date(r.sub_next_billing_date)
+      : new Date();
+    const startDateStr = startDateObj.toISOString().split("T")[0];
+    const collectionDay = Math.max(1, Math.min(28, startDateObj.getDate()));
+
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    const endDateStr = endDateObj.toISOString().split("T")[0];
+
+    await execute(
+      `INSERT INTO reseller_subscriptions (id, reseller_id, package_tier, amount_cents, currency, merchant_ref, status, collection_day, start_date, end_date)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)`,
+      [randomUUID(), r.id, r.package_tier, pkg.monthlyCents, pkg.currency, merchantRef, collectionDay, startDateStr, endDateStr]
+    );
+
+    const token = generateSubscriptionToken(merchantRef, amount);
+    const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    const fields: Record<string, string> = {
+      puid,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantReference: merchantRef,
+      Amount: amount,
+      Token: token,
+      txtCurrencyCode: pkg.currency,
+      RedirectSuccessfulURL: `${APP_URL}/api/reseller/subscription/return-redirect?status=success&merchantRef=${merchantRef}`,
+      RedirectFailedURL: `${APP_URL}/api/reseller/subscription/return-redirect?status=failed&merchantRef=${merchantRef}`,
+      Variable1: "ResellerSubscription",
+      Variable2: merchantRef,
+      Qty1: "1",
+      ItemRef1: r.package_tier,
+      ItemDescr1: `${pkg.label} Partner — Monthly Subscription`,
+      ItemAmount1: amount,
+      ShippingCost: "0.00",
+      Discount: "0.00",
+      Recipient: userRecord?.full_name || "Partner",
+      ShippingAddress1: "",
+      ShippingAddress2: "",
+      ShippingAddress3: "",
+      frequency: "MONTHLY",
+      collectionDay: String(collectionDay),
+      accountNumber: `RSUB_${Date.now()}`,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      collectionValue: amount,
+      contactNumber: "",
+      mobileNumber: "",
+      emailAddress: userRecord?.email || "",
+      shouldSendSms: "false",
+      shouldSendEmail: "true",
+    };
+
+    console.log("[Reseller Sub] Subscription checkout created:", { merchantRef, amount, tier: r.package_tier, startDate: startDateStr });
+    res.json({ formAction: ADUMO_URL, fields });
+  } catch (err: any) {
+    console.error("[Reseller Sub] Checkout error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/reseller/subscription/return-redirect — Adumo callback after subscription setup
+resellerRouter.get("/subscription/return-redirect", async (req, res) => {
+  const q = req.query as Record<string, string>;
+  const status = q.status || q._RESULT || "";
+  const merchantRef = (q.merchantRef || q._MERCHANTREFERENCE || q.MerchantReference || "") as string;
+  const redirectBase = `${APP_URL}/partner`;
+
+  console.log(`[Reseller Sub] Return redirect: status=${status}, merchantRef=${merchantRef}`);
+
+  if (!merchantRef) return res.redirect(`${redirectBase}?payment=sub_error`);
+
+  const sub = await queryOne(
+    "SELECT * FROM reseller_subscriptions WHERE merchant_ref = ? AND status = 'PENDING'",
+    [merchantRef]
+  );
+  if (!sub) {
+    console.warn(`[Reseller Sub] No pending subscription for merchantRef=${merchantRef}`);
+    return res.redirect(`${redirectBase}?payment=sub_error`);
+  }
+
+  const failed = status === "failed" || status.toLowerCase().includes("fail") || status === "0";
+  if (failed) {
+    await execute("UPDATE reseller_subscriptions SET status = 'FAILED' WHERE merchant_ref = ?", [merchantRef]);
+    return res.redirect(`${redirectBase}?payment=sub_failed`);
+  }
+
+  // Verify response token if present
+  const responseToken = q._RESPONSETOKEN || q.ResponseToken || "";
+  if (responseToken) {
+    try {
+      const decoded = verifyResponseToken(responseToken);
+      if (decoded.mref && decoded.mref !== merchantRef) {
+        console.error(`[Reseller Sub] Token mref mismatch`);
+        return res.redirect(`${redirectBase}?payment=sub_error`);
+      }
+    } catch (e: any) {
+      console.error(`[Reseller Sub] Token verify failed:`, e.message);
+    }
+  }
+
+  // Activate subscription
+  await execute(
+    "UPDATE reseller_subscriptions SET status = 'ACTIVE', activated_at = NOW() WHERE merchant_ref = ?",
+    [merchantRef]
+  );
+  await execute(
+    "UPDATE resellers SET sub_status = 'active' WHERE id = ?",
+    [sub.reseller_id]
+  );
+
+  console.log(`[Reseller Sub] Subscription activated: reseller_id=${sub.reseller_id}, tier=${sub.package_tier}`);
+  res.redirect(`${redirectBase}?payment=sub_success`);
 });
 
 // ─── Custom Domain endpoints ───────────────────────────────────────────────────
