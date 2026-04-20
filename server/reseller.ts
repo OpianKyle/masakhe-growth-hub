@@ -983,6 +983,35 @@ resellerRouter.get("/subscription/return-redirect", async (req, res) => {
   res.redirect(`${redirectBase}?payment=sub_success`);
 });
 
+// GET /api/reseller/billing/history — all invoices + subscription records for this reseller
+resellerRouter.get("/billing/history", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const r = await queryOne("SELECT id FROM resellers WHERE user_id = ?", [userId]);
+    if (!r) return res.status(404).json({ error: "Not a reseller" });
+
+    const invoices = await queryAll(
+      `SELECT id, package_tier, amount_cents, currency, merchant_ref, status, created_at, paid_at
+       FROM reseller_billing_invoices
+       WHERE reseller_id = ?
+       ORDER BY created_at DESC`,
+      [r.id]
+    );
+
+    const subscriptions = await queryAll(
+      `SELECT id, package_tier, amount_cents, currency, merchant_ref, status, collection_day, start_date, end_date, created_at, activated_at
+       FROM reseller_subscriptions
+       WHERE reseller_id = ?
+       ORDER BY created_at DESC`,
+      [r.id]
+    );
+
+    res.json({ invoices, subscriptions });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Custom Domain endpoints ───────────────────────────────────────────────────
 
 // GET current domain status

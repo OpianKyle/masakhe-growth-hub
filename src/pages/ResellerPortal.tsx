@@ -6,7 +6,7 @@ import PartnerPackage from "./PartnerPackage";
 import {
   Award, LogOut, Menu, X,
   BarChart2, Users, DollarSign, Crown, Trophy, CreditCard, CheckCircle, ArrowUpCircle, Loader2, Star,
-  Globe, Lock, Clipboard, RefreshCw, Trash2, AlertCircle, CalendarClock, ShieldCheck, Clock,
+  Globe, Lock, Clipboard, RefreshCw, Trash2, AlertCircle, CalendarClock, ShieldCheck, Clock, FileText, RotateCcw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -297,6 +297,16 @@ function BillingView({
   const [subPaymentData, setSubPaymentData] = useState<{ formAction: string; fields: Record<string, string> } | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [subLoading, setSubLoading] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/reseller/billing/history", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { setInvoices(d.invoices || []); setSubscriptions(d.subscriptions || []); setHistoryLoaded(true); })
+      .catch(() => setHistoryLoaded(true));
+  }, []);
 
   useEffect(() => {
     if (paymentData && formRef.current) formRef.current.submit();
@@ -582,6 +592,114 @@ function BillingView({
           </p>
         </div>
       )}
+
+      {/* Billing History */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="h-5 w-5 text-green-400" />
+          <h2 className="text-lg font-bold text-white">Billing History</h2>
+        </div>
+
+        {!historyLoaded ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+          </div>
+        ) : invoices.length === 0 && subscriptions.length === 0 ? (
+          <div className="rounded-2xl bg-[#111827] border border-white/10 p-8 text-center">
+            <FileText className="h-8 w-8 text-white/20 mx-auto mb-3" />
+            <p className="text-white/40 text-sm">No billing records yet.</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-[#111827] border border-white/10 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left text-white/40 text-xs uppercase tracking-wider px-5 py-3 font-medium">Date</th>
+                  <th className="text-left text-white/40 text-xs uppercase tracking-wider px-5 py-3 font-medium hidden sm:table-cell">Description</th>
+                  <th className="text-left text-white/40 text-xs uppercase tracking-wider px-5 py-3 font-medium hidden md:table-cell">Reference</th>
+                  <th className="text-right text-white/40 text-xs uppercase tracking-wider px-5 py-3 font-medium">Amount</th>
+                  <th className="text-right text-white/40 text-xs uppercase tracking-wider px-5 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {invoices.map(inv => {
+                  const tierLabel = PACKAGE_LABELS[inv.package_tier]?.label || inv.package_tier;
+                  const isSetup = inv.merchant_ref?.startsWith("RJOIN_") || inv.merchant_ref?.startsWith("RSEL_");
+                  const isUpgrade = inv.merchant_ref?.startsWith("RUPG_");
+                  const desc = isUpgrade ? `Upgrade to ${tierLabel}` : `${tierLabel} — Once-off Setup`;
+                  const dateStr = inv.paid_at || inv.created_at;
+                  return (
+                    <tr key={inv.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-5 py-3.5 text-white/60 text-xs whitespace-nowrap">
+                        {dateStr ? new Date(dateStr).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                      </td>
+                      <td className="px-5 py-3.5 text-white/80 hidden sm:table-cell">
+                        <span className="flex items-center gap-1.5">
+                          <CreditCard className="h-3.5 w-3.5 text-white/30 shrink-0" />
+                          {desc}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-white/35 font-mono text-xs hidden md:table-cell truncate max-w-[140px]">
+                        {inv.merchant_ref}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-white whitespace-nowrap">
+                        R{((inv.amount_cents || 0) / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          inv.status === "PAID"    ? "bg-green-500/15 text-green-400" :
+                          inv.status === "FAILED"  ? "bg-red-500/15 text-red-400" :
+                                                     "bg-yellow-500/15 text-yellow-400"
+                        }`}>
+                          {inv.status === "PAID" && <CheckCircle className="h-3 w-3" />}
+                          {inv.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {subscriptions.map(sub => {
+                  const tierLabel = PACKAGE_LABELS[sub.package_tier]?.label || sub.package_tier;
+                  const dateStr = sub.activated_at || sub.created_at;
+                  return (
+                    <tr key={sub.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-5 py-3.5 text-white/60 text-xs whitespace-nowrap">
+                        {dateStr ? new Date(dateStr).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                      </td>
+                      <td className="px-5 py-3.5 text-white/80 hidden sm:table-cell">
+                        <span className="flex items-center gap-1.5">
+                          <RotateCcw className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          {tierLabel} — Monthly Subscription
+                          {sub.status === "ACTIVE" && sub.collection_day && (
+                            <span className="text-white/30 text-xs ml-1">· day {sub.collection_day}</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-white/35 font-mono text-xs hidden md:table-cell truncate max-w-[140px]">
+                        {sub.merchant_ref}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-white whitespace-nowrap">
+                        R{((sub.amount_cents || 0) / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}<span className="text-white/30 text-xs font-normal">/mo</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          sub.status === "ACTIVE"   ? "bg-green-500/15 text-green-400" :
+                          sub.status === "FAILED"   ? "bg-red-500/15 text-red-400" :
+                          sub.status === "CANCELLED"? "bg-gray-500/15 text-gray-400" :
+                                                      "bg-yellow-500/15 text-yellow-400"
+                        }`}>
+                          {sub.status === "ACTIVE" && <CheckCircle className="h-3 w-3" />}
+                          {sub.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
