@@ -13,7 +13,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setBillingChecked(true);
       return;
     }
-    if (user.role === "admin") {
+    // Admins and partner/reseller accounts have their own billing — skip SMME billing check
+    if (user.role === "admin" || user.is_reseller) {
       setBillingBlocked(false);
       setBillingChecked(true);
       return;
