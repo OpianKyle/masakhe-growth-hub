@@ -26,7 +26,17 @@ linkedinOAuthRouter.get("/oauth/linkedin/callback", async (req: Request, res: Re
   const userId = req.session.userId;
   if (!userId) return res.redirect("/login");
 
-  const workspaceId = state as string;
+  // Decode state — supports both old plain workspaceId and new JSON payload
+  let workspaceId: string;
+  let redirectUri: string;
+  try {
+    const decoded = JSON.parse(Buffer.from(state as string, "base64url").toString());
+    workspaceId = decoded.workspaceId;
+    redirectUri = decoded.redirectUri;
+  } catch {
+    workspaceId = state as string;
+    redirectUri = `${process.env.APP_URL || "https://masakheportal.co.za"}/api/social/oauth/linkedin/callback`;
+  }
 
   const membership = await queryOne(
     "SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?",
@@ -37,10 +47,6 @@ linkedinOAuthRouter.get("/oauth/linkedin/callback", async (req: Request, res: Re
   }
 
   try {
-    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
-    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-    const origin = `${proto}://${host}`;
-    const redirectUri = `${origin}/api/social/oauth/linkedin/callback`;
 
     // Exchange code for access token
     const tokenRes = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
