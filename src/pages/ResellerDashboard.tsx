@@ -217,7 +217,7 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
         priceCents: 199900,
         recommended: true,
         description: "Your own domain set up for you. Sell under your brand with dedicated support.",
-        features: ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Access to Mktng Assets", "Dedicated Support"],
+        features: ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Connect", "Access to Mktng Assets", "Dedicated Support"],
         btnLabel: "Become a Reseller",
       },
       {
@@ -227,8 +227,8 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
         priceNote: "Once-off setup + R899/mo",
         priceCents: 399900,
         recommended: false,
-        description: "Custom website, account manager and full 5-tier commission network.",
-        features: ["Everything in Reseller", "Custom website done for you", "Commissions paid on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads from Paid Campaign"],
+        description: "Website builder, social media posts, and full 5-tier commission network with binary bonuses.",
+        features: ["Everything in Reseller", "Website Builder", "Commissions paid on 5 Tiers", "Social Media posts", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads Provided from Paid Campaign"],
         btnLabel: "Go Premium Reseller",
       },
     ];

@@ -241,15 +241,15 @@ const UPGRADE_OPTIONS: Record<string, Array<{
       label: "Reseller",
       payToday: "R1,999",
       description: "Your own domain set up for you. Sell under your brand with dedicated support.",
-      features: ["Own domain done for you", "Commissions on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Dedicated Support"],
+      features: ["Own domain done for you", "Commissions on 3 Tiers", "Dedicated WhatsApp line", "Business Connect", "Dedicated Support"],
       highlight: true,
     },
     {
       targetTier: "master",
       label: "Premium Reseller",
       payToday: "R3,999",
-      description: "Custom website, account manager and full 5-tier commission network.",
-      features: ["Everything in Reseller", "Custom website done for you", "Commissions on 5 Tiers", "Binary Bonuses Unlocked", "Quarterly Profit Share"],
+      description: "Website builder, social media posts, and full 5-tier commission network with binary bonuses.",
+      features: ["Everything in Reseller", "Website Builder", "Commissions on 5 Tiers", "Social Media posts", "Binary Bonuses Unlocked", "Quarterly Profit Share"],
       highlight: false,
     },
   ],
@@ -258,8 +258,8 @@ const UPGRADE_OPTIONS: Record<string, Array<{
       targetTier: "master",
       label: "Premium Reseller",
       payToday: "R2,000",
-      description: "Upgrade to Premium. You pay the difference — R3,999 minus your R1,999 setup.",
-      features: ["Custom website done for you", "Commissions on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Leads from Paid Campaign"],
+      description: "Upgrade to Premium. Get Website Builder, social media posts, and 5-tier commissions. You pay the R2,000 difference.",
+      features: ["Website Builder", "Commissions on 5 Tiers", "Social Media posts", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Leads Provided from Paid Campaign"],
       highlight: true,
     },
   ],
@@ -268,8 +268,8 @@ const UPGRADE_OPTIONS: Record<string, Array<{
 
 const CURRENT_FEATURES: Record<string, string[]> = {
   affiliate: ["Unique referral link", "20% direct commissions", "Basic marketing materials", "Partner dashboard access"],
-  reseller:  ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Access to Mktng Assets", "Dedicated Support"],
-  master:    ["Everything in Reseller", "Custom website done for you", "Commissions paid on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads from Paid Campaign"],
+  reseller:  ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Connect", "Access to Mktng Assets", "Dedicated Support"],
+  master:    ["Everything in Reseller", "Website Builder", "Commissions paid on 5 Tiers", "Social Media posts", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads Provided from Paid Campaign"],
 };
 
 function BillingView({
@@ -817,8 +817,8 @@ function DomainView({ packageTier, onUpgrade }: { packageTier: string; onUpgrade
         </p>
         <div className="grid grid-cols-2 gap-3 text-left">
           {[
-            { tier: "Reseller",          price: "R1,999", sub: "then R599/mo", features: ["Own domain done for you", "Custom branding", "3-Tier commissions"] },
-            { tier: "Premium Reseller",  price: "R3,999", sub: "then R899/mo", features: ["Everything in Reseller", "Custom website", "5-Tier commissions"] },
+            { tier: "Reseller",          price: "R1,999", sub: "then R599/mo", features: ["Own domain done for you", "Business Connect", "3-Tier commissions"] },
+            { tier: "Premium Reseller",  price: "R3,999", sub: "then R899/mo", features: ["Everything in Reseller", "Website Builder", "5-Tier commissions"] },
           ].map(pkg => (
             <div key={pkg.tier} className="rounded-xl bg-white/5 border border-white/10 p-4">
               <p className="text-white font-semibold text-sm">{pkg.tier}</p>
