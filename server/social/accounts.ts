@@ -81,7 +81,7 @@ accountsRouter.post("/:workspaceId/accounts/oauth/linkedin/start", requireWorksp
     return res.json({ mockMode: true, message: "LinkedIn credentials not configured. Using mock mode." });
   }
   const redirectUri = `${process.env.APP_URL || "http://localhost:5000"}/api/social/oauth/linkedin/callback`;
-  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=w_member_social%20r_liteprofile&state=${req.params.workspaceId}`;
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email%20w_member_social&state=${req.params.workspaceId}`;
   res.json({ authUrl });
 });
 

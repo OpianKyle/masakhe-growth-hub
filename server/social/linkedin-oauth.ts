@@ -65,31 +65,23 @@ linkedinOAuthRouter.get("/oauth/linkedin/callback", async (req: Request, res: Re
     const expiresIn = tokenData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    // Get profile info
-    const profileRes = await fetch(`${LINKEDIN_API}/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))`, {
+    // Get profile info via OpenID Connect userinfo endpoint (works with openid + profile + email scopes)
+    const profileRes = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const profileData = await profileRes.json() as any;
 
-    if (profileData.serviceErrorCode) {
-      console.error("[LinkedIn OAuth] Profile error:", profileData.message);
+    if (!profileRes.ok || profileData.error) {
+      console.error("[LinkedIn OAuth] Profile error:", profileData);
       return res.redirect(
-        `/dashboard/social?error=${encodeURIComponent("Could not fetch LinkedIn profile: " + profileData.message)}`
+        `/dashboard/social?error=${encodeURIComponent("Could not fetch LinkedIn profile: " + (profileData.message || profileData.error || profileRes.status))}`
       );
     }
 
-    const linkedinId = profileData.id;
-    const displayName = `${profileData.localizedFirstName || ""} ${profileData.localizedLastName || ""}`.trim() || `LinkedIn-${linkedinId}`;
-
-    // Get email address
-    let emailAddress = "";
-    try {
-      const emailRes = await fetch(`${LINKEDIN_API}/emailAddress?q=members&projection=(elements*(handle~))`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const emailData = await emailRes.json() as any;
-      emailAddress = emailData.elements?.[0]?.["handle~"]?.emailAddress || "";
-    } catch {}
+    // OpenID userinfo returns: sub, name, given_name, family_name, email, picture
+    const linkedinId = profileData.sub;
+    const displayName = profileData.name || `${profileData.given_name || ""} ${profileData.family_name || ""}`.trim() || `LinkedIn-${linkedinId}`;
+    const emailAddress = profileData.email || "";
 
     const profileUrl = `https://www.linkedin.com/in/${linkedinId}`;
     const now = new Date().toISOString();
