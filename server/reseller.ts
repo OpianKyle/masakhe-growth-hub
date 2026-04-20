@@ -242,7 +242,7 @@ resellerRouter.post("/join", requireAuth, async (req, res) => {
     }
 
     // Paid tiers — create Adumo checkout with return to dashboard
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -261,8 +261,8 @@ resellerRouter.post("/join", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -574,7 +574,7 @@ resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
     if (!tier || !["reseller", "master"].includes(tier)) {
       return res.status(400).json({ error: "Invalid package tier" });
     }
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -601,8 +601,8 @@ resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -646,7 +646,7 @@ resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
     if (!targetTier || !["reseller", "master"].includes(targetTier)) {
       return res.status(400).json({ error: "Invalid target tier" });
     }
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -683,8 +683,8 @@ resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,

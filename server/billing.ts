@@ -374,7 +374,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid plan code" });
     }
 
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -423,8 +423,8 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -494,7 +494,7 @@ billingRouter.post("/invoice-payment", requireAuth, async (req, res) => {
     const { invoiceId, recipientName, email, contactNumber } = req.body;
 
     if (!invoiceId) return res.status(400).json({ error: "Invoice ID is required" });
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -521,8 +521,8 @@ billingRouter.post("/invoice-payment", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -560,7 +560,7 @@ billingRouter.post("/manual-payment", requireAuth, async (req, res) => {
     if (!planCode || !["starter", "pro", "premium"].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
     }
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -583,8 +583,8 @@ billingRouter.post("/manual-payment", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -769,7 +769,7 @@ billingRouter.post("/change-plan", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid plan code" });
     }
 
-    if (!process.env.ADUMO_CUID || !process.env.ADUMO_AUID || !process.env.ADUMO_JWT_SECRET) {
+    if (!process.env.ADUMO_MERCHANT_ID || !process.env.ADUMO_APPLICATION_ID || !process.env.ADUMO_JWT_SECRET) {
       return res.status(500).json({ error: "Payment gateway not configured" });
     }
 
@@ -825,8 +825,8 @@ billingRouter.post("/change-plan", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_CUID!,
-      ApplicationID: process.env.ADUMO_AUID!,
+      MerchantID: process.env.ADUMO_MERCHANT_ID!,
+      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,

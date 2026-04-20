@@ -5,8 +5,8 @@ export function generateSubscriptionToken(merchantRef: string, amount: string): 
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: "Masakhe",
-    cuid: process.env.ADUMO_CUID,
-    auid: process.env.ADUMO_AUID,
+    cuid: process.env.ADUMO_MERCHANT_ID,
+    auid: process.env.ADUMO_APPLICATION_ID,
     amount,
     mref: merchantRef,
     jti: randomBytes(32).toString("base64"),
