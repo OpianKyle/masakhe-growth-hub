@@ -11,6 +11,10 @@ export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
 
 const isMockMode = () => !process.env.META_APP_ID && !process.env.LINKEDIN_CLIENT_ID;
+const platformMockModes = () => ({
+  META: !process.env.META_APP_ID,
+  LINKEDIN: !process.env.LINKEDIN_CLIENT_ID,
+});
 
 accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admin", "editor", "viewer"), async (req, res) => {
   try {
@@ -21,7 +25,8 @@ accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admi
        ORDER BY created_at DESC`,
       [req.params.workspaceId]
     );
-    res.json({ accounts, mockMode: isMockMode() });
+    const modes = platformMockModes();
+    res.json({ accounts, mockMode: isMockMode(), platformMockModes: modes });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

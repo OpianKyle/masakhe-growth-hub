@@ -82,6 +82,7 @@ const PLATFORMS = [
 export default function SocialAccounts({ workspaceId }: Props) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mockMode, setMockMode] = useState(false);
+  const [platformMockModes, setPlatformMockModes] = useState<{ META?: boolean; LINKEDIN?: boolean }>({});
   const [showConnect, setShowConnect] = useState(false);
   const [platform, setPlatform] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -93,7 +94,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
     if (!workspaceId) return;
     fetch(`/api/social/ws/${workspaceId}/accounts`, { credentials: "include" })
       .then(r => r.json())
-      .then(d => { setAccounts(d.accounts || []); setMockMode(d.mockMode); })
+      .then(d => { setAccounts(d.accounts || []); setMockMode(d.mockMode); setPlatformMockModes(d.platformMockModes || {}); })
       .catch(() => {});
   }, [workspaceId]);
 
@@ -307,7 +308,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 </div>
               </div>
 
-              {platform === "LINKEDIN" && !mockMode ? (
+              {platform === "LINKEDIN" && !platformMockModes.LINKEDIN ? (
                 <Card className="p-4 border-blue-200 bg-blue-50">
                   <div className="flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
@@ -319,7 +320,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                     </div>
                   </div>
                 </Card>
-              ) : platform === "META_INSTAGRAM" && !mockMode ? (
+              ) : platform === "META_INSTAGRAM" && !platformMockModes.META ? (
                 <div className="space-y-3">
                   <Card className="p-4 border-blue-200 bg-blue-50">
                     <div className="flex items-start gap-3">
@@ -345,7 +346,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                     </p>
                   </Card>
                 </div>
-              ) : platform && !mockMode && isMetaPlatform(platform) ? (
+              ) : platform && !platformMockModes.META && isMetaPlatform(platform) ? (
                 <Card className="p-4 border-blue-200 bg-blue-50">
                   <div className="flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
@@ -388,7 +389,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
             </div>
 
             <div className="p-6 border-t bg-slate-50 flex gap-2">
-              {platform && !mockMode && isMetaPlatform(platform) ? (
+              {platform && !platformMockModes.META && isMetaPlatform(platform) ? (
                 <Button
                   onClick={handleMetaOAuth}
                   disabled={oauthLoading}
@@ -397,7 +398,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                   <Facebook className="h-4 w-4 mr-2" />
                   {oauthLoading ? "Redirecting to Facebook..." : "Connect with Facebook"}
                 </Button>
-              ) : platform === "LINKEDIN" && !mockMode ? (
+              ) : platform === "LINKEDIN" && !platformMockModes.LINKEDIN ? (
                 <Button
                   onClick={handleLinkedInOAuth}
                   disabled={oauthLoading}
