@@ -37,7 +37,9 @@ linkedinOAuthRouter.get("/oauth/linkedin/callback", async (req: Request, res: Re
   }
 
   try {
-    const origin = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const origin = `${proto}://${host}`;
     const redirectUri = `${origin}/api/social/oauth/linkedin/callback`;
 
     // Exchange code for access token
