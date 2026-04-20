@@ -10,7 +10,7 @@ import { randomUUID } from "crypto";
 export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
 
-const MOCK_MODE = !process.env.META_APP_ID && !process.env.LINKEDIN_CLIENT_ID;
+const isMockMode = () => !process.env.META_APP_ID && !process.env.LINKEDIN_CLIENT_ID;
 
 accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admin", "editor", "viewer"), async (req, res) => {
   try {
@@ -21,7 +21,7 @@ accountsRouter.get("/:workspaceId/accounts", requireWorkspaceRole("owner", "admi
        ORDER BY created_at DESC`,
       [req.params.workspaceId]
     );
-    res.json({ accounts, mockMode: MOCK_MODE });
+    res.json({ accounts, mockMode: isMockMode() });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -51,9 +51,10 @@ accountsRouter.post("/:workspaceId/accounts/connect", requireActiveSubscription,
       ]
     );
 
-    await writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, profileUrl, mock: MOCK_MODE });
+    const mock = isMockMode();
+    await writeAuditLog(req.params.workspaceId, req.session.userId!, "CONNECTED_ACCOUNT", "social_account", id, { platform, accountName, profileUrl, mock });
 
-    res.json({ ok: true, id, mockMode: MOCK_MODE });
+    res.json({ ok: true, id, mockMode: mock });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
