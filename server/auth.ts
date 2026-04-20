@@ -154,13 +154,24 @@ authRouter.post("/login", async (req, res) => {
                 bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
                 bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
                 bp.popia_consent,
-                IF(r.id IS NOT NULL, 1, 0) as is_reseller
+                IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
          FROM users u
          LEFT JOIN business_profiles bp ON bp.user_id = u.id
          LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
          WHERE u.id = ?`,
         [user.id]
       );
+
+      // Auto-create reseller record if the account is a partner but has no active record
+      if (fullUser?.business_status === 'reseller') {
+        const existing = await queryOne(
+          "SELECT id FROM resellers WHERE user_id = ?", [user.id]
+        );
+        if (!existing) {
+          await autoRegisterReseller(user.id, user.full_name).catch(() => {});
+        }
+      }
+
       res.json({ ok: true, user: fullUser });
     });
   } catch (err: any) {
@@ -249,7 +260,7 @@ authRouter.get("/me", async (req, res) => {
             bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
             bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
             bp.popia_consent,
-            IF(r.id IS NOT NULL, 1, 0) as is_reseller
+            IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
      FROM users u
      LEFT JOIN business_profiles bp ON bp.user_id = u.id
      LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'

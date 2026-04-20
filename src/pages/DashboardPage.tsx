@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
   // Resellers have their own portal — redirect them
   useEffect(() => {
-    if (user?.is_reseller && user?.business_status === "reseller" && user?.role !== "admin") {
+    if (user?.is_reseller && user?.role !== "admin") {
       navigate("/partner", { replace: true });
     }
   }, [user, navigate]);
