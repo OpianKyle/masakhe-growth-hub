@@ -40,7 +40,10 @@ export default function LoginPage() {
     const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
-      if (result.needsOnboarding && !result.isReseller) {
+      if (result.isAdmin) {
+        toast.success("Welcome back!");
+        navigate("/admin", { replace: true });
+      } else if (result.needsOnboarding && !result.isReseller) {
         toast.success("Welcome! Let's finish setting up your account.");
         navigate("/onboarding", { replace: true });
       } else if (result.isReseller) {

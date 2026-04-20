@@ -33,7 +33,7 @@ interface AuthContextType {
   loading: boolean;
   isImpersonating: boolean;
   originalAdminName: string | null;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean; isReseller?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean; isReseller?: boolean; isAdmin?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -89,7 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         const needsOnboarding = !data.user.popia_consent;
         const isReseller = !!data.user.is_reseller;
-        return { ok: true, needsOnboarding, isReseller };
+        const isAdmin = data.user.role === "admin";
+        return { ok: true, needsOnboarding, isReseller, isAdmin };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {
