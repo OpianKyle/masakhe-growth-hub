@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
 
-export function generateSubscriptionToken(merchantRef: string, amount: string): string {
+function buildTokenPayload(merchantRef: string, amount: string) {
   const now = Math.floor(Date.now() / 1000);
-  const payload = {
+  return {
     iss: "Masakhe",
     cuid: process.env.ADUMO_MERCHANT_ID,
     auid: process.env.ADUMO_APPLICATION_ID,
@@ -13,7 +13,14 @@ export function generateSubscriptionToken(merchantRef: string, amount: string): 
     iat: now - 60,
     exp: now + 600,
   };
-  return jwt.sign(payload, process.env.ADUMO_JWT_SECRET!, { algorithm: "HS256" });
+}
+
+export function generatePaymentToken(merchantRef: string, amount: string): string {
+  return jwt.sign(buildTokenPayload(merchantRef, amount), process.env.ADUMO_JWT_SECRET!, { algorithm: "HS256" });
+}
+
+export function generateSubscriptionToken(merchantRef: string, amount: string): string {
+  return jwt.sign(buildTokenPayload(merchantRef, amount), process.env.ADUMO_JWT_SECRET!, { algorithm: "HS256" });
 }
 
 export function verifyResponseToken(token: string): any {

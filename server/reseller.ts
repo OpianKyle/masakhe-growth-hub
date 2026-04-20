@@ -3,7 +3,7 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
 import { getTransporterForUser } from "./email-settings";
-import { generateSubscriptionToken, verifyResponseToken } from "./adumo";
+import { generatePaymentToken, verifyResponseToken } from "./adumo";
 
 export const resellerRouter = Router();
 
@@ -257,7 +257,7 @@ resellerRouter.post("/join", requireAuth, async (req, res) => {
       [randomUUID(), r.id, tier, pkg.amountCents, pkg.currency, merchantRef]
     );
 
-    const token = generateSubscriptionToken(merchantRef, amount);
+    const token = generatePaymentToken(merchantRef, amount);
 
     const fields: Record<string, string> = {
       puid,
@@ -596,7 +596,7 @@ resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
       [randomUUID(), r.id, tier, pkg.amountCents, pkg.currency, merchantRef]
     );
 
-    const token = generateSubscriptionToken(merchantRef, amount);
+    const token = generatePaymentToken(merchantRef, amount);
     const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
 
     const fields: Record<string, string> = {
@@ -678,7 +678,7 @@ resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
       [randomUUID(), r.id, targetTier, diffCents, pkg.currency, merchantRef]
     );
 
-    const token = generateSubscriptionToken(merchantRef, amount);
+    const token = generatePaymentToken(merchantRef, amount);
     const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
 
     const fields: Record<string, string> = {
