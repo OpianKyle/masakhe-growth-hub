@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -330,6 +330,10 @@ export default function WebsiteBuilder() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
+  const [editorWidth, setEditorWidth] = useState(420);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartWidthRef = useRef(420);
   const [showAddSection, setShowAddSection] = useState(false);
   const [isProPlan, setIsProPlan] = useState(false);
   const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
@@ -393,6 +397,30 @@ export default function WebsiteBuilder() {
   const updateSite = useCallback((updater: (prev: SiteConfig) => SiteConfig) => {
     setSite((prev) => prev ? updater(prev) : prev);
   }, []);
+
+  const onSplitterMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartWidthRef.current = editorWidth;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const delta = ev.clientX - dragStartXRef.current;
+      const next = Math.min(700, Math.max(260, dragStartWidthRef.current + delta));
+      setEditorWidth(next);
+    };
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [editorWidth]);
 
   const updateSection = useCallback((index: number, newData: any) => {
     updateSite((prev) => {
@@ -680,7 +708,7 @@ export default function WebsiteBuilder() {
     </Dialog>
 
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
-      <div className="w-[420px] flex flex-col border-r bg-white shadow-xl">
+      <div className="flex flex-col border-r bg-white shadow-xl shrink-0" style={{ width: editorWidth }}>
         <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSite(null)} title="Back to templates">
@@ -804,7 +832,20 @@ export default function WebsiteBuilder() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      {/* Drag splitter */}
+      <div
+        onMouseDown={onSplitterMouseDown}
+        className="w-1.5 shrink-0 bg-slate-200 hover:bg-blue-400 active:bg-blue-500 cursor-col-resize transition-colors z-10 relative group"
+        title="Drag to resize"
+      >
+        <div className="absolute inset-y-0 -left-1 -right-1" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="w-0.5 h-4 bg-blue-500 rounded-full" />
+          <div className="w-0.5 h-4 bg-blue-500 rounded-full" />
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
           <div className="flex items-center gap-2">
             <Button variant={isPreviewMobile ? "ghost" : "default"} size="sm" className="h-7 text-xs" onClick={() => setIsPreviewMobile(false)}>
