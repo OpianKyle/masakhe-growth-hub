@@ -113,6 +113,12 @@ export default function SocialAccounts({ workspaceId }: Props) {
       load();
       window.history.replaceState({}, "", window.location.pathname);
     }
+    if (params.get("connected") === "linkedin") {
+      const name = params.get("name") || "LinkedIn account";
+      toast.success(`${name} connected successfully!`);
+      load();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     if (params.get("error")) {
       toast.error(params.get("error") || "Connection failed");
       window.history.replaceState({}, "", window.location.pathname);
@@ -123,6 +129,36 @@ export default function SocialAccounts({ workspaceId }: Props) {
 
   const isMetaPlatform = (platformId: string) =>
     platformId === "META_FACEBOOK" || platformId === "META_INSTAGRAM";
+
+  const isOAuthPlatform = (platformId: string) =>
+    isMetaPlatform(platformId) || platformId === "LINKEDIN";
+
+  const handleLinkedInOAuth = async () => {
+    if (!workspaceId) {
+      toast.error("No workspace found. Please refresh and try again.");
+      return;
+    }
+    setOauthLoading(true);
+    try {
+      const res = await fetch(`/api/social/ws/${workspaceId}/accounts/oauth/linkedin/start`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else if (data.mockMode) {
+        toast.info("LinkedIn API not configured. Use manual linking instead.");
+        setOauthLoading(false);
+      } else {
+        toast.error(data.error || "Could not start LinkedIn connection");
+        setOauthLoading(false);
+      }
+    } catch {
+      toast.error("Network error. Please check your connection and try again.");
+      setOauthLoading(false);
+    }
+  };
 
   const handleMetaOAuth = async () => {
     if (!workspaceId) {
@@ -271,7 +307,19 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 </div>
               </div>
 
-              {platform === "META_INSTAGRAM" && !mockMode ? (
+              {platform === "LINKEDIN" && !mockMode ? (
+                <Card className="p-4 border-blue-200 bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-900 text-sm">Connect via LinkedIn OAuth</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Click below to sign in with LinkedIn. You'll be asked to authorise Masakhe to post on your behalf. Once connected, you can publish posts directly to your LinkedIn profile from the social poster.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : platform === "META_INSTAGRAM" && !mockMode ? (
                 <div className="space-y-3">
                   <Card className="p-4 border-blue-200 bg-blue-50">
                     <div className="flex items-start gap-3">
@@ -348,6 +396,15 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 >
                   <Facebook className="h-4 w-4 mr-2" />
                   {oauthLoading ? "Redirecting to Facebook..." : "Connect with Facebook"}
+                </Button>
+              ) : platform === "LINKEDIN" && !mockMode ? (
+                <Button
+                  onClick={handleLinkedInOAuth}
+                  disabled={oauthLoading}
+                  className="flex-1 bg-blue-700 hover:bg-blue-800 text-white"
+                >
+                  <Linkedin className="h-4 w-4 mr-2" />
+                  {oauthLoading ? "Redirecting to LinkedIn..." : "Connect with LinkedIn"}
                 </Button>
               ) : (
                 <Button

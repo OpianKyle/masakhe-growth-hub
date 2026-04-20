@@ -6,6 +6,7 @@ import { requireActiveSubscription } from "../feature-gate";
 import { writeAuditLog } from "./audit";
 import { randomUUID } from "crypto";
 import { publishToFacebook, publishToInstagram } from "./meta-oauth";
+import { publishToLinkedIn } from "./linkedin-oauth";
 import fs from "fs";
 import path from "path";
 
@@ -308,6 +309,30 @@ export async function publishPostNow(postId: string, workspaceId: string, userId
         await execute(
           "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
           [result.error || "Facebook publish failed", target.id]
+        );
+      }
+      continue;
+    }
+
+    if (target.platform === "LINKEDIN" && target.access_token_enc) {
+      const result = await publishToLinkedIn(
+        target.platform_account_id,
+        target.access_token_enc,
+        contentText,
+        mediaBuffer ? undefined : mediaUrl,
+        mediaBuffer,
+        mediaMimeType
+      );
+      if (result.success) {
+        await execute(
+          "UPDATE social_post_targets SET status = 'PUBLISHED', platform_post_id = ?, published_at = ? WHERE id = ?",
+          [result.postId || "", now, target.id]
+        );
+      } else {
+        allSuccess = false;
+        await execute(
+          "UPDATE social_post_targets SET status = 'FAILED', error_message = ? WHERE id = ?",
+          [result.error || "LinkedIn publish failed", target.id]
         );
       }
       continue;
