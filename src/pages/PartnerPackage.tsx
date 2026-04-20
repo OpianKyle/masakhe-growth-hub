@@ -14,6 +14,7 @@ const PACKAGES = [
     label: "Affiliate",
     price: "Free",
     priceNote: "No upfront cost",
+    monthly: null,
     priceCents: 0,
     recommended: false,
     description: "Start earning referral commissions immediately with zero investment.",
@@ -29,39 +30,44 @@ const PACKAGES = [
   {
     tier: "reseller",
     label: "Reseller",
-    price: "R999",
+    price: "R1,999",
     priceNote: "Once-off setup",
-    priceCents: 99900,
+    monthly: "R599/month",
+    priceCents: 199900,
     recommended: true,
-    description: "Connect your own domain and brand. Sell Masakhe under your own identity.",
+    description: "Your own domain set up for you. Sell Masakhe under your brand with dedicated support.",
     features: [
       "Everything in Affiliate",
-      "Custom domain setup",
-      "Branded client portal",
-      "Level 2-3 commissions",
-      "Dedicated support line",
-      "Client management portal",
+      "Own domain done for you",
+      "Commissions paid on 3 Tiers",
+      "Dedicated WhatsApp line",
+      "Business Portal",
+      "Access to Mktng Assets",
+      "Dedicated Support",
     ],
     btnLabel: "Become a Reseller",
     btnVariant: "default" as const,
   },
   {
     tier: "master",
-    label: "Master Reseller",
-    price: "R4,999",
+    label: "Premium Reseller",
+    price: "R3,999",
     priceNote: "Once-off setup",
-    priceCents: 499900,
+    monthly: "R899/month",
+    priceCents: 399900,
     recommended: false,
-    description: "Recruit your own resellers. Earn overrides on your entire sub-network.",
+    description: "Custom website built for you, account manager and full 5-tier commission network.",
     features: [
       "Everything in Reseller",
-      "Recruit & manage resellers",
-      "All 5 commission levels",
-      "Binary bonus unlocked",
-      "Revenue share pool",
-      "Co-branded marketing fund",
+      "Custom website done for you",
+      "Commissions paid on 5 Tiers",
+      "Dedicated Account Manager",
+      "Binary Bonuses Unlocked",
+      "Quarterly Profit Share",
+      "Branding Eligibility",
+      "Leads Provided from Paid Campaign",
     ],
-    btnLabel: "Go Master Reseller",
+    btnLabel: "Go Premium Reseller",
     btnVariant: "outline" as const,
   },
 ];
@@ -152,14 +158,19 @@ export default function PartnerPackage({ onActivated }: Props) {
 
             <h2 className="text-white text-xl font-bold mb-1">{pkg.label}</h2>
 
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className={`text-3xl font-extrabold ${pkg.priceCents === 0 ? "text-white/40" : "text-green-400"}`}>
-                {pkg.price}
-              </span>
-              <span className="text-white/40 text-sm">{pkg.priceNote}</span>
+            <div className="mb-1">
+              <div className="flex items-baseline gap-2">
+                <span className={`text-3xl font-extrabold ${pkg.priceCents === 0 ? "text-white/40" : "text-green-400"}`}>
+                  {pkg.price}
+                </span>
+                <span className="text-white/40 text-sm">{pkg.priceNote}</span>
+              </div>
+              {pkg.monthly && (
+                <p className="text-white/50 text-xs mt-0.5">then <span className="text-white/70 font-semibold">{pkg.monthly}</span></p>
+              )}
             </div>
 
-            <p className="text-white/50 text-sm mb-5 leading-relaxed">{pkg.description}</p>
+            <p className="text-white/50 text-sm mb-5 leading-relaxed mt-2">{pkg.description}</p>
 
             <ul className="space-y-2.5 mb-8 flex-1">
               {pkg.features.map((f) => (
@@ -190,7 +201,7 @@ export default function PartnerPackage({ onActivated }: Props) {
       </div>
 
       <p className="mt-10 text-white/25 text-xs text-center">
-        Once-off fees are processed securely via Adumo Online. No recurring charges.
+        Once-off setup fees are processed securely via Adumo Online. Monthly fees are invoiced separately.
       </p>
     </div>
   );

@@ -15,9 +15,9 @@ const ADUMO_URL = process.env.ADUMO_ENV === "production"
 
 // Partner package definitions
 const PARTNER_PACKAGES = {
-  affiliate: { label: "Affiliate",       amountCents: 0,      currency: "ZAR" },
-  reseller:  { label: "Reseller",        amountCents: 99900,  currency: "ZAR" },
-  master:    { label: "Master Reseller", amountCents: 499900, currency: "ZAR" },
+  affiliate: { label: "Affiliate",         amountCents: 0,      monthlyCents: 0,     currency: "ZAR" },
+  reseller:  { label: "Reseller",          amountCents: 199900, monthlyCents: 59900, currency: "ZAR" },
+  master:    { label: "Premium Reseller",  amountCents: 399900, monthlyCents: 89900, currency: "ZAR" },
 };
 
 // ─── Rank definitions ────────────────────────────────────────────────────────
@@ -661,8 +661,8 @@ resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Target tier must be higher than current tier" });
     }
 
-    // Differential pricing
-    const TIER_CENTS: Record<string, number> = { affiliate: 0, reseller: 99900, master: 499900 };
+    // Differential pricing (once-off setup fees)
+    const TIER_CENTS: Record<string, number> = { affiliate: 0, reseller: 199900, master: 399900 };
     const currentCents = TIER_CENTS[r.package_tier || "affiliate"] ?? 0;
     const targetCents  = TIER_CENTS[targetTier];
     const diffCents    = targetCents - currentCents;

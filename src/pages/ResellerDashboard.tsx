@@ -212,24 +212,24 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
       {
         tier: "reseller",
         label: "Reseller",
-        price: "R999",
-        priceNote: "Once-off setup",
-        priceCents: 99900,
+        price: "R1,999",
+        priceNote: "Once-off setup + R599/mo",
+        priceCents: 199900,
         recommended: true,
-        description: "Connect your own domain and brand. Sell Masakhe under your own identity.",
-        features: ["Everything in Affiliate", "Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+        description: "Your own domain set up for you. Sell under your brand with dedicated support.",
+        features: ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Access to Mktng Assets", "Dedicated Support"],
         btnLabel: "Become a Reseller",
       },
       {
         tier: "master",
-        label: "Master Reseller",
-        price: "R4,999",
-        priceNote: "Once-off setup",
-        priceCents: 499900,
+        label: "Premium Reseller",
+        price: "R3,999",
+        priceNote: "Once-off setup + R899/mo",
+        priceCents: 399900,
         recommended: false,
-        description: "Recruit your own resellers. Earn overrides on your entire sub-network.",
-        features: ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
-        btnLabel: "Go Master Reseller",
+        description: "Custom website, account manager and full 5-tier commission network.",
+        features: ["Everything in Reseller", "Custom website done for you", "Commissions paid on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads from Paid Campaign"],
+        btnLabel: "Go Premium Reseller",
       },
     ];
 
@@ -713,7 +713,7 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
                       const tierLabel: Record<string, string> = {
                         affiliate: "Affiliate",
                         reseller:  "Reseller",
-                        master:    "Master",
+                        master:    "Premium",
                       };
                       return (
                         <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50">

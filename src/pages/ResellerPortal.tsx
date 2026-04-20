@@ -25,9 +25,9 @@ const NAV_ITEMS = [
 ];
 
 const PACKAGE_LABELS: Record<string, { label: string; color: string; price: string }> = {
-  affiliate: { label: "Affiliate",       color: "text-gray-400",  price: "Free" },
-  reseller:  { label: "Reseller",        color: "text-green-400", price: "R999 once-off" },
-  master:    { label: "Master Reseller", color: "text-yellow-400",price: "R4,999 once-off" },
+  affiliate: { label: "Affiliate",         color: "text-gray-400",  price: "Free" },
+  reseller:  { label: "Reseller",          color: "text-green-400", price: "R1,999 setup + R599/mo" },
+  master:    { label: "Premium Reseller",  color: "text-yellow-400",price: "R3,999 setup + R899/mo" },
 };
 
 export default function ResellerPortal() {
@@ -228,27 +228,27 @@ const UPGRADE_OPTIONS: Record<string, Array<{
     {
       targetTier: "reseller",
       label: "Reseller",
-      payToday: "R999",
-      description: "Connect your own domain and brand. Sell Masakhe under your own identity.",
-      features: ["Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
+      payToday: "R1,999",
+      description: "Your own domain set up for you. Sell under your brand with dedicated support.",
+      features: ["Own domain done for you", "Commissions on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Dedicated Support"],
       highlight: true,
     },
     {
       targetTier: "master",
-      label: "Master Reseller",
-      payToday: "R4,999",
-      description: "Recruit your own resellers. Earn overrides on your entire sub-network.",
-      features: ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool"],
+      label: "Premium Reseller",
+      payToday: "R3,999",
+      description: "Custom website, account manager and full 5-tier commission network.",
+      features: ["Everything in Reseller", "Custom website done for you", "Commissions on 5 Tiers", "Binary Bonuses Unlocked", "Quarterly Profit Share"],
       highlight: false,
     },
   ],
   reseller: [
     {
       targetTier: "master",
-      label: "Master Reseller",
-      payToday: "R4,000",
-      description: "Unlock the full network. You pay the difference — R4,999 minus your R999 setup.",
-      features: ["Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
+      label: "Premium Reseller",
+      payToday: "R2,000",
+      description: "Upgrade to Premium. You pay the difference — R3,999 minus your R1,999 setup.",
+      features: ["Custom website done for you", "Commissions on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Leads from Paid Campaign"],
       highlight: true,
     },
   ],
@@ -257,8 +257,8 @@ const UPGRADE_OPTIONS: Record<string, Array<{
 
 const CURRENT_FEATURES: Record<string, string[]> = {
   affiliate: ["Unique referral link", "20% direct commissions", "Basic marketing materials", "Partner dashboard access"],
-  reseller:  ["Everything in Affiliate", "Custom domain setup", "Branded client portal", "Level 2-3 commissions", "Dedicated support line", "Client management portal"],
-  master:    ["Everything in Reseller", "Recruit & manage resellers", "All 5 commission levels", "Binary bonus unlocked", "Revenue share pool", "Co-branded marketing fund"],
+  reseller:  ["Everything in Affiliate", "Own domain done for you", "Commissions paid on 3 Tiers", "Dedicated WhatsApp line", "Business Portal", "Access to Mktng Assets", "Dedicated Support"],
+  master:    ["Everything in Reseller", "Custom website done for you", "Commissions paid on 5 Tiers", "Dedicated Account Manager", "Binary Bonuses Unlocked", "Quarterly Profit Share", "Branding Eligibility", "Leads from Paid Campaign"],
 };
 
 function BillingView({ packageTier, onUpgraded }: { packageTier: string; onUpgraded: (tier: string) => void }) {
@@ -530,16 +530,17 @@ function DomainView({ packageTier, onUpgrade }: { packageTier: string; onUpgrade
         <h2 className="text-xl font-bold text-white">Custom Domain — Reseller feature</h2>
         <p className="text-white/50 text-sm leading-relaxed">
           Connect your own domain (e.g. <span className="text-white/70 font-mono">portal.mybrand.co.za</span>) so your clients see your brand — not Masakhe's.
-          This feature is included in the Reseller and Master Reseller packages.
+          This feature is included in the Reseller and Premium Reseller packages.
         </p>
         <div className="grid grid-cols-2 gap-3 text-left">
           {[
-            { tier: "Reseller",        price: "R999",   features: ["Custom domain", "Custom branding", "Sub-domain config"] },
-            { tier: "Master Reseller", price: "R4,999", features: ["Everything in Reseller", "Full sub-reseller network", "All 5 commission levels"] },
+            { tier: "Reseller",          price: "R1,999", sub: "then R599/mo", features: ["Own domain done for you", "Custom branding", "3-Tier commissions"] },
+            { tier: "Premium Reseller",  price: "R3,999", sub: "then R899/mo", features: ["Everything in Reseller", "Custom website", "5-Tier commissions"] },
           ].map(pkg => (
             <div key={pkg.tier} className="rounded-xl bg-white/5 border border-white/10 p-4">
               <p className="text-white font-semibold text-sm">{pkg.tier}</p>
               <p className="text-green-400 font-bold text-lg">{pkg.price}</p>
+              <p className="text-white/35 text-[10px]">{pkg.sub}</p>
               <ul className="mt-2 space-y-1">
                 {pkg.features.map(f => (
                   <li key={f} className="flex items-center gap-1.5 text-xs text-white/50">
