@@ -1,10 +1,11 @@
 import { Helmet } from "react-helmet-async";
+import { useState } from "react";
 import { motion, type Easing } from "framer-motion";
 import {
   ArrowRight, Globe, Smartphone, BarChart3, FileText, Shield,
   Megaphone, Check, Headphones, Users, Zap, Lock, Wallet,
   Fingerprint, Tag, Building2, AlertTriangle, CreditCard,
-  PiggyBank, BadgeCheck, Award, MapPin
+  PiggyBank, BadgeCheck, Award, MapPin, Mail, MessageSquare, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -76,6 +77,30 @@ const pricingPlans = [
 ];
 
 export default function LandingPage() {
+  const [contactForm, setContactForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [contactStatus, setContactStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [contactError, setContactError] = useState("");
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactStatus("submitting");
+    setContactError("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submission failed.");
+      setContactStatus("success");
+      setContactForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      setContactError(err.message || "Something went wrong. Please try again.");
+      setContactStatus("error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans">
       <Helmet>
@@ -592,6 +617,116 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Contact Form ── */}
+      <section id="contact" className="py-24 bg-slate-50">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p custom={0} variants={fadeUp} className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-3">Get In Touch</motion.p>
+            <motion.h2 custom={1} variants={fadeUp} className="text-4xl font-bold font-heading text-slate-900 mb-4">We'd love to hear from you</motion.h2>
+            <motion.p custom={2} variants={fadeUp} className="text-slate-500 text-lg max-w-xl mx-auto">Have a question about our platform, pricing, or partnership opportunities? Send us a message and we'll get back to you shortly.</motion.p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-5 gap-10">
+            {/* Info cards */}
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="lg:col-span-2 flex flex-col gap-5 justify-center">
+              {[
+                { icon: Mail, title: "Email Us", desc: "admin@masakheportal.co.za", sub: "We reply within 1 business day" },
+                { icon: MessageSquare, title: "Live Chat Support", desc: "Available inside the platform", sub: "Sign in to start a chat" },
+                { icon: MapPin, title: "South Africa", desc: "Proudly South African", sub: "B-BBEE Level 1 Contributor" },
+              ].map(({ icon: Icon, title, desc, sub }) => (
+                <div key={title} className="flex items-start gap-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 flex-shrink-0">
+                    <Icon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm">{title}</p>
+                    <p className="text-slate-700 text-sm mt-0.5">{desc}</p>
+                    <p className="text-slate-400 text-xs mt-0.5">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Form */}
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+              {contactStatus === "success" ? (
+                <div className="flex flex-col items-center justify-center h-full py-10 text-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Message sent!</h3>
+                  <p className="text-slate-500 max-w-xs">Thank you for reaching out. We'll be in touch with you shortly.</p>
+                  <button onClick={() => setContactStatus("idle")} className="mt-2 text-sm text-blue-600 hover:underline font-medium">Send another message</button>
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="space-y-5">
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        value={contactForm.name}
+                        onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Your name"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
+                      <input
+                        type="email"
+                        required
+                        value={contactForm.email}
+                        onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                        placeholder="you@example.com"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      value={contactForm.subject}
+                      onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))}
+                      placeholder="How can we help?"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Message <span className="text-red-500">*</span></label>
+                    <textarea
+                      required
+                      rows={5}
+                      value={contactForm.message}
+                      onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))}
+                      placeholder="Tell us more about your enquiry..."
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                    />
+                  </div>
+                  {contactStatus === "error" && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">{contactError}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={contactStatus === "submitting"}
+                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"
+                  >
+                    {contactStatus === "submitting" ? (
+                      <span className="flex items-center gap-2"><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Sending…</span>
+                    ) : (
+                      <><Send className="h-4 w-4" /> Send Message</>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* ── B-BEE Banner ── */}
       <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-700 py-5">
         <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
@@ -633,7 +768,7 @@ export default function LandingPage() {
             {[
               { title: "Platform", links: [{ label: "Website Builder", href: "#" }, { label: "Social Media Hub", href: "#" }, { label: "Invoicing & Quotes", href: "#" }, { label: "Payroll", href: "#" }, { label: "Client Management", href: "#" }] },
               { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Pricing", href: "#pricing" }, { label: "Support", href: "#" }] },
-              { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#" }] },
+              { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#contact" }] },
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="text-xs font-bold text-white mb-4 uppercase tracking-widest">{col.title}</h4>
