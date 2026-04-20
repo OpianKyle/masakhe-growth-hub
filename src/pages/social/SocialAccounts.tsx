@@ -308,7 +308,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                 </div>
               </div>
 
-              {platform === "LINKEDIN" && !platformMockModes.LINKEDIN ? (
+              {platform === "LINKEDIN" ? (
                 <Card className="p-4 border-blue-200 bg-blue-50">
                   <div className="flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
@@ -398,7 +398,7 @@ export default function SocialAccounts({ workspaceId }: Props) {
                   <Facebook className="h-4 w-4 mr-2" />
                   {oauthLoading ? "Redirecting to Facebook..." : "Connect with Facebook"}
                 </Button>
-              ) : platform === "LINKEDIN" && !platformMockModes.LINKEDIN ? (
+              ) : platform === "LINKEDIN" ? (
                 <Button
                   onClick={handleLinkedInOAuth}
                   disabled={oauthLoading}
