@@ -156,6 +156,25 @@ const TEMPLATES = [
     ),
     badgeBg: "bg-purple-700",
   },
+  {
+    id: 7, name: "Plain",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect x="4" y="4" width="28" height="4" rx="0.5" fill="#262626" opacity="0.85"/>
+        <rect x="4" y="9" width="20" height="1.5" rx="0.5" fill="#aaa"/>
+        <rect x="4" y="11.5" width="14" height="1.5" rx="0.5" fill="#aaa"/>
+        <rect x="4" y="16" width="60" height="1.5" fill="#262626"/>
+        <rect x="4" y="19" width="28" height="9" rx="0.5" fill="#f0f0f0"/>
+        <rect x="4" y="19" width="28" height="2.5" fill="#262626"/>
+        <rect x="34" y="19" width="26" height="9" rx="0.5" fill="#f0f0f0"/>
+        <rect x="34" y="19" width="26" height="2.5" fill="#262626"/>
+        <rect x="4" y="30" width="56" height="4" rx="0.5" fill="#262626"/>
+        <rect x="4" y="36" width="36" height="1.5" rx="0.5" fill="#ddd"/>
+      </svg>
+    ),
+    badgeBg: "bg-neutral-700",
+  },
 ];
 
 export default function InvoicesPage() {

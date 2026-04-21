@@ -12,7 +12,7 @@ const BG_IMAGE = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?a
 
 const features = [
   { icon: Globe,       label: "AI Website Builder",    desc: "Go live in minutes" },
-  { icon: FileText,    label: "Invoicing & Quotes",    desc: "6 professional templates" },
+  { icon: FileText,    label: "Invoicing & Quotes",    desc: "7 professional templates" },
   { icon: Wallet,      label: "Financial Tracking",    desc: "Income & expense management" },
   { icon: Users,       label: "Client Management",     desc: "Full CRM built-in" },
   { icon: Smartphone,  label: "Social Media Hub",      desc: "Schedule & publish posts" },
