@@ -44,6 +44,36 @@ const white = rgb(1, 1, 1);
 const grey = rgb(0.4, 0.4, 0.4);
 const lightGrey = rgb(0.85, 0.85, 0.85);
 
+// Parse a #rrggbb hex string to pdf-lib RGB, returns null on invalid input
+function hexToRgb(hex: string): RGB | null {
+  const m = hex?.match(/^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/);
+  if (!m) return null;
+  return rgb(parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255);
+}
+
+// Return the user's custom invoice colour if set, otherwise the template default
+function brandColor(user: any, defaultColor: RGB): RGB {
+  if (user?.invoice_color) {
+    const c = hexToRgb(user.invoice_color);
+    if (c) return c;
+  }
+  return defaultColor;
+}
+
+// Lighten an RGB colour by blending toward white (factor 0–1)
+function lighten(c: RGB, factor: number): RGB {
+  return rgb(
+    c.red   + (1 - c.red)   * factor,
+    c.green + (1 - c.green) * factor,
+    c.blue  + (1 - c.blue)  * factor,
+  );
+}
+
+// Darken an RGB colour by multiplying channels (factor 0–1)
+function darken(c: RGB, factor: number): RGB {
+  return rgb(c.red * (1 - factor), c.green * (1 - factor), c.blue * (1 - factor));
+}
+
 const RIGHT = 545; // right margin for right-aligned text
 
 // Count optional business info lines so headers can size themselves
@@ -251,8 +281,8 @@ function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
 // ────────────────────────────────────────────────────────────────────────────
 function renderTemplate1(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
-  const green = rgb(0.08, 0.45, 0.27);
-  const mintBg = rgb(0.93, 0.98, 0.95);
+  const green = brandColor(user, rgb(0.08, 0.45, 0.27));
+  const mintBg = lighten(green, 0.75);
 
   // Thick green left accent stripe (full height)
   page.drawRectangle({ x: 0, y: 0, width: 8, height: 842, color: green });
@@ -314,8 +344,8 @@ function renderTemplate1(ctx: TemplateCtx) {
 // ────────────────────────────────────────────────────────────────────────────
 function renderTemplate2(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
-  const navy = rgb(0.09, 0.22, 0.45);
-  const navyLight = rgb(0.92, 0.94, 0.98);
+  const navy = brandColor(user, rgb(0.09, 0.22, 0.45));
+  const navyLight = lighten(navy, 0.80);
 
   let y = 800;
   if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 18; }
@@ -323,18 +353,19 @@ function renderTemplate2(ctx: TemplateCtx) {
   // Navy invoice info box — top right, overlapping biz info area
   const boxY = 800;
   const boxH = 90;
+  const navyHighlight = lighten(navy, 0.55);
   page.drawRectangle({ x: 360, y: boxY - boxH, width: 185, height: boxH, color: navy });
   const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
   page.drawText(docTitle, { x: 380, y: boxY - 20, size: 13, font: fontBold, color: white });
-  page.drawText(invoice.invoice_number, { x: 380, y: boxY - 38, size: 10, font: fontBold, color: rgb(0.75, 0.87, 1) });
-  page.drawText("Dated:", { x: 380, y: boxY - 52, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+  page.drawText(invoice.invoice_number, { x: 380, y: boxY - 38, size: 10, font: fontBold, color: navyHighlight });
+  page.drawText("Dated:", { x: 380, y: boxY - 52, size: 8, font, color: navyHighlight });
   page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 420, y: boxY - 52, size: 8, font: fontBold, color: white });
   if (invoice.reference) {
-    page.drawText("Ref:", { x: 380, y: boxY - 66, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+    page.drawText("Ref:", { x: 380, y: boxY - 66, size: 8, font, color: navyHighlight });
     page.drawText(invoice.reference, { x: 404, y: boxY - 66, size: 8, font: fontBold, color: white });
   }
   if (isQuote) {
-    page.drawText("Valid:", { x: 380, y: boxY - 80, size: 8, font, color: rgb(0.7, 0.8, 0.95) });
+    page.drawText("Valid:", { x: 380, y: boxY - 80, size: 8, font, color: navyHighlight });
     page.drawText(invoice.payment_terms || "30 days", { x: 410, y: boxY - 80, size: 8, font: fontBold, color: white });
   }
 
@@ -376,8 +407,8 @@ function renderTemplate2(ctx: TemplateCtx) {
 function renderTemplate3(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
   const dark = rgb(0.12, 0.12, 0.12);
-  const orange = rgb(0.85, 0.40, 0.05);
-  const warmTint = rgb(1.0, 0.96, 0.90);
+  const orange = brandColor(user, rgb(0.85, 0.40, 0.05));
+  const warmTint = lighten(orange, 0.88);
   const dimGrey = rgb(0.75, 0.75, 0.75);
 
   // Dynamic header height so logo + biz info never overflow
@@ -412,9 +443,9 @@ function renderTemplate3(ctx: TemplateCtx) {
 // ────────────────────────────────────────────────────────────────────────────
 function renderTemplate4(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
-  const blue = rgb(0.12, 0.35, 0.72);
-  const skyBlue = rgb(0.91, 0.95, 1.0);
-  const midBlue = rgb(0.60, 0.75, 0.95);
+  const blue = brandColor(user, rgb(0.12, 0.35, 0.72));
+  const skyBlue = lighten(blue, 0.82);
+  const midBlue = lighten(blue, 0.45);
 
   // Dynamic header height: logo and biz text are placed SIDE BY SIDE so nothing overflows
   const headerH = Math.max(calcHeaderH(user, logo), 100);
@@ -476,8 +507,8 @@ function renderTemplate4(ctx: TemplateCtx) {
 // ────────────────────────────────────────────────────────────────────────────
 function renderTemplate5(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
-  const burg = rgb(0.52, 0.07, 0.07);
-  const creamBg = rgb(0.99, 0.96, 0.96);
+  const burg = brandColor(user, rgb(0.52, 0.07, 0.07));
+  const creamBg = lighten(burg, 0.92);
 
   // Top decorative bars
   page.drawRectangle({ x: 0, y: 836, width: W, height: 6, color: burg });
@@ -581,11 +612,11 @@ function renderTemplate5(ctx: TemplateCtx) {
 // ────────────────────────────────────────────────────────────────────────────
 function renderTemplate6(ctx: TemplateCtx) {
   const { page, font, fontBold, logo, invoice, user, isQuote } = ctx;
-  const purple = rgb(0.42, 0.13, 0.69);
-  const purpleMid = rgb(0.50, 0.22, 0.76);
-  const purpleDark = rgb(0.20, 0.02, 0.38);
-  const lavender = rgb(0.95, 0.89, 1.0);
-  const midPurple = rgb(0.72, 0.54, 0.92);
+  const purple = brandColor(user, rgb(0.42, 0.13, 0.69));
+  const purpleMid = lighten(purple, 0.15);
+  const purpleDark = darken(purple, 0.55);
+  const lavender = lighten(purple, 0.82);
+  const midPurple = lighten(purple, 0.45);
 
   // Dynamic header height so logo + biz info are side-by-side and never overflow
   const headerH = Math.max(calcHeaderH(user, logo), 115);
@@ -900,7 +931,8 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     const user = await queryOne(
       `SELECT u.full_name, u.email, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number,
-              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code, bp.registration_number
+              bp.invoice_color, bp.bank_name, bp.account_name, bp.account_type, bp.account_number,
+              bp.branch_code, bp.registration_number
        FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?`,
       [userId]
     );
@@ -980,7 +1012,8 @@ invoiceRouter.post("/:id/email", async (req, res) => {
 
     const user = await queryOne(
       `SELECT u.full_name, u.email, u.role, bp.business_name, bp.phone, bp.physical_address, bp.logo_url, bp.vat_number,
-              bp.bank_name, bp.account_name, bp.account_type, bp.account_number, bp.branch_code, bp.registration_number
+              bp.invoice_color, bp.bank_name, bp.account_name, bp.account_type, bp.account_number,
+              bp.branch_code, bp.registration_number
        FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?`,
       [userId]
     );

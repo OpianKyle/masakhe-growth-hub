@@ -349,6 +349,7 @@ export async function runMigrations() {
     } catch (_) {}
     await addColumnIfMissing("business_profiles", "tax_number", "VARCHAR(50) NULL");
     await addColumnIfMissing("business_profiles", "vat_number", "VARCHAR(50) NULL");
+    await addColumnIfMissing("business_profiles", "invoice_color", "VARCHAR(20) NULL");
     await addColumnIfMissing("billing_subscriptions", "adumo_subscription_id", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_invoices", "plan_id", "INT NULL");
     await addColumnIfMissing("billing_payment_methods", "puid", "VARCHAR(255) NULL");

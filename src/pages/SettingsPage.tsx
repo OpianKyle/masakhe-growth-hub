@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle, Shield, FileText, X } from "lucide-react";
+import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle, Shield, FileText, X, Palette, FileImage } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function SettingsPage() {

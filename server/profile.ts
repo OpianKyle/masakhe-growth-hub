@@ -37,13 +37,16 @@ profileRouter.put("/", async (req, res) => {
     const { fullName, businessName, tradingName, businessStatus, businessType, industrySector,
             yearsOperating, employeeCount, phone, whatsapp, email, physicalAddress,
             bankName, accountName, accountType, accountNumber, branchCode, saId, cipcNumber,
-            registrationNumber } = req.body;
+            registrationNumber, vatNumber, invoiceColor } = req.body;
 
     const now = new Date().toISOString();
 
     if (fullName) {
       await execute("UPDATE users SET full_name = ?, updated_at = ? WHERE id = ?", [fullName, now, userId]);
     }
+
+    // Validate invoiceColor — only accept valid hex colours
+    const safeColor = invoiceColor && /^#[0-9A-Fa-f]{6}$/.test(invoiceColor) ? invoiceColor : null;
 
     const existing = await queryOne("SELECT id FROM business_profiles WHERE user_id = ?", [userId]);
 
@@ -54,14 +57,16 @@ profileRouter.put("/", async (req, res) => {
           industry_sector = ?, years_operating = ?, employee_count = ?,
           phone = ?, whatsapp = ?, email = ?, physical_address = ?,
           bank_name = ?, account_name = ?, account_type = ?, account_number = ?, branch_code = ?,
-          sa_id = ?, cipc_number = ?, registration_number = ?, updated_at = ?
+          sa_id = ?, cipc_number = ?, registration_number = ?,
+          vat_number = ?, invoice_color = ?, updated_at = ?
          WHERE user_id = ?`,
         [
           businessName || null, tradingName || null, businessStatus || null, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
           bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
-          saId || null, cipcNumber || null, registrationNumber || null, now, userId
+          saId || null, cipcNumber || null, registrationNumber || null,
+          vatNumber || null, safeColor || null, now, userId
         ]
       );
     } else {
@@ -70,15 +75,16 @@ profileRouter.put("/", async (req, res) => {
         `INSERT INTO business_profiles (id, user_id, business_name, trading_name, business_status, business_type,
           industry_sector, years_operating, employee_count, phone, whatsapp, email, physical_address,
           bank_name, account_name, account_type, account_number, branch_code, sa_id, cipc_number,
-          registration_number, popia_consent, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          registration_number, vat_number, invoice_color, popia_consent, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
         [
           randomUUID(), userId,
           businessName || null, tradingName || null, businessStatus || null, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
           bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
-          saId || null, cipcNumber || null, registrationNumber || null, now, now
+          saId || null, cipcNumber || null, registrationNumber || null,
+          vatNumber || null, safeColor || null, now, now
         ]
       );
     }
