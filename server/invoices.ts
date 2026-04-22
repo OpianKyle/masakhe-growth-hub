@@ -806,6 +806,12 @@ interface CustomConfig {
   totalsAlign?: "right" | "left";
   notesPosition?: "after-items" | "before-totals" | "after-bank";
   bankPosition?: "footer" | "after-totals";
+  /* font colours */
+  headingColor?: string;
+  bodyTextColor?: string;
+  mutedTextColor?: string;
+  tableHeaderTextColor?: string;
+  totalsTextColor?: string;
   footerText?: string;
   showFields?: {
     logo?: boolean;
@@ -857,6 +863,13 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   const totalsAlign = cfg.totalsAlign || "right";
   const notesPos = cfg.notesPosition || "after-items";
   const bankPos = cfg.bankPosition || "footer";
+
+  // Font colours (with sensible fallbacks to existing palette)
+  const cHeading = hexToRgb(cfg.headingColor || "#111111") || rgb(0.07, 0.07, 0.07);
+  const cBody = hexToRgb(cfg.bodyTextColor || "#333333") || rgb(0.20, 0.20, 0.20);
+  const cMuted = hexToRgb(cfg.mutedTextColor || "#666666") || rgb(0.40, 0.40, 0.40);
+  const cTableHead = hexToRgb(cfg.tableHeaderTextColor || "#ffffff") || white;
+  const cTotals = hexToRgb(cfg.totalsTextColor || "#ffffff") || white;
 
   const { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
   const pageH = 842;
@@ -1038,23 +1051,23 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   page.drawRectangle({ x: billToX, y: y - boxH, width: colW, height: boxH, color: boxBg });
   const btLabel = (lbl.billToLabel || "Bill To").toUpperCase();
   drawText(btLabel, billToX + 8, y - 12, 7, fontBold, accent);
-  drawText(invoice.customer_name || "", billToX + 8, y - 24, 9.5, fontBold, black, colW - 16);
+  drawText(invoice.customer_name || "", billToX + 8, y - 24, 9.5, fontBold, cHeading, colW - 16);
   let btY = y - 36;
-  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, grey, colW - 16); btY -= 11; }
-  if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, grey); btY -= 11; }
-  if (invoice.customer_email) drawText(invoice.customer_email, billToX + 8, btY, 8, font, grey, colW - 16);
+  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
+  if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, cMuted); btY -= 11; }
+  if (invoice.customer_email) drawText(invoice.customer_email, billToX + 8, btY, 8, font, cMuted, colW - 16);
 
   // Details
   page.drawRectangle({ x: detailsX, y: y - boxH, width: colW, height: boxH, color: boxBg });
   let detY = y - 14;
   if (showRef && invoice.reference) {
-    drawText("Reference:", detailsX + 8, detY, 8, fontBold, rgb(0.2, 0.2, 0.2));
-    drawText(invoice.reference, detailsX + 8 + font.widthOfTextAtSize("Reference: ", 8) + 4, detY, 8, font, grey, colW - 90);
+    drawText("Reference:", detailsX + 8, detY, 8, fontBold, cBody);
+    drawText(invoice.reference, detailsX + 8 + font.widthOfTextAtSize("Reference: ", 8) + 4, detY, 8, font, cMuted, colW - 90);
     detY -= 12;
   }
   if (showTerms && invoice.payment_terms) {
-    drawText("Terms:", detailsX + 8, detY, 8, fontBold, rgb(0.2, 0.2, 0.2));
-    drawText(invoice.payment_terms, detailsX + 8 + font.widthOfTextAtSize("Terms: ", 8) + 4, detY, 8, font, grey, colW - 70);
+    drawText("Terms:", detailsX + 8, detY, 8, fontBold, cBody);
+    drawText(invoice.payment_terms, detailsX + 8 + font.widthOfTextAtSize("Terms: ", 8) + 4, detY, 8, font, cMuted, colW - 70);
     detY -= 12;
   }
   y -= boxH + 16;
@@ -1069,9 +1082,9 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   const headerRowH = 20;
   page.drawRectangle({ x: L, y: y - headerRowH, width: W2, height: headerRowH, color: accent });
   for (const col of cols) {
-    if (col.align === "right") rText(col.label, col.x + col.w - 6, y - headerRowH + 6, 8.5, fontBold, white);
-    else if (col.align === "center") cText(col.label, col.x + col.w / 2, y - headerRowH + 6, 8.5, fontBold, white);
-    else drawText(col.label, col.x, y - headerRowH + 6, 8.5, fontBold, white);
+    if (col.align === "right") rText(col.label, col.x + col.w - 6, y - headerRowH + 6, 8.5, fontBold, cTableHead);
+    else if (col.align === "center") cText(col.label, col.x + col.w / 2, y - headerRowH + 6, 8.5, fontBold, cTableHead);
+    else drawText(col.label, col.x, y - headerRowH + 6, 8.5, fontBold, cTableHead);
   }
   y -= headerRowH;
 
@@ -1083,10 +1096,10 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     if (isStriped && i % 2 === 0) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: rgb(0.975, 0.98, 0.975) });
     if (isBordered) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, borderColor: lightGrey, borderWidth: 0.5 });
     const amt = (item.qty || 1) * (item.unitPrice || 0);
-    drawText(item.name || "", L + 6, y - rowH + 6, 9, font, black, W2 * 0.48);
-    cText(String(item.qty || 1), L + W2 * 0.50 + W2 * 0.05, y - rowH + 6, 9, font, grey);
-    rText(`${sym}${(item.unitPrice || 0).toFixed(2)}`, L + W2 * 0.80 - 6, y - rowH + 6, 9, font, grey);
-    rText(`${sym}${amt.toFixed(2)}`, R2 - 6, y - rowH + 6, 9, fontBold, black);
+    drawText(item.name || "", L + 6, y - rowH + 6, 9, font, cBody, W2 * 0.48);
+    cText(String(item.qty || 1), L + W2 * 0.50 + W2 * 0.05, y - rowH + 6, 9, font, cMuted);
+    rText(`${sym}${(item.unitPrice || 0).toFixed(2)}`, L + W2 * 0.80 - 6, y - rowH + 6, 9, font, cMuted);
+    rText(`${sym}${amt.toFixed(2)}`, R2 - 6, y - rowH + 6, 9, fontBold, cHeading);
     y -= rowH;
   }
 
@@ -1100,22 +1113,22 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     const totalsX = totalsAlign === "left" ? L : R2 - totalsW;
     let ty = curY;
 
-    drawText(lbl.subtotalLabel || "Subtotal", totalsX + 10, ty - 10, 9, font, grey);
-    rText(`${sym}${(subtotalCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, grey);
+    drawText(lbl.subtotalLabel || "Subtotal", totalsX + 10, ty - 10, 9, font, cMuted);
+    rText(`${sym}${(subtotalCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, cMuted);
     ty -= 16;
 
     if (vatEnabled && showVat) {
       const vatLbl = (lbl.vatLabel || `VAT (${vatRate}%)`).replace("15%", `${vatRate}%`);
-      drawText(vatLbl, totalsX + 10, ty - 10, 9, font, grey);
-      rText(`${sym}${(vatCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, grey);
+      drawText(vatLbl, totalsX + 10, ty - 10, 9, font, cMuted);
+      rText(`${sym}${(vatCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, cMuted);
       ty -= 16;
     }
 
     const totalH = 26;
     page.drawRectangle({ x: totalsX, y: ty - totalH, width: totalsW, height: totalH, color: accent });
     const totLbl = lbl.totalLabel || (isQuote ? "TOTAL ESTIMATE" : "TOTAL DUE");
-    drawText(totLbl, totalsX + 10, ty - totalH + 9, 10, fontBold, white);
-    rText(`${sym}${(invoice.total_cents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - totalH + 9, 12, fontBold, white);
+    drawText(totLbl, totalsX + 10, ty - totalH + 9, 10, fontBold, cTotals);
+    rText(`${sym}${(invoice.total_cents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - totalH + 9, 12, fontBold, cTotals);
     return ty - totalH - 14;
   };
 
@@ -1124,7 +1137,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     const notesLbl = (lbl.notesLabel || "Notes").toUpperCase();
     page.drawRectangle({ x: L, y: curY - 24, width: 3, height: 26, color: accent });
     drawText(notesLbl, L + 10, curY - 8, 8, fontBold, accent);
-    drawText(invoice.notes, L + 10, curY - 22, 8.5, font, grey, W2 - 16);
+    drawText(invoice.notes, L + 10, curY - 22, 8.5, font, cMuted, W2 - 16);
     return curY - 36;
   };
 
@@ -1144,7 +1157,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     for (let i = 0; i < bCols.length; i++) {
       const bx = L + i * bColW;
       drawText(bCols[i].label, bx, by, 7, fontBold, accent);
-      drawText(bCols[i].value, bx, by - 11, 8.5, font, black, bColW - 6);
+      drawText(bCols[i].value, bx, by - 11, 8.5, font, cBody, bColW - 6);
     }
     return by - 24;
   };
@@ -1160,7 +1173,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
       dx += 8;
     }
     fy -= 12;
-    cText(cfg.footerText, W / 2, fy - 8, 8.5, font, grey);
+    cText(cfg.footerText, W / 2, fy - 8, 8.5, font, cMuted);
     return fy - 16;
   };
 

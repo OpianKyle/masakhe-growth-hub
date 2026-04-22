@@ -31,6 +31,12 @@ export interface TemplateConfig {
   totalsAlign: "right" | "left";
   notesPosition: "after-items" | "before-totals" | "after-bank";
   bankPosition: "footer" | "after-totals";
+  /* font colours */
+  headingColor: string;
+  bodyTextColor: string;
+  mutedTextColor: string;
+  tableHeaderTextColor: string;
+  totalsTextColor: string;
   /* document settings */
   footerText: string;
   showFields: {
@@ -79,6 +85,11 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   totalsAlign: "right",
   notesPosition: "after-items",
   bankPosition: "footer",
+  headingColor: "#111111",
+  bodyTextColor: "#333333",
+  mutedTextColor: "#666666",
+  tableHeaderTextColor: "#ffffff",
+  totalsTextColor: "#ffffff",
   footerText: "Thank you for your business!",
   showFields: {
     logo: true,
@@ -294,7 +305,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
   };
 
   return (
-    <div style={{ width: "595px", background: "#fff", fontFamily: "Arial, sans-serif", fontSize: "9px", color: "#1a1a1a", boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
+    <div style={{ width: "595px", background: "#fff", fontFamily: "Arial, sans-serif", fontSize: "9px", color: config.bodyTextColor, boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
       {/* Top accent bar (only for "bar" divider and non-white headers) */}
       {config.headerBg === "white" && config.headerDivider === "bar" && (
         <div style={{ height: "5px", background: accent }} />
@@ -359,24 +370,24 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
         const billToBox = (
           <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
             <div style={{ fontWeight: "bold", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "5px" }}>{config.labels.billToLabel}</div>
-            <div style={{ fontWeight: "600", fontSize: "10px", color: "#111" }}>ABC Corporation (Pty) Ltd</div>
-            {config.showFields.customerAddress && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>456 Client Ave, Johannesburg, 2001</div>}
-            {config.showFields.customerPhone && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>+27 82 987 6543</div>}
-            <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>billing@abccorp.co.za</div>
+            <div style={{ fontWeight: "600", fontSize: "10px", color: config.headingColor }}>ABC Corporation (Pty) Ltd</div>
+            {config.showFields.customerAddress && <div style={{ color: config.mutedTextColor, marginTop: "2px", fontSize: "8px" }}>456 Client Ave, Johannesburg, 2001</div>}
+            {config.showFields.customerPhone && <div style={{ color: config.mutedTextColor, marginTop: "2px", fontSize: "8px" }}>+27 82 987 6543</div>}
+            <div style={{ color: config.mutedTextColor, marginTop: "2px", fontSize: "8px" }}>billing@abccorp.co.za</div>
           </div>
         );
         const detailsBox = (
           <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
             {config.showFields.reference && (
               <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-                <span style={{ fontWeight: "600", color: "#333" }}>Reference: </span>
-                <span style={{ color: "#555" }}>PO-2024-123</span>
+                <span style={{ fontWeight: "600", color: config.bodyTextColor }}>Reference: </span>
+                <span style={{ color: config.mutedTextColor }}>PO-2024-123</span>
               </div>
             )}
             {config.showFields.paymentTerms && (
               <div style={{ fontSize: "8px" }}>
-                <span style={{ fontWeight: "600", color: "#333" }}>Terms: </span>
-                <span style={{ color: "#555" }}>Due within 7 days</span>
+                <span style={{ fontWeight: "600", color: config.bodyTextColor }}>Terms: </span>
+                <span style={{ color: config.mutedTextColor }}>Due within 7 days</span>
               </div>
             )}
           </div>
@@ -392,7 +403,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
       <div style={{ padding: "0 32px 12px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "8.5px" }}>
           <thead>
-            <tr style={{ background: accent, color: "#fff" }}>
+            <tr style={{ background: accent, color: config.tableHeaderTextColor }}>
               <th style={{ padding: "7px 10px", textAlign: "left", fontWeight: "700", letterSpacing: "0.4px" }}>{config.labels.itemCol}</th>
               <th style={{ padding: "7px 8px", textAlign: "center", width: "40px", fontWeight: "700" }}>{config.labels.qtyCol}</th>
               <th style={{ padding: "7px 8px", textAlign: "right", width: "75px", fontWeight: "700" }}>{config.labels.unitPriceCol}</th>
@@ -402,10 +413,10 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
           <tbody>
             {items.map((item, i) => (
               <tr key={i} style={{ background: rowBg(i) }}>
-                <td style={{ padding: "7px 10px", borderBottom: cellBorder, color: "#111" }}>{item.name}</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", borderBottom: cellBorder, color: "#555" }}>{item.qty}</td>
-                <td style={{ padding: "7px 8px", textAlign: "right", borderBottom: cellBorder, color: "#555" }}>{sym}{item.unitPrice.toFixed(2)}</td>
-                <td style={{ padding: "7px 10px", textAlign: "right", borderBottom: cellBorder, fontWeight: "600", color: "#111" }}>{sym}{(item.qty * item.unitPrice).toFixed(2)}</td>
+                <td style={{ padding: "7px 10px", borderBottom: cellBorder, color: config.bodyTextColor }}>{item.name}</td>
+                <td style={{ padding: "7px 8px", textAlign: "center", borderBottom: cellBorder, color: config.mutedTextColor }}>{item.qty}</td>
+                <td style={{ padding: "7px 8px", textAlign: "right", borderBottom: cellBorder, color: config.mutedTextColor }}>{sym}{item.unitPrice.toFixed(2)}</td>
+                <td style={{ padding: "7px 10px", textAlign: "right", borderBottom: cellBorder, fontWeight: "600", color: config.headingColor }}>{sym}{(item.qty * item.unitPrice).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -413,15 +424,15 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
 
         <div style={{ display: "flex", justifyContent: config.totalsAlign === "left" ? "flex-start" : "flex-end", marginTop: "8px" }}>
           <div style={{ width: "200px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px", color: "#555" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px", color: config.mutedTextColor }}>
               <span>{config.labels.subtotalLabel}</span><span>{sym}{subtotal.toFixed(2)}</span>
             </div>
             {config.showFields.vat && (
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px", color: "#555" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px", color: config.mutedTextColor }}>
                 <span>{config.labels.vatLabel.replace("15%", `${config.vatRate}%`)}</span><span>{sym}{vatAmt.toFixed(2)}</span>
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: accent, color: "#fff", borderRadius: "4px", marginTop: "4px", fontWeight: "bold", fontSize: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: accent, color: config.totalsTextColor, borderRadius: "4px", marginTop: "4px", fontWeight: "bold", fontSize: "10px" }}>
               <span>{config.labels.totalLabel}</span><span>{sym}{total.toFixed(2)}</span>
             </div>
           </div>
@@ -433,7 +444,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
           <div key="notes" style={{ padding: "0 32px 12px" }}>
             <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: "10px" }}>
               <div style={{ fontWeight: "700", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "4px" }}>{config.labels.notesLabel}</div>
-              <div style={{ color: "#555", lineHeight: "1.6" }}>Please reference your invoice number when making payment. Direct EFT payments are preferred.</div>
+              <div style={{ color: config.mutedTextColor, lineHeight: "1.6" }}>Please reference your invoice number when making payment. Direct EFT payments are preferred.</div>
             </div>
           </div>
         ) : null;
@@ -443,7 +454,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
               {[{ label: "Bank", value: bankName }, { label: "Account Name", value: accountName }, { label: "Account No.", value: accountNum }, { label: "Branch Code", value: branchCode }].map(({ label, value }) => (
                 <div key={label}>
                   <div style={{ fontSize: "7px", textTransform: "uppercase", color: accent, fontWeight: "700", marginBottom: "1px" }}>{label}</div>
-                  <div style={{ color: "#333", fontSize: "8px" }}>{value}</div>
+                  <div style={{ color: config.bodyTextColor, fontSize: "8px" }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -729,6 +740,38 @@ export default function InvoiceTemplateDesigner({ onSave }: Props) {
             <Input value={config.headerTagline} onChange={e => update({ headerTagline: e.target.value })}
               className="h-9 text-xs" placeholder="e.g. Professional services since 2010" />
             <p className="text-[10px] text-muted-foreground mt-1">Appears below your business name in the header</p>
+          </div>
+        </Section>
+
+        {/* ── Font Colours ───────────────────────────────────── */}
+        <Section title="Font Colours" defaultOpen={false}>
+          <p className="text-[11px] text-muted-foreground mb-2">Choose colours for headings, body text, and key elements.</p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { key: "headingColor", label: "Headings", hint: "Customer name, item totals" },
+              { key: "bodyTextColor", label: "Body text", hint: "Standard content & item descriptions" },
+              { key: "mutedTextColor", label: "Muted / secondary", hint: "Addresses, subtotal, notes" },
+              { key: "tableHeaderTextColor", label: "Table header text", hint: "Text on the coloured table row" },
+              { key: "totalsTextColor", label: "Total bar text", hint: "Text inside the total amount bar" },
+            ].map(({ key, label, hint }) => (
+              <div key={key}>
+                <Label className="text-xs mb-1.5 block">{label}</Label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={(config as any)[key]}
+                    onChange={e => update({ [key]: e.target.value } as any)}
+                    className="h-9 w-12 rounded cursor-pointer border"
+                  />
+                  <Input
+                    value={(config as any)[key]}
+                    onChange={e => update({ [key]: e.target.value } as any)}
+                    className="h-9 text-xs flex-1 font-mono"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{hint}</p>
+              </div>
+            ))}
           </div>
         </Section>
 
