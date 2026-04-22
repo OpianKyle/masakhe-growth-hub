@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette } from "lucide-react";
-import InvoiceTemplateDesigner, { loadTemplateConfig } from "@/components/InvoiceTemplateDesigner";
+import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
   name: string;
@@ -207,6 +207,13 @@ export default function InvoicesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [docType, setDocType] = useState<"invoice" | "quote">("invoice");
   const [selectedTemplate, setSelectedTemplate] = useState(1);
+  const [customTemplateName, setCustomTemplateName] = useState<string>(() => getSavedTemplateName() || "Custom");
+  const [hasCustomTemplate, setHasCustomTemplate] = useState<boolean>(() => hasSavedTemplateConfig());
+
+  const refreshCustomTemplateMeta = () => {
+    setCustomTemplateName(getSavedTemplateName() || "Custom");
+    setHasCustomTemplate(hasSavedTemplateConfig());
+  };
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -478,7 +485,7 @@ export default function InvoicesPage() {
       {/* Template Designer Tab */}
       {activeTab === "designer" && (
         <Card className="p-6">
-          <InvoiceTemplateDesigner />
+          <InvoiceTemplateDesigner onSave={refreshCustomTemplateMeta} />
         </Card>
       )}
 
@@ -499,20 +506,39 @@ export default function InvoicesPage() {
             <div className="mb-6">
               <Label className="text-xs mb-2 block">Choose Template</Label>
               <div className="flex gap-3 flex-wrap">
-                {TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    onClick={() => setSelectedTemplate(tpl.id)}
-                    className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${
-                      selectedTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <div className="w-16 h-10 rounded overflow-hidden border border-gray-100 shadow-sm">
-                      {tpl.preview}
-                    </div>
-                    <span className="text-xs font-medium">{tpl.name}</span>
-                  </button>
-                ))}
+                {TEMPLATES.map((tpl) => {
+                  const isCustom = tpl.id === 8;
+                  const displayName = isCustom ? customTemplateName : tpl.name;
+                  const handleClick = () => {
+                    if (isCustom && !hasCustomTemplate) {
+                      toast.info("Design your custom template first");
+                      setActiveTab("designer");
+                      setShowCreate(false);
+                      return;
+                    }
+                    setSelectedTemplate(tpl.id);
+                  };
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={handleClick}
+                      title={isCustom && !hasCustomTemplate ? "Click to design your custom template" : displayName}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${
+                        selectedTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"
+                      } ${isCustom && !hasCustomTemplate ? "opacity-60" : ""}`}
+                    >
+                      <div className="w-16 h-10 rounded overflow-hidden border border-gray-100 shadow-sm relative">
+                        {tpl.preview}
+                        {isCustom && !hasCustomTemplate && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                            <Palette className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium max-w-[80px] truncate">{displayName}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

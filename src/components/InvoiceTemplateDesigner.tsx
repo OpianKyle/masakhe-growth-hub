@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Save, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 
 export interface TemplateConfig {
+  templateName: string;
   accentColor: string;
   documentTitle: string;
   currencySymbol: string;
@@ -52,6 +53,7 @@ export interface TemplateConfig {
 }
 
 export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
+  templateName: "My Custom Template",
   accentColor: "#156C41",
   documentTitle: "TAX INVOICE",
   currencySymbol: "R",
@@ -108,6 +110,19 @@ export function loadTemplateConfig(): TemplateConfig {
 
 function saveTemplateConfig(config: TemplateConfig) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch {}
+}
+
+export function hasSavedTemplateConfig(): boolean {
+  try { return localStorage.getItem(STORAGE_KEY) !== null; } catch { return false; }
+}
+
+export function getSavedTemplateName(): string | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed.templateName as string) || null;
+  } catch { return null; }
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -566,6 +581,18 @@ export default function InvoiceTemplateDesigner({ onSave }: Props) {
               <Save className="h-3 w-3 mr-1" /> Save
             </Button>
           </div>
+        </div>
+
+        <div className="border rounded-lg p-3 bg-primary/5 border-primary/20">
+          <Label className="text-xs mb-1.5 block font-semibold">Template Name</Label>
+          <Input
+            value={config.templateName}
+            onChange={e => update({ templateName: e.target.value })}
+            className="h-9 text-sm"
+            placeholder="e.g. My Brand Invoice"
+            maxLength={40}
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">This name shows on the template picker so you can tell it apart from the rest.</p>
         </div>
 
         {/* ── Appearance ─────────────────────────────────────── */}
