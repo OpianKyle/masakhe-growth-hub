@@ -790,6 +790,17 @@ interface CustomConfig {
   vatRate?: number;
   headerLayout?: "left" | "centered";
   tableStyle?: "striped" | "bordered" | "minimal";
+  /* header style */
+  headerBg?: "white" | "accent" | "dark" | "gradient" | "custom";
+  headerCustomBg?: string;
+  headerTitleStyle?: "large" | "badge" | "outline" | "minimal";
+  headerDivider?: "bar" | "line" | "double" | "shadow" | "none";
+  headerLogoSize?: "sm" | "md" | "lg";
+  headerLogoShape?: "square" | "rounded" | "circle";
+  headerPadding?: "compact" | "normal" | "spacious";
+  headerTagline?: string;
+  headerShowAddress?: boolean;
+  headerShowPhone?: boolean;
   footerText?: string;
   showFields?: {
     logo?: boolean;
