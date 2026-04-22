@@ -801,6 +801,11 @@ interface CustomConfig {
   headerTagline?: string;
   headerShowAddress?: boolean;
   headerShowPhone?: boolean;
+  /* layout positions */
+  billToPosition?: "left" | "right";
+  totalsAlign?: "right" | "left";
+  notesPosition?: "after-items" | "before-totals" | "after-bank";
+  bankPosition?: "footer" | "after-totals";
   footerText?: string;
   showFields?: {
     logo?: boolean;
@@ -846,17 +851,41 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   const showNotes = sf.notes !== false;
   const showBank = sf.bankDetails !== false;
 
+  const headerShowAddress = cfg.headerShowAddress !== false;
+  const headerShowPhone = cfg.headerShowPhone !== false;
+  const billToPos = cfg.billToPosition || "left";
+  const totalsAlign = cfg.totalsAlign || "right";
+  const notesPos = cfg.notesPosition || "after-items";
+  const bankPos = cfg.bankPosition || "footer";
+
   const { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
   const pageH = 842;
   const L = 40, R2 = 555;
   const W2 = R2 - L;
+
+  // ── Resolve header background colour ────────────────────────
+  let headerBgColor: RGB | null = null;
+  if (cfg.headerBg === "accent") headerBgColor = accent;
+  else if (cfg.headerBg === "dark") headerBgColor = rgb(0.10, 0.13, 0.25);
+  else if (cfg.headerBg === "gradient") headerBgColor = darken(accent, 0.15);
+  else if (cfg.headerBg === "custom") headerBgColor = hexToRgb(cfg.headerCustomBg || "#2d3748") || rgb(0.18, 0.21, 0.28);
+  const isColoredHeader = !!headerBgColor;
+  const hMain = isColoredHeader ? white : black;
+  const hSub = isColoredHeader ? rgb(0.85, 0.87, 0.90) : grey;
+  const titleColor = isColoredHeader ? white : accent;
+
+  // ── Logo sizing ────────────────────────────────────────────
+  const logoSizeMap = { sm: 28, md: 42, lg: 60 } as const;
+  const logoBox = logoSizeMap[(cfg.headerLogoSize || "md")];
+  const padMap = { compact: { top: 18, side: 32, bottom: 14 }, normal: { top: 26, side: 32, bottom: 22 }, spacious: { top: 36, side: 40, bottom: 32 } } as const;
+  const headerPad = padMap[(cfg.headerPadding || "normal")];
 
   const drawText = (text: string, x: number, y: number, size: number, f: PDFFont, color: RGB, maxW?: number) => {
     if (!text) return;
     let t = text;
     if (maxW) {
       while (t.length > 0 && f.widthOfTextAtSize(t, size) > maxW) t = t.slice(0, -1);
-      if (t !== text) t = t.slice(0, -3) + "...";
+      if (t.length < text.length) t = t.slice(0, -3) + "...";
     }
     page.drawText(t, { x, y, size, font: f, color });
   };
@@ -864,180 +893,294 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     const tw = f.widthOfTextAtSize(text, size);
     page.drawText(text, { x: rx - tw, y, size, font: f, color });
   };
+  const cText = (text: string, cx: number, y: number, size: number, f: PDFFont, color: RGB) => {
+    const tw = f.widthOfTextAtSize(text, size);
+    page.drawText(text, { x: cx - tw / 2, y, size, font: f, color });
+  };
 
-  let y = pageH - 10;
-
-  // Top accent bar
-  page.drawRectangle({ x: 0, y: pageH - 8, width: W, height: 8, color: accent });
-  y = pageH - 28;
-
-  // Header
-  if (cfg.headerLayout === "centered") {
-    // Centered: business name + doc title centered
-    if (showLogo && logo) {
-      const lx = (W - logo.w) / 2;
-      page.drawImage(logo.image, { x: lx, y: y - logo.h + 4, width: logo.w, height: logo.h });
-      y -= logo.h + 4;
+  // Helper to draw the document title with a configurable style
+  const drawDocTitle = (rightX: number, topY: number): number => {
+    const style = cfg.headerTitleStyle || "large";
+    const titleSize = 16;
+    const titleW = fontBold.widthOfTextAtSize(docTitle, titleSize);
+    if (style === "badge") {
+      const padX = 8, padY = 4;
+      page.drawRectangle({ x: rightX - titleW - padX * 2, y: topY - titleSize - padY, width: titleW + padX * 2, height: titleSize + padY * 2, color: isColoredHeader ? rgb(1, 1, 1) : accent });
+      drawText(docTitle, rightX - titleW - padX, topY - titleSize, titleSize, fontBold, isColoredHeader ? accent : white);
+      return topY - titleSize - padY * 2 - 4;
     }
-    const bizName = user?.business_name || user?.full_name || "";
-    const bnW = fontBold.widthOfTextAtSize(bizName, 14);
-    drawText(bizName, (W - bnW) / 2, y, 14, fontBold, black);
-    y -= 16;
-    if (user?.physical_address) {
-      const aw = font.widthOfTextAtSize(user.physical_address, 8);
-      drawText(user.physical_address, (W - aw) / 2, y, 8, font, grey); y -= 11;
+    if (style === "outline") {
+      const padX = 8, padY = 4;
+      page.drawRectangle({ x: rightX - titleW - padX * 2, y: topY - titleSize - padY, width: titleW + padX * 2, height: titleSize + padY * 2, borderColor: isColoredHeader ? white : accent, borderWidth: 1.2 });
+      drawText(docTitle, rightX - titleW - padX, topY - titleSize, titleSize, fontBold, titleColor);
+      return topY - titleSize - padY * 2 - 4;
     }
-    y -= 4;
-    const titleW = fontBold.widthOfTextAtSize(docTitle, 18);
-    page.drawRectangle({ x: (W - titleW - 20) / 2, y: y - 4, width: titleW + 20, height: 24, color: accent });
-    const tw = fontBold.widthOfTextAtSize(docTitle, 14);
-    drawText(docTitle, (W - tw) / 2, y, 14, fontBold, white); y -= 30;
+    if (style === "minimal") {
+      const sz = 9;
+      const w = fontBold.widthOfTextAtSize(docTitle, sz);
+      drawText(docTitle.toUpperCase(), rightX - w, topY - sz, sz, fontBold, hSub);
+      return topY - sz - 4;
+    }
+    drawText(docTitle, rightX - titleW, topY - titleSize, titleSize, fontBold, titleColor);
+    return topY - titleSize - 4;
+  };
+
+  // ── HEADER ─────────────────────────────────────────────────
+  const headerStartY = pageH;
+  let headerHeight: number;
+
+  // Calculate header content height first to draw bg correctly
+  const bizName = user?.business_name || user?.full_name || "";
+  const bizLines: string[] = [];
+  if (cfg.headerTagline) bizLines.push(cfg.headerTagline);
+  if (headerShowAddress && user?.physical_address) bizLines.push(user.physical_address);
+  if (headerShowPhone && user?.phone) bizLines.push(user.phone);
+  if (showVatNum && user?.vat_number) bizLines.push(`VAT: ${user.vat_number}`);
+
+  // Header height: top pad + max(logo, biz block) + bottom pad
+  const bizTextBlockH = 16 /* name */ + bizLines.length * 11;
+  const contentH = Math.max(showLogo && logo ? logoBox : 0, bizTextBlockH);
+  headerHeight = headerPad.top + contentH + headerPad.bottom;
+
+  // Draw header background
+  if (isColoredHeader && headerBgColor) {
+    page.drawRectangle({ x: 0, y: headerStartY - headerHeight, width: W, height: headerHeight, color: headerBgColor });
   } else {
-    // Left (default)
-    let logoEndY = y;
-    if (showLogo && logo) {
-      page.drawImage(logo.image, { x: L, y: y - logo.h + 4, width: logo.w, height: logo.h });
-      logoEndY = y - logo.h;
+    // top accent bar (only when divider="bar" and white header)
+    if ((cfg.headerDivider || "bar") === "bar") {
+      page.drawRectangle({ x: 0, y: headerStartY - 5, width: W, height: 5, color: accent });
     }
-    const bizName = user?.business_name || user?.full_name || "";
-    drawText(bizName, L, y - (showLogo && logo ? logo.h + 8 : 0) - (showLogo && logo ? 0 : 0), 13, fontBold, black, 250);
-    const bizY = y - (showLogo && logo ? logo.h + 6 : 0);
-    if (!showLogo || !logo) drawText(bizName, L, bizY, 13, fontBold, black, 250);
-    let infoY = bizY - 14;
-    if (user?.physical_address) { drawText(user.physical_address, L, infoY, 8, font, grey, 240); infoY -= 11; }
-    if (user?.phone) { drawText(user.phone, L, infoY, 8, font, grey); infoY -= 11; }
-    if (showVatNum && user?.vat_number) { drawText(`VAT: ${user.vat_number}`, L, infoY, 8, font, grey); infoY -= 11; }
-
-    // Right: doc title + number + date
-    const rightX = R2;
-    drawText(docTitle, rightX - fontBold.widthOfTextAtSize(docTitle, 16), y, 16, fontBold, accent);
-    rText(`# ${invoice.invoice_number}`, rightX, y - 20, 9, font, grey);
-    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, y - 32, 9, font, grey);
-    const dueDate = new Date(new Date(invoice.created_at).getTime() + 7 * 86400000).toLocaleDateString("en-ZA");
-    rText(`Due: ${dueDate}`, rightX, y - 44, 9, font, grey);
-
-    y = Math.min(infoY, y - 60) - 10;
   }
 
-  // Horizontal rule
-  page.drawRectangle({ x: L, y, width: W2, height: 1, color: accent }); y -= 14;
+  // Header content positions
+  const hContentTopY = headerStartY - headerPad.top;
+  let y: number;
 
-  // Bill To + Details Row
-  const colW = (W2 - 10) / 2;
-  const boxH = 60;
+  if (cfg.headerLayout === "centered") {
+    let cy = hContentTopY;
+    if (showLogo && logo) {
+      const aspect = logo.w / logo.h;
+      const lh = logoBox;
+      const lw = Math.min(lh * aspect, 180);
+      page.drawImage(logo.image, { x: (W - lw) / 2, y: cy - lh, width: lw, height: lh });
+      cy -= lh + 8;
+    }
+    cText(bizName, W / 2, cy - 14, 14, fontBold, hMain);
+    cy -= 16;
+    for (const line of bizLines) {
+      cText(line, W / 2, cy - 9, 8.5, font, hSub);
+      cy -= 11;
+    }
+    cy -= 6;
+    drawDocTitle(W / 2 + (fontBold.widthOfTextAtSize(docTitle, 16) / 2), cy);
+    y = headerStartY - headerHeight;
+  } else {
+    // Left layout: logo + biz info (left), title + meta (right) — side by side
+    const leftBlockX = headerPad.side;
+    let leftCursorY = hContentTopY;
+    let textStartX = leftBlockX;
+    if (showLogo && logo) {
+      const aspect = logo.w / logo.h;
+      const lh = logoBox;
+      const lw = Math.min(lh * aspect, 120);
+      page.drawImage(logo.image, { x: leftBlockX, y: hContentTopY - lh, width: lw, height: lh });
+      textStartX = leftBlockX + lw + 12;
+    }
+    // biz name
+    drawText(bizName, textStartX, leftCursorY - 14, 13, fontBold, hMain, 280);
+    let infoY = leftCursorY - 26;
+    for (const line of bizLines) {
+      drawText(line, textStartX, infoY, 8.5, font, hSub, 280);
+      infoY -= 11;
+    }
 
-  // Left box: Bill To
-  page.drawRectangle({ x: L, y: y - boxH, width: colW, height: boxH, color: rgb(0.97, 0.97, 0.97) });
-  const btLabel = lbl.billToLabel || "Bill To";
-  drawText(btLabel.toUpperCase(), L + 8, y - 10, 7, fontBold, accent);
-  drawText(invoice.customer_name || "", L + 8, y - 20, 9, fontBold, black, colW - 16);
-  let btY = y - 32;
-  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, L + 8, btY, 8, font, grey, colW - 16); btY -= 10; }
-  if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, L + 8, btY, 8, font, grey); btY -= 10; }
-  if (invoice.customer_email) { drawText(invoice.customer_email, L + 8, btY, 8, font, grey, colW - 16); }
+    // right side: title + meta
+    const rightX = W - headerPad.side;
+    const afterTitleY = drawDocTitle(rightX, hContentTopY);
+    rText(`# ${invoice.invoice_number}`, rightX, afterTitleY - 4, 9, font, hSub);
+    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, afterTitleY - 16, 9, font, hSub);
+    const dueDate = new Date(new Date(invoice.created_at).getTime() + 7 * 86400000).toLocaleDateString("en-ZA");
+    rText(`Due: ${dueDate}`, rightX, afterTitleY - 28, 9, font, hSub);
 
-  // Right box: Details
-  const rx2 = L + colW + 10;
-  page.drawRectangle({ x: rx2, y: y - boxH, width: colW, height: boxH, color: rgb(0.97, 0.97, 0.97) });
-  let detY = y - 10;
+    y = headerStartY - headerHeight;
+  }
+
+  // Header divider
+  const div = cfg.headerDivider || "bar";
+  if (isColoredHeader) {
+    if (div !== "none") page.drawRectangle({ x: 0, y: y - 4, width: W, height: 4, color: darken(accent, 0.25) });
+    y -= 4;
+  } else {
+    if (div === "line") { page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.6, color: lightGrey }); y -= 1; }
+    else if (div === "double") { page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.6, color: lightGrey }); page.drawRectangle({ x: L, y: y - 5, width: W2, height: 0.6, color: lightGrey }); y -= 5; }
+    else if (div === "shadow") { page.drawRectangle({ x: 0, y: y - 4, width: W, height: 4, color: rgb(0.92, 0.92, 0.92) }); y -= 4; }
+    // "bar" already drawn at top, "none" does nothing
+  }
+  y -= 14;
+
+  // ── BILL TO + DETAILS ROW ──────────────────────────────────
+  const colW = (W2 - 12) / 2;
+  // Compute box height based on content
+  let btLines = 1; // customer name
+  if (showAddress && invoice.customer_address) btLines++;
+  if (showPhone && invoice.customer_phone) btLines++;
+  if (invoice.customer_email) btLines++;
+  let dtLines = 0;
+  if (showRef && invoice.reference) dtLines++;
+  if (showTerms && invoice.payment_terms) dtLines++;
+  const boxH = Math.max(56, 18 + Math.max(btLines, dtLines) * 11 + 8);
+
+  const boxBg = rgb(0.97, 0.97, 0.97);
+  const billToX = billToPos === "right" ? L + colW + 12 : L;
+  const detailsX = billToPos === "right" ? L : L + colW + 12;
+
+  // Bill To
+  page.drawRectangle({ x: billToX, y: y - boxH, width: colW, height: boxH, color: boxBg });
+  const btLabel = (lbl.billToLabel || "Bill To").toUpperCase();
+  drawText(btLabel, billToX + 8, y - 12, 7, fontBold, accent);
+  drawText(invoice.customer_name || "", billToX + 8, y - 24, 9.5, fontBold, black, colW - 16);
+  let btY = y - 36;
+  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, grey, colW - 16); btY -= 11; }
+  if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, grey); btY -= 11; }
+  if (invoice.customer_email) drawText(invoice.customer_email, billToX + 8, btY, 8, font, grey, colW - 16);
+
+  // Details
+  page.drawRectangle({ x: detailsX, y: y - boxH, width: colW, height: boxH, color: boxBg });
+  let detY = y - 14;
   if (showRef && invoice.reference) {
-    drawText("Reference:", rx2 + 8, detY, 7, fontBold, grey); rText(invoice.reference, rx2 + colW - 8, detY, 8, font, black); detY -= 12;
+    drawText("Reference:", detailsX + 8, detY, 8, fontBold, rgb(0.2, 0.2, 0.2));
+    drawText(invoice.reference, detailsX + 8 + font.widthOfTextAtSize("Reference: ", 8) + 4, detY, 8, font, grey, colW - 90);
+    detY -= 12;
   }
   if (showTerms && invoice.payment_terms) {
-    drawText("Terms:", rx2 + 8, detY, 7, fontBold, grey); rText(invoice.payment_terms, rx2 + colW - 8, detY, 8, font, black); detY -= 12;
+    drawText("Terms:", detailsX + 8, detY, 8, fontBold, rgb(0.2, 0.2, 0.2));
+    drawText(invoice.payment_terms, detailsX + 8 + font.widthOfTextAtSize("Terms: ", 8) + 4, detY, 8, font, grey, colW - 70);
+    detY -= 12;
   }
-  y -= boxH + 14;
+  y -= boxH + 16;
 
-  // Items Table Header
+  // ── ITEMS TABLE ────────────────────────────────────────────
   const cols = [
-    { label: lbl.itemCol || "Description", x: L, w: W2 * 0.44, align: "left" },
-    { label: lbl.qtyCol || "Qty", x: L + W2 * 0.44, w: W2 * 0.08, align: "center" },
-    { label: lbl.unitPriceCol || "Unit Price", x: L + W2 * 0.52, w: W2 * 0.23, align: "right" },
-    { label: lbl.amountCol || "Amount", x: L + W2 * 0.75, w: W2 * 0.25, align: "right" },
+    { label: lbl.itemCol || "Description", x: L + 6, w: W2 * 0.50, align: "left" as const },
+    { label: lbl.qtyCol || "Qty", x: L + W2 * 0.50, w: W2 * 0.10, align: "center" as const },
+    { label: lbl.unitPriceCol || "Unit Price", x: L + W2 * 0.60, w: W2 * 0.20, align: "right" as const },
+    { label: lbl.amountCol || "Amount", x: L + W2 * 0.80, w: W2 * 0.20, align: "right" as const },
   ];
-  const rowH = 18;
-  page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: accent });
+  const headerRowH = 20;
+  page.drawRectangle({ x: L, y: y - headerRowH, width: W2, height: headerRowH, color: accent });
   for (const col of cols) {
-    const lx2 = col.align === "right" ? col.x + col.w - font.widthOfTextAtSize(col.label, 8) - 4 :
-      col.align === "center" ? col.x + (col.w - font.widthOfTextAtSize(col.label, 8)) / 2 : col.x + 6;
-    drawText(col.label, lx2, y - rowH + 5, 8, fontBold, white);
+    if (col.align === "right") rText(col.label, col.x + col.w - 6, y - headerRowH + 6, 8.5, fontBold, white);
+    else if (col.align === "center") cText(col.label, col.x + col.w / 2, y - headerRowH + 6, 8.5, fontBold, white);
+    else drawText(col.label, col.x, y - headerRowH + 6, 8.5, fontBold, white);
   }
-  y -= rowH;
+  y -= headerRowH;
 
-  // Items rows
+  const rowH = 20;
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const isStriped = cfg.tableStyle !== "minimal" && cfg.tableStyle !== "bordered";
+    const isStriped = (cfg.tableStyle || "striped") === "striped";
     const isBordered = cfg.tableStyle === "bordered";
-    if (isStriped && i % 2 === 0) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: rgb(0.97, 0.98, 0.97) });
+    if (isStriped && i % 2 === 0) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: rgb(0.975, 0.98, 0.975) });
     if (isBordered) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, borderColor: lightGrey, borderWidth: 0.5 });
     const amt = (item.qty || 1) * (item.unitPrice || 0);
-    drawText(item.name || "", L + 6, y - rowH + 5, 8.5, font, black, W2 * 0.42);
-    const qStr = String(item.qty || 1);
-    drawText(qStr, L + W2 * 0.44 + (W2 * 0.08 - font.widthOfTextAtSize(qStr, 8.5)) / 2, y - rowH + 5, 8.5, font, grey);
-    rText(`${sym}${(item.unitPrice || 0).toFixed(2)}`, L + W2 * 0.75 - 6, y - rowH + 5, 8.5, font, grey);
-    rText(`${sym}${amt.toFixed(2)}`, R2 - 4, y - rowH + 5, 8.5, fontBold, black);
+    drawText(item.name || "", L + 6, y - rowH + 6, 9, font, black, W2 * 0.48);
+    cText(String(item.qty || 1), L + W2 * 0.50 + W2 * 0.05, y - rowH + 6, 9, font, grey);
+    rText(`${sym}${(item.unitPrice || 0).toFixed(2)}`, L + W2 * 0.80 - 6, y - rowH + 6, 9, font, grey);
+    rText(`${sym}${amt.toFixed(2)}`, R2 - 6, y - rowH + 6, 9, fontBold, black);
     y -= rowH;
   }
 
-  // Divider
-  page.drawRectangle({ x: L, y, width: W2, height: 1, color: lightGrey }); y -= 10;
+  // small spacer + thin divider
+  page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.4, color: lightGrey });
+  y -= 12;
 
-  // Totals
-  const tLabelX = L + W2 * 0.6;
-  const tValueX = R2;
-  const subStr = `${sym}${(subtotalCents / 100).toFixed(2)}`;
-  drawText(lbl.subtotalLabel || "Subtotal", tLabelX, y, 8, font, grey);
-  rText(subStr, tValueX, y, 8, font, grey); y -= 12;
+  // ── CONTENT BLOCK BUILDERS ────────────────────────────────
+  const drawTotals = (curY: number): number => {
+    const totalsW = 220;
+    const totalsX = totalsAlign === "left" ? L : R2 - totalsW;
+    let ty = curY;
 
-  if (vatEnabled && showVat) {
-    const vatLbl = (lbl.vatLabel || `VAT (${vatRate}%)`).replace("15%", `${vatRate}%`);
-    drawText(vatLbl, tLabelX, y, 8, font, grey);
-    rText(`${sym}${(vatCents / 100).toFixed(2)}`, tValueX, y, 8, font, grey); y -= 12;
-  }
+    drawText(lbl.subtotalLabel || "Subtotal", totalsX + 10, ty - 10, 9, font, grey);
+    rText(`${sym}${(subtotalCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, grey);
+    ty -= 16;
 
-  // Total box
-  const totalH = 24;
-  page.drawRectangle({ x: tLabelX - 8, y: y - totalH, width: tValueX - tLabelX + 8 + 4, height: totalH, color: accent });
-  const totLbl = lbl.totalLabel || (isQuote ? "TOTAL ESTIMATE" : "TOTAL DUE");
-  drawText(totLbl, tLabelX - 2, y - totalH + 7, 9, fontBold, white);
-  rText(`${sym}${(invoice.total_cents / 100).toFixed(2)}`, tValueX, y - totalH + 7, 11, fontBold, white);
-  y -= totalH + 14;
-
-  // Notes
-  if (showNotes && invoice.notes) {
-    const notesLbl = lbl.notesLabel || "Notes";
-    page.drawRectangle({ x: L, y: y - 4, width: 3, height: 30, color: accent });
-    drawText(notesLbl.toUpperCase(), L + 8, y, 7, fontBold, accent); y -= 11;
-    drawText(invoice.notes, L + 8, y, 8, font, grey, W2 - 16); y -= 20;
-  }
-
-  // Bank Details
-  if (showBank && (user?.bank_name || user?.account_number)) {
-    y -= 6;
-    page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.5, color: lightGrey }); y -= 12;
-    drawText("BANKING DETAILS", L, y, 7, fontBold, accent); y -= 10;
-    const bCols = [
-      { label: "Bank", value: user.bank_name },
-      { label: "Account", value: user.account_name },
-      { label: "Acc. No.", value: user.account_number },
-      { label: "Branch", value: user.branch_code },
-    ].filter(b => b.value);
-    let bx = L;
-    for (const b of bCols) {
-      drawText(b.label, bx, y, 7, fontBold, grey);
-      drawText(b.value, bx, y - 10, 8, font, black, 100);
-      bx += (W2 / 4);
+    if (vatEnabled && showVat) {
+      const vatLbl = (lbl.vatLabel || `VAT (${vatRate}%)`).replace("15%", `${vatRate}%`);
+      drawText(vatLbl, totalsX + 10, ty - 10, 9, font, grey);
+      rText(`${sym}${(vatCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, grey);
+      ty -= 16;
     }
-    y -= 22;
-  }
 
-  // Footer text
-  if (cfg.footerText) {
-    page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.5, color: lighten(accent, 0.6) }); y -= 10;
-    const ftW = font.widthOfTextAtSize(cfg.footerText, 8);
-    drawText(cfg.footerText, (W - ftW) / 2, y, 8, font, grey);
-    y -= 14;
+    const totalH = 26;
+    page.drawRectangle({ x: totalsX, y: ty - totalH, width: totalsW, height: totalH, color: accent });
+    const totLbl = lbl.totalLabel || (isQuote ? "TOTAL ESTIMATE" : "TOTAL DUE");
+    drawText(totLbl, totalsX + 10, ty - totalH + 9, 10, fontBold, white);
+    rText(`${sym}${(invoice.total_cents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - totalH + 9, 12, fontBold, white);
+    return ty - totalH - 14;
+  };
+
+  const drawNotes = (curY: number): number => {
+    if (!showNotes || !invoice.notes) return curY;
+    const notesLbl = (lbl.notesLabel || "Notes").toUpperCase();
+    page.drawRectangle({ x: L, y: curY - 24, width: 3, height: 26, color: accent });
+    drawText(notesLbl, L + 10, curY - 8, 8, fontBold, accent);
+    drawText(invoice.notes, L + 10, curY - 22, 8.5, font, grey, W2 - 16);
+    return curY - 36;
+  };
+
+  const drawBank = (curY: number): number => {
+    if (!showBank || !(user?.bank_name || user?.account_number)) return curY;
+    let by = curY;
+    page.drawRectangle({ x: L, y: by - 1, width: W2, height: 0.5, color: lightGrey });
+    by -= 12;
+    const bCols = [
+      { label: "BANK", value: user.bank_name },
+      { label: "ACCOUNT NAME", value: user.account_name },
+      { label: "ACCOUNT NO.", value: user.account_number },
+      { label: "BRANCH CODE", value: user.branch_code },
+    ].filter(b => b.value);
+    if (bCols.length === 0) return curY;
+    const bColW = W2 / 4;
+    for (let i = 0; i < bCols.length; i++) {
+      const bx = L + i * bColW;
+      drawText(bCols[i].label, bx, by, 7, fontBold, accent);
+      drawText(bCols[i].value, bx, by - 11, 8.5, font, black, bColW - 6);
+    }
+    return by - 24;
+  };
+
+  const drawFooter = (curY: number): number => {
+    if (!cfg.footerText) return curY;
+    let fy = curY;
+    // dashed-style divider (approximate with short rects)
+    const dashY = fy - 4;
+    let dx = L;
+    while (dx < R2) {
+      page.drawRectangle({ x: dx, y: dashY, width: 4, height: 0.5, color: lightGrey });
+      dx += 8;
+    }
+    fy -= 12;
+    cText(cfg.footerText, W / 2, fy - 8, 8.5, font, grey);
+    return fy - 16;
+  };
+
+  // ── ASSEMBLE BODY IN CHOSEN ORDER ─────────────────────────
+  // Build ordered list of section drawers
+  type SectionId = "totals" | "notes" | "bank" | "footer";
+  const order: SectionId[] = [];
+  if (notesPos === "before-totals") order.push("notes");
+  order.push("totals");
+  if (notesPos === "after-items") order.push("notes");
+  if (bankPos === "after-totals") order.push("bank");
+  if (notesPos === "after-bank") order.push("notes");
+  if (bankPos === "footer") order.push("bank");
+  order.push("footer");
+
+  for (const id of order) {
+    if (id === "totals") y = drawTotals(y);
+    else if (id === "notes") y = drawNotes(y);
+    else if (id === "bank") y = drawBank(y);
+    else if (id === "footer") y = drawFooter(y);
   }
 
   // Bottom accent bar

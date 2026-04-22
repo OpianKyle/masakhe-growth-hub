@@ -26,6 +26,11 @@ export interface TemplateConfig {
   headerTagline: string;
   headerShowAddress: boolean;
   headerShowPhone: boolean;
+  /* layout positions */
+  billToPosition: "left" | "right";
+  totalsAlign: "right" | "left";
+  notesPosition: "after-items" | "before-totals" | "after-bank";
+  bankPosition: "footer" | "after-totals";
   /* document settings */
   footerText: string;
   showFields: {
@@ -70,6 +75,10 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   headerTagline: "",
   headerShowAddress: true,
   headerShowPhone: true,
+  billToPosition: "left",
+  totalsAlign: "right",
+  notesPosition: "after-items",
+  bankPosition: "footer",
   footerText: "Thank you for your business!",
   showFields: {
     logo: true,
@@ -346,29 +355,38 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
       )}
 
       {/* Bill To + Details Row */}
-      <div style={{ padding: "12px 32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-        <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
-          <div style={{ fontWeight: "bold", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "5px" }}>{config.labels.billToLabel}</div>
-          <div style={{ fontWeight: "600", fontSize: "10px", color: "#111" }}>ABC Corporation (Pty) Ltd</div>
-          {config.showFields.customerAddress && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>456 Client Ave, Johannesburg, 2001</div>}
-          {config.showFields.customerPhone && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>+27 82 987 6543</div>}
-          <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>billing@abccorp.co.za</div>
-        </div>
-        <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
-          {config.showFields.reference && (
-            <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-              <span style={{ fontWeight: "600", color: "#333" }}>Reference: </span>
-              <span style={{ color: "#555" }}>PO-2024-123</span>
-            </div>
-          )}
-          {config.showFields.paymentTerms && (
-            <div style={{ fontSize: "8px" }}>
-              <span style={{ fontWeight: "600", color: "#333" }}>Terms: </span>
-              <span style={{ color: "#555" }}>Due within 7 days</span>
-            </div>
-          )}
-        </div>
-      </div>
+      {(() => {
+        const billToBox = (
+          <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
+            <div style={{ fontWeight: "bold", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "5px" }}>{config.labels.billToLabel}</div>
+            <div style={{ fontWeight: "600", fontSize: "10px", color: "#111" }}>ABC Corporation (Pty) Ltd</div>
+            {config.showFields.customerAddress && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>456 Client Ave, Johannesburg, 2001</div>}
+            {config.showFields.customerPhone && <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>+27 82 987 6543</div>}
+            <div style={{ color: "#555", marginTop: "2px", fontSize: "8px" }}>billing@abccorp.co.za</div>
+          </div>
+        );
+        const detailsBox = (
+          <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
+            {config.showFields.reference && (
+              <div style={{ marginBottom: "4px", fontSize: "8px" }}>
+                <span style={{ fontWeight: "600", color: "#333" }}>Reference: </span>
+                <span style={{ color: "#555" }}>PO-2024-123</span>
+              </div>
+            )}
+            {config.showFields.paymentTerms && (
+              <div style={{ fontSize: "8px" }}>
+                <span style={{ fontWeight: "600", color: "#333" }}>Terms: </span>
+                <span style={{ color: "#555" }}>Due within 7 days</span>
+              </div>
+            )}
+          </div>
+        );
+        return (
+          <div style={{ padding: "12px 32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            {config.billToPosition === "right" ? <>{detailsBox}{billToBox}</> : <>{billToBox}{detailsBox}</>}
+          </div>
+        );
+      })()}
 
       {/* Items Table */}
       <div style={{ padding: "0 32px 12px" }}>
@@ -393,7 +411,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
           </tbody>
         </table>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+        <div style={{ display: "flex", justifyContent: config.totalsAlign === "left" ? "flex-start" : "flex-end", marginTop: "8px" }}>
           <div style={{ width: "200px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px", color: "#555" }}>
               <span>{config.labels.subtotalLabel}</span><span>{sym}{subtotal.toFixed(2)}</span>
@@ -410,34 +428,46 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
         </div>
       </div>
 
-      {/* Notes */}
-      {config.showFields.notes && (
-        <div style={{ padding: "0 32px 12px" }}>
-          <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: "10px" }}>
-            <div style={{ fontWeight: "700", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "4px" }}>{config.labels.notesLabel}</div>
-            <div style={{ color: "#555", lineHeight: "1.6" }}>Please reference your invoice number when making payment. Direct EFT payments are preferred.</div>
+      {(() => {
+        const notesBlock = config.showFields.notes ? (
+          <div key="notes" style={{ padding: "0 32px 12px" }}>
+            <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: "10px" }}>
+              <div style={{ fontWeight: "700", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "4px" }}>{config.labels.notesLabel}</div>
+              <div style={{ color: "#555", lineHeight: "1.6" }}>Please reference your invoice number when making payment. Direct EFT payments are preferred.</div>
+            </div>
           </div>
-        </div>
-      )}
+        ) : null;
+        const bankBlock = config.showFields.bankDetails ? (
+          <div key="bank" style={{ padding: "10px 32px 0", borderTop: "1px solid #e5e7eb", marginTop: "4px" }}>
+            <div style={{ marginBottom: "8px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+              {[{ label: "Bank", value: bankName }, { label: "Account Name", value: accountName }, { label: "Account No.", value: accountNum }, { label: "Branch Code", value: branchCode }].map(({ label, value }) => (
+                <div key={label}>
+                  <div style={{ fontSize: "7px", textTransform: "uppercase", color: accent, fontWeight: "700", marginBottom: "1px" }}>{label}</div>
+                  <div style={{ color: "#333", fontSize: "8px" }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+        const footerBlock = config.footerText ? (
+          <div key="footer" style={{ padding: "8px 32px 16px" }}>
+            <div style={{ textAlign: "center", color: "#888", fontSize: "8px", fontStyle: "italic", paddingTop: "6px", borderTop: "1px dashed #e5e7eb" }}>
+              {config.footerText}
+            </div>
+          </div>
+        ) : null;
 
-      {/* Bank Details + Footer */}
-      <div style={{ padding: "10px 32px 16px", borderTop: "1px solid #e5e7eb", marginTop: "4px" }}>
-        {config.showFields.bankDetails && (
-          <div style={{ marginBottom: "8px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-            {[{ label: "Bank", value: bankName }, { label: "Account Name", value: accountName }, { label: "Account No.", value: accountNum }, { label: "Branch Code", value: branchCode }].map(({ label, value }) => (
-              <div key={label}>
-                <div style={{ fontSize: "7px", textTransform: "uppercase", color: accent, fontWeight: "700", marginBottom: "1px" }}>{label}</div>
-                <div style={{ color: "#333", fontSize: "8px" }}>{value}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {config.footerText && (
-          <div style={{ textAlign: "center", color: "#888", fontSize: "8px", fontStyle: "italic", paddingTop: "6px", borderTop: "1px dashed #e5e7eb" }}>
-            {config.footerText}
-          </div>
-        )}
-      </div>
+        const order: React.ReactNode[] = [];
+        if (config.notesPosition === "before-totals") {
+          // already drawn before totals — would require restructure; treat as after-items here
+        }
+        if (config.notesPosition === "after-items") order.push(notesBlock);
+        if (config.bankPosition === "after-totals") order.push(bankBlock);
+        if (config.notesPosition === "after-bank") order.push(notesBlock);
+        if (config.bankPosition === "footer") order.push(bankBlock);
+        order.push(footerBlock);
+        return <>{order.filter(Boolean)}</>;
+      })()}
 
       {/* Bottom bar */}
       <div style={{ height: "4px", background: accent }} />
@@ -699,6 +729,45 @@ export default function InvoiceTemplateDesigner({ onSave }: Props) {
             <Input value={config.headerTagline} onChange={e => update({ headerTagline: e.target.value })}
               className="h-9 text-xs" placeholder="e.g. Professional services since 2010" />
             <p className="text-[10px] text-muted-foreground mt-1">Appears below your business name in the header</p>
+          </div>
+        </Section>
+
+        {/* ── Layout & Positioning ───────────────────────────── */}
+        <Section title="Layout & Positioning" defaultOpen={false}>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs mb-1.5 block">Bill To Position</Label>
+              <select value={config.billToPosition} onChange={e => update({ billToPosition: e.target.value as any })}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <option value="left">Left side</option>
+                <option value="right">Right side</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Totals Alignment</Label>
+              <select value={config.totalsAlign} onChange={e => update({ totalsAlign: e.target.value as any })}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <option value="right">Right aligned</option>
+                <option value="left">Left aligned</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Notes Position</Label>
+              <select value={config.notesPosition} onChange={e => update({ notesPosition: e.target.value as any })}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <option value="after-items">After totals</option>
+                <option value="after-bank">After bank details</option>
+                <option value="before-totals">Above totals</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Bank Details Position</Label>
+              <select value={config.bankPosition} onChange={e => update({ bankPosition: e.target.value as any })}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <option value="footer">In footer (bottom)</option>
+                <option value="after-totals">Right after totals</option>
+              </select>
+            </div>
           </div>
         </Section>
 
