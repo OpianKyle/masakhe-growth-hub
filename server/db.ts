@@ -877,6 +877,7 @@ export async function runMigrations() {
     await addColumnIfMissing("invoices", "notes", "TEXT NULL");
     await addColumnIfMissing("invoices", "type", "VARCHAR(10) NOT NULL DEFAULT 'invoice'");
     await addColumnIfMissing("invoices", "template", "INT NOT NULL DEFAULT 1");
+    await addColumnIfMissing("invoices", "template_config", "TEXT NULL");
     await addColumnIfMissing("business_profiles", "account_name", "VARCHAR(255) NULL");
     await addColumnIfMissing("business_profiles", "registration_number", "VARCHAR(100) NULL");
 

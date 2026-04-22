@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2 } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette } from "lucide-react";
+import InvoiceTemplateDesigner, { loadTemplateConfig } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
   name: string;
@@ -175,11 +176,34 @@ const TEMPLATES = [
     ),
     badgeBg: "bg-neutral-700",
   },
+  {
+    id: 8, name: "Custom",
+    preview: (
+      <svg viewBox="0 0 64 40" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="40" fill="#fff"/>
+        <rect width="64" height="3" fill="url(#cg)"/>
+        <defs><linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#156C41"/><stop offset="50%" stopColor="#1a7fd4"/><stop offset="100%" stopColor="#9333ea"/></linearGradient></defs>
+        <rect x="4" y="7" width="20" height="3" rx="0.5" fill="#333" opacity="0.85"/>
+        <rect x="4" y="12" width="14" height="1.5" rx="0.5" fill="#aaa"/>
+        <circle cx="52" cy="9" r="6" fill="#f0f9ff" stroke="#1a7fd4" strokeWidth="0.8"/>
+        <text x="49.5" y="11.2" fontSize="6" fontWeight="bold" fill="#1a7fd4" fontFamily="sans-serif">✦</text>
+        <rect x="4" y="18" width="60" height="1" fill="#156C41" opacity="0.3"/>
+        <rect x="4" y="21" width="28" height="7" rx="1" fill="#f0fdf4"/>
+        <rect x="4" y="21" width="28" height="2" rx="0.5" fill="#156C41" opacity="0.7"/>
+        <rect x="34" y="21" width="26" height="7" rx="1" fill="#f0fdf4"/>
+        <rect x="34" y="21" width="26" height="2" fill="#156C41" opacity="0.7"/>
+        <rect x="4" y="30" width="56" height="3" rx="0.5" fill="#156C41" opacity="0.8"/>
+        <rect x="4" y="35" width="36" height="1.5" rx="0.5" fill="#ddd"/>
+        <rect x="0" y="38" width="64" height="2" fill="#156C41" opacity="0.5"/>
+      </svg>
+    ),
+    badgeBg: "bg-gradient-to-r from-emerald-600 to-blue-600",
+  },
 ];
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [activeTab, setActiveTab] = useState<"invoice" | "quote">("invoice");
+  const [activeTab, setActiveTab] = useState<"invoice" | "quote" | "designer">("invoice");
   const [showCreate, setShowCreate] = useState(false);
   const [docType, setDocType] = useState<"invoice" | "quote">("invoice");
   const [selectedTemplate, setSelectedTemplate] = useState(1);
@@ -272,6 +296,7 @@ export default function InvoicesPage() {
         items, vatEnabled,
         type: docType,
         template: selectedTemplate,
+        templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
       }),
     });
 
@@ -333,6 +358,7 @@ export default function InvoicesPage() {
         notes: notes || undefined,
         items, vat_enabled: vatEnabled,
         template: selectedTemplate,
+        templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
       }),
     });
 
@@ -393,7 +419,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const filtered = invoices.filter(inv => (inv.type || "invoice") === activeTab);
+  const filtered = invoices.filter(inv => (inv.type || "invoice") === (activeTab === "designer" ? "invoice" : activeTab));
 
   return (
     <div className="p-6 space-y-6">
@@ -437,7 +463,24 @@ export default function InvoicesPage() {
             </button>
           );
         })}
+        <button
+          onClick={() => setActiveTab("designer")}
+          className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+            activeTab === "designer"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Palette className="h-3.5 w-3.5" /> Template Designer
+        </button>
       </div>
+
+      {/* Template Designer Tab */}
+      {activeTab === "designer" && (
+        <Card className="p-6">
+          <InvoiceTemplateDesigner />
+        </Card>
+      )}
 
       {/* Create / Edit Form */}
       {(showCreate || editingId !== null) && (
@@ -500,8 +543,8 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1">
+            <div className="space-y-2 mb-4">
+              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
                 <div className="col-span-5">Item</div>
                 <div className="col-span-2">Qty</div>
                 <div className="col-span-2">Unit Price (R)</div>
@@ -509,7 +552,7 @@ export default function InvoicesPage() {
                 <div className="col-span-1"></div>
               </div>
               {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                <div key={i} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-dashed border-muted last:border-0">
                   <div className="col-span-5">
                     <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-9 text-sm" placeholder="Item description" />
                   </div>
@@ -579,8 +622,8 @@ export default function InvoicesPage() {
         </motion.div>
       )}
 
-      {/* List */}
-      <Card className="overflow-hidden">
+      {/* List — hidden in designer tab */}
+      {activeTab !== "designer" && <Card className="overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -656,7 +699,7 @@ export default function InvoicesPage() {
               <tr>
                 <td colSpan={7} className="p-8 text-center text-muted-foreground">
                   No {activeTab === "quote" ? "quotes" : "invoices"} yet.
-                  <button onClick={() => openCreate(activeTab)} className="ml-2 text-primary underline underline-offset-2">
+                  <button onClick={() => openCreate(activeTab as "invoice" | "quote")} className="ml-2 text-primary underline underline-offset-2">
                     Create your first {activeTab === "quote" ? "quote" : "invoice"}.
                   </button>
                 </td>
@@ -664,7 +707,7 @@ export default function InvoicesPage() {
             )}
           </tbody>
         </table>
-      </Card>
+      </Card>}
     </div>
   );
 }

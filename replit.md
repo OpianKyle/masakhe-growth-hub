@@ -7,6 +7,12 @@ Masakhe is a digital platform designed to assist South African SMMEs with compre
 - Remote MySQL database on Xneelo (no SQLite, no paid Replit services)
 - South African business context (Rand currency, SA tax/compliance)
 
+## Invoice System
+- 8 templates total. Templates 1-7 are pre-built. Template 8 is "Custom" — driven by a `TemplateConfig` JSON stored in `invoices.template_config` column.
+- `src/components/InvoiceTemplateDesigner.tsx`: Full live-preview designer with accent color, document title, currency symbol, VAT rate, header layout, table style, footer text, field visibility toggles (logo, VAT number, customer phone/address, reference, payment terms, VAT, notes, bank details), and custom column/section labels. Config persisted to `localStorage` under `masakhe_invoice_template_v1`.
+- `src/pages/InvoicesPage.tsx`: "Template Designer" is a 3rd tab. "Custom" template (id=8) in the TEMPLATES array. `loadTemplateConfig()` is called at create/update time when template 8 is selected, and `templateConfig` is sent in the API body. Item row spacing is improved with `py-2` per row + dashed border separators.
+- Backend: `template_config TEXT NULL` column added via migration in `server/db.ts`. `renderCustomTemplate(ctx, config)` in `server/invoices.ts` renders a full A4 PDF respecting accent color, show/hide fields, and custom labels. Both the PDF download and email routes handle template 8.
+
 ## SEO Implementation
 - `react-helmet-async` installed; `HelmetProvider` wraps app in `src/App.tsx`
 - `index.html` has full base meta tags: title, description, keywords, OG, Twitter Card, canonical, JSON-LD (Organization + WebSite + SoftwareApplication schemas)

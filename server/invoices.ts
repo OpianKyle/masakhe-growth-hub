@@ -780,6 +780,260 @@ function renderTemplate7(ctx: TemplateCtx) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Template 8 — fully custom (driven by template_config JSON)
+// ────────────────────────────────────────────────────────────────────────────
+
+interface CustomConfig {
+  accentColor?: string;
+  documentTitle?: string;
+  currencySymbol?: string;
+  vatRate?: number;
+  headerLayout?: "left" | "centered";
+  tableStyle?: "striped" | "bordered" | "minimal";
+  footerText?: string;
+  showFields?: {
+    logo?: boolean;
+    vatNumber?: boolean;
+    customerPhone?: boolean;
+    customerAddress?: boolean;
+    reference?: boolean;
+    paymentTerms?: boolean;
+    vat?: boolean;
+    notes?: boolean;
+    bankDetails?: boolean;
+  };
+  labels?: {
+    itemCol?: string;
+    qtyCol?: string;
+    unitPriceCol?: string;
+    amountCol?: string;
+    subtotalLabel?: string;
+    vatLabel?: string;
+    totalLabel?: string;
+    notesLabel?: string;
+    billToLabel?: string;
+  };
+}
+
+function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
+  const cfg: CustomConfig = rawConfig || {};
+  const sf = cfg.showFields || {};
+  const lbl = cfg.labels || {};
+
+  const accent = hexToRgb(cfg.accentColor || "#156C41") || rgb(0.08, 0.42, 0.25);
+  const sym = cfg.currencySymbol || "R";
+  const docTitle = cfg.documentTitle || (ctx.isQuote ? "QUOTE" : "TAX INVOICE");
+  const vatRate = cfg.vatRate ?? 15;
+
+  const showLogo = sf.logo !== false;
+  const showVatNum = sf.vatNumber !== false;
+  const showPhone = sf.customerPhone !== false;
+  const showAddress = sf.customerAddress !== false;
+  const showRef = sf.reference !== false;
+  const showTerms = sf.paymentTerms !== false;
+  const showVat = sf.vat !== false;
+  const showNotes = sf.notes !== false;
+  const showBank = sf.bankDetails !== false;
+
+  const { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
+  const pageH = 842;
+  const L = 40, R2 = 555;
+  const W2 = R2 - L;
+
+  const drawText = (text: string, x: number, y: number, size: number, f: PDFFont, color: RGB, maxW?: number) => {
+    if (!text) return;
+    let t = text;
+    if (maxW) {
+      while (t.length > 0 && f.widthOfTextAtSize(t, size) > maxW) t = t.slice(0, -1);
+      if (t !== text) t = t.slice(0, -3) + "...";
+    }
+    page.drawText(t, { x, y, size, font: f, color });
+  };
+  const rText = (text: string, rx: number, y: number, size: number, f: PDFFont, color: RGB) => {
+    const tw = f.widthOfTextAtSize(text, size);
+    page.drawText(text, { x: rx - tw, y, size, font: f, color });
+  };
+
+  let y = pageH - 10;
+
+  // Top accent bar
+  page.drawRectangle({ x: 0, y: pageH - 8, width: W, height: 8, color: accent });
+  y = pageH - 28;
+
+  // Header
+  if (cfg.headerLayout === "centered") {
+    // Centered: business name + doc title centered
+    if (showLogo && logo) {
+      const lx = (W - logo.w) / 2;
+      page.drawImage(logo.image, { x: lx, y: y - logo.h + 4, width: logo.w, height: logo.h });
+      y -= logo.h + 4;
+    }
+    const bizName = user?.business_name || user?.full_name || "";
+    const bnW = fontBold.widthOfTextAtSize(bizName, 14);
+    drawText(bizName, (W - bnW) / 2, y, 14, fontBold, black);
+    y -= 16;
+    if (user?.physical_address) {
+      const aw = font.widthOfTextAtSize(user.physical_address, 8);
+      drawText(user.physical_address, (W - aw) / 2, y, 8, font, grey); y -= 11;
+    }
+    y -= 4;
+    const titleW = fontBold.widthOfTextAtSize(docTitle, 18);
+    page.drawRectangle({ x: (W - titleW - 20) / 2, y: y - 4, width: titleW + 20, height: 24, color: accent });
+    const tw = fontBold.widthOfTextAtSize(docTitle, 14);
+    drawText(docTitle, (W - tw) / 2, y, 14, fontBold, white); y -= 30;
+  } else {
+    // Left (default)
+    let logoEndY = y;
+    if (showLogo && logo) {
+      page.drawImage(logo.image, { x: L, y: y - logo.h + 4, width: logo.w, height: logo.h });
+      logoEndY = y - logo.h;
+    }
+    const bizName = user?.business_name || user?.full_name || "";
+    drawText(bizName, L, y - (showLogo && logo ? logo.h + 8 : 0) - (showLogo && logo ? 0 : 0), 13, fontBold, black, 250);
+    const bizY = y - (showLogo && logo ? logo.h + 6 : 0);
+    if (!showLogo || !logo) drawText(bizName, L, bizY, 13, fontBold, black, 250);
+    let infoY = bizY - 14;
+    if (user?.physical_address) { drawText(user.physical_address, L, infoY, 8, font, grey, 240); infoY -= 11; }
+    if (user?.phone) { drawText(user.phone, L, infoY, 8, font, grey); infoY -= 11; }
+    if (showVatNum && user?.vat_number) { drawText(`VAT: ${user.vat_number}`, L, infoY, 8, font, grey); infoY -= 11; }
+
+    // Right: doc title + number + date
+    const rightX = R2;
+    drawText(docTitle, rightX - fontBold.widthOfTextAtSize(docTitle, 16), y, 16, fontBold, accent);
+    rText(`# ${invoice.invoice_number}`, rightX, y - 20, 9, font, grey);
+    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, y - 32, 9, font, grey);
+    const dueDate = new Date(new Date(invoice.created_at).getTime() + 7 * 86400000).toLocaleDateString("en-ZA");
+    rText(`Due: ${dueDate}`, rightX, y - 44, 9, font, grey);
+
+    y = Math.min(infoY, y - 60) - 10;
+  }
+
+  // Horizontal rule
+  page.drawRectangle({ x: L, y, width: W2, height: 1, color: accent }); y -= 14;
+
+  // Bill To + Details Row
+  const colW = (W2 - 10) / 2;
+  const boxH = 60;
+
+  // Left box: Bill To
+  page.drawRectangle({ x: L, y: y - boxH, width: colW, height: boxH, color: rgb(0.97, 0.97, 0.97) });
+  const btLabel = lbl.billToLabel || "Bill To";
+  drawText(btLabel.toUpperCase(), L + 8, y - 10, 7, fontBold, accent);
+  drawText(invoice.customer_name || "", L + 8, y - 20, 9, fontBold, black, colW - 16);
+  let btY = y - 32;
+  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, L + 8, btY, 8, font, grey, colW - 16); btY -= 10; }
+  if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, L + 8, btY, 8, font, grey); btY -= 10; }
+  if (invoice.customer_email) { drawText(invoice.customer_email, L + 8, btY, 8, font, grey, colW - 16); }
+
+  // Right box: Details
+  const rx2 = L + colW + 10;
+  page.drawRectangle({ x: rx2, y: y - boxH, width: colW, height: boxH, color: rgb(0.97, 0.97, 0.97) });
+  let detY = y - 10;
+  if (showRef && invoice.reference) {
+    drawText("Reference:", rx2 + 8, detY, 7, fontBold, grey); rText(invoice.reference, rx2 + colW - 8, detY, 8, font, black); detY -= 12;
+  }
+  if (showTerms && invoice.payment_terms) {
+    drawText("Terms:", rx2 + 8, detY, 7, fontBold, grey); rText(invoice.payment_terms, rx2 + colW - 8, detY, 8, font, black); detY -= 12;
+  }
+  y -= boxH + 14;
+
+  // Items Table Header
+  const cols = [
+    { label: lbl.itemCol || "Description", x: L, w: W2 * 0.44, align: "left" },
+    { label: lbl.qtyCol || "Qty", x: L + W2 * 0.44, w: W2 * 0.08, align: "center" },
+    { label: lbl.unitPriceCol || "Unit Price", x: L + W2 * 0.52, w: W2 * 0.23, align: "right" },
+    { label: lbl.amountCol || "Amount", x: L + W2 * 0.75, w: W2 * 0.25, align: "right" },
+  ];
+  const rowH = 18;
+  page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: accent });
+  for (const col of cols) {
+    const lx2 = col.align === "right" ? col.x + col.w - font.widthOfTextAtSize(col.label, 8) - 4 :
+      col.align === "center" ? col.x + (col.w - font.widthOfTextAtSize(col.label, 8)) / 2 : col.x + 6;
+    drawText(col.label, lx2, y - rowH + 5, 8, fontBold, white);
+  }
+  y -= rowH;
+
+  // Items rows
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const isStriped = cfg.tableStyle !== "minimal" && cfg.tableStyle !== "bordered";
+    const isBordered = cfg.tableStyle === "bordered";
+    if (isStriped && i % 2 === 0) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, color: rgb(0.97, 0.98, 0.97) });
+    if (isBordered) page.drawRectangle({ x: L, y: y - rowH, width: W2, height: rowH, borderColor: lightGrey, borderWidth: 0.5 });
+    const amt = (item.qty || 1) * (item.unitPrice || 0);
+    drawText(item.name || "", L + 6, y - rowH + 5, 8.5, font, black, W2 * 0.42);
+    const qStr = String(item.qty || 1);
+    drawText(qStr, L + W2 * 0.44 + (W2 * 0.08 - font.widthOfTextAtSize(qStr, 8.5)) / 2, y - rowH + 5, 8.5, font, grey);
+    rText(`${sym}${(item.unitPrice || 0).toFixed(2)}`, L + W2 * 0.75 - 6, y - rowH + 5, 8.5, font, grey);
+    rText(`${sym}${amt.toFixed(2)}`, R2 - 4, y - rowH + 5, 8.5, fontBold, black);
+    y -= rowH;
+  }
+
+  // Divider
+  page.drawRectangle({ x: L, y, width: W2, height: 1, color: lightGrey }); y -= 10;
+
+  // Totals
+  const tLabelX = L + W2 * 0.6;
+  const tValueX = R2;
+  const subStr = `${sym}${(subtotalCents / 100).toFixed(2)}`;
+  drawText(lbl.subtotalLabel || "Subtotal", tLabelX, y, 8, font, grey);
+  rText(subStr, tValueX, y, 8, font, grey); y -= 12;
+
+  if (vatEnabled && showVat) {
+    const vatLbl = (lbl.vatLabel || `VAT (${vatRate}%)`).replace("15%", `${vatRate}%`);
+    drawText(vatLbl, tLabelX, y, 8, font, grey);
+    rText(`${sym}${(vatCents / 100).toFixed(2)}`, tValueX, y, 8, font, grey); y -= 12;
+  }
+
+  // Total box
+  const totalH = 24;
+  page.drawRectangle({ x: tLabelX - 8, y: y - totalH, width: tValueX - tLabelX + 8 + 4, height: totalH, color: accent });
+  const totLbl = lbl.totalLabel || (isQuote ? "TOTAL ESTIMATE" : "TOTAL DUE");
+  drawText(totLbl, tLabelX - 2, y - totalH + 7, 9, fontBold, white);
+  rText(`${sym}${(invoice.total_cents / 100).toFixed(2)}`, tValueX, y - totalH + 7, 11, fontBold, white);
+  y -= totalH + 14;
+
+  // Notes
+  if (showNotes && invoice.notes) {
+    const notesLbl = lbl.notesLabel || "Notes";
+    page.drawRectangle({ x: L, y: y - 4, width: 3, height: 30, color: accent });
+    drawText(notesLbl.toUpperCase(), L + 8, y, 7, fontBold, accent); y -= 11;
+    drawText(invoice.notes, L + 8, y, 8, font, grey, W2 - 16); y -= 20;
+  }
+
+  // Bank Details
+  if (showBank && (user?.bank_name || user?.account_number)) {
+    y -= 6;
+    page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.5, color: lightGrey }); y -= 12;
+    drawText("BANKING DETAILS", L, y, 7, fontBold, accent); y -= 10;
+    const bCols = [
+      { label: "Bank", value: user.bank_name },
+      { label: "Account", value: user.account_name },
+      { label: "Acc. No.", value: user.account_number },
+      { label: "Branch", value: user.branch_code },
+    ].filter(b => b.value);
+    let bx = L;
+    for (const b of bCols) {
+      drawText(b.label, bx, y, 7, fontBold, grey);
+      drawText(b.value, bx, y - 10, 8, font, black, 100);
+      bx += (W2 / 4);
+    }
+    y -= 22;
+  }
+
+  // Footer text
+  if (cfg.footerText) {
+    page.drawRectangle({ x: L, y: y - 1, width: W2, height: 0.5, color: lighten(accent, 0.6) }); y -= 10;
+    const ftW = font.widthOfTextAtSize(cfg.footerText, 8);
+    drawText(cfg.footerText, (W - ftW) / 2, y, 8, font, grey);
+    y -= 14;
+  }
+
+  // Bottom accent bar
+  page.drawRectangle({ x: 0, y: 0, width: W, height: 4, color: accent });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Route handlers (unchanged from before)
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -867,11 +1121,11 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig } = req.body;
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
     const docType = type === "quote" ? "quote" : "invoice";
-    const docTemplate = Math.min(7, Math.max(1, parseInt(template) || 1));
+    const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
     const subtotalCents = items.reduce((sum: number, item: any) => sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100), 0);
     const vatCents = vatEnabled ? Math.round(subtotalCents * 0.15) : 0;
     const totalCents = subtotalCents + vatCents;
@@ -880,10 +1134,11 @@ invoiceRouter.post("/", async (req, res) => {
     const docNumber = `${prefix}-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
     const id = randomUUID();
     const now = new Date().toISOString();
+    const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?)`,
-      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?)`,
+      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, now]
     );
     res.json({ ok: true, id, invoiceNumber: docNumber });
   } catch (err: any) {
@@ -902,6 +1157,7 @@ invoiceRouter.get("/", async (req, res) => {
       vat_cents: inv.vat_cents || 0,
       type: inv.type || "invoice",
       template: inv.template || 1,
+      template_config: inv.template_config ? JSON.parse(inv.template_config) : null,
     })));
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch invoices" });
@@ -980,14 +1236,19 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
     const ctx: TemplateCtx = { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote };
 
-    switch (templateNum) {
-      case 2: renderTemplate2(ctx); break;
-      case 3: renderTemplate3(ctx); break;
-      case 4: renderTemplate4(ctx); break;
-      case 5: renderTemplate5(ctx); break;
-      case 6: renderTemplate6(ctx); break;
-      case 7: renderTemplate7(ctx); break;
-      default: renderTemplate1(ctx);
+    if (templateNum === 8) {
+      const rawConfig = invoice.template_config ? JSON.parse(invoice.template_config) : {};
+      renderCustomTemplate(ctx, rawConfig);
+    } else {
+      switch (templateNum) {
+        case 2: renderTemplate2(ctx); break;
+        case 3: renderTemplate3(ctx); break;
+        case 4: renderTemplate4(ctx); break;
+        case 5: renderTemplate5(ctx); break;
+        case 6: renderTemplate6(ctx); break;
+        case 7: renderTemplate7(ctx); break;
+        default: renderTemplate1(ctx);
+      }
     }
 
     const pdfBytes = await pdfDoc.save();
@@ -1059,14 +1320,19 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     }
 
     const ctx: TemplateCtx = { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote };
-    switch (templateNum) {
-      case 2: renderTemplate2(ctx); break;
-      case 3: renderTemplate3(ctx); break;
-      case 4: renderTemplate4(ctx); break;
-      case 5: renderTemplate5(ctx); break;
-      case 6: renderTemplate6(ctx); break;
-      case 7: renderTemplate7(ctx); break;
-      default: renderTemplate1(ctx);
+    if (templateNum === 8) {
+      const rawConfig = invoice.template_config ? JSON.parse(invoice.template_config) : {};
+      renderCustomTemplate(ctx, rawConfig);
+    } else {
+      switch (templateNum) {
+        case 2: renderTemplate2(ctx); break;
+        case 3: renderTemplate3(ctx); break;
+        case 4: renderTemplate4(ctx); break;
+        case 5: renderTemplate5(ctx); break;
+        case 6: renderTemplate6(ctx); break;
+        case 7: renderTemplate7(ctx); break;
+        default: renderTemplate1(ctx);
+      }
     }
     const pdfBytes = await pdfDoc.save();
 
@@ -1133,17 +1399,18 @@ invoiceRouter.put("/:id", async (req, res) => {
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template } = req.body;
+    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template, templateConfig } = req.body;
     if (!customer_name || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customer_name and items are required" });
-    const docTemplate = Math.min(7, Math.max(1, parseInt(template) || 1));
+    const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
     const vatOn = !!vat_enabled;
     let subtotalCents = 0;
     for (const it of items) subtotalCents += Math.round((it.qty || 1) * ((it.unitPrice || 0) * 100));
     const vatCents = vatOn ? Math.round(subtotalCents * 0.15) : 0;
+    const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     await execute(
-      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=? WHERE id=?`,
-      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, req.params.id]
+      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=? WHERE id=?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, req.params.id]
     );
     res.json({ ok: true });
   } catch (err: any) {
