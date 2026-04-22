@@ -37,6 +37,9 @@ export interface TemplateConfig {
   mutedTextColor: string;
   tableHeaderTextColor: string;
   totalsTextColor: string;
+  billToLabelColor: string;
+  notesLabelColor: string;
+  bankLabelColor: string;
   /* document settings */
   footerText: string;
   showFields: {
@@ -90,6 +93,9 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   mutedTextColor: "#666666",
   tableHeaderTextColor: "#ffffff",
   totalsTextColor: "#ffffff",
+  billToLabelColor: "#156C41",
+  notesLabelColor: "#156C41",
+  bankLabelColor: "#156C41",
   footerText: "Thank you for your business!",
   showFields: {
     logo: true,
@@ -369,7 +375,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
       {(() => {
         const billToBox = (
           <div style={{ background: "#f8f9fa", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ fontWeight: "bold", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "5px" }}>{config.labels.billToLabel}</div>
+            <div style={{ fontWeight: "bold", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: config.billToLabelColor, marginBottom: "5px" }}>{config.labels.billToLabel}</div>
             <div style={{ fontWeight: "600", fontSize: "10px", color: config.headingColor }}>ABC Corporation (Pty) Ltd</div>
             {config.showFields.customerAddress && <div style={{ color: config.mutedTextColor, marginTop: "2px", fontSize: "8px" }}>456 Client Ave, Johannesburg, 2001</div>}
             {config.showFields.customerPhone && <div style={{ color: config.mutedTextColor, marginTop: "2px", fontSize: "8px" }}>+27 82 987 6543</div>}
@@ -442,8 +448,8 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
       {(() => {
         const notesBlock = config.showFields.notes ? (
           <div key="notes" style={{ padding: "0 32px 12px" }}>
-            <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: "10px" }}>
-              <div style={{ fontWeight: "700", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: accent, marginBottom: "4px" }}>{config.labels.notesLabel}</div>
+            <div style={{ borderLeft: `3px solid ${config.notesLabelColor}`, paddingLeft: "10px" }}>
+              <div style={{ fontWeight: "700", fontSize: "7.5px", textTransform: "uppercase", letterSpacing: "0.8px", color: config.notesLabelColor, marginBottom: "4px" }}>{config.labels.notesLabel}</div>
               <div style={{ color: config.mutedTextColor, lineHeight: "1.6" }}>Please reference your invoice number when making payment. Direct EFT payments are preferred.</div>
             </div>
           </div>
@@ -453,7 +459,7 @@ function InvoicePreview({ config, profile }: InvoicePreviewProps) {
             <div style={{ marginBottom: "8px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
               {[{ label: "Bank", value: bankName }, { label: "Account Name", value: accountName }, { label: "Account No.", value: accountNum }, { label: "Branch Code", value: branchCode }].map(({ label, value }) => (
                 <div key={label}>
-                  <div style={{ fontSize: "7px", textTransform: "uppercase", color: accent, fontWeight: "700", marginBottom: "1px" }}>{label}</div>
+                  <div style={{ fontSize: "7px", textTransform: "uppercase", color: config.bankLabelColor, fontWeight: "700", marginBottom: "1px" }}>{label}</div>
                   <div style={{ color: config.bodyTextColor, fontSize: "8px" }}>{value}</div>
                 </div>
               ))}
@@ -753,6 +759,9 @@ export default function InvoiceTemplateDesigner({ onSave }: Props) {
               { key: "mutedTextColor", label: "Muted / secondary", hint: "Addresses, subtotal, notes" },
               { key: "tableHeaderTextColor", label: "Table header text", hint: "Text on the coloured table row" },
               { key: "totalsTextColor", label: "Total bar text", hint: "Text inside the total amount bar" },
+              { key: "billToLabelColor", label: "\"Bill To\" label", hint: "Section heading above customer details" },
+              { key: "notesLabelColor", label: "\"Notes\" label", hint: "Notes section heading and side bar" },
+              { key: "bankLabelColor", label: "Bank detail labels", hint: "Bank, Account, Branch labels in footer" },
             ].map(({ key, label, hint }) => (
               <div key={key}>
                 <Label className="text-xs mb-1.5 block">{label}</Label>

@@ -812,6 +812,9 @@ interface CustomConfig {
   mutedTextColor?: string;
   tableHeaderTextColor?: string;
   totalsTextColor?: string;
+  billToLabelColor?: string;
+  notesLabelColor?: string;
+  bankLabelColor?: string;
   footerText?: string;
   showFields?: {
     logo?: boolean;
@@ -870,6 +873,9 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   const cMuted = hexToRgb(cfg.mutedTextColor || "#666666") || rgb(0.40, 0.40, 0.40);
   const cTableHead = hexToRgb(cfg.tableHeaderTextColor || "#ffffff") || white;
   const cTotals = hexToRgb(cfg.totalsTextColor || "#ffffff") || white;
+  const cBillToLbl = hexToRgb(cfg.billToLabelColor || cfg.accentColor || "#156C41") || accent;
+  const cNotesLbl = hexToRgb(cfg.notesLabelColor || cfg.accentColor || "#156C41") || accent;
+  const cBankLbl = hexToRgb(cfg.bankLabelColor || cfg.accentColor || "#156C41") || accent;
 
   const { page, font, fontBold, logo, invoice, user, items, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
   const pageH = 842;
@@ -1050,7 +1056,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   // Bill To
   page.drawRectangle({ x: billToX, y: y - boxH, width: colW, height: boxH, color: boxBg });
   const btLabel = (lbl.billToLabel || "Bill To").toUpperCase();
-  drawText(btLabel, billToX + 8, y - 12, 7, fontBold, accent);
+  drawText(btLabel, billToX + 8, y - 12, 7, fontBold, cBillToLbl);
   drawText(invoice.customer_name || "", billToX + 8, y - 24, 9.5, fontBold, cHeading, colW - 16);
   let btY = y - 36;
   if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
@@ -1135,8 +1141,8 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   const drawNotes = (curY: number): number => {
     if (!showNotes || !invoice.notes) return curY;
     const notesLbl = (lbl.notesLabel || "Notes").toUpperCase();
-    page.drawRectangle({ x: L, y: curY - 24, width: 3, height: 26, color: accent });
-    drawText(notesLbl, L + 10, curY - 8, 8, fontBold, accent);
+    page.drawRectangle({ x: L, y: curY - 24, width: 3, height: 26, color: cNotesLbl });
+    drawText(notesLbl, L + 10, curY - 8, 8, fontBold, cNotesLbl);
     drawText(invoice.notes, L + 10, curY - 22, 8.5, font, cMuted, W2 - 16);
     return curY - 36;
   };
@@ -1156,7 +1162,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     const bColW = W2 / 4;
     for (let i = 0; i < bCols.length; i++) {
       const bx = L + i * bColW;
-      drawText(bCols[i].label, bx, by, 7, fontBold, accent);
+      drawText(bCols[i].label, bx, by, 7, fontBold, cBankLbl);
       drawText(bCols[i].value, bx, by - 11, 8.5, font, cBody, bColW - 6);
     }
     return by - 24;
