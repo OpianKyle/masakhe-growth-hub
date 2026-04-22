@@ -78,18 +78,6 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
-    icon: HandCoins,
-    label: "Business Toolkit",
-    groupId: "funding",
-    children: [
-      { icon: BookOpen, label: "Business Plan", path: "/dashboard/business-plan", comingSoon: true },
-      { icon: HandCoins, label: "Funding Proposal", path: "/dashboard/funding-proposal", comingSoon: true },
-      { icon: ClipboardCheck, label: "Funding Scoring", path: "/dashboard/funding", comingSoon: true },
-      { icon: Building2, label: "Verify Company", path: "/dashboard/company-verify", comingSoon: true },
-      { icon: Send, label: "Funding Applications", path: "/dashboard/funding-applications", comingSoon: true },
-    ],
-  },
-  {
     icon: Banknote,
     label: "HR & Payroll",
     groupId: "hr",
@@ -100,7 +88,6 @@ const baseNavItems: NavItem[] = [
   },
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
-  { icon: FileText, label: "Tenders", path: "/dashboard/tenders", comingSoon: true },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
