@@ -24,6 +24,8 @@ interface MediaAsset {
 
 interface Props {
   workspaceId: string;
+  platformFilter?: string;
+  calendarPath?: string;
 }
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -49,7 +51,7 @@ const HASHTAG_SUGGESTIONS = [
   "#ShopLocal", "#SupportLocal", "#Startup", "#Digital", "#Masakhe"
 ];
 
-export default function SocialCreate({ workspaceId }: Props) {
+export default function SocialCreate({ workspaceId, platformFilter, calendarPath }: Props) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
@@ -79,7 +81,10 @@ export default function SocialCreate({ workspaceId }: Props) {
     if (!workspaceId) return;
     fetch(`/api/social/ws/${workspaceId}/accounts`, { credentials: "include" })
       .then(r => r.json())
-      .then(d => setAccounts(d.accounts || []))
+      .then(d => {
+        const all = d.accounts || [];
+        setAccounts(platformFilter ? all.filter((a: Account) => a.platform === platformFilter) : all);
+      })
       .catch(() => {});
     fetch(`/api/social/ws/${workspaceId}/media`, { credentials: "include" })
       .then(r => r.json())
@@ -234,7 +239,7 @@ export default function SocialCreate({ workspaceId }: Props) {
       const data = await res.json();
       if (res.ok) {
         toast.success(action === "draft" ? "Draft saved" : action === "schedule" ? "Post scheduled" : "Post published");
-        navigate("/dashboard/social/calendar");
+        navigate(calendarPath || "/dashboard/social/calendar");
       } else {
         toast.error(data.error || "Failed to save post");
       }

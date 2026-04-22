@@ -15,6 +15,7 @@ import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, S
 interface Props {
   workspaceId: string;
   site: SiteConfig | null;
+  createPath?: string;
 }
 
 interface PostTemplate {
@@ -775,7 +776,7 @@ const CATEGORY_ORDER = [
   "Brokerage & Finance",
 ];
 
-export default function SocialPostTemplates({ workspaceId, site }: Props) {
+export default function SocialPostTemplates({ workspaceId, site, createPath }: Props) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -789,7 +790,8 @@ export default function SocialPostTemplates({ workspaceId, site }: Props) {
     params.set("template", template.content);
     params.set("templateImage", template.templateImage);
     params.set("templateImageName", template.templateImageName);
-    navigate(`/dashboard/social/create?${params.toString()}`);
+    const base = createPath || "/dashboard/social/create";
+    navigate(`${base}?${params.toString()}`);
   };
 
   const handleCopy = async (template: PostTemplate) => {

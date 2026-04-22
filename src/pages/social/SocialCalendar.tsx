@@ -24,6 +24,8 @@ interface Post {
 
 interface Props {
   workspaceId: string;
+  platformFilter?: string;
+  createPath?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -42,7 +44,7 @@ const STATUS_ICONS: Record<string, any> = {
   FAILED: AlertTriangle,
 };
 
-export default function SocialCalendar({ workspaceId }: Props) {
+export default function SocialCalendar({ workspaceId, platformFilter, createPath }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
@@ -95,7 +97,10 @@ export default function SocialCalendar({ workspaceId }: Props) {
 
   const postsByDay = useMemo(() => {
     const map: Record<number, Post[]> = {};
-    for (const p of posts) {
+    const filteredPosts = platformFilter
+      ? posts.filter(p => p.targets?.some(t => t.platform === platformFilter))
+      : posts;
+    for (const p of filteredPosts) {
       const dateStr = p.scheduled_at || p.created_at;
       const d = new Date(dateStr);
       if (d.getMonth() === month && d.getFullYear() === year) {
@@ -105,7 +110,7 @@ export default function SocialCalendar({ workspaceId }: Props) {
       }
     }
     return map;
-  }, [posts, month, year]);
+  }, [posts, month, year, platformFilter]);
 
   const today = new Date();
   const isToday = (day: number) => today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
@@ -128,7 +133,7 @@ export default function SocialCalendar({ workspaceId }: Props) {
             <button onClick={() => setView("month")} className={`px-3 py-1.5 text-sm ${view === "month" ? "bg-primary text-white" : "hover:bg-muted"}`}>Month</button>
             <button onClick={() => setView("week")} className={`px-3 py-1.5 text-sm ${view === "week" ? "bg-primary text-white" : "hover:bg-muted"}`}>Week</button>
           </div>
-          <Link to="/dashboard/social/create">
+          <Link to={createPath || "/dashboard/social/create"}>
             <Button size="sm" className="gradient-hero text-white"><Plus className="h-4 w-4 mr-1" /> New Post</Button>
           </Link>
         </div>
@@ -222,7 +227,7 @@ export default function SocialCalendar({ workspaceId }: Props) {
                   Retry
                 </Button>
               )}
-              <Link to={`/dashboard/social/create?edit=${selectedPost.id}`}>
+              <Link to={`${createPath || "/dashboard/social/create"}?edit=${selectedPost.id}`}>
                 <Button size="sm" variant="outline">Edit</Button>
               </Link>
               <Button size="sm" variant="ghost" onClick={() => setSelectedPost(null)}>Close</Button>

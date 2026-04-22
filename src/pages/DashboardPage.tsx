@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award, Linkedin
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -14,6 +14,7 @@ import FinancePage from "./FinancePage";
 import InvoicesPage from "./InvoicesPage";
 import GrantReadinessPage from "./GrantReadinessPage";
 import SocialHub from "./social/SocialHub";
+import BizConnectHub from "./bizconnect/BizConnectHub";
 import SettingsPage from "./SettingsPage";
 import DashboardOverview from "./DashboardOverview";
 import BillingPage from "./BillingPage";
@@ -64,6 +65,7 @@ const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website" },
   { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
+  { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect" },
   {
     icon: Wallet,
     label: "Transactions",
@@ -154,6 +156,7 @@ export default function DashboardPage() {
 
   const getPageTitle = () => {
     if (location.pathname.startsWith("/dashboard/social")) return "Social Media Hub";
+    if (location.pathname.startsWith("/dashboard/biz-connect")) return "Biz Connect";
     const match = allPaths.find(p =>
       p.path === "/dashboard" ? location.pathname === "/dashboard" : location.pathname.startsWith(p.path)
     );
@@ -459,6 +462,7 @@ export default function DashboardPage() {
             <Route path="invoices" element={<InvoicesPage />} />
             <Route path="funding" element={<Navigate to="/dashboard" replace />} />
             <Route path="social/*" element={<SocialHub />} />
+            <Route path="biz-connect/*" element={<BizConnectHub />} />
             <Route path="tenders" element={<TendersPage />} />
             <Route path="business-plan" element={<Navigate to="/dashboard" replace />} />
             <Route path="funding-proposal" element={<Navigate to="/dashboard" replace />} />

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 interface Props {
   workspaceId: string;
+  platformFilter?: string;
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -21,7 +22,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   X: "#000000",
 };
 
-export default function SocialAnalytics({ workspaceId }: Props) {
+export default function SocialAnalytics({ workspaceId, platformFilter }: Props) {
   const [data, setData] = useState<any>(null);
   const [report, setReport] = useState<any>(null);
 
@@ -46,11 +47,13 @@ export default function SocialAnalytics({ workspaceId }: Props) {
 
   const { overview, postsByPlatform, postsByDay } = data;
 
-  const pieData = (postsByPlatform || []).map((p: any) => ({
-    name: p.platform.replace("META_", ""),
-    value: p.post_count,
-    color: PLATFORM_COLORS[p.platform] || "#888",
-  }));
+  const pieData = (postsByPlatform || [])
+    .filter((p: any) => !platformFilter || p.platform === platformFilter)
+    .map((p: any) => ({
+      name: p.platform.replace("META_", ""),
+      value: p.post_count,
+      color: PLATFORM_COLORS[p.platform] || "#888",
+    }));
 
   return (
     <div className="space-y-6">
