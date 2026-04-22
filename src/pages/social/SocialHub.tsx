@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, PenSquare, Image, BarChart3,
-  Facebook, Instagram, Linkedin, X as XIcon, Video, Globe,
+  Facebook, Instagram, Video, Globe,
   Plus, Trash2, CheckCircle2, Info, Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,7 @@ interface Account {
 const PLATFORMS = [
   { id: "META_FACEBOOK", label: "Facebook", icon: Facebook, color: "bg-blue-600", placeholder: "Page or business name", urlPlaceholder: "https://facebook.com/yourbusiness" },
   { id: "META_INSTAGRAM", label: "Instagram", icon: Instagram, color: "bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400", placeholder: "@yourbusiness", urlPlaceholder: "https://instagram.com/yourbusiness" },
-  { id: "LINKEDIN", label: "LinkedIn", icon: Linkedin, color: "bg-blue-700", placeholder: "Company or profile name", urlPlaceholder: "https://linkedin.com/company/yourbusiness" },
-  { id: "X", label: "X (Twitter)", icon: XIcon, color: "bg-black", placeholder: "@yourhandle", urlPlaceholder: "https://x.com/yourhandle" },
   { id: "TIKTOK", label: "TikTok", icon: Video, color: "bg-gray-900", placeholder: "@yourhandle", urlPlaceholder: "https://tiktok.com/@yourhandle" },
-  { id: "YOUTUBE", label: "YouTube", icon: Video, color: "bg-red-600", placeholder: "Channel name", urlPlaceholder: "https://youtube.com/@yourchannel" },
 ];
 
 const subNav = [

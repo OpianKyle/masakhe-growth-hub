@@ -416,7 +416,7 @@ export default function SocialCreate({ workspaceId, platformFilter, calendarPath
               </button>
             </div>
             <div className="flex gap-1 mb-3">
-              {["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN"].map(p => {
+              {["META_FACEBOOK", "META_INSTAGRAM"].map(p => {
                 const Icon = PLATFORM_ICONS[p] || Globe;
                 return (
                   <button key={p} onClick={() => setPreviewPlatform(p)} className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${previewPlatform === p ? "bg-primary text-white" : "bg-muted hover:bg-muted/80"}`}>
@@ -457,7 +457,7 @@ export default function SocialCreate({ workspaceId, platformFilter, calendarPath
               </div>
               <div className="p-5 space-y-4">
                 <div className="flex gap-1.5">
-                  {["META_FACEBOOK", "META_INSTAGRAM", "LINKEDIN"].map(p => {
+                  {["META_FACEBOOK", "META_INSTAGRAM"].map(p => {
                     const Icon = PLATFORM_ICONS[p] || Globe;
                     return (
                       <button key={p} onClick={() => setPreviewPlatform(p)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${previewPlatform === p ? "bg-primary text-white" : "bg-muted hover:bg-muted/80"}`}>
