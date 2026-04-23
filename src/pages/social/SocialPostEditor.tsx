@@ -67,6 +67,8 @@ interface ImageEl extends BaseEl {
   src: string;
   width: number;
   height: number;
+  mask?: "none" | "rounded" | "circle";
+  cornerRadius?: number;
 }
 
 interface LineEl extends BaseEl {
@@ -467,56 +469,205 @@ const BASE_TEMPLATES: Template[] = [
   },
 ];
 
+type StockLayout = "overlay" | "side-panel" | "bottom-card" | "top-strip" | "frame" | "diagonal" | "circle-badge" | "split";
+
 interface StockSpec {
   id: string;
   name: string;
   img: string;
   accent: string;
+  layout?: StockLayout;
+  side?: "left" | "right";
   overlayAlpha?: number;
   badge?: string;
   headline: string;
   sub?: string;
   cta?: string;
-  align?: "left" | "center";
   width?: number;
   height?: number;
   font?: string;
+  light?: boolean;
 }
 
+function rect(x: number, y: number, w: number, h: number, fill: string, opts: any = {}): Omit<RectEl, "id"> {
+  return { type: "rect", x, y, width: w, height: h, fill, stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true, ...opts };
+}
+function txt(x: number, y: number, w: number, text: string, size: number, fill: string, opts: any = {}): Omit<TextEl, "id"> {
+  return { type: "text", x, y, width: w, text, fontSize: size, fontFamily: "Poppins", fontStyle: "bold", align: "left", fill, rotation: 0, draggable: true, ...opts };
+}
+function badge(x: number, y: number, label: string, accent: string, fillText = "#FFFFFF"): Omit<AnyEl, "id">[] {
+  const bw = Math.max(180, label.length * 16 + 60);
+  return [
+    rect(x, y, bw, 50, accent, { cornerRadius: 25 }),
+    txt(x, y + 12, bw, label, 22, fillText, { align: "center" }),
+  ];
+}
+function ctaBtn(x: number, y: number, label: string, accent: string, fillText = "#FFFFFF"): Omit<AnyEl, "id">[] {
+  const w = Math.max(260, label.length * 18 + 80);
+  return [
+    rect(x, y, w, 80, accent, { cornerRadius: 40 }),
+    txt(x, y + 22, w, label, 28, fillText, { align: "center" }),
+  ];
+}
+
+const STOCK_LAYOUTS: StockLayout[] = ["overlay", "side-panel", "bottom-card", "top-strip", "frame", "diagonal", "circle-badge", "split"];
 function makeStockTemplate(s: StockSpec): Template {
   const W = s.width ?? 1080;
   const H = s.height ?? 1080;
-  const align = s.align ?? "left";
-  const alpha = s.overlayAlpha ?? 0.55;
-  const font = s.font ?? "Poppins";
-  const padX = 70;
-  const contentW = W - padX * 2;
-  const els: Omit<AnyEl, "id">[] = [
-    { type: "rect", x: 0, y: 0, width: W, height: H, fill: `rgba(15,23,42,${alpha})`, stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true } as any,
-  ];
-  let y = Math.round(H * 0.12);
-  if (s.badge) {
-    const bw = Math.min(contentW, Math.max(180, s.badge.length * 16 + 60));
-    els.push({ type: "rect", x: align === "center" ? (W - bw) / 2 : padX, y, width: bw, height: 50, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 25, rotation: 0, draggable: true } as any);
-    els.push({ type: "text", x: align === "center" ? (W - bw) / 2 : padX, y: y + 12, text: s.badge, fontSize: 22, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: bw, rotation: 0, draggable: true } as any);
-    y += 90;
+  const hash = Array.from(s.id).reduce((a, c) => a + c.charCodeAt(0), 0);
+  const layout: StockLayout = s.layout ?? STOCK_LAYOUTS[hash % STOCK_LAYOUTS.length];
+  const sideAuto: "left" | "right" = (hash % 2 === 0) ? "left" : "right";
+  if (s.layout === undefined && layout === "side-panel") s = { ...s, side: sideAuto };
+  const accent = s.accent;
+  const lightText = s.light ? "#0F172A" : "#FFFFFF";
+  const subText = s.light ? "#1F2937" : "#F1F5F9";
+  const els: Omit<AnyEl, "id">[] = [];
+
+  const headlineSize = (text: string, max = 100) => {
+    const longest = Math.max(...text.split("\n").map(l => l.length));
+    if (longest > 22) return Math.min(max, 72);
+    if (longest > 14) return Math.min(max, 88);
+    return max;
+  };
+
+  if (layout === "overlay") {
+    const alpha = s.overlayAlpha ?? 0.55;
+    els.push(rect(0, 0, W, H, `rgba(15,23,42,${alpha})`));
+    let y = Math.round(H * 0.12);
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
+    const hs = headlineSize(s.headline, 110);
+    els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect(70, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
   }
-  const headlineSize = s.headline.length > 40 ? 70 : s.headline.length > 22 ? 88 : 110;
-  els.push({ type: "text", x: padX, y, text: s.headline, fontSize: headlineSize, fontFamily: font, fontStyle: "bold", align, fill: "#FFFFFF", width: contentW, rotation: 0, draggable: true } as any);
-  y += headlineSize * (s.headline.split("\n").length + 0.5);
-  els.push({ type: "rect", x: align === "center" ? (W - 100) / 2 : padX, y, width: 100, height: 4, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 2, rotation: 0, draggable: true } as any);
-  y += 30;
-  if (s.sub) {
-    els.push({ type: "text", x: padX, y, text: s.sub, fontSize: 30, fontFamily: "Inter", fontStyle: "normal", align, fill: "#F1F5F9", width: contentW, rotation: 0, draggable: true } as any);
+
+  else if (layout === "side-panel") {
+    const side = s.side ?? "left";
+    const panelW = Math.round(W * 0.5);
+    const px = side === "left" ? 0 : W - panelW;
+    const tx = px + 60;
+    const tw = panelW - 120;
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.25)"));
+    els.push(rect(px, 0, panelW, H, accent));
+    let y = Math.round(H * 0.14);
+    if (s.badge) {
+      els.push(rect(tx, y, Math.max(180, s.badge.length * 16 + 60), 50, "#FFFFFF", { cornerRadius: 25 }));
+      els.push(txt(tx, y + 12, Math.max(180, s.badge.length * 16 + 60), s.badge, 22, accent, { align: "center" }));
+      y += 90;
+    }
+    const hs = headlineSize(s.headline, 96);
+    els.push(txt(tx, y, tw, s.headline, hs, "#FFFFFF"));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect(tx, y, 80, 4, "#FFFFFF", { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(tx, y, tw, s.sub, 26, "#FFFFFF", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) {
+      const ctaW = Math.max(240, s.cta.length * 16 + 80);
+      els.push(rect(tx, H - 160, ctaW, 80, "#FFFFFF", { cornerRadius: 40 }));
+      els.push(txt(tx, H - 138, ctaW, s.cta, 28, accent, { align: "center" }));
+    }
   }
-  if (s.cta) {
-    const ctaW = Math.max(260, s.cta.length * 18 + 80);
-    els.push({ type: "rect", x: align === "center" ? (W - ctaW) / 2 : padX, y: H - 160, width: ctaW, height: 80, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true } as any);
-    els.push({ type: "text", x: align === "center" ? (W - ctaW) / 2 : padX, y: H - 138, text: s.cta, fontSize: 28, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: ctaW, rotation: 0, draggable: true } as any);
+
+  else if (layout === "bottom-card") {
+    const cardH = Math.round(H * 0.5);
+    const cardY = H - cardH - 50;
+    els.push(rect(50, cardY, W - 100, cardH, "#FFFFFF", { cornerRadius: 24 }));
+    els.push(rect(50, cardY, W - 100, 80, accent, { cornerRadius: 24 }));
+    els.push(rect(50, cardY + 60, W - 100, 30, accent));
+    let y = cardY + 110;
+    if (s.badge) els.push(txt(80, cardY + 22, W - 160, s.badge, 30, "#FFFFFF", { align: "center" }));
+    const hs = headlineSize(s.headline, 78);
+    els.push(txt(80, y, W - 160, s.headline, hs, "#0F172A", { fontFamily: "Georgia" }));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect(80, y, 80, 4, accent, { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(80, y, W - 160, s.sub, 26, "#374151", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) els.push(...ctaBtn(80, cardY + cardH - 110, s.cta, accent));
   }
+
+  else if (layout === "top-strip") {
+    const stripH = Math.round(H * 0.22);
+    els.push(rect(0, stripH, W, H - stripH, "rgba(0,0,0,0.35)"));
+    els.push(rect(0, 0, W, stripH, accent));
+    if (s.badge) els.push(txt(60, stripH / 2 - 22, W - 120, s.badge, 36, "#FFFFFF", { align: "center" }));
+    let y = stripH + Math.round(H * 0.08);
+    const hs = headlineSize(s.headline, 110);
+    els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF", { align: "center" }));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect((W - 100) / 2, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal", align: "center" }));
+    if (s.cta) {
+      const ctaW = Math.max(260, s.cta.length * 18 + 80);
+      els.push(...ctaBtn((W - ctaW) / 2, H - 140, s.cta, accent));
+    }
+  }
+
+  else if (layout === "frame") {
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.5)"));
+    els.push(rect(40, 40, W - 80, H - 80, "transparent", { stroke: accent, strokeWidth: 6, cornerRadius: 12 }));
+    els.push(rect(80, Math.round(H * 0.28), W - 160, Math.round(H * 0.5), "rgba(15,23,42,0.7)", { cornerRadius: 16 }));
+    let y = Math.round(H * 0.32);
+    if (s.badge) {
+      const bw = Math.max(180, s.badge.length * 16 + 60);
+      els.push(rect((W - bw) / 2, y, bw, 50, accent, { cornerRadius: 25 }));
+      els.push(txt((W - bw) / 2, y + 12, bw, s.badge, 22, "#FFFFFF", { align: "center" }));
+      y += 90;
+    }
+    const hs = headlineSize(s.headline, 96);
+    els.push(txt(110, y, W - 220, s.headline, hs, "#FFFFFF", { align: "center", fontFamily: "Georgia" }));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect((W - 80) / 2, y, 80, 4, accent, { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(110, y, W - 220, s.sub, 28, "#F1F5F9", { fontFamily: "Inter", fontStyle: "italic", align: "center" }));
+    if (s.cta) {
+      const ctaW = Math.max(260, s.cta.length * 18 + 80);
+      els.push(...ctaBtn((W - ctaW) / 2, H - 180, s.cta, accent));
+    }
+  }
+
+  else if (layout === "diagonal") {
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.4)"));
+    els.push({ type: "line", x: 0, y: 0, points: [0, H * 0.55, W, H * 0.25], stroke: accent, strokeWidth: 80, rotation: 0, draggable: true } as any);
+    let y = Math.round(H * 0.66);
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
+    const hs = headlineSize(s.headline, 100);
+    els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
+    y += hs * (s.headline.split("\n").length + 0.3);
+    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 26, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
+  }
+
+  else if (layout === "circle-badge") {
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.55)"));
+    els.push({ type: "circle", x: W - 180, y: 200, radius: 180, fill: accent, stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true } as any);
+    if (s.badge) els.push(txt(W - 360, 160, 360, s.badge, 38, "#FFFFFF", { align: "center" }));
+    let y = Math.round(H * 0.5);
+    const hs = headlineSize(s.headline, 110);
+    els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
+    y += hs * (s.headline.split("\n").length + 0.4);
+    els.push(rect(70, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
+    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
+  }
+
+  else if (layout === "split") {
+    const splitY = Math.round(H * 0.55);
+    els.push(rect(0, splitY, W, H - splitY, "#0F172A"));
+    let y = splitY + 60;
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
+    const hs = headlineSize(s.headline, 76);
+    els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
+    y += hs * (s.headline.split("\n").length + 0.3);
+    els.push(rect(70, y, 80, 4, accent, { cornerRadius: 2 })); y += 24;
+    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 24, "#CBD5E1", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.cta) {
+      const ctaW = Math.max(260, s.cta.length * 18 + 80);
+      els.push(...ctaBtn(W - ctaW - 70, H - 140, s.cta, accent));
+    }
+  }
+
   return {
     id: s.id, name: s.name,
-    thumb: `linear-gradient(135deg,${s.accent},#0F172A)`,
+    thumb: `linear-gradient(135deg,${accent},#0F172A)`,
     width: W, height: H,
     background: "#0F172A",
     backgroundImage: s.img,
@@ -591,6 +742,9 @@ function URLImage({ el, isSelected, onSelect, onChange }: {
 }) {
   const [img] = useImage(el.src, "anonymous");
   const ref = useRef<Konva.Image>(null);
+  const cr =
+    el.mask === "circle" ? Math.min(el.width, el.height) / 2 :
+    el.mask === "rounded" ? (el.cornerRadius ?? 24) : 0;
   return (
     <KImage
       id={el.id}
@@ -599,6 +753,7 @@ function URLImage({ el, isSelected, onSelect, onChange }: {
       x={el.x} y={el.y} width={el.width} height={el.height}
       rotation={el.rotation}
       draggable={el.draggable}
+      cornerRadius={cr}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
@@ -917,7 +1072,7 @@ export default function SocialPostEditor() {
   const selected = elements.find(e => e.id === selectedId) || null;
 
   return (
-    <div className="flex flex-col h-full min-h-[calc(100vh-100px)] w-full overflow-hidden bg-white">
+    <div className="flex flex-col h-[calc(100vh-100px)] w-full overflow-hidden bg-white">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -1288,6 +1443,8 @@ export default function SocialPostEditor() {
                 <Transformer
                   ref={trRef}
                   rotateEnabled
+                  keepRatio={false}
+                  enabledAnchors={["top-left","top-center","top-right","middle-left","middle-right","bottom-left","bottom-center","bottom-right"]}
                   boundBoxFunc={(oldBox, newBox) => {
                     if (newBox.width < 10 || newBox.height < 10) return oldBox;
                     return newBox;
@@ -1490,6 +1647,58 @@ export default function SocialPostEditor() {
                         className="w-full" />
                     </div>
                   )}
+                </>
+              )}
+
+              {selected.type === "image" && (
+                <>
+                  <div>
+                    <Label className="text-xs">Mask shape</Label>
+                    <div className="grid grid-cols-3 gap-1 mt-1">
+                      {(["none", "rounded", "circle"] as const).map(m => {
+                        const active = ((selected as ImageEl).mask ?? "none") === m;
+                        return (
+                          <button
+                            key={m}
+                            onClick={() => update(selected.id, { mask: m } as Partial<ImageEl>)}
+                            className={`py-2 rounded border text-xs capitalize ${
+                              active ? "bg-primary text-white border-primary" : "bg-white hover:bg-slate-50"
+                            }`}
+                          >
+                            {m}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {((selected as ImageEl).mask ?? "none") === "rounded" && (
+                    <div>
+                      <Label className="text-xs">Corner radius: {(selected as ImageEl).cornerRadius ?? 24}px</Label>
+                      <input type="range" min={0} max={200}
+                        value={(selected as ImageEl).cornerRadius ?? 24}
+                        onChange={e => update(selected.id, { cornerRadius: Number(e.target.value) } as Partial<ImageEl>)}
+                        className="w-full" />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Width</Label>
+                      <Input type="number"
+                        value={Math.round((selected as ImageEl).width)}
+                        onChange={e => update(selected.id, { width: Math.max(20, Number(e.target.value)) } as Partial<ImageEl>)}
+                        className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Height</Label>
+                      <Input type="number"
+                        value={Math.round((selected as ImageEl).height)}
+                        onChange={e => update(selected.id, { height: Math.max(20, Number(e.target.value)) } as Partial<ImageEl>)}
+                        className="h-8 text-sm" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Drag any corner or side handle to freely deform — use a mask to crop into a circle or rounded shape.
+                  </p>
                 </>
               )}
 
