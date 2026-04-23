@@ -125,7 +125,7 @@ const BACKGROUNDS = [
   { id: "fitness", label: "Fitness", url: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&q=80&auto=format" },
 ];
 
-const TEMPLATES: Template[] = [
+const BASE_TEMPLATES: Template[] = [
   {
     id: "mega-sale",
     name: "Mega Sale 50% OFF",
@@ -466,6 +466,120 @@ const TEMPLATES: Template[] = [
   },
 ];
 
+interface StockSpec {
+  id: string;
+  name: string;
+  img: string;
+  accent: string;
+  overlayAlpha?: number;
+  badge?: string;
+  headline: string;
+  sub?: string;
+  cta?: string;
+  align?: "left" | "center";
+  width?: number;
+  height?: number;
+  font?: string;
+}
+
+function makeStockTemplate(s: StockSpec): Template {
+  const W = s.width ?? 1080;
+  const H = s.height ?? 1080;
+  const align = s.align ?? "left";
+  const alpha = s.overlayAlpha ?? 0.55;
+  const font = s.font ?? "Poppins";
+  const padX = 70;
+  const contentW = W - padX * 2;
+  const els: Omit<AnyEl, "id">[] = [
+    { type: "rect", x: 0, y: 0, width: W, height: H, fill: `rgba(15,23,42,${alpha})`, stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true } as any,
+  ];
+  let y = Math.round(H * 0.12);
+  if (s.badge) {
+    const bw = Math.min(contentW, Math.max(180, s.badge.length * 16 + 60));
+    els.push({ type: "rect", x: align === "center" ? (W - bw) / 2 : padX, y, width: bw, height: 50, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 25, rotation: 0, draggable: true } as any);
+    els.push({ type: "text", x: align === "center" ? (W - bw) / 2 : padX, y: y + 12, text: s.badge, fontSize: 22, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: bw, rotation: 0, draggable: true } as any);
+    y += 90;
+  }
+  const headlineSize = s.headline.length > 40 ? 70 : s.headline.length > 22 ? 88 : 110;
+  els.push({ type: "text", x: padX, y, text: s.headline, fontSize: headlineSize, fontFamily: font, fontStyle: "bold", align, fill: "#FFFFFF", width: contentW, rotation: 0, draggable: true } as any);
+  y += headlineSize * (s.headline.split("\n").length + 0.5);
+  els.push({ type: "rect", x: align === "center" ? (W - 100) / 2 : padX, y, width: 100, height: 4, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 2, rotation: 0, draggable: true } as any);
+  y += 30;
+  if (s.sub) {
+    els.push({ type: "text", x: padX, y, text: s.sub, fontSize: 30, fontFamily: "Inter", fontStyle: "normal", align, fill: "#F1F5F9", width: contentW, rotation: 0, draggable: true } as any);
+  }
+  if (s.cta) {
+    const ctaW = Math.max(260, s.cta.length * 18 + 80);
+    els.push({ type: "rect", x: align === "center" ? (W - ctaW) / 2 : padX, y: H - 160, width: ctaW, height: 80, fill: s.accent, stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true } as any);
+    els.push({ type: "text", x: align === "center" ? (W - ctaW) / 2 : padX, y: H - 138, text: s.cta, fontSize: 28, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: ctaW, rotation: 0, draggable: true } as any);
+  }
+  return {
+    id: s.id, name: s.name,
+    thumb: `linear-gradient(135deg,${s.accent},#0F172A)`,
+    width: W, height: H,
+    background: "#0F172A",
+    backgroundImage: s.img,
+    elements: els,
+  };
+}
+
+const U = (id: string, w = 1080) => `https://images.unsplash.com/${id}?w=${w}&q=80&auto=format`;
+
+const STOCK_SPECS: StockSpec[] = [
+  { id: "st-restaurant", name: "Restaurant Special", img: U("photo-1517248135467-4c7edcad34c4"), accent: "#EF4444", badge: "TONIGHT", headline: "Chef's table\nspecial menu", sub: "3-course dinner · R295 per person", cta: "RESERVE A TABLE" },
+  { id: "st-coffee", name: "Coffee Promo", img: U("photo-1495474472287-4d71bcdd2085"), accent: "#92400E", badge: "MORNING DEAL", headline: "Buy one,\nget one free", sub: "Every weekday before 10am", cta: "FIND YOUR STORE" },
+  { id: "st-bakery", name: "Bakery Daily", img: U("photo-1509440159596-0249088772ff"), accent: "#D97706", badge: "FRESH TODAY", headline: "Baked from\n4am, every day", sub: "Sourdough · pastries · cakes", cta: "ORDER NOW" },
+  { id: "st-pizza", name: "Pizza Friday", img: U("photo-1513104890138-7c749659a591"), accent: "#DC2626", badge: "FRIDAY ONLY", headline: "Two large\npizzas · R199", sub: "Dine-in, takeaway or delivery", cta: "ORDER ONLINE" },
+  { id: "st-burger", name: "Burger Combo", img: U("photo-1568901346375-23c9450c58cd"), accent: "#F59E0B", badge: "COMBO DEAL", headline: "Burger, fries\n& drink · R89", sub: "Available all day, every day", cta: "ORDER NOW" },
+  { id: "st-sushi", name: "Sushi Night", img: U("photo-1579871494447-9811cf80d66c"), accent: "#0EA5E9", badge: "ALL YOU CAN EAT", headline: "Sushi night\nThursdays", sub: "R245 per person · 18:00 till late", cta: "BOOK A TABLE" },
+  { id: "st-smoothie", name: "Smoothie Bar", img: U("photo-1546173159-315724a31696"), accent: "#22C55E", badge: "HEALTHY VIBES", headline: "Cold-pressed\ngoodness daily", sub: "Made fresh from local produce", cta: "VIEW MENU" },
+  { id: "st-wine", name: "Wine Tasting", img: U("photo-1510812431401-41d2bd2722f3"), accent: "#7E22CE", badge: "INVITE ONLY", headline: "Private wine\ntasting evening", sub: "Saturday · 7 May · 19:00", cta: "RSVP NOW" },
+  { id: "st-gym", name: "Gym Membership", img: U("photo-1534438327276-14e5300c3a48"), accent: "#22C55E", badge: "JOIN TODAY", headline: "Train hard.\nLive better.", sub: "First month free · No contracts", cta: "CLAIM YOUR SPOT" },
+  { id: "st-pt", name: "Personal Training", img: U("photo-1517836357463-d25dfeac3438"), accent: "#F97316", badge: "1-ON-1", headline: "Your personal\ntraining plan", sub: "Certified coaches · Real results", cta: "BOOK A SESSION" },
+  { id: "st-yoga", name: "Yoga Class", img: U("photo-1545205597-3d9d02c29597"), accent: "#A855F7", badge: "MORNING FLOW", headline: "Find your\nbalance", sub: "Sunrise yoga · Tue, Thu & Sat", cta: "RESERVE YOUR SPOT" },
+  { id: "st-spa", name: "Spa Day", img: U("photo-1540555700478-4be289fbecef"), accent: "#10B981", badge: "RELAX & RESTORE", headline: "Treat yourself\nto a spa day", sub: "Full body massage from R495", cta: "BOOK NOW" },
+  { id: "st-salon", name: "Hair Salon", img: U("photo-1560066984-138dadb4c035"), accent: "#EC4899", badge: "NEW CLIENT", headline: "20% off your\nfirst visit", sub: "Cut · colour · style", cta: "BOOK ONLINE" },
+  { id: "st-nails", name: "Nail Studio", img: U("photo-1604654894610-df63bc536371"), accent: "#F472B6", badge: "TUESDAY SPECIAL", headline: "Gel manicure\nR180", sub: "Walk-ins welcome", cta: "FIND US" },
+  { id: "st-beauty", name: "Beauty Tips", img: U("photo-1522335789203-aabd1fc54bc9"), accent: "#EC4899", badge: "BEAUTY TIP", headline: "Glow from\nthe inside out", sub: "5 daily habits for healthier skin", cta: "READ MORE" },
+  { id: "st-skincare", name: "Skincare Launch", img: U("photo-1556228720-195a672e8a03"), accent: "#22D3EE", badge: "JUST LAUNCHED", headline: "The new vitamin\nC serum", sub: "Brighter skin in 14 days", cta: "SHOP NOW" },
+  { id: "st-fashion", name: "Fashion Sale", img: U("photo-1490481651871-ab68de25d43d"), accent: "#FBBF24", badge: "UP TO 60% OFF", headline: "End of season\nclearance", sub: "Online & in-store · Limited stock", cta: "SHOP THE SALE" },
+  { id: "st-shoes", name: "Shoe Drop", img: U("photo-1542291026-7eec264c27ff"), accent: "#06B6D4", badge: "JUST LANDED", headline: "Step into\nsomething new", sub: "Latest sneakers from your favourite brands", cta: "SHOP DROP" },
+  { id: "st-jewelry", name: "Jewelry Showcase", img: U("photo-1535632787350-4e68ef0ac584"), accent: "#FBBF24", badge: "HANDCRAFTED", headline: "Timeless\npieces, just\nfor you", sub: "Locally made · Ethically sourced", cta: "VIEW COLLECTION" },
+  { id: "st-watch", name: "Watch Promo", img: U("photo-1523275335684-37898b6baf30"), accent: "#0F172A", badge: "FATHER'S DAY", headline: "A gift that\nlasts a lifetime", sub: "Free engraving with every purchase", cta: "SHOP WATCHES" },
+  { id: "st-handbag", name: "Handbag Launch", img: U("photo-1584917865442-de89df76afd3"), accent: "#9333EA", badge: "NEW IN", headline: "The everyday\nbag, reimagined", sub: "Available in 6 colours", cta: "DISCOVER MORE" },
+  { id: "st-realestate", name: "Real Estate Listing", img: U("photo-1568605114967-8130f3a36994"), accent: "#1E40AF", badge: "FOR SALE", headline: "4-bed family\nhome · Sandton", sub: "R 4 250 000 · 320 m²", cta: "VIEW LISTING" },
+  { id: "st-openhouse", name: "Open House", img: U("photo-1600585154340-be6161a56a0c"), accent: "#0EA5E9", badge: "THIS SUNDAY", headline: "Open house\n· 12 — 14h", sub: "27 Jacaranda Drive, Bryanston", cta: "GET DIRECTIONS" },
+  { id: "st-property", name: "Property Manager", img: U("photo-1487958449943-2429e8be8625"), accent: "#0F766E", badge: "STRESS-FREE LETTING", headline: "We manage\nyour property", sub: "Tenant vetting · Rent collection · Maintenance", cta: "GET A QUOTE" },
+  { id: "st-construction", name: "Construction Services", img: U("photo-1503387762-592deb58ef4e"), accent: "#F59E0B", badge: "BUILD WITH US", headline: "Built to last,\ndelivered on time", sub: "Residential · commercial · renovations", cta: "REQUEST A QUOTE" },
+  { id: "st-trades", name: "Trades & Repairs", img: U("photo-1581094288338-2314dddb7ece"), accent: "#EF4444", badge: "24/7 CALL-OUTS", headline: "Plumbing &\nelectrical, sorted", sub: "Same-day response across Gauteng", cta: "CALL NOW" },
+  { id: "st-carwash", name: "Car Wash", img: U("photo-1492144534655-ae79c964c9d7"), accent: "#0EA5E9", badge: "WEEKEND SPECIAL", headline: "Full valet\nfrom R150", sub: "Wash · vacuum · interior shine", cta: "FIND OUR LOCATIONS" },
+  { id: "st-autorepair", name: "Auto Repair", img: U("photo-1503376780353-7e6692767b70"), accent: "#0F172A", badge: "TRUSTED MECHANIC", headline: "Service your\ncar with us", sub: "Major service from R1 950 · All makes", cta: "BOOK YOUR SERVICE" },
+  { id: "st-travel", name: "Travel Deal", img: U("photo-1488646953014-85cb44e25828"), accent: "#06B6D4", badge: "EARLY BIRD", headline: "Cape Town\nlong weekend", sub: "Flights + hotel from R3 999 pp", cta: "BOOK YOUR TRIP" },
+  { id: "st-hotel", name: "Hotel Booking", img: U("photo-1566073771259-6a8506099945"), accent: "#FBBF24", badge: "STAY 3, PAY 2", headline: "Escape the city\nthis weekend", sub: "Boutique stays from R1 250 a night", cta: "VIEW HOTELS" },
+  { id: "st-flights", name: "Flight Sale", img: U("photo-1436491865332-7a61a109cc05"), accent: "#3B82F6", badge: "FLIGHT SALE", headline: "Fly local from\nR699 one-way", sub: "Book by Sunday · Travel in May", cta: "SEARCH FLIGHTS" },
+  { id: "st-tour", name: "Tour Operator", img: U("photo-1464822759023-fed622ff2c3b"), accent: "#F97316", badge: "GUIDED ADVENTURE", headline: "Drakensberg\nweekend hike", sub: "All meals & guides included · 9–11 May", cta: "BOOK YOUR PLACE" },
+  { id: "st-photo", name: "Photography Service", img: U("photo-1502920917128-1aa500764cbd"), accent: "#FBBF24", badge: "BOOKING NOW", headline: "Brand & portrait\nphotography", sub: "Studio & on-location packages from R1 950", cta: "VIEW PORTFOLIO" },
+  { id: "st-wedding", name: "Wedding Planner", img: U("photo-1519225421980-715cb0215aed"), accent: "#F472B6", badge: "SAVE THE DATE", headline: "Your dream day,\nplanned by us", sub: "Full-service wedding planning", cta: "BOOK A CONSULTATION" },
+  { id: "st-baby", name: "Baby Shower", img: U("photo-1531497865144-0464ef8fb9a9"), accent: "#FBCFE8", badge: "BUNDLE OF JOY", headline: "It's a party!", sub: "Saturday · 14h · 12 Acacia Lane", cta: "RSVP NOW" },
+  { id: "st-birthday", name: "Birthday Bash", img: U("photo-1530103862676-de8c9debad1d"), accent: "#F59E0B", badge: "YOU'RE INVITED", headline: "Let's celebrate\ntogether", sub: "Saturday · 18:30 · The Rooftop", cta: "RSVP" },
+  { id: "st-newyear", name: "New Year Promo", img: U("photo-1546961342-8e845b6720be"), accent: "#FBBF24", badge: "NEW YEAR · NEW YOU", headline: "20% off\neverything", sub: "Use code NEW2026 at checkout", cta: "SHOP THE SALE" },
+  { id: "st-valentines", name: "Valentine's Special", img: U("photo-1549122728-f519709caa9c"), accent: "#EF4444", badge: "VALENTINE'S DAY", headline: "Treat someone\nyou love", sub: "Curated gift sets from R249", cta: "SHOP GIFTS" },
+  { id: "st-mothers", name: "Mother's Day", img: U("photo-1556228720-195a672e8a03"), accent: "#F472B6", badge: "MOTHER'S DAY", headline: "Show mom\nyou care", sub: "Spa, dining and gift bundles available", cta: "VIEW GIFTS" },
+  { id: "st-blackfriday", name: "Black Friday", img: U("photo-1607082348824-0a96f2a4b9da"), accent: "#FBBF24", overlayAlpha: 0.75, badge: "BLACK FRIDAY", headline: "Up to 70% off\nstorewide", sub: "Doors open midnight · While stocks last", cta: "SHOP NOW" },
+  { id: "st-techlaunch", name: "Tech Launch", img: U("photo-1518770660439-4636190af475"), accent: "#22D3EE", badge: "INTRODUCING", headline: "The smarter\nway to work", sub: "Available 1 May · Pre-order today", cta: "PRE-ORDER" },
+  { id: "st-app", name: "App Promo", img: U("photo-1512941937669-90a1b58e7e9c"), accent: "#6366F1", badge: "DOWNLOAD NOW", headline: "Your business,\nin your pocket", sub: "iOS & Android · Free 14-day trial", cta: "GET THE APP" },
+  { id: "st-podcast", name: "Podcast Episode", img: U("photo-1478737270239-2f02b77fc618"), accent: "#22C55E", badge: "NEW EPISODE", headline: "How to scale\nyour SMME", sub: "Featuring Lerato Khumalo · 38 min", cta: "LISTEN NOW" },
+  { id: "st-course", name: "Online Course", img: U("photo-1503676260728-1c00da094a0b"), accent: "#3B82F6", badge: "ENROL NOW", headline: "Master your\ndigital marketing", sub: "6-week online course · Starts 5 May", cta: "ENROL TODAY" },
+  { id: "st-coaching", name: "Business Coaching", img: U("photo-1573496359142-b8d87734a5a2"), accent: "#A855F7", badge: "1-ON-1 COACHING", headline: "Grow your\nbusiness faster", sub: "Free 30-minute discovery call", cta: "BOOK YOUR CALL" },
+  { id: "st-charity", name: "Charity Drive", img: U("photo-1593113598332-cd288d649433"), accent: "#22C55E", badge: "DONATE TODAY", headline: "Together we\ncan do more", sub: "Help us feed 1 000 families this winter", cta: "DONATE NOW" },
+  { id: "st-eco", name: "Eco Initiative", img: U("photo-1473773508845-188df298d2d1"), accent: "#10B981", badge: "GO GREEN", headline: "Small steps,\nbig impact", sub: "Switch to our refillable range today", cta: "LEARN MORE" },
+  { id: "st-pet", name: "Pet Service", img: U("photo-1518791841217-8f162f1e1131"), accent: "#F59E0B", badge: "PAW-FECT CARE", headline: "Grooming your\npet will love", sub: "Cats & dogs · Mobile service available", cta: "BOOK A GROOM" },
+  { id: "st-florist", name: "Florist Promo", img: U("photo-1490750967868-88aa4486c946"), accent: "#EC4899", badge: "SAME-DAY DELIVERY", headline: "Fresh blooms,\ndelivered today", sub: "Order before 12pm · Across Joburg", cta: "ORDER FLOWERS" },
+  { id: "st-gift", name: "Gift Shop", img: U("photo-1513885535751-8b9238bd345a"), accent: "#A855F7", badge: "GIFT IDEAS", headline: "The perfect\ngift, sorted", sub: "Curated gift boxes from R349", cta: "SHOP GIFTS" },
+];
+
+const TEMPLATES: Template[] = [...BASE_TEMPLATES, ...STOCK_SPECS.map(makeStockTemplate)];
+
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -798,16 +912,41 @@ export default function SocialPostEditor() {
             <div>
               <h3 className="font-semibold text-sm mb-3">Templates</h3>
               <div className="grid grid-cols-2 gap-2">
-                {TEMPLATES.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => loadTemplate(t)}
-                    className="aspect-square rounded-lg border hover:border-primary transition-all overflow-hidden text-[10px] font-semibold text-white shadow-sm relative group"
-                    style={{ background: t.thumb }}
-                  >
-                    <span className="absolute inset-x-0 bottom-0 bg-black/40 py-1">{t.name}</span>
-                  </button>
-                ))}
+                {TEMPLATES.map(t => {
+                  const headlineEl = t.elements.find(e => e.type === "text" && (e as TextEl).fontSize >= 50) as TextEl | undefined;
+                  const headline = (headlineEl?.text || t.name).split("\n")[0].slice(0, 18);
+                  const accentEl = t.elements.find(e => (e.type === "rect" || e.type === "circle") && (e as any).fill && !String((e as any).fill).startsWith("rgba") && !String((e as any).fill).startsWith("transparent")) as any;
+                  const accent = accentEl?.fill || "#3B82F6";
+                  const isPortrait = t.height > t.width;
+                  const isLandscape = t.width > t.height;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => loadTemplate(t)}
+                      className={`rounded-lg border hover:border-primary hover:shadow-md transition-all overflow-hidden shadow-sm relative group ${
+                        isLandscape ? "aspect-[16/9]" : isPortrait ? "aspect-[9/16]" : "aspect-square"
+                      }`}
+                      style={
+                        t.backgroundImage
+                          ? { backgroundImage: `url(${t.backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center", backgroundColor: t.background }
+                          : { background: t.thumb }
+                      }
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70" />
+                      <div className="absolute top-1.5 left-1.5 right-1.5 flex">
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded text-white truncate max-w-full" style={{ background: accent }}>
+                          {t.width}×{t.height}
+                        </span>
+                      </div>
+                      <div className="absolute inset-x-1 bottom-5 text-white font-bold text-[11px] leading-tight text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] line-clamp-2 px-1">
+                        {headline}
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-[9px] font-semibold text-white text-center truncate px-1">
+                        {t.name}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
