@@ -891,10 +891,50 @@ export default function SocialPostEditor() {
 
         {/* Right properties panel */}
         <div className="w-64 border-l bg-white overflow-y-auto shrink-0">
+          <div className="border-b">
+            <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                <Layers className="h-4 w-4" /> Layers
+              </h3>
+              <span className="text-[10px] text-muted-foreground">{elements.length} item{elements.length === 1 ? "" : "s"}</span>
+            </div>
+            {elements.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-4 pb-3">
+                Add text, shapes or images and they will appear here.
+              </p>
+            ) : (
+              <ul className="px-2 pb-2 max-h-64 overflow-y-auto">
+                {elements.slice().reverse().map((el) => {
+                  const isActive = el.id === selectedId;
+                  let label = "";
+                  let LIcon: any = Square;
+                  if (el.type === "text") { label = (el as TextEl).text.split("\n")[0].slice(0, 24) || "Text"; LIcon = Type; }
+                  else if (el.type === "rect") { label = "Rectangle"; LIcon = Square; }
+                  else if (el.type === "circle") { label = "Circle"; LIcon = CircleIcon; }
+                  else if (el.type === "star") { label = "Star"; LIcon = StarIcon; }
+                  else if (el.type === "line") { label = "Line"; LIcon = Minus; }
+                  else if (el.type === "image") { label = "Image"; LIcon = ImageIcon; }
+                  return (
+                    <li key={el.id}>
+                      <button
+                        onClick={() => setSelectedId(el.id)}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
+                          isActive ? "bg-primary/10 text-primary" : "hover:bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <LIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate flex-1">{label}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
           {!selected ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               <Palette className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-              Select an element to edit its properties
+              Select an element above or on the canvas to edit its properties
             </div>
           ) : (
             <div className="p-4 space-y-4">
