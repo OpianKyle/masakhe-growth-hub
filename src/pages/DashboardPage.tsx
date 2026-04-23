@@ -32,7 +32,6 @@ import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
 import TrialBanner from "@/components/TrialBanner";
-import ComplianceDocsGate from "@/components/ComplianceDocsGate";
 import AIChatBot from "@/components/AIChatBot";
 
 type NavChild = {
@@ -467,7 +466,6 @@ export default function DashboardPage() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
           </Routes>
-          <ComplianceDocsGate />
 
           {subscriptionActive === false &&
             !location.pathname.startsWith("/dashboard/billing") &&

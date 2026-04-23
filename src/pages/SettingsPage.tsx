@@ -1,35 +1,18 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle, Shield, FileText, X, Palette, FileImage } from "lucide-react";
+import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle, Palette, FileImage } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const initialTab = searchParams.get("tab") === "docs" ? "docs" : "profile";
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "email" | "docs">(initialTab as any);
-
-  interface ComplianceDoc { id: string; docType: string; fileName: string; fileSize: number; uploadedAt: string; }
-  interface ComplianceStatus { ficaUploaded: boolean; businessRegUploaded: boolean; allUploaded: boolean; daysLeft: number; gracePeriodExpired: boolean; isBlocked: boolean; docs: ComplianceDoc[]; }
-  const [complianceStatus, setComplianceStatus] = useState<ComplianceStatus | null>(null);
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
-
-  const fetchCompliance = useCallback(async () => {
-    try {
-      const res = await fetch("/api/fica-docs/status", { credentials: "include" });
-      if (res.ok) setComplianceStatus(await res.json());
-    } catch {}
-  }, []);
-
-  useEffect(() => { fetchCompliance(); }, [fetchCompliance]);
+  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "email">("profile");
 
   const buildForm = (u: typeof user) => ({
     fullName: u?.full_name || "",
@@ -247,53 +230,11 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDocUpload = async (docType: "FICA" | "BUSINESS_REG", file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Maximum 10MB allowed.", variant: "destructive" });
-      return;
-    }
-    setUploadingDoc(docType);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const fileData = e.target?.result as string;
-        const res = await fetch("/api/fica-docs/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ docType, fileData, fileName: file.name, mimeType: file.type, fileSize: file.size }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          toast({ title: "Document uploaded", description: `${file.name} saved successfully.` });
-          fetchCompliance();
-        } else {
-          toast({ title: "Upload failed", description: data.error, variant: "destructive" });
-        }
-        setUploadingDoc(null);
-      };
-      reader.onerror = () => { toast({ title: "Error reading file", variant: "destructive" }); setUploadingDoc(null); };
-      reader.readAsDataURL(file);
-    } catch {
-      toast({ title: "Upload failed", variant: "destructive" });
-      setUploadingDoc(null);
-    }
-  };
-
-  const handleDocDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/fica-docs/${id}`, { method: "DELETE", credentials: "include" });
-      if (res.ok) { toast({ title: "Document removed" }); fetchCompliance(); }
-      else { const d = await res.json(); toast({ title: "Error", description: d.error, variant: "destructive" }); }
-    } catch { toast({ title: "Error removing document", variant: "destructive" }); }
-  };
-
   const tabs = [
     { key: "profile" as const, label: "Personal & Business", icon: User },
     { key: "business" as const, label: "Business Details", icon: Building2 },
     { key: "banking" as const, label: "Banking", icon: CreditCard },
     { key: "email" as const, label: "Email Sending", icon: ServerCog },
-    { key: "docs" as const, label: "Compliance Docs", icon: Shield },
   ];
 
   return (
@@ -700,117 +641,9 @@ export default function SettingsPage() {
           </>
         )}
 
-        {activeTab === "docs" && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-bold text-foreground flex items-center gap-2 mb-1">
-                <Shield className="h-5 w-5 text-primary" /> Compliance Documents
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Upload your FICA document and business registration certificate to verify your account.
-                These documents are required within 2 days of signing up.
-              </p>
-            </div>
-
-            {complianceStatus && !complianceStatus.allUploaded && (
-              <div className={`rounded-lg border p-4 flex items-start gap-3 ${complianceStatus.isBlocked ? "bg-destructive/5 border-destructive/30" : "bg-amber-50 border-amber-200"}`}>
-                <AlertCircle className={`h-5 w-5 shrink-0 mt-0.5 ${complianceStatus.isBlocked ? "text-destructive" : "text-amber-600"}`} />
-                <div>
-                  <p className={`text-sm font-semibold ${complianceStatus.isBlocked ? "text-destructive" : "text-amber-800"}`}>
-                    {complianceStatus.isBlocked
-                      ? "Account Blocked — Documents Overdue"
-                      : `${Math.ceil(complianceStatus.daysLeft)} day${Math.ceil(complianceStatus.daysLeft) !== 1 ? "s" : ""} remaining to upload documents`}
-                  </p>
-                  <p className={`text-xs mt-0.5 ${complianceStatus.isBlocked ? "text-destructive/80" : "text-amber-700"}`}>
-                    {complianceStatus.isBlocked
-                      ? "Upload both documents below to restore full access."
-                      : "Your account will be restricted if documents are not submitted in time."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {complianceStatus?.allUploaded && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4 flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                <p className="text-sm font-semibold text-green-800">All compliance documents submitted — thank you!</p>
-              </div>
-            )}
-
-            {(["FICA", "BUSINESS_REG"] as const).map((docType) => {
-              const existing = complianceStatus?.docs.find(d => d.docType === docType);
-              const isUploading = uploadingDoc === docType;
-              const inputId = `doc-upload-${docType}`;
-              return (
-                <div key={docType} className="rounded-xl border bg-slate-50 p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${existing ? "bg-green-100" : "bg-slate-200"}`}>
-                        {existing ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <FileText className="h-5 w-5 text-slate-500" />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">
-                          {docType === "FICA" ? "FICA Document" : "Business Registration Certificate"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {docType === "FICA"
-                            ? "SA ID, passport or proof of address — PDF, JPG, PNG"
-                            : "CIPC registration certificate or business license — PDF, JPG, PNG"}
-                        </p>
-                      </div>
-                    </div>
-                    {existing && (
-                      <span className="text-[10px] bg-green-100 text-green-700 rounded-full px-2.5 py-1 font-semibold">Uploaded</span>
-                    )}
-                  </div>
-
-                  {existing && (
-                    <div className="flex items-center gap-3 rounded-lg border bg-white px-3 py-2.5">
-                      <FileText className="h-4 w-4 text-blue-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">{existing.fileName}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {(existing.fileSize / 1024).toFixed(1)} KB · Uploaded {new Date(existing.uploadedAt).toLocaleDateString("en-ZA")}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDocDelete(existing.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-                        title="Remove document"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div>
-                    <input
-                      id={inputId}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp"
-                      className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDocUpload(docType, f); e.target.value = ""; }}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById(inputId)?.click()}
-                      disabled={isUploading}
-                      className="w-full"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {isUploading ? "Uploading..." : existing ? "Replace Document" : "Upload Document"}
-                    </Button>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 text-center">PDF, JPG or PNG · Max 10MB</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </motion.div>
 
-      {activeTab !== "email" && activeTab !== "docs" && (
+      {activeTab !== "email" && (
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving} className="px-8">
             <Save className="h-4 w-4 mr-2" />
