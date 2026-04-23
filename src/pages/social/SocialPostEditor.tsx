@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Rect, Circle, Text as KText, Image as KImage, Transformer, Star, Line } from "react-konva";
 import useImage from "use-image";
 import Konva from "konva";
@@ -45,6 +45,10 @@ interface RectEl extends BaseEl {
   stroke: string;
   strokeWidth: number;
   cornerRadius: number;
+  fillType?: "solid" | "linear" | "radial" | "image";
+  fillColor2?: string;
+  gradientAngle?: number;
+  fillImageSrc?: string;
 }
 
 interface CircleEl extends BaseEl {
@@ -53,6 +57,10 @@ interface CircleEl extends BaseEl {
   fill: string;
   stroke: string;
   strokeWidth: number;
+  fillType?: "solid" | "linear" | "radial" | "image";
+  fillColor2?: string;
+  gradientAngle?: number;
+  fillImageSrc?: string;
 }
 
 interface StarEl extends BaseEl {
@@ -61,6 +69,10 @@ interface StarEl extends BaseEl {
   innerRadius: number;
   outerRadius: number;
   fill: string;
+  fillType?: "solid" | "linear" | "radial" | "image";
+  fillColor2?: string;
+  gradientAngle?: number;
+  fillImageSrc?: string;
 }
 
 interface ImageEl extends BaseEl {
@@ -796,6 +808,61 @@ function BackgroundImage({ src, width, height }: { src: string; width: number; h
   return <KImage image={img} x={x} y={y} width={w} height={h} listening={false} />;
 }
 
+/* ── Gradient / Image Fill Helpers ─────────────────────────────────── */
+
+function gradientPoints(w: number, h: number, angleDeg: number, centered = false) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const hd = Math.sqrt(w * w + h * h) / 2;
+  if (centered) {
+    return { start: { x: -hd * Math.cos(rad), y: -hd * Math.sin(rad) }, end: { x: hd * Math.cos(rad), y: hd * Math.sin(rad) } };
+  }
+  const cx = w / 2, cy = h / 2;
+  return { start: { x: cx - hd * Math.cos(rad), y: cy - hd * Math.sin(rad) }, end: { x: cx + hd * Math.cos(rad), y: cy + hd * Math.sin(rad) } };
+}
+
+function useShapeFillProps(el: RectEl | CircleEl | StarEl, w: number, h: number, centered = false) {
+  const [img] = useImage((el.fillType === "image" ? el.fillImageSrc : "") || "", "anonymous");
+  return useMemo(() => {
+    const type = el.fillType || "solid";
+    const c1 = el.fill || "#3B82F6";
+    const c2 = el.fillColor2 || "#000000";
+    const angle = el.gradientAngle ?? 90;
+    if (type === "linear") {
+      const { start, end } = gradientPoints(w, h, angle, centered);
+      return { fillLinearGradientStartPoint: start, fillLinearGradientEndPoint: end, fillLinearGradientColorStops: [0, c1, 1, c2] };
+    }
+    if (type === "radial") {
+      const cx = centered ? 0 : w / 2, cy = centered ? 0 : h / 2;
+      const r = Math.sqrt((w / 2) * (w / 2) + (h / 2) * (h / 2));
+      return { fillRadialGradientStartPoint: { x: cx, y: cy }, fillRadialGradientEndPoint: { x: cx, y: cy }, fillRadialGradientStartRadius: 0, fillRadialGradientEndRadius: r, fillRadialGradientColorStops: [0, c1, 1, c2] };
+    }
+    if (type === "image" && img?.width) {
+      if (centered) {
+        const scale = Math.max((w) / img.width, (h) / img.height);
+        return { fillPatternImage: img, fillPatternScaleX: scale, fillPatternScaleY: scale, fillPatternOffsetX: img.width / 2, fillPatternOffsetY: img.height / 2, fillPatternRepeat: "no-repeat" as const, fillPriority: "pattern" as const, fill: c1 };
+      }
+      return { fillPatternImage: img, fillPatternScaleX: w / img.width, fillPatternScaleY: h / img.height, fillPatternRepeat: "no-repeat" as const, fillPriority: "pattern" as const, fill: c1 };
+    }
+    return { fill: c1 };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [el.fillType, el.fill, el.fillColor2, el.gradientAngle, el.fillImageSrc, w, h, img]);
+}
+
+function ShapeRect({ el, common, onTE }: { el: RectEl; common: any; onTE: (e: any) => void }) {
+  const fp = useShapeFillProps(el, el.width, el.height, false);
+  return <Rect {...common} x={el.x} y={el.y} width={el.width} height={el.height} {...fp} stroke={el.stroke} strokeWidth={el.strokeWidth} cornerRadius={el.cornerRadius} rotation={el.rotation} draggable={el.draggable} onTransformEnd={onTE} />;
+}
+
+function ShapeCircle({ el, common, onTE }: { el: CircleEl; common: any; onTE: (e: any) => void }) {
+  const fp = useShapeFillProps(el, el.radius * 2, el.radius * 2, true);
+  return <Circle {...common} x={el.x} y={el.y} radius={el.radius} {...fp} stroke={el.stroke} strokeWidth={el.strokeWidth} rotation={el.rotation} draggable={el.draggable} onTransformEnd={onTE} />;
+}
+
+function ShapeStar({ el, common, onTE }: { el: StarEl; common: any; onTE: (e: any) => void }) {
+  const fp = useShapeFillProps(el, el.outerRadius * 2, el.outerRadius * 2, true);
+  return <Star {...common} x={el.x} y={el.y} numPoints={el.numPoints} innerRadius={el.innerRadius} outerRadius={el.outerRadius} {...fp} rotation={el.rotation} draggable={el.draggable} onTransformEnd={onTE} />;
+}
+
 export default function SocialPostEditor() {
   const [preset, setPreset] = useState(PRESETS[0]);
   const [bg, setBg] = useState("#FFFFFF");
@@ -892,6 +959,7 @@ export default function SocialPostEditor() {
   const trRef = useRef<Konva.Transformer>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fillImgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleResize() {
@@ -1328,6 +1396,28 @@ export default function SocialPostEditor() {
                   if (fileRef.current) fileRef.current.value = "";
                 }}
               />
+              <input
+                ref={fillImgRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    handleFile(f);
+                    if (selectedId) {
+                      const reader = new FileReader();
+                      reader.onload = ev => {
+                        if (ev.target?.result) {
+                          update(selectedId, { fillImageSrc: ev.target.result as string, fillType: "image" } as any);
+                        }
+                      };
+                      reader.readAsDataURL(f);
+                    }
+                  }
+                  if (fillImgRef.current) fillImgRef.current.value = "";
+                }}
+              />
               <Button onClick={() => fileRef.current?.click()} className="w-full gradient-hero text-white" size="sm">
                 <Upload className="h-4 w-4 mr-1" /> Upload Image
               </Button>
@@ -1418,75 +1508,45 @@ export default function SocialPostEditor() {
                   }
                   if (el.type === "rect") {
                     return (
-                      <Rect
-                        {...common}
-                        x={el.x} y={el.y}
-                        width={el.width} height={el.height}
-                        fill={el.fill}
-                        stroke={el.stroke}
-                        strokeWidth={el.strokeWidth}
-                        cornerRadius={el.cornerRadius}
-                        rotation={el.rotation}
-                        draggable={el.draggable}
-                        onTransformEnd={(e) => {
+                      <ShapeRect
+                        key={el.id}
+                        el={el}
+                        common={common}
+                        onTE={(e) => {
                           const node = e.target as Konva.Rect;
                           const sx = node.scaleX(); const sy = node.scaleY();
                           node.scaleX(1); node.scaleY(1);
-                          update(el.id, {
-                            x: node.x(), y: node.y(),
-                            width: Math.max(10, node.width() * sx),
-                            height: Math.max(10, node.height() * sy),
-                            rotation: node.rotation(),
-                          } as Partial<RectEl>);
+                          update(el.id, { x: node.x(), y: node.y(), width: Math.max(10, node.width() * sx), height: Math.max(10, node.height() * sy), rotation: node.rotation() } as Partial<RectEl>);
                         }}
                       />
                     );
                   }
                   if (el.type === "circle") {
                     return (
-                      <Circle
-                        {...common}
-                        x={el.x} y={el.y}
-                        radius={el.radius}
-                        fill={el.fill}
-                        stroke={el.stroke}
-                        strokeWidth={el.strokeWidth}
-                        rotation={el.rotation}
-                        draggable={el.draggable}
-                        onTransformEnd={(e) => {
+                      <ShapeCircle
+                        key={el.id}
+                        el={el}
+                        common={common}
+                        onTE={(e) => {
                           const node = e.target as Konva.Circle;
                           const sx = node.scaleX();
                           node.scaleX(1); node.scaleY(1);
-                          update(el.id, {
-                            x: node.x(), y: node.y(),
-                            radius: Math.max(10, el.radius * sx),
-                            rotation: node.rotation(),
-                          } as Partial<CircleEl>);
+                          update(el.id, { x: node.x(), y: node.y(), radius: Math.max(10, el.radius * sx), rotation: node.rotation() } as Partial<CircleEl>);
                         }}
                       />
                     );
                   }
                   if (el.type === "star") {
                     return (
-                      <Star
-                        {...common}
-                        x={el.x} y={el.y}
-                        numPoints={el.numPoints}
-                        innerRadius={el.innerRadius}
-                        outerRadius={el.outerRadius}
-                        fill={el.fill}
-                        rotation={el.rotation}
-                        draggable={el.draggable}
-                        onTransformEnd={(e) => {
+                      <ShapeStar
+                        key={el.id}
+                        el={el}
+                        common={common}
+                        onTE={(e) => {
                           const node = e.target as Konva.Star;
                           const sx = node.scaleX();
                           node.scaleX(1); node.scaleY(1);
-                          update(el.id, {
-                            x: node.x(), y: node.y(),
-                            innerRadius: Math.max(5, el.innerRadius * sx),
-                            outerRadius: Math.max(10, el.outerRadius * sx),
-                            rotation: node.rotation(),
-                          } as Partial<StarEl>);
+                          update(el.id, { x: node.x(), y: node.y(), innerRadius: Math.max(5, el.innerRadius * sx), outerRadius: Math.max(10, el.outerRadius * sx), rotation: node.rotation() } as Partial<StarEl>);
                         }}
                       />
                     );
@@ -1739,10 +1799,11 @@ export default function SocialPostEditor() {
 
               {(selected.type === "rect" || selected.type === "circle" || selected.type === "star") && (
                 <>
-                  <ColorPicker
-                    label="Fill"
-                    value={(selected as any).fill}
-                    onChange={(c) => update(selected.id, { fill: c } as any)}
+                  <FillEditor
+                    el={selected as any}
+                    uploads={uploads}
+                    onChange={(patch) => update(selected.id, patch as any)}
+                    fillImgRef={fillImgRef}
                   />
                   {(selected.type === "rect" || selected.type === "circle") && (
                     <>
@@ -1870,6 +1931,108 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
       <input type="color" value={value && value.startsWith("#") ? value : "#000000"}
         onChange={e => onChange(e.target.value)}
         className="mt-2 w-full h-9 rounded cursor-pointer" />
+    </div>
+  );
+}
+
+const DIR_PRESETS = [
+  { angle: 0,   label: "→" },
+  { angle: 45,  label: "↘" },
+  { angle: 90,  label: "↓" },
+  { angle: 135, label: "↙" },
+  { angle: 180, label: "←" },
+  { angle: 225, label: "↖" },
+  { angle: 270, label: "↑" },
+  { angle: 315, label: "↗" },
+];
+
+function FillEditor({ el, uploads, onChange, fillImgRef }: {
+  el: RectEl | CircleEl | StarEl;
+  uploads: string[];
+  onChange: (patch: Partial<RectEl & CircleEl & StarEl>) => void;
+  fillImgRef: React.RefObject<HTMLInputElement>;
+}) {
+  const type = el.fillType || "solid";
+  const c1 = el.fill || "#3B82F6";
+  const c2 = el.fillColor2 || "#000000";
+  const angle = el.gradientAngle ?? 90;
+
+  const gradPreview = type === "linear"
+    ? `linear-gradient(${angle}deg, ${c1}, ${c2})`
+    : type === "radial"
+    ? `radial-gradient(circle, ${c1}, ${c2})`
+    : c1;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs mb-1.5 block">Fill Type</Label>
+        <div className="grid grid-cols-4 gap-1">
+          {(["solid", "linear", "radial", "image"] as const).map(t => (
+            <button key={t} type="button" onClick={() => onChange({ fillType: t })}
+              className={`py-1.5 rounded text-xs font-medium border transition-colors ${type === t ? "bg-primary text-white border-primary" : "bg-white hover:bg-slate-50 border-slate-200"}`}>
+              {t === "solid" ? "Solid" : t === "linear" ? "Linear" : t === "radial" ? "Radial" : "Image"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {type === "solid" && (
+        <ColorPicker label="Color" value={c1} onChange={c => onChange({ fill: c })} />
+      )}
+
+      {(type === "linear" || type === "radial") && (
+        <>
+          {/* Gradient preview swatch */}
+          <div className="h-8 rounded-md border" style={{ background: gradPreview }} />
+
+          <ColorPicker label="Color 1 (start)" value={c1} onChange={c => onChange({ fill: c })} />
+          <ColorPicker label="Color 2 (end)" value={c2} onChange={c => onChange({ fillColor2: c })} />
+
+          {type === "linear" && (
+            <div>
+              <Label className="text-xs mb-1 block">Direction: {angle}°</Label>
+              <input type="range" min={0} max={360} value={angle}
+                onChange={e => onChange({ gradientAngle: Number(e.target.value) })}
+                className="w-full mb-2" />
+              <div className="grid grid-cols-8 gap-1">
+                {DIR_PRESETS.map(d => (
+                  <button key={d.angle} type="button" onClick={() => onChange({ gradientAngle: d.angle })}
+                    className={`h-7 rounded text-sm border transition-colors ${angle === d.angle ? "bg-primary text-white border-primary" : "hover:bg-slate-50 border-slate-200"}`}>
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {type === "image" && (
+        <div className="space-y-2">
+          <Label className="text-xs block">Choose image fill</Label>
+          {el.fillImageSrc && (
+            <div className="h-16 rounded-md border overflow-hidden">
+              <img src={el.fillImageSrc} alt="fill" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className={`grid gap-1.5 ${uploads.length > 0 ? "grid-cols-3" : "grid-cols-1"}`}>
+            {uploads.map((src, i) => (
+              <button key={i} type="button" onClick={() => onChange({ fillImageSrc: src, fillType: "image" })}
+                className={`aspect-square rounded border overflow-hidden hover:border-primary transition-colors ${el.fillImageSrc === src ? "ring-2 ring-primary border-primary" : "border-slate-200"}`}>
+                <img src={src} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => fillImgRef.current?.click()}
+            className="w-full py-2 rounded border border-dashed border-slate-300 text-xs text-muted-foreground hover:bg-slate-50 hover:border-primary transition-colors flex items-center justify-center gap-1.5">
+            <Upload className="h-3.5 w-3.5" /> Upload image for fill
+          </button>
+          {uploads.length === 0 && !el.fillImageSrc && (
+            <p className="text-[10px] text-muted-foreground text-center">Upload an image to use it as a shape fill</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
