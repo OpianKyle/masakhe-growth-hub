@@ -872,7 +872,8 @@ export default function SocialPostEditor() {
     const onMove = (ev: MouseEvent) => {
       const dx = ev.clientX - startX;
       const next = side === "left" ? startW + dx : startW - dx;
-      const clamped = Math.max(180, Math.min(560, next));
+      const maxW = side === "left" ? 720 : 560;
+      const clamped = Math.max(180, Math.min(maxW, next));
       if (side === "left") setLeftWidth(clamped); else setRightWidth(clamped);
     };
     const onUp = () => {
@@ -1184,7 +1185,7 @@ export default function SocialPostEditor() {
           {tab === "templates" && (
             <div>
               <h3 className="font-semibold text-sm mb-3">Templates</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={`grid gap-2 ${leftWidth >= 560 ? "grid-cols-4" : leftWidth >= 400 ? "grid-cols-3" : "grid-cols-2"}`}>
                 {TEMPLATES.map(t => {
                   const headlineEl = t.elements.find(e => e.type === "text" && (e as TextEl).fontSize >= 50) as TextEl | undefined;
                   const headline = (headlineEl?.text || t.name).split("\n")[0].slice(0, 18);
@@ -1345,6 +1346,15 @@ export default function SocialPostEditor() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Resize handle — right edge of left panel */}
+        <div
+          onMouseDown={(e) => startResize("left", e)}
+          className="w-1.5 cursor-col-resize bg-slate-200 hover:bg-primary/60 active:bg-primary transition-colors shrink-0 flex items-center justify-center group"
+          title="Drag to resize panel"
+        >
+          <div className="w-0.5 h-8 rounded-full bg-slate-400 group-hover:bg-primary/80 transition-colors" />
         </div>
 
         {/* Canvas area */}
@@ -1538,19 +1548,14 @@ export default function SocialPostEditor() {
           </div>
         </div>
 
-        {/* Resize handle for left panel */}
-        <div
-          onMouseDown={(e) => startResize("left", e)}
-          className="w-1 cursor-col-resize bg-slate-200 hover:bg-primary/60 transition-colors shrink-0"
-          title="Drag to resize"
-        />
-
-        {/* Right properties panel */}
+        {/* Resize handle — left edge of right panel */}
         <div
           onMouseDown={(e) => startResize("right", e)}
-          className="w-1 cursor-col-resize bg-slate-200 hover:bg-primary/60 transition-colors shrink-0 ml-auto"
-          title="Drag to resize"
-        />
+          className="w-1.5 cursor-col-resize bg-slate-200 hover:bg-primary/60 active:bg-primary transition-colors shrink-0 flex items-center justify-center group"
+          title="Drag to resize panel"
+        >
+          <div className="w-0.5 h-8 rounded-full bg-slate-400 group-hover:bg-primary/80 transition-colors" />
+        </div>
         <div className="border-l bg-white overflow-y-auto shrink-0" style={{ width: rightWidth }}>
           <div className="border-b">
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
