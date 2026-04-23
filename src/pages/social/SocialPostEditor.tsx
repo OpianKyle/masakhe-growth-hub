@@ -527,6 +527,30 @@ export default function SocialPostEditor() {
   const [stageScale, setStageScale] = useState(0.5);
   const [tab, setTab] = useState<"templates" | "text" | "shapes" | "background" | "uploads">("templates");
   const [uploads, setUploads] = useState<string[]>([]);
+  const [leftWidth, setLeftWidth] = useState(240);
+  const [rightWidth, setRightWidth] = useState(256);
+
+  function startResize(side: "left" | "right", e: React.MouseEvent) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = side === "left" ? leftWidth : rightWidth;
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      const next = side === "left" ? startW + dx : startW - dx;
+      const clamped = Math.max(180, Math.min(560, next));
+      if (side === "left") setLeftWidth(clamped); else setRightWidth(clamped);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
 
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -695,15 +719,21 @@ export default function SocialPostEditor() {
   function exportImage() {
     if (!stageRef.current) return;
     const stage = stageRef.current;
+    const prevSelected = selectedId;
+    setSelectedId(null);
+    const tr = stage.findOne("Transformer") as any;
+    if (tr) { tr.nodes([]); tr.getLayer()?.batchDraw(); }
     const prevScale = stage.scaleX();
     const prevPos = { x: stage.x(), y: stage.y() };
     stage.scale({ x: 1, y: 1 });
     stage.position({ x: 0, y: 0 });
     stage.size({ width: preset.w, height: preset.h });
+    stage.draw();
     const uri = stage.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
     stage.scale({ x: prevScale, y: prevScale });
     stage.position(prevPos);
     stage.size({ width: preset.w * prevScale, height: preset.h * prevScale });
+    setSelectedId(prevSelected);
 
     const link = document.createElement("a");
     link.download = `post-${preset.id}-${Date.now()}.png`;
@@ -763,7 +793,7 @@ export default function SocialPostEditor() {
         </div>
 
         {/* Left panel */}
-        <div className="w-60 border-r bg-white overflow-y-auto p-3 shrink-0">
+        <div className="border-r bg-white overflow-y-auto p-3 shrink-0 relative" style={{ width: leftWidth }}>
           {tab === "templates" && (
             <div>
               <h3 className="font-semibold text-sm mb-3">Templates</h3>
@@ -1068,8 +1098,20 @@ export default function SocialPostEditor() {
           </div>
         </div>
 
+        {/* Resize handle for left panel */}
+        <div
+          onMouseDown={(e) => startResize("left", e)}
+          className="w-1 cursor-col-resize bg-slate-200 hover:bg-primary/60 transition-colors shrink-0"
+          title="Drag to resize"
+        />
+
         {/* Right properties panel */}
-        <div className="w-64 border-l bg-white overflow-y-auto shrink-0">
+        <div
+          onMouseDown={(e) => startResize("right", e)}
+          className="w-1 cursor-col-resize bg-slate-200 hover:bg-primary/60 transition-colors shrink-0 ml-auto"
+          title="Drag to resize"
+        />
+        <div className="border-l bg-white overflow-y-auto shrink-0" style={{ width: rightWidth }}>
           <div className="border-b">
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
               <h3 className="font-semibold text-sm flex items-center gap-1.5">
