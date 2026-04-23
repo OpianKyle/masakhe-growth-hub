@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import {
   Type, Square, Circle as CircleIcon, Star as StarIcon, Image as ImageIcon,
   Upload, Download, Trash2, LayoutTemplate, Palette, Bold, Italic,
-  AlignLeft, AlignCenter, AlignRight, Copy, Layers, Minus, ChevronUp, ChevronDown
+  AlignLeft, AlignCenter, AlignRight, Copy, Layers, Minus, ChevronUp, ChevronDown,
+  Undo2, Redo2
 } from "lucide-react";
 
 type ElementType = "text" | "rect" | "circle" | "star" | "image" | "line";
@@ -644,6 +645,63 @@ export default function SocialPostEditor() {
   const [leftWidth, setLeftWidth] = useState(240);
   const [rightWidth, setRightWidth] = useState(256);
 
+  const historyRef = useRef<{ elements: AnyEl[]; bg: string; bgImage: string }[]>([{ elements: [], bg: "#FFFFFF", bgImage: "" }]);
+  const historyIdxRef = useRef<number>(0);
+  const skipHistoryRef = useRef<boolean>(false);
+  const [, forceHistoryUpdate] = useState(0);
+
+  useEffect(() => {
+    if (skipHistoryRef.current) {
+      skipHistoryRef.current = false;
+      return;
+    }
+    const snapshot = { elements: JSON.parse(JSON.stringify(elements)), bg, bgImage };
+    const trimmed = historyRef.current.slice(0, historyIdxRef.current + 1);
+    trimmed.push(snapshot);
+    if (trimmed.length > 80) trimmed.shift();
+    historyRef.current = trimmed;
+    historyIdxRef.current = trimmed.length - 1;
+    forceHistoryUpdate(n => n + 1);
+  }, [elements, bg, bgImage]);
+
+  function undo() {
+    if (historyIdxRef.current <= 0) return;
+    historyIdxRef.current -= 1;
+    const snap = historyRef.current[historyIdxRef.current];
+    skipHistoryRef.current = true;
+    setElements(JSON.parse(JSON.stringify(snap.elements)));
+    setBg(snap.bg);
+    setBgImage(snap.bgImage);
+    setSelectedId(null);
+    forceHistoryUpdate(n => n + 1);
+  }
+
+  function redo() {
+    if (historyIdxRef.current >= historyRef.current.length - 1) return;
+    historyIdxRef.current += 1;
+    const snap = historyRef.current[historyIdxRef.current];
+    skipHistoryRef.current = true;
+    setElements(JSON.parse(JSON.stringify(snap.elements)));
+    setBg(snap.bg);
+    setBgImage(snap.bgImage);
+    setSelectedId(null);
+    forceHistoryUpdate(n => n + 1);
+  }
+
+  const canUndo = historyIdxRef.current > 0;
+  const canRedo = historyIdxRef.current < historyRef.current.length - 1;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const isMeta = e.ctrlKey || e.metaKey;
+      if (!isMeta) return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.key === "z" && e.shiftKey) || e.key === "y") { e.preventDefault(); redo(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function startResize(side: "left" | "right", e: React.MouseEvent) {
     e.preventDefault();
     const startX = e.clientX;
@@ -867,6 +925,12 @@ export default function SocialPostEditor() {
           <span className="text-xs text-muted-foreground hidden sm:inline">Create stunning social media posts</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button onClick={undo} disabled={!canUndo} variant="outline" size="sm" title="Undo (Ctrl+Z)">
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button onClick={redo} disabled={!canRedo} variant="outline" size="sm" title="Redo (Ctrl+Shift+Z)">
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <select
             value={preset.id}
             onChange={(e) => {
