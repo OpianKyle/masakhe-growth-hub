@@ -106,59 +106,163 @@ interface Template {
   width: number;
   height: number;
   background: string;
+  backgroundImage?: string;
   elements: Omit<AnyEl, "id">[];
 }
 
+const BACKGROUNDS = [
+  { id: "none", label: "None", url: "" },
+  { id: "office", label: "Office", url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&q=80&auto=format" },
+  { id: "team", label: "Team", url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&q=80&auto=format" },
+  { id: "shop", label: "Shop", url: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1080&q=80&auto=format" },
+  { id: "food", label: "Food", url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1080&q=80&auto=format" },
+  { id: "city", label: "City", url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1080&q=80&auto=format" },
+  { id: "tech", label: "Tech", url: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&q=80&auto=format" },
+  { id: "nature", label: "Nature", url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1080&q=80&auto=format" },
+  { id: "abstract", label: "Abstract", url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=1080&q=80&auto=format" },
+  { id: "marble", label: "Marble", url: "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=1080&q=80&auto=format" },
+  { id: "fashion", label: "Fashion", url: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1080&q=80&auto=format" },
+  { id: "fitness", label: "Fitness", url: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&q=80&auto=format" },
+];
+
 const TEMPLATES: Template[] = [
   {
-    id: "sale",
-    name: "Big Sale",
-    thumb: "linear-gradient(135deg,#EF4444,#F97316)",
+    id: "mega-sale",
+    name: "Mega Sale 50% OFF",
+    thumb: "linear-gradient(135deg,#DC2626,#FBBF24)",
     width: 1080, height: 1080,
-    background: "#EF4444",
+    background: "#DC2626",
     elements: [
-      { type: "rect", x: 60, y: 60, width: 960, height: 960, fill: "transparent", stroke: "#FFFFFF", strokeWidth: 8, cornerRadius: 24, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 350, text: "BIG\nSALE", fontSize: 220, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 780, text: "Up to 50% OFF", fontSize: 64, fontFamily: "Poppins", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "circle", x: 880, y: 200, radius: 180, fill: "#FBBF24", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "text", x: 740, y: 130, text: "50%\nOFF", fontSize: 90, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#DC2626", width: 280, rotation: -8, draggable: true },
+      { type: "rect", x: 60, y: 60, width: 960, height: 960, fill: "transparent", stroke: "#FFFFFF", strokeWidth: 6, cornerRadius: 28, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 420, text: "MEGA\nSALE", fontSize: 240, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 290, y: 800, width: 500, height: 90, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, cornerRadius: 45, rotation: 0, draggable: true },
+      { type: "text", x: 290, y: 825, text: "SHOP NOW →", fontSize: 38, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#DC2626", width: 500, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 940, text: "Limited time only · Use code SAVE50", fontSize: 26, fontFamily: "Inter", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+    ],
+  },
+  {
+    id: "new-arrival",
+    name: "New Arrival",
+    thumb: "linear-gradient(135deg,#0F172A,#10B981)",
+    width: 1080, height: 1080,
+    background: "#0F172A",
+    backgroundImage: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1080&q=80&auto=format",
+    elements: [
+      { type: "rect", x: 0, y: 0, width: 1080, height: 1080, fill: "rgba(15,23,42,0.55)", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 120, width: 220, height: 50, fill: "#10B981", stroke: "transparent", strokeWidth: 0, cornerRadius: 25, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 130, text: "NEW DROP", fontSize: 24, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 220, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 220, text: "Spring\nCollection\n2026", fontSize: 130, fontFamily: "Georgia", fontStyle: "bold", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 720, width: 140, height: 4, fill: "#10B981", stroke: "transparent", strokeWidth: 0, cornerRadius: 2, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 750, text: "Discover the styles everyone is\ntalking about — now in store.", fontSize: 36, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 920, width: 360, height: 80, fill: "#10B981", stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 942, text: "SHOP COLLECTION", fontSize: 28, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 360, rotation: 0, draggable: true },
+    ],
+  },
+  {
+    id: "grand-opening",
+    name: "Grand Opening",
+    thumb: "linear-gradient(135deg,#7C2D12,#FBBF24)",
+    width: 1080, height: 1080,
+    background: "#7C2D12",
+    backgroundImage: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1080&q=80&auto=format",
+    elements: [
+      { type: "rect", x: 0, y: 0, width: 1080, height: 1080, fill: "rgba(124,45,18,0.65)", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "star", x: 200, y: 200, numPoints: 5, innerRadius: 30, outerRadius: 70, fill: "#FBBF24", rotation: 0, draggable: true },
+      { type: "star", x: 880, y: 220, numPoints: 5, innerRadius: 25, outerRadius: 55, fill: "#FBBF24", rotation: 15, draggable: true },
+      { type: "star", x: 920, y: 880, numPoints: 5, innerRadius: 30, outerRadius: 70, fill: "#FBBF24", rotation: -10, draggable: true },
+      { type: "text", x: 80, y: 350, text: "GRAND\nOPENING", fontSize: 150, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#FBBF24", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 340, y: 670, width: 400, height: 3, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 700, text: "Saturday · 10 AM", fontSize: 56, fontFamily: "Georgia", fontStyle: "italic", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 800, text: "Free gifts · Live music · Refreshments", fontSize: 32, fontFamily: "Inter", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 290, y: 900, width: 500, height: 80, fill: "#FBBF24", stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true },
+      { type: "text", x: 290, y: 922, text: "RSVP TODAY", fontSize: 32, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#7C2D12", width: 500, rotation: 0, draggable: true },
+    ],
+  },
+  {
+    id: "service-promo",
+    name: "Service Promo",
+    thumb: "linear-gradient(135deg,#1E40AF,#06B6D4)",
+    width: 1080, height: 1080,
+    background: "#FFFFFF",
+    elements: [
+      { type: "rect", x: 0, y: 0, width: 1080, height: 480, fill: "#1E40AF", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "circle", x: 880, y: 100, radius: 140, fill: "#06B6D4", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "circle", x: 100, y: 480, radius: 90, fill: "#06B6D4", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 140, text: "PROFESSIONAL\nSERVICES", fontSize: 80, fontFamily: "Poppins", fontStyle: "bold", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 360, text: "Trusted by 500+ South African businesses", fontSize: 28, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#06B6D4", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 580, width: 920, height: 2, fill: "#E5E7EB", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 620, text: "✓ Fast turnaround\n✓ Affordable pricing\n✓ Local expertise\n✓ 100% satisfaction", fontSize: 36, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#1F2937", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 920, width: 380, height: 80, fill: "#1E40AF", stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 942, text: "GET A QUOTE", fontSize: 30, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 380, rotation: 0, draggable: true },
+      { type: "text", x: 540, y: 950, text: "📞 011 123 4567", fontSize: 28, fontFamily: "Inter", fontStyle: "bold", align: "left", fill: "#1E40AF", width: 460, rotation: 0, draggable: true },
+    ],
+  },
+  {
+    id: "food-special",
+    name: "Food Special",
+    thumb: "linear-gradient(135deg,#92400E,#F59E0B)",
+    width: 1080, height: 1080,
+    background: "#92400E",
+    backgroundImage: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1080&q=80&auto=format",
+    elements: [
+      { type: "rect", x: 0, y: 0, width: 1080, height: 1080, fill: "rgba(0,0,0,0.45)", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "rect", x: 60, y: 60, width: 960, height: 960, fill: "transparent", stroke: "#FBBF24", strokeWidth: 4, cornerRadius: 16, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 160, text: "TODAY'S SPECIAL", fontSize: 36, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FBBF24", width: 920, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 320, text: "Sunday\nRoast", fontSize: 200, fontFamily: "Georgia", fontStyle: "italic bold", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "circle", x: 540, y: 760, radius: 100, fill: "#FBBF24", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "text", x: 380, y: 720, text: "ONLY\nR149", fontSize: 50, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#92400E", width: 320, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 920, text: "Order now · Dine in or takeaway", fontSize: 30, fontFamily: "Inter", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+    ],
+  },
+  {
+    id: "fitness",
+    name: "Fitness Promo",
+    thumb: "linear-gradient(135deg,#000000,#22C55E)",
+    width: 1080, height: 1080,
+    background: "#000000",
+    backgroundImage: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&q=80&auto=format",
+    elements: [
+      { type: "rect", x: 0, y: 0, width: 1080, height: 1080, fill: "rgba(0,0,0,0.55)", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "rect", x: 0, y: 880, width: 1080, height: 200, fill: "#22C55E", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 200, text: "STRONGER\nEVERY DAY", fontSize: 130, fontFamily: "Impact", fontStyle: "bold", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 80, y: 540, width: 100, height: 6, fill: "#22C55E", stroke: "transparent", strokeWidth: 0, cornerRadius: 3, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 580, text: "Join the gym that gets results.\nFirst class FREE.", fontSize: 38, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 920, text: "BOOK YOUR FREE SESSION TODAY", fontSize: 36, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#000000", width: 920, rotation: 0, draggable: true },
+      { type: "text", x: 80, y: 980, text: "yourbrand.co.za · @yourbrand", fontSize: 22, fontFamily: "Inter", fontStyle: "normal", align: "center", fill: "#000000", width: 920, rotation: 0, draggable: true },
     ],
   },
   {
     id: "quote",
-    name: "Inspirational Quote",
+    name: "Inspiring Quote",
     thumb: "linear-gradient(135deg,#1F2937,#0EA5E9)",
     width: 1080, height: 1080,
     background: "#1F2937",
     elements: [
-      { type: "text", x: 100, y: 380, text: '"Dream big.\nWork hard.\nStay humble."', fontSize: 88, fontFamily: "Georgia", fontStyle: "italic", align: "center", fill: "#FFFFFF", width: 880, rotation: 0, draggable: true },
-      { type: "rect", x: 470, y: 720, width: 140, height: 4, fill: "#0EA5E9", stroke: "transparent", strokeWidth: 0, cornerRadius: 2, rotation: 0, draggable: true },
-      { type: "text", x: 100, y: 760, text: "— Your Brand", fontSize: 32, fontFamily: "Poppins", fontStyle: "normal", align: "center", fill: "#0EA5E9", width: 880, rotation: 0, draggable: true },
+      { type: "circle", x: 540, y: 540, radius: 480, fill: "transparent", stroke: "#0EA5E9", strokeWidth: 2, rotation: 0, draggable: true },
+      { type: "text", x: 100, y: 380, text: '"Dream big.\nWork hard.\nStay humble."', fontSize: 100, fontFamily: "Georgia", fontStyle: "italic", align: "center", fill: "#FFFFFF", width: 880, rotation: 0, draggable: true },
+      { type: "rect", x: 470, y: 740, width: 140, height: 4, fill: "#0EA5E9", stroke: "transparent", strokeWidth: 0, cornerRadius: 2, rotation: 0, draggable: true },
+      { type: "text", x: 100, y: 780, text: "— YOUR BRAND", fontSize: 32, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#0EA5E9", width: 880, rotation: 0, draggable: true },
     ],
   },
   {
-    id: "promo",
-    name: "Product Promo",
-    thumb: "linear-gradient(135deg,#10B981,#3B82F6)",
-    width: 1080, height: 1080,
+    id: "discount-coupon",
+    name: "Discount Coupon",
+    thumb: "linear-gradient(135deg,#FBBF24,#EF4444)",
+    width: 1200, height: 630,
     background: "#FFFFFF",
     elements: [
-      { type: "rect", x: 0, y: 0, width: 1080, height: 540, fill: "#10B981", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 160, text: "NEW\nARRIVAL", fontSize: 120, fontFamily: "Poppins", fontStyle: "bold", align: "left", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 620, text: "Discover our latest product collection — designed for you.", fontSize: 38, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#1F2937", width: 920, rotation: 0, draggable: true },
-      { type: "rect", x: 80, y: 880, width: 320, height: 80, fill: "#3B82F6", stroke: "transparent", strokeWidth: 0, cornerRadius: 40, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 902, text: "SHOP NOW", fontSize: 32, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#FFFFFF", width: 320, rotation: 0, draggable: true },
-    ],
-  },
-  {
-    id: "event",
-    name: "Event Announcement",
-    thumb: "linear-gradient(135deg,#8B5CF6,#EC4899)",
-    width: 1080, height: 1080,
-    background: "#8B5CF6",
-    elements: [
-      { type: "text", x: 80, y: 140, text: "JOIN US", fontSize: 64, fontFamily: "Poppins", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 280, text: "Launch\nParty", fontSize: 180, fontFamily: "Georgia", fontStyle: "italic bold", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
-      { type: "rect", x: 240, y: 760, width: 600, height: 2, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
-      { type: "text", x: 80, y: 800, text: "Friday · 7PM\nMain Hall", fontSize: 44, fontFamily: "Inter", fontStyle: "normal", align: "center", fill: "#FFFFFF", width: 920, rotation: 0, draggable: true },
+      { type: "rect", x: 0, y: 0, width: 1200, height: 630, fill: "#FBBF24", stroke: "transparent", strokeWidth: 0, cornerRadius: 0, rotation: 0, draggable: true },
+      { type: "circle", x: 600, y: 0, radius: 50, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "circle", x: 600, y: 630, radius: 50, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true },
+      { type: "text", x: 40, y: 180, text: "30%", fontSize: 220, fontFamily: "Impact", fontStyle: "bold", align: "center", fill: "#7C2D12", width: 520, rotation: 0, draggable: true },
+      { type: "text", x: 40, y: 420, text: "DISCOUNT", fontSize: 56, fontFamily: "Poppins", fontStyle: "bold", align: "center", fill: "#7C2D12", width: 520, rotation: 0, draggable: true },
+      { type: "text", x: 640, y: 120, text: "Special Offer", fontSize: 40, fontFamily: "Georgia", fontStyle: "italic", align: "left", fill: "#7C2D12", width: 520, rotation: 0, draggable: true },
+      { type: "rect", x: 640, y: 200, width: 480, height: 100, fill: "#FFFFFF", stroke: "transparent", strokeWidth: 0, cornerRadius: 12, rotation: 0, draggable: true },
+      { type: "text", x: 640, y: 230, text: "CODE: SAVE30", fontSize: 50, fontFamily: "Courier New", fontStyle: "bold", align: "center", fill: "#EF4444", width: 480, rotation: 0, draggable: true },
+      { type: "text", x: 640, y: 350, text: "Use this code at checkout to get\n30% off your next purchase.", fontSize: 26, fontFamily: "Inter", fontStyle: "normal", align: "left", fill: "#7C2D12", width: 520, rotation: 0, draggable: true },
+      { type: "text", x: 640, y: 510, text: "Valid until 31 December 2026", fontSize: 22, fontFamily: "Inter", fontStyle: "italic", align: "left", fill: "#7C2D12", width: 520, rotation: 0, draggable: true },
     ],
   },
   {
@@ -195,6 +299,7 @@ function URLImage({ el, isSelected, onSelect, onChange }: {
   const ref = useRef<Konva.Image>(null);
   return (
     <KImage
+      id={el.id}
       image={img}
       ref={ref}
       x={el.x} y={el.y} width={el.width} height={el.height}
@@ -220,13 +325,28 @@ function URLImage({ el, isSelected, onSelect, onChange }: {
   );
 }
 
+function BackgroundImage({ src, width, height }: { src: string; width: number; height: number }) {
+  const [img] = useImage(src, "anonymous");
+  if (!img) return null;
+  const ir = img.width / img.height;
+  const cr = width / height;
+  let w = width, h = height, x = 0, y = 0;
+  if (ir > cr) {
+    h = height; w = height * ir; x = (width - w) / 2;
+  } else {
+    w = width; h = width / ir; y = (height - h) / 2;
+  }
+  return <KImage image={img} x={x} y={y} width={w} height={h} listening={false} />;
+}
+
 export default function SocialPostEditor() {
   const [preset, setPreset] = useState(PRESETS[0]);
   const [bg, setBg] = useState("#FFFFFF");
+  const [bgImage, setBgImage] = useState<string>("");
   const [elements, setElements] = useState<AnyEl[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stageScale, setStageScale] = useState(0.5);
-  const [tab, setTab] = useState<"templates" | "text" | "shapes" | "uploads">("templates");
+  const [tab, setTab] = useState<"templates" | "text" | "shapes" | "background" | "uploads">("templates");
   const [uploads, setUploads] = useState<string[]>([]);
 
   const stageRef = useRef<Konva.Stage>(null);
@@ -273,6 +393,7 @@ export default function SocialPostEditor() {
   function loadTemplate(t: Template) {
     setPreset({ id: t.id, label: t.name, w: t.width, h: t.height });
     setBg(t.background);
+    setBgImage(t.backgroundImage || "");
     setElements(t.elements.map(e => ({ ...e, id: uid() } as AnyEl)));
     setSelectedId(null);
   }
@@ -415,7 +536,7 @@ export default function SocialPostEditor() {
   const selected = elements.find(e => e.id === selectedId) || null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] -m-6">
+    <div className="flex flex-col h-full min-h-[calc(100vh-100px)] w-full overflow-hidden bg-white">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -446,6 +567,7 @@ export default function SocialPostEditor() {
             { id: "templates", icon: LayoutTemplate, label: "Templates" },
             { id: "text", icon: Type, label: "Text" },
             { id: "shapes", icon: Square, label: "Shapes" },
+            { id: "background", icon: Palette, label: "Background" },
             { id: "uploads", icon: ImageIcon, label: "Uploads" },
           ] as const).map(t => (
             <button
@@ -462,7 +584,7 @@ export default function SocialPostEditor() {
         </div>
 
         {/* Left panel */}
-        <div className="w-72 border-r bg-white overflow-y-auto p-4 shrink-0">
+        <div className="w-60 border-r bg-white overflow-y-auto p-3 shrink-0">
           {tab === "templates" && (
             <div>
               <h3 className="font-semibold text-sm mb-3">Templates</h3>
@@ -478,18 +600,33 @@ export default function SocialPostEditor() {
                   </button>
                 ))}
               </div>
-              <div className="mt-5">
-                <Label className="text-xs">Background color</Label>
-                <div className="grid grid-cols-6 gap-1.5 mt-2">
-                  {PALETTE.map(c => (
-                    <button key={c} onClick={() => setBg(c)}
-                      className="w-8 h-8 rounded border hover:scale-110 transition-transform"
-                      style={{ backgroundColor: c }} />
-                  ))}
-                </div>
-                <input type="color" value={bg} onChange={e => setBg(e.target.value)}
-                  className="mt-2 w-full h-9 rounded cursor-pointer" />
+            </div>
+          )}
+
+          {tab === "background" && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3">Background Image</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {BACKGROUNDS.map(b => (
+                  <button key={b.id} onClick={() => setBgImage(b.url)}
+                    className={`aspect-square rounded-lg border overflow-hidden hover:border-primary text-[10px] font-semibold text-white shadow-sm relative ${
+                      bgImage === b.url ? "ring-2 ring-primary" : ""
+                    } ${b.url ? "" : "bg-slate-100 text-slate-600"}`}
+                    style={b.url ? { backgroundImage: `url(${b.url})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}>
+                    <span className={`absolute inset-x-0 bottom-0 py-1 ${b.url ? "bg-black/40" : ""}`}>{b.label}</span>
+                  </button>
+                ))}
               </div>
+              <h3 className="font-semibold text-sm mt-5 mb-2">Background Color</h3>
+              <div className="grid grid-cols-6 gap-1.5">
+                {PALETTE.map(c => (
+                  <button key={c} onClick={() => { setBg(c); setBgImage(""); }}
+                    className={`w-8 h-8 rounded border hover:scale-110 transition-transform ${bg === c && !bgImage ? "ring-2 ring-primary ring-offset-1" : ""}`}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+              <input type="color" value={bg} onChange={e => { setBg(e.target.value); setBgImage(""); }}
+                className="mt-2 w-full h-9 rounded cursor-pointer" />
             </div>
           )}
 
@@ -586,6 +723,7 @@ export default function SocialPostEditor() {
             >
               <Layer>
                 <Rect x={0} y={0} width={preset.w} height={preset.h} fill={bg} listening={false} />
+                {bgImage && <BackgroundImage src={bgImage} width={preset.w} height={preset.h} />}
                 {elements.map(el => {
                   const common = {
                     id: el.id,
@@ -752,7 +890,7 @@ export default function SocialPostEditor() {
         </div>
 
         {/* Right properties panel */}
-        <div className="w-72 border-l bg-white overflow-y-auto shrink-0">
+        <div className="w-64 border-l bg-white overflow-y-auto shrink-0">
           {!selected ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               <Palette className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
