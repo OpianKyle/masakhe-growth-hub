@@ -11,7 +11,7 @@ import {
   Type, Square, Circle as CircleIcon, Star as StarIcon, Image as ImageIcon,
   Upload, Download, Trash2, LayoutTemplate, Palette, Bold, Italic,
   AlignLeft, AlignCenter, AlignRight, Copy, Layers, Minus, ChevronUp, ChevronDown,
-  Undo2, Redo2
+  Undo2, Redo2, Link as LinkIcon
 } from "lucide-react";
 
 type ElementType = "text" | "rect" | "circle" | "star" | "image" | "line";
@@ -34,6 +34,7 @@ interface TextEl extends BaseEl {
   align: "left" | "center" | "right";
   fill: string;
   width: number;
+  link?: string;
 }
 
 interface RectEl extends BaseEl {
@@ -1099,11 +1100,27 @@ export default function SocialPostEditor() {
     stage.size({ width: preset.w * prevScale, height: preset.h * prevScale });
     setSelectedId(prevSelected);
 
-    const link = document.createElement("a");
-    link.download = `post-${preset.id}-${Date.now()}.png`;
-    link.href = uri;
-    link.click();
-    toast.success("Design downloaded");
+    const a = document.createElement("a");
+    a.download = `post-${preset.id}-${Date.now()}.png`;
+    a.href = uri;
+    a.click();
+
+    const links = elements
+      .filter(el => el.type === "text" && (el as TextEl).link?.trim())
+      .map(el => {
+        const t = el as TextEl;
+        return { label: t.text.replace(/\n/g, " ").trim(), url: t.link!.trim() };
+      });
+    if (links.length > 0) {
+      const captionLines = links.map(l => `${l.label}: ${l.url}`).join("\n");
+      try { navigator.clipboard.writeText(captionLines); } catch {}
+      toast.success(`Design downloaded · ${links.length} link${links.length > 1 ? "s" : ""} copied to clipboard`, {
+        description: captionLines.length > 120 ? captionLines.slice(0, 120) + "…" : captionLines,
+        duration: 8000,
+      });
+    } else {
+      toast.success("Design downloaded");
+    }
   }
 
   const selected = elements.find(e => e.id === selectedId) || null;
@@ -1675,6 +1692,43 @@ export default function SocialPostEditor() {
                     value={(selected as TextEl).fill}
                     onChange={(c) => update(selected.id, { fill: c } as Partial<TextEl>)}
                   />
+                  <div>
+                    <Label className="text-xs flex items-center gap-1">
+                      <LinkIcon className="h-3 w-3" /> Link (URL)
+                    </Label>
+                    <input
+                      type="url"
+                      placeholder="https://your-site.co.za/offer"
+                      value={(selected as TextEl).link ?? ""}
+                      onChange={e => update(selected.id, { link: e.target.value } as Partial<TextEl>)}
+                      className="w-full mt-1 rounded-md border px-2 py-1.5 text-sm"
+                    />
+                    {(selected as TextEl).link && (
+                      <div className="mt-2 flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText((selected as TextEl).link ?? "");
+                            toast.success("Link copied");
+                          }}
+                          className="text-xs flex-1 rounded-md border px-2 py-1 hover:bg-slate-50"
+                        >
+                          Copy link
+                        </button>
+                        <a
+                          href={(selected as TextEl).link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs flex-1 rounded-md border px-2 py-1 hover:bg-slate-50 text-center"
+                        >
+                          Open
+                        </a>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                      PNG images can't carry clickable links. The link is stored on the design and added to your post caption when you download or publish.
+                    </p>
+                  </div>
                 </>
               )}
 
