@@ -530,17 +530,20 @@ function makeStockTemplate(s: StockSpec): Template {
     return max;
   };
 
+  const subLines = (text?: string, perLine = 40) =>
+    text ? text.split("\n").reduce((a, l) => a + Math.max(1, Math.ceil(l.length / perLine)), 0) : 0;
+
   if (layout === "overlay") {
     const alpha = s.overlayAlpha ?? 0.55;
     els.push(rect(0, 0, W, H, `rgba(15,23,42,${alpha})`));
-    let y = Math.round(H * 0.12);
-    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
-    const hs = headlineSize(s.headline, 110);
+    let y = Math.round(H * 0.1);
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 80; }
+    const hs = headlineSize(s.headline, 100);
     els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
-    y += hs * (s.headline.split("\n").length + 0.4);
+    y += hs * 1.15 * s.headline.split("\n").length + 30;
     els.push(rect(70, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
-    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
+    if (s.sub) { els.push(txt(70, y, W - 140, s.sub, 28, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" })); y += 28 * 1.3 * subLines(s.sub, 36) + 50; }
+    if (s.cta) els.push(...ctaBtn(70, Math.min(H - 160, Math.max(y, H - 240)), s.cta, accent));
   }
 
   else if (layout === "side-panel") {
@@ -551,117 +554,121 @@ function makeStockTemplate(s: StockSpec): Template {
     const tw = panelW - 120;
     els.push(rect(0, 0, W, H, "rgba(15,23,42,0.25)"));
     els.push(rect(px, 0, panelW, H, accent));
-    let y = Math.round(H * 0.14);
+    let y = Math.round(H * 0.12);
     if (s.badge) {
-      els.push(rect(tx, y, Math.max(180, s.badge.length * 16 + 60), 50, "#FFFFFF", { cornerRadius: 25 }));
-      els.push(txt(tx, y + 12, Math.max(180, s.badge.length * 16 + 60), s.badge, 22, accent, { align: "center" }));
-      y += 90;
+      const bw = Math.max(180, s.badge.length * 16 + 60);
+      els.push(rect(tx, y, bw, 50, "#FFFFFF", { cornerRadius: 25 }));
+      els.push(txt(tx, y + 12, bw, s.badge, 22, accent, { align: "center" }));
+      y += 80;
     }
-    const hs = headlineSize(s.headline, 96);
+    const hs = headlineSize(s.headline, 88);
     els.push(txt(tx, y, tw, s.headline, hs, "#FFFFFF"));
-    y += hs * (s.headline.split("\n").length + 0.4);
-    els.push(rect(tx, y, 80, 4, "#FFFFFF", { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(tx, y, tw, s.sub, 26, "#FFFFFF", { fontFamily: "Inter", fontStyle: "normal" }));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    els.push(rect(tx, y, 80, 4, "#FFFFFF", { cornerRadius: 2 })); y += 28;
+    if (s.sub) { els.push(txt(tx, y, tw, s.sub, 24, "#FFFFFF", { fontFamily: "Inter", fontStyle: "normal" })); y += 24 * 1.3 * subLines(s.sub, 26) + 50; }
     if (s.cta) {
-      const ctaW = Math.max(240, s.cta.length * 16 + 80);
-      els.push(rect(tx, H - 160, ctaW, 80, "#FFFFFF", { cornerRadius: 40 }));
-      els.push(txt(tx, H - 138, ctaW, s.cta, 28, accent, { align: "center" }));
+      const ctaW = Math.max(220, s.cta.length * 16 + 60);
+      const cy = Math.min(H - 140, Math.max(y, H - 220));
+      els.push(rect(tx, cy, ctaW, 70, "#FFFFFF", { cornerRadius: 35 }));
+      els.push(txt(tx, cy + 19, ctaW, s.cta, 24, accent, { align: "center" }));
     }
   }
 
   else if (layout === "bottom-card") {
-    const cardH = Math.round(H * 0.5);
-    const cardY = H - cardH - 50;
+    const cardH = Math.round(H * 0.55);
+    const cardY = H - cardH - 40;
     els.push(rect(50, cardY, W - 100, cardH, "#FFFFFF", { cornerRadius: 24 }));
     els.push(rect(50, cardY, W - 100, 80, accent, { cornerRadius: 24 }));
     els.push(rect(50, cardY + 60, W - 100, 30, accent));
-    let y = cardY + 110;
-    if (s.badge) els.push(txt(80, cardY + 22, W - 160, s.badge, 30, "#FFFFFF", { align: "center" }));
-    const hs = headlineSize(s.headline, 78);
+    if (s.badge) els.push(txt(80, cardY + 22, W - 160, s.badge, 28, "#FFFFFF", { align: "center" }));
+    let y = cardY + 120;
+    const hs = headlineSize(s.headline, 70);
     els.push(txt(80, y, W - 160, s.headline, hs, "#0F172A", { fontFamily: "Georgia" }));
-    y += hs * (s.headline.split("\n").length + 0.4);
-    els.push(rect(80, y, 80, 4, accent, { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(80, y, W - 160, s.sub, 26, "#374151", { fontFamily: "Inter", fontStyle: "normal" }));
-    if (s.cta) els.push(...ctaBtn(80, cardY + cardH - 110, s.cta, accent));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    els.push(rect(80, y, 80, 4, accent, { cornerRadius: 2 })); y += 26;
+    if (s.sub) { els.push(txt(80, y, W - 160, s.sub, 24, "#374151", { fontFamily: "Inter", fontStyle: "normal" })); y += 24 * 1.3 * subLines(s.sub, 36) + 30; }
+    if (s.cta) els.push(...ctaBtn(80, Math.min(cardY + cardH - 100, Math.max(y, cardY + cardH - 180)), s.cta, accent));
   }
 
   else if (layout === "top-strip") {
-    const stripH = Math.round(H * 0.22);
-    els.push(rect(0, stripH, W, H - stripH, "rgba(0,0,0,0.35)"));
+    const stripH = Math.round(H * 0.2);
+    els.push(rect(0, stripH, W, H - stripH, "rgba(0,0,0,0.4)"));
     els.push(rect(0, 0, W, stripH, accent));
-    if (s.badge) els.push(txt(60, stripH / 2 - 22, W - 120, s.badge, 36, "#FFFFFF", { align: "center" }));
+    if (s.badge) els.push(txt(60, stripH / 2 - 20, W - 120, s.badge, 32, "#FFFFFF", { align: "center" }));
     let y = stripH + Math.round(H * 0.08);
-    const hs = headlineSize(s.headline, 110);
+    const hs = headlineSize(s.headline, 100);
     els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF", { align: "center" }));
-    y += hs * (s.headline.split("\n").length + 0.4);
-    els.push(rect((W - 100) / 2, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal", align: "center" }));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    els.push(rect((W - 100) / 2, y, 100, 4, accent, { cornerRadius: 2 })); y += 28;
+    if (s.sub) { els.push(txt(70, y, W - 140, s.sub, 28, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal", align: "center" })); y += 28 * 1.3 * subLines(s.sub, 38) + 40; }
     if (s.cta) {
       const ctaW = Math.max(260, s.cta.length * 18 + 80);
-      els.push(...ctaBtn((W - ctaW) / 2, H - 140, s.cta, accent));
+      els.push(...ctaBtn((W - ctaW) / 2, Math.min(H - 140, Math.max(y, H - 220)), s.cta, accent));
     }
   }
 
   else if (layout === "frame") {
-    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.5)"));
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.55)"));
     els.push(rect(40, 40, W - 80, H - 80, "transparent", { stroke: accent, strokeWidth: 6, cornerRadius: 12 }));
-    els.push(rect(80, Math.round(H * 0.28), W - 160, Math.round(H * 0.5), "rgba(15,23,42,0.7)", { cornerRadius: 16 }));
-    let y = Math.round(H * 0.32);
+    const cardY = Math.round(H * 0.22);
+    const cardH = Math.round(H * 0.6);
+    els.push(rect(80, cardY, W - 160, cardH, "rgba(15,23,42,0.75)", { cornerRadius: 16 }));
+    let y = cardY + 40;
     if (s.badge) {
       const bw = Math.max(180, s.badge.length * 16 + 60);
       els.push(rect((W - bw) / 2, y, bw, 50, accent, { cornerRadius: 25 }));
       els.push(txt((W - bw) / 2, y + 12, bw, s.badge, 22, "#FFFFFF", { align: "center" }));
-      y += 90;
+      y += 80;
     }
-    const hs = headlineSize(s.headline, 96);
+    const hs = headlineSize(s.headline, 84);
     els.push(txt(110, y, W - 220, s.headline, hs, "#FFFFFF", { align: "center", fontFamily: "Georgia" }));
-    y += hs * (s.headline.split("\n").length + 0.4);
-    els.push(rect((W - 80) / 2, y, 80, 4, accent, { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(110, y, W - 220, s.sub, 28, "#F1F5F9", { fontFamily: "Inter", fontStyle: "italic", align: "center" }));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    els.push(rect((W - 80) / 2, y, 80, 4, accent, { cornerRadius: 2 })); y += 28;
+    if (s.sub) { els.push(txt(110, y, W - 220, s.sub, 26, "#F1F5F9", { fontFamily: "Inter", fontStyle: "italic", align: "center" })); y += 26 * 1.3 * subLines(s.sub, 38) + 40; }
     if (s.cta) {
       const ctaW = Math.max(260, s.cta.length * 18 + 80);
-      els.push(...ctaBtn((W - ctaW) / 2, H - 180, s.cta, accent));
+      els.push(...ctaBtn((W - ctaW) / 2, Math.min(cardY + cardH - 100, Math.max(y, cardY + cardH - 180)), s.cta, accent));
     }
   }
 
   else if (layout === "diagonal") {
-    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.4)"));
-    els.push({ type: "line", x: 0, y: 0, points: [0, H * 0.55, W, H * 0.25], stroke: accent, strokeWidth: 80, rotation: 0, draggable: true } as any);
-    let y = Math.round(H * 0.66);
-    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
-    const hs = headlineSize(s.headline, 100);
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.45)"));
+    els.push({ type: "line", x: 0, y: 0, points: [0, H * 0.55, W, H * 0.28], stroke: accent, strokeWidth: 80, rotation: 0, draggable: true } as any);
+    let y = Math.round(H * 0.62);
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 80; }
+    const hs = headlineSize(s.headline, 88);
     els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
-    y += hs * (s.headline.split("\n").length + 0.3);
-    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 26, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
-    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    if (s.sub) { els.push(txt(70, y, W - 140, s.sub, 24, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" })); y += 24 * 1.3 * subLines(s.sub, 44) + 40; }
+    if (s.cta) els.push(...ctaBtn(70, Math.min(H - 140, Math.max(y, H - 220)), s.cta, accent));
   }
 
   else if (layout === "circle-badge") {
-    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.55)"));
+    els.push(rect(0, 0, W, H, "rgba(15,23,42,0.6)"));
     els.push({ type: "circle", x: W - 180, y: 200, radius: 180, fill: accent, stroke: "transparent", strokeWidth: 0, rotation: 0, draggable: true } as any);
-    if (s.badge) els.push(txt(W - 360, 160, 360, s.badge, 38, "#FFFFFF", { align: "center" }));
-    let y = Math.round(H * 0.5);
-    const hs = headlineSize(s.headline, 110);
+    if (s.badge) els.push(txt(W - 360, 170, 360, s.badge, 36, "#FFFFFF", { align: "center" }));
+    let y = Math.round(H * 0.46);
+    const hs = headlineSize(s.headline, 100);
     els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
-    y += hs * (s.headline.split("\n").length + 0.4);
-    els.push(rect(70, y, 100, 4, accent, { cornerRadius: 2 })); y += 30;
-    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 30, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" }));
-    if (s.cta) els.push(...ctaBtn(70, H - 160, s.cta, accent));
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
+    els.push(rect(70, y, 100, 4, accent, { cornerRadius: 2 })); y += 28;
+    if (s.sub) { els.push(txt(70, y, W - 140, s.sub, 28, "#F1F5F9", { fontFamily: "Inter", fontStyle: "normal" })); y += 28 * 1.3 * subLines(s.sub, 38) + 40; }
+    if (s.cta) els.push(...ctaBtn(70, Math.min(H - 140, Math.max(y, H - 220)), s.cta, accent));
   }
 
   else if (layout === "split") {
-    const splitY = Math.round(H * 0.55);
+    const splitY = Math.round(H * 0.5);
     els.push(rect(0, splitY, W, H - splitY, "#0F172A"));
-    let y = splitY + 60;
-    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 90; }
-    const hs = headlineSize(s.headline, 76);
+    let y = splitY + 50;
+    if (s.badge) { els.push(...badge(70, y, s.badge, accent)); y += 80; }
+    const hs = headlineSize(s.headline, 70);
     els.push(txt(70, y, W - 140, s.headline, hs, "#FFFFFF"));
-    y += hs * (s.headline.split("\n").length + 0.3);
+    y += hs * 1.15 * s.headline.split("\n").length + 24;
     els.push(rect(70, y, 80, 4, accent, { cornerRadius: 2 })); y += 24;
-    if (s.sub) els.push(txt(70, y, W - 140, s.sub, 24, "#CBD5E1", { fontFamily: "Inter", fontStyle: "normal" }));
+    if (s.sub) { els.push(txt(70, y, W - 140, s.sub, 22, "#CBD5E1", { fontFamily: "Inter", fontStyle: "normal" })); y += 22 * 1.3 * subLines(s.sub, 50) + 30; }
     if (s.cta) {
-      const ctaW = Math.max(260, s.cta.length * 18 + 80);
-      els.push(...ctaBtn(W - ctaW - 70, H - 140, s.cta, accent));
+      const ctaW = Math.max(240, s.cta.length * 16 + 60);
+      els.push(...ctaBtn(W - ctaW - 70, Math.min(H - 120, Math.max(y, H - 180)), s.cta, accent));
     }
   }
 
@@ -988,6 +995,36 @@ export default function SocialPostEditor() {
     setElements([...elements, e]); setSelectedId(e.id);
   }
 
+  function addButton(variant: "filled" | "outline" | "pill" | "ghost", label: string, fill: string) {
+    const w = Math.max(280, label.length * 18 + 80);
+    const h = 80;
+    const x = preset.w / 2 - w / 2;
+    const y = preset.h / 2 - h / 2;
+    const bgId = uid();
+    const txtId = uid();
+    let bg: RectEl;
+    let textColor = "#FFFFFF";
+    if (variant === "filled") {
+      bg = { id: bgId, type: "rect", x, y, width: w, height: h, fill, stroke: "transparent", strokeWidth: 0, cornerRadius: 12, rotation: 0, draggable: true };
+    } else if (variant === "pill") {
+      bg = { id: bgId, type: "rect", x, y, width: w, height: h, fill, stroke: "transparent", strokeWidth: 0, cornerRadius: h / 2, rotation: 0, draggable: true };
+    } else if (variant === "outline") {
+      bg = { id: bgId, type: "rect", x, y, width: w, height: h, fill: "transparent", stroke: fill, strokeWidth: 4, cornerRadius: 12, rotation: 0, draggable: true };
+      textColor = fill;
+    } else {
+      bg = { id: bgId, type: "rect", x, y, width: w, height: h, fill: "rgba(255,255,255,0.15)", stroke: "transparent", strokeWidth: 0, cornerRadius: 12, rotation: 0, draggable: true };
+      textColor = "#FFFFFF";
+    }
+    const t: TextEl = {
+      id: txtId, type: "text", x, y: y + 22, width: w, text: label,
+      fontSize: 28, fontFamily: "Poppins", fontStyle: "bold", align: "center",
+      fill: textColor, rotation: 0, draggable: true,
+    };
+    setElements(prev => [...prev, bg, t]);
+    setSelectedId(t.id);
+    toast.success("Button added — edit text in the right panel");
+  }
+
   function addImage(src: string) {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -1230,6 +1267,32 @@ export default function SocialPostEditor() {
                   <Minus className="h-8 w-8 text-slate-700" />
                 </button>
               </div>
+
+              <h3 className="font-semibold text-sm mt-5 mb-3">CTA Buttons</h3>
+              <div className="space-y-2">
+                <button onClick={() => addButton("filled", "Shop Now", "#3B82F6")} className="w-full rounded-lg bg-blue-500 text-white text-sm font-semibold py-3 hover:bg-blue-600">
+                  Shop Now
+                </button>
+                <button onClick={() => addButton("pill", "Learn More", "#10B981")} className="w-full rounded-full bg-emerald-500 text-white text-sm font-semibold py-3 hover:bg-emerald-600">
+                  Learn More
+                </button>
+                <button onClick={() => addButton("filled", "Get Started", "#F97316")} className="w-full rounded-lg bg-orange-500 text-white text-sm font-semibold py-3 hover:bg-orange-600">
+                  Get Started
+                </button>
+                <button onClick={() => addButton("outline", "Read More", "#FFFFFF")} className="w-full rounded-lg border-2 border-slate-700 text-slate-700 text-sm font-semibold py-3 hover:bg-slate-100">
+                  Read More (outline)
+                </button>
+                <button onClick={() => addButton("pill", "Book Now", "#EF4444")} className="w-full rounded-full bg-red-500 text-white text-sm font-semibold py-3 hover:bg-red-600">
+                  Book Now
+                </button>
+                <button onClick={() => addButton("ghost", "Sign Up", "#FFFFFF")} className="w-full rounded-lg bg-slate-200 text-slate-800 text-sm font-semibold py-3 hover:bg-slate-300">
+                  Sign Up (ghost)
+                </button>
+                <button onClick={() => addButton("filled", "Contact Us", "#0F172A")} className="w-full rounded-lg bg-slate-900 text-white text-sm font-semibold py-3 hover:bg-slate-800">
+                  Contact Us
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-3">Buttons are added as a shape + text. Click the text to change the label and the shape to change the colour.</p>
             </div>
           )}
 
