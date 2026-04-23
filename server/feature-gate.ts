@@ -22,8 +22,11 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
     if (user?.role === "admin") {
+      return next();
+    }
+    if (user?.subscription_exempt) {
       return next();
     }
 

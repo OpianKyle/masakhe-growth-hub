@@ -617,6 +617,10 @@ export async function runMigrations() {
       await conn.query(`ALTER TABLE companies ADD COLUMN verification_details TEXT DEFAULT NULL`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 
+    try {
+      await conn.query(`ALTER TABLE users ADD COLUMN subscription_exempt TINYINT(1) NOT NULL DEFAULT 0`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
     await conn.query(`
       CREATE TABLE IF NOT EXISTS vehicle_listings (
         id VARCHAR(36) PRIMARY KEY,

@@ -50,6 +50,7 @@ interface Client {
   plan_code?: string | null;
   plan_name?: string | null;
   plan_price_cents?: number | null;
+  subscription_exempt?: number | boolean;
 }
 
 const adminNavItems = [
@@ -247,6 +248,24 @@ function ClientList() {
     }
   };
 
+  const toggleExempt = async (id: string, name: string, currentlyExempt: boolean) => {
+    const action = currentlyExempt ? "remove the free-access exemption for" : "make free (no subscription needed) for";
+    if (!confirm(`${currentlyExempt ? "Remove free access" : "Grant free access"} — ${action} ${name}?`)) return;
+    const res = await fetch(`/api/admin/clients/${id}/exempt`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ exempt: !currentlyExempt }),
+    });
+    if (res.ok) {
+      toast.success(currentlyExempt ? `${name} now requires a subscription` : `${name} now has free access`);
+      loadClients();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to update exemption");
+    }
+  };
+
   const revokeSubscription = async (id: string, name: string) => {
     if (!confirm(`Revoke active subscription for ${name}?`)) return;
     const res = await fetch(`/api/admin/clients/${id}/subscription`, {
@@ -408,6 +427,21 @@ function ClientList() {
                 <td className="p-4">
                   {client.role === "admin" ? (
                     <span className="text-xs text-muted-foreground italic">Admin</span>
+                  ) : client.subscription_exempt ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-800">
+                        <Star className="h-3 w-3" />
+                        Free Access
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => toggleExempt(client.id, client.full_name, true)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   ) : client.subscription_status === "TRIAL" ? (
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800">
@@ -463,6 +497,15 @@ function ClientList() {
                         onClick={() => grantSubscription(client.id, "pro", client.full_name)}
                       >
                         <BanknoteIcon className="h-3 w-3" /> Pro
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-purple-300 text-purple-700 hover:bg-purple-50"
+                        onClick={() => toggleExempt(client.id, client.full_name, false)}
+                        title="Grant free access — no subscription required"
+                      >
+                        <Star className="h-3 w-3" /> Free Access
                       </Button>
                     </div>
                   )}
