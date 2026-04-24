@@ -7,7 +7,7 @@ import {
   Sparkles, Copy, ArrowRight, Globe, Building2, Star, Phone,
   Tag, Users, BarChart3, RefreshCw, ChevronRight, Megaphone,
   Gift, Lightbulb, TrendingUp, Heart, Clock, Handshake, HelpCircle, Rocket, Zap,
-  ShieldCheck, PiggyBank, Briefcase, DollarSign, PieChart, FileCheck, Award, Home, AlertTriangle, UserCheck
+  ShieldCheck, PiggyBank, Briefcase, DollarSign, PieChart, FileCheck, Award, Home, AlertTriangle, UserCheck, PenLine
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, StatsData, ContactData } from "@/types/site";
@@ -819,7 +819,7 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-2xl font-bold font-heading flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" /> Post Templates
@@ -830,11 +830,16 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
               : "Ready-to-use advertising templates — build your website to unlock personalised posts"}
           </p>
         </div>
-        {!site && (
-          <Button onClick={() => navigate("/dashboard/website")} className="gradient-hero text-white">
-            <Globe className="h-4 w-4 mr-2" /> Build Your Website
+        <div className="flex items-center gap-2 flex-wrap">
+          {!site && (
+            <Button variant="outline" onClick={() => navigate("/dashboard/website")}>
+              <Globe className="h-4 w-4 mr-2" /> Build Website
+            </Button>
+          )}
+          <Button onClick={() => navigate(createPath || "/dashboard/social/create")} className="gradient-hero text-white">
+            <PenLine className="h-4 w-4 mr-2" /> Create Post
           </Button>
-        )}
+        </div>
       </div>
 
       {!site && (
