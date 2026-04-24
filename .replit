@@ -67,7 +67,6 @@ SMTP_PORT = "465"
 SMTP_USER = "admin@masakhegroup.co.za"
 SMTP_FROM = "admin@masakhegroup.co.za"
 SMTP_SECURE = "true"
-APP_URL = "https://masakheportal.co.za"
 VITE_SERVER_IP = "41.203.18.1"
 
 [userenv.development]
