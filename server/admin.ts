@@ -62,7 +62,7 @@ adminRouter.get("/stats", async (req, res) => {
 adminRouter.get("/clients", async (req, res) => {
   try {
     const clients = await queryAll(
-      `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
+      `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.subscription_exempt,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
               bp.industry_sector, bp.phone, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
@@ -198,6 +198,20 @@ adminRouter.delete("/clients/:id/subscription", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to revoke subscription" });
+  }
+});
+
+adminRouter.patch("/clients/:id/exempt", async (req, res) => {
+  try {
+    const { exempt } = req.body;
+    const value = exempt ? 1 : 0;
+    await execute(
+      "UPDATE users SET subscription_exempt = ?, updated_at = ? WHERE id = ?",
+      [value, new Date().toISOString(), req.params.id]
+    );
+    res.json({ ok: true, exempt: !!value });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update exemption" });
   }
 });
 

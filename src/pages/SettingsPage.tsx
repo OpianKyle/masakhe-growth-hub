@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Camera, Trash2, Save, Building2, User, CreditCard, MapPin, Phone, Mail, Briefcase, Upload, ServerCog, Send, CheckCircle2, AlertCircle, FileText, X, Palette, FileImage } from "lucide-react";
+
 import { useToast } from "@/components/ui/use-toast";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);

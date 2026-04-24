@@ -230,11 +230,14 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
 billingRouter.get("/status", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
     
     // Admin users always have pro access
     if (user?.role === "admin") {
       return res.json({ active: true, status: "ACTIVE", plan: "pro" });
+    }
+    if (user?.subscription_exempt) {
+      return res.json({ active: true, status: "EXEMPT", plan: "pro" });
     }
     
     const workspace = await queryOne(
@@ -269,10 +272,13 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 billingRouter.get("/access-status", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
 
     if (user?.role === "admin") {
       return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "ACTIVE" });
+    }
+    if (user?.subscription_exempt) {
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "EXEMPT" });
     }
 
     const workspace = await queryOne(

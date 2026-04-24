@@ -32,7 +32,6 @@ import { payrollRouter } from "./payroll";
 import { clientsRouter } from "./clients";
 import { campaignsRouter } from "./campaigns";
 import { emailSettingsRouter } from "./email-settings";
-import { ficaDocsRouter } from "./fica-docs";
 import { contactRouter } from "./contact";
 import path from "path";
 import { queryOne } from "./db";
@@ -101,7 +100,6 @@ async function main() {
   app.use("/api/clients", clientsRouter);
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);
-  app.use("/api/fica-docs", ficaDocsRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
 
