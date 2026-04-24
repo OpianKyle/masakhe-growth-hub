@@ -305,6 +305,7 @@ authRouter.get("/google", (req, res) => {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     return res.redirect(`/register?error=google_not_configured`);
   }
+  console.log("[Google OAuth] Redirect URI being used:", GOOGLE_REDIRECT_URI);
   const ref = (req.query.ref as string) || "";
   const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
   const url = client.generateAuthUrl({
