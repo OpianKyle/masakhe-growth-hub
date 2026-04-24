@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import SocialPostTemplates from "../social/SocialPostTemplates";
+import LinkedInTemplates from "../social/LinkedInTemplates";
 import type { SiteConfig } from "@/types/site";
 import SocialCalendar from "../social/SocialCalendar";
 import SocialCreate from "../social/SocialCreate";
@@ -371,12 +371,12 @@ export default function BizConnectHub() {
           </div>
         ) : (
           <Routes>
-            <Route index element={<SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/dashboard/biz-connect/create" />} />
+            <Route index element={<LinkedInTemplates workspaceId={workspaceId} businessName={site?.businessName} createPath="/dashboard/biz-connect/create" />} />
             <Route path="calendar" element={<SocialCalendar workspaceId={workspaceId} platformFilter="LINKEDIN" createPath="/dashboard/biz-connect/create" />} />
             <Route path="create" element={<SocialCreate workspaceId={workspaceId} platformFilter="LINKEDIN" calendarPath="/dashboard/biz-connect/calendar" />} />
             <Route path="media" element={<SocialMediaLibrary workspaceId={workspaceId} />} />
             <Route path="analytics" element={<SocialAnalytics workspaceId={workspaceId} platformFilter="LINKEDIN" />} />
-            <Route path="*" element={<SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/dashboard/biz-connect/create" />} />
+            <Route path="*" element={<LinkedInTemplates workspaceId={workspaceId} businessName={site?.businessName} createPath="/dashboard/biz-connect/create" />} />
           </Routes>
         )}
       </div>
