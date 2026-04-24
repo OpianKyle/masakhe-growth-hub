@@ -4,6 +4,12 @@ import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendPasswordResetEmail } from "./email";
 import { linkResellerClient, autoRegisterReseller } from "./reseller";
+import { OAuth2Client } from "google-auth-library";
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const APP_URL = process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:5000"}`;
+const GOOGLE_REDIRECT_URI = `${APP_URL}/api/auth/google/callback`;
 
 export const authRouter = Router();
 
@@ -293,6 +299,87 @@ authRouter.get("/me", async (req, res) => {
   }
 
   res.json({ user, isImpersonating, originalAdminName });
+});
+
+authRouter.get("/google", (req, res) => {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return res.redirect(`/register?error=google_not_configured`);
+  }
+  const ref = (req.query.ref as string) || "";
+  const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+  const url = client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["profile", "email"],
+    state: ref ? `ref=${ref}` : "",
+    prompt: "select_account",
+  });
+  res.redirect(url);
+});
+
+authRouter.get("/google/callback", async (req, res) => {
+  const { code, state, error: oauthError } = req.query as Record<string, string>;
+  if (oauthError || !code) {
+    return res.redirect(`/login?error=google_denied`);
+  }
+  try {
+    const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
+
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token!, audience: GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.redirect(`/login?error=google_no_email`);
+    }
+
+    const { email, name, given_name, family_name } = payload;
+    const fullName = name || `${given_name || ""} ${family_name || ""}`.trim() || email;
+
+    const referralCode = state?.startsWith("ref=") ? state.slice(4) : undefined;
+    const now = new Date().toISOString();
+
+    let user = await queryOne("SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
+    if (!user) {
+      const userId = randomUUID();
+      await execute(
+        `INSERT INTO users (id, email, password_hash, full_name, role, referred_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'user', ?, ?, ?)`,
+        [userId, email.toLowerCase(), "", fullName, referralCode || null, now, now]
+      );
+      const profileId = randomUUID();
+      await execute(
+        `INSERT INTO business_profiles (id, user_id, email, popia_consent, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)`,
+        [profileId, userId, email.toLowerCase(), now, now]
+      );
+      const wsId = randomUUID();
+      await execute(
+        "INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+        [wsId, `${fullName}'s Business`, userId, now, now]
+      );
+      await execute(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
+        [randomUUID(), wsId, userId, "owner", now]
+      );
+      const starterPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'starter' LIMIT 1");
+      if (starterPlan) {
+        const trialEnd = new Date(); trialEnd.setDate(trialEnd.getDate() + 14);
+        await execute(
+          `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
+           VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
+          [wsId, starterPlan.id, now, trialEnd.toISOString(), now, now]
+        );
+      }
+      sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
+      if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
+      user = { id: userId };
+    }
+
+    req.session.userId = user.id;
+    req.session.save(() => res.redirect("/dashboard"));
+  } catch (err: any) {
+    console.error("Google OAuth error:", err.message);
+    res.redirect(`/login?error=google_failed`);
+  }
 });
 
 authRouter.post("/impersonate/end", async (req, res) => {
