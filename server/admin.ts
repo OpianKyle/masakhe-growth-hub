@@ -1,10 +1,79 @@
 import { Router } from "express";
-import { queryOne, queryAll, execute } from "./db";
+import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
 import { getTransporterForUser } from "./email-settings";
 
 export const adminRouter = Router();
+
+// ───────────────────────── Migrations: notes/tags + audit log ─────────────────────────
+async function runAdminMigrations() {
+  const conn = await pool.getConnection();
+  try {
+    try {
+      await conn.query(`ALTER TABLE users ADD COLUMN admin_notes LONGTEXT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) console.error("[Admin] notes col:", e.message); }
+    try {
+      await conn.query(`ALTER TABLE users ADD COLUMN admin_tags JSON NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) console.error("[Admin] tags col:", e.message); }
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id VARCHAR(36) NOT NULL,
+        admin_name VARCHAR(255) NULL,
+        admin_email VARCHAR(255) NULL,
+        action VARCHAR(80) NOT NULL,
+        target_type VARCHAR(40) NULL,
+        target_id VARCHAR(64) NULL,
+        target_label VARCHAR(255) NULL,
+        details_json TEXT NULL,
+        ip_address VARCHAR(64) NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_audit_admin (admin_id),
+        INDEX idx_audit_action (action),
+        INDEX idx_audit_target (target_type, target_id),
+        INDEX idx_audit_created (created_at)
+      ) ENGINE=InnoDB
+    `);
+  } finally {
+    conn.release();
+  }
+}
+runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));
+
+// ───────────────────────── Audit-log helper ─────────────────────────
+async function logAudit(req: any, action: string, opts: {
+  targetType?: string;
+  targetId?: string;
+  targetLabel?: string;
+  details?: Record<string, any>;
+} = {}) {
+  try {
+    // Use the original admin id when impersonating, so impersonated actions are still attributed.
+    const adminId = req.session?.originalAdminId || req.session?.userId;
+    if (!adminId) return;
+    const admin = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [adminId]);
+    const ip = (req.headers["x-forwarded-for"]?.toString().split(",")[0].trim()) || req.ip || null;
+    await execute(
+      `INSERT INTO admin_audit_log (admin_id, admin_name, admin_email, action, target_type, target_id, target_label, details_json, ip_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        adminId,
+        admin?.full_name || null,
+        admin?.email || null,
+        action,
+        opts.targetType || null,
+        opts.targetId || null,
+        opts.targetLabel || null,
+        opts.details ? JSON.stringify(opts.details) : null,
+        ip,
+      ]
+    );
+  } catch (e: any) {
+    console.error("[Audit] failed to log:", e.message);
+  }
+}
 
 async function ensureWorkspaceForUser(userId: string): Promise<string> {
   const existing = await queryOne(
@@ -24,6 +93,7 @@ async function ensureWorkspaceForUser(userId: string): Promise<string> {
 
 adminRouter.use(requireAdmin);
 
+// ───────────────────────── Overview stats (existing) ─────────────────────────
 adminRouter.get("/stats", async (req, res) => {
   try {
     const totalUsers = (await queryOne("SELECT COUNT(*) as c FROM users"))?.c || 0;
@@ -59,10 +129,130 @@ adminRouter.get("/stats", async (req, res) => {
   }
 });
 
+// ───────────────────────── Financial stats: MRR / ARR / churn / conversion ─────────────────────────
+adminRouter.get("/financial-stats", async (req, res) => {
+  try {
+    // MRR: sum of price_cents of currently ACTIVE subscriptions on monthly plans.
+    const mrrRow = await queryOne(
+      `SELECT COALESCE(SUM(bp.price_cents), 0) as mrr_cents,
+              COUNT(*) as active_subs
+       FROM billing_subscriptions bs
+       JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.status = 'ACTIVE' AND bp.bill_interval = 'MONTHLY'`
+    );
+    const mrrCents = Number(mrrRow?.mrr_cents || 0);
+    const activeSubs = Number(mrrRow?.active_subs || 0);
+
+    const trialRow = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions
+       WHERE status = 'TRIAL' AND (trial_end_at IS NULL OR trial_end_at > NOW())`
+    );
+    const activeTrials = Number(trialRow?.c || 0);
+
+    const expiredTrialRow = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions
+       WHERE status = 'TRIAL' AND trial_end_at IS NOT NULL AND trial_end_at <= NOW()`
+    );
+    const expiredTrials = Number(expiredTrialRow?.c || 0);
+
+    const pastDueRow = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions WHERE status = 'PAST_DUE'`
+    );
+    const pastDue = Number(pastDueRow?.c || 0);
+
+    // Cancellations in the last 30 days.
+    const cancelled30Row = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions
+       WHERE status = 'CANCELLED' AND (cancelled_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) OR updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY))`
+    );
+    const cancelled30 = Number(cancelled30Row?.c || 0);
+    const churnPct = (activeSubs + cancelled30) > 0
+      ? +((cancelled30 / (activeSubs + cancelled30)) * 100).toFixed(1)
+      : 0;
+
+    // Trial → paid conversion: subs that have moved past TRIAL into ACTIVE / total trials ever.
+    const totalTrialsRow = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions WHERE trial_start_at IS NOT NULL`
+    );
+    const convertedRow = await queryOne(
+      `SELECT COUNT(*) as c FROM billing_subscriptions
+       WHERE trial_start_at IS NOT NULL AND status = 'ACTIVE'`
+    );
+    const totalTrials = Number(totalTrialsRow?.c || 0);
+    const converted = Number(convertedRow?.c || 0);
+    const conversionPct = totalTrials > 0 ? +((converted / totalTrials) * 100).toFixed(1) : 0;
+
+    const arpu = activeSubs > 0 ? Math.round(mrrCents / activeSubs) : 0;
+
+    // Revenue this month — paid invoices.
+    const paidThisMonthRow = await queryOne(
+      `SELECT COALESCE(SUM(amount_cents), 0) as total, COUNT(*) as c
+       FROM billing_invoices
+       WHERE LOWER(status) = 'paid' AND paid_at >= DATE_FORMAT(NOW(), '%Y-%m-01')`
+    );
+    const paidThisMonthCents = Number(paidThisMonthRow?.total || 0);
+    const paidThisMonthCount = Number(paidThisMonthRow?.c || 0);
+
+    const pendingInvRow = await queryOne(
+      `SELECT COUNT(*) as c, COALESCE(SUM(amount_cents),0) as total
+       FROM billing_invoices WHERE UPPER(status) = 'PENDING'`
+    );
+    const failedInvRow = await queryOne(
+      `SELECT COUNT(*) as c, COALESCE(SUM(amount_cents),0) as total
+       FROM billing_invoices WHERE UPPER(status) IN ('FAILED','VOIDED')`
+    );
+
+    // Revenue by month (last 6 months) from paid billing invoices.
+    const revRows = await queryAll(
+      `SELECT DATE_FORMAT(paid_at, '%Y-%m') as month, COALESCE(SUM(amount_cents), 0) as total
+       FROM billing_invoices
+       WHERE LOWER(status) = 'paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+       GROUP BY month
+       ORDER BY month ASC`
+    );
+
+    // Plan distribution
+    const planRows = await queryAll(
+      `SELECT bp.code, bp.name, COUNT(*) as c
+       FROM billing_subscriptions bs
+       JOIN billing_plans bp ON bp.id = bs.plan_id
+       WHERE bs.status IN ('ACTIVE','TRIAL')
+         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
+       GROUP BY bp.code, bp.name`
+    );
+
+    res.json({
+      mrrCents,
+      arrCents: mrrCents * 12,
+      arpuCents: arpu,
+      activeSubs,
+      activeTrials,
+      expiredTrials,
+      pastDue,
+      cancelled30Days: cancelled30,
+      churnPct,
+      conversionPct,
+      totalTrialsEver: totalTrials,
+      convertedToActive: converted,
+      paidThisMonthCents,
+      paidThisMonthCount,
+      pendingInvoices: { count: Number(pendingInvRow?.c || 0), totalCents: Number(pendingInvRow?.total || 0) },
+      failedInvoices: { count: Number(failedInvRow?.c || 0), totalCents: Number(failedInvRow?.total || 0) },
+      revenueByMonth: revRows.map((r: any) => ({ month: r.month, totalCents: Number(r.total) })),
+      planDistribution: planRows.map((r: any) => ({ code: r.code, name: r.name, count: Number(r.c) })),
+    });
+  } catch (err: any) {
+    console.error("[Admin] financial-stats error:", err.message);
+    res.status(500).json({ error: "Failed to fetch financial stats" });
+  }
+});
+
+// ───────────────────────── Client list (now with notes/tags) ─────────────────────────
 adminRouter.get("/clients", async (req, res) => {
   try {
     const clients = await queryAll(
       `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.subscription_exempt,
+              u.admin_notes, u.admin_tags,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
               bp.industry_sector, bp.phone, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
@@ -75,16 +265,27 @@ adminRouter.get("/clients", async (req, res) => {
        LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
        ORDER BY u.created_at DESC`
     );
-    res.json(clients);
+    // admin_tags is stored as JSON; mysql2 can return it as string or already-parsed.
+    const normalised = clients.map((c: any) => ({
+      ...c,
+      admin_tags: typeof c.admin_tags === "string" ? safeParse(c.admin_tags) : (c.admin_tags || []),
+    }));
+    res.json(normalised);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch clients" });
   }
 });
 
+function safeParse(s: string | null): any[] {
+  if (!s) return [];
+  try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+
 adminRouter.get("/clients/:id", async (req, res) => {
   try {
     const user = await queryOne(
       `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.updated_at,
+              u.admin_notes, u.admin_tags,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
               bp.industry_sector, bp.years_operating, bp.employee_count,
               bp.phone, bp.whatsapp, bp.email as bp_email, bp.physical_address
@@ -100,7 +301,9 @@ adminRouter.get("/clients/:id", async (req, res) => {
 
     res.json({
       user: {
-        id: user.id, email: user.email, full_name: user.full_name, role: user.role, created_at: user.created_at
+        id: user.id, email: user.email, full_name: user.full_name, role: user.role, created_at: user.created_at,
+        admin_notes: user.admin_notes,
+        admin_tags: typeof user.admin_tags === "string" ? safeParse(user.admin_tags) : (user.admin_tags || []),
       },
       profile: {
         business_name: user.business_name,
@@ -122,8 +325,48 @@ adminRouter.get("/clients/:id", async (req, res) => {
   }
 });
 
+// ───────────────────────── Notes & tags ─────────────────────────
+adminRouter.patch("/clients/:id/notes", async (req, res) => {
+  try {
+    const { notes } = req.body;
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
+    if (!target) return res.status(404).json({ error: "Client not found" });
+    await execute("UPDATE users SET admin_notes = ?, updated_at = ? WHERE id = ?",
+      [notes ?? null, new Date().toISOString(), req.params.id]);
+    await logAudit(req, "client.notes.updated", {
+      targetType: "user", targetId: req.params.id, targetLabel: target.full_name,
+      details: { length: typeof notes === "string" ? notes.length : 0 },
+    });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: "Failed to save notes" });
+  }
+});
+
+adminRouter.patch("/clients/:id/tags", async (req, res) => {
+  try {
+    const tags = Array.isArray(req.body?.tags) ? req.body.tags : [];
+    const cleaned = Array.from(new Set(
+      tags.map((t: any) => String(t || "").trim()).filter((t: string) => t.length > 0 && t.length <= 40)
+    )).slice(0, 12);
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
+    if (!target) return res.status(404).json({ error: "Client not found" });
+    await execute("UPDATE users SET admin_tags = ?, updated_at = ? WHERE id = ?",
+      [JSON.stringify(cleaned), new Date().toISOString(), req.params.id]);
+    await logAudit(req, "client.tags.updated", {
+      targetType: "user", targetId: req.params.id, targetLabel: target.full_name,
+      details: { tags: cleaned },
+    });
+    res.json({ ok: true, tags: cleaned });
+  } catch {
+    res.status(500).json({ error: "Failed to save tags" });
+  }
+});
+
+// ───────────────────────── Subscription / role / exemption (with audit) ─────────────────────────
 adminRouter.post("/clients/:id/trial", async (req, res) => {
   try {
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
     const workspaceId = await ensureWorkspaceForUser(req.params.id);
     const workspace = { id: workspaceId };
 
@@ -150,6 +393,10 @@ adminRouter.post("/clients/:id/trial", async (req, res) => {
         [workspace.id, premiumPlan.id, now, trialEndStr]
       );
     }
+    await logAudit(req, "subscription.trial_granted", {
+      targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
+      details: { plan: "premium", trialEndsAt: trialEndStr },
+    });
     res.json({ ok: true, trialEndsAt: trialEndStr });
   } catch (err) {
     res.status(500).json({ error: "Failed to grant trial" });
@@ -162,6 +409,7 @@ adminRouter.post("/clients/:id/subscription", async (req, res) => {
     if (!["starter", "pro", "premium"].includes(plan)) {
       return res.status(400).json({ error: "Invalid plan. Use 'starter', 'pro', or 'premium'." });
     }
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
     const workspaceId = await ensureWorkspaceForUser(req.params.id);
     const workspace = { id: workspaceId };
     const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [plan]);
@@ -181,6 +429,10 @@ adminRouter.post("/clients/:id/subscription", async (req, res) => {
         [workspace.id, billingPlan.id]
       );
     }
+    await logAudit(req, "subscription.granted", {
+      targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
+      details: { plan },
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to grant subscription" });
@@ -189,12 +441,16 @@ adminRouter.post("/clients/:id/subscription", async (req, res) => {
 
 adminRouter.delete("/clients/:id/subscription", async (req, res) => {
   try {
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
     const workspaceId = await ensureWorkspaceForUser(req.params.id);
     const workspace = { id: workspaceId };
     await execute(
-      "UPDATE billing_subscriptions SET status = 'CANCELLED', updated_at = NOW() WHERE workspace_id = ? AND status IN ('ACTIVE','TRIAL')",
+      "UPDATE billing_subscriptions SET status = 'CANCELLED', cancelled_at = NOW(), updated_at = NOW() WHERE workspace_id = ? AND status IN ('ACTIVE','TRIAL')",
       [workspace.id]
     );
+    await logAudit(req, "subscription.revoked", {
+      targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to revoke subscription" });
@@ -205,10 +461,14 @@ adminRouter.patch("/clients/:id/exempt", async (req, res) => {
   try {
     const { exempt } = req.body;
     const value = exempt ? 1 : 0;
+    const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
     await execute(
       "UPDATE users SET subscription_exempt = ?, updated_at = ? WHERE id = ?",
       [value, new Date().toISOString(), req.params.id]
     );
+    await logAudit(req, value ? "client.free_access_granted" : "client.free_access_removed", {
+      targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
+    });
     res.json({ ok: true, exempt: !!value });
   } catch (err) {
     res.status(500).json({ error: "Failed to update exemption" });
@@ -221,8 +481,13 @@ adminRouter.patch("/clients/:id/role", async (req, res) => {
     if (!["user", "admin"].includes(role)) {
       return res.status(400).json({ error: "Invalid role" });
     }
+    const target = await queryOne("SELECT full_name, role FROM users WHERE id = ?", [req.params.id]);
     await execute("UPDATE users SET role = ?, updated_at = ? WHERE id = ?",
       [role, new Date().toISOString(), req.params.id]);
+    await logAudit(req, "client.role_changed", {
+      targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
+      details: { from: target?.role, to: role },
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update role" });
@@ -247,6 +512,11 @@ adminRouter.post("/impersonate/:userId", async (req, res) => {
 
     req.session.originalAdminId = adminId;
     req.session.userId = targetId;
+    await logAudit({ session: { userId: adminId, originalAdminId: adminId }, headers: req.headers, ip: req.ip } as any,
+      "client.impersonated", {
+        targetType: "user", targetId, targetLabel: target.full_name,
+        details: { email: target.email },
+      });
     req.session.save(() => {
       res.json({ ok: true, targetName: target.full_name });
     });
@@ -361,6 +631,11 @@ adminRouter.post("/clients/:id/invoice", async (req, res) => {
       }
     }
 
+    await logAudit(req, "client.invoice_created", {
+      targetType: "user", targetId: req.params.id, targetLabel: clientUser.full_name,
+      details: { invoiceNumber, amountCents, planName, emailSent },
+    });
+
     res.json({ ok: true, invoiceNumber, emailSent });
   } catch (err: any) {
     console.error("Admin invoice creation error:", err);
@@ -394,11 +669,72 @@ adminRouter.delete("/clients/:id", async (req, res) => {
     if (userId === req.session?.userId) {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
+    const target = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
     await execute("DELETE FROM websites WHERE owner_id = ?", [userId]);
     await execute("DELETE FROM business_profiles WHERE user_id = ?", [userId]);
     await execute("DELETE FROM users WHERE id = ?", [userId]);
+    await logAudit(req, "client.deleted", {
+      targetType: "user", targetId: userId, targetLabel: target?.full_name,
+      details: { email: target?.email },
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete client" });
+  }
+});
+
+// ───────────────────────── Audit log read API ─────────────────────────
+adminRouter.get("/audit-log", async (req, res) => {
+  try {
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const where: string[] = [];
+    const params: any[] = [];
+    if (req.query.adminId) { where.push("admin_id = ?"); params.push(req.query.adminId); }
+    if (req.query.action) { where.push("action = ?"); params.push(req.query.action); }
+    if (req.query.targetId) { where.push("target_id = ?"); params.push(req.query.targetId); }
+    if (req.query.q) {
+      const q = `%${req.query.q}%`;
+      where.push("(admin_name LIKE ? OR target_label LIKE ? OR action LIKE ?)");
+      params.push(q, q, q);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const rows = await queryAll(
+      `SELECT id, admin_id, admin_name, admin_email, action, target_type, target_id,
+              target_label, details_json, ip_address, created_at
+       FROM admin_audit_log ${whereSql}
+       ORDER BY created_at DESC
+       LIMIT ${limit} OFFSET ${offset}`,
+      params
+    );
+    const totalRow = await queryOne(
+      `SELECT COUNT(*) as c FROM admin_audit_log ${whereSql}`, params
+    );
+    res.json({
+      total: Number(totalRow?.c || 0),
+      limit, offset,
+      entries: rows.map((r: any) => ({
+        ...r,
+        details: r.details_json ? safeJsonParse(r.details_json) : null,
+      })),
+    });
+  } catch (err: any) {
+    console.error("[Admin] audit-log error:", err.message);
+    res.status(500).json({ error: "Failed to fetch audit log" });
+  }
+});
+
+function safeJsonParse(s: string): any {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
+adminRouter.get("/audit-log/actions", async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT action, COUNT(*) as c FROM admin_audit_log GROUP BY action ORDER BY action ASC`
+    );
+    res.json(rows.map((r: any) => ({ action: r.action, count: Number(r.c) })));
+  } catch {
+    res.status(500).json({ error: "Failed to fetch actions" });
   }
 });

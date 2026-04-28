@@ -5,7 +5,7 @@ import {
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
-  Crown, Handshake
+  Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -51,6 +51,43 @@ interface Client {
   plan_name?: string | null;
   plan_price_cents?: number | null;
   subscription_exempt?: number | boolean;
+  admin_notes?: string | null;
+  admin_tags?: string[] | null;
+}
+
+interface FinancialStats {
+  mrrCents: number;
+  arrCents: number;
+  arpuCents: number;
+  activeSubs: number;
+  activeTrials: number;
+  expiredTrials: number;
+  pastDue: number;
+  cancelled30Days: number;
+  churnPct: number;
+  conversionPct: number;
+  totalTrialsEver: number;
+  convertedToActive: number;
+  paidThisMonthCents: number;
+  paidThisMonthCount: number;
+  pendingInvoices: { count: number; totalCents: number };
+  failedInvoices: { count: number; totalCents: number };
+  revenueByMonth: Array<{ month: string; totalCents: number }>;
+  planDistribution: Array<{ code: string; name: string; count: number }>;
+}
+
+interface AuditEntry {
+  id: number;
+  admin_id: string;
+  admin_name: string | null;
+  admin_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  target_label: string | null;
+  details: Record<string, any> | null;
+  ip_address: string | null;
+  created_at: string;
 }
 
 const adminNavItems = [
@@ -59,17 +96,43 @@ const adminNavItems = [
   { icon: Handshake,       label: "Partners",  path: "/admin/partners" },
   { icon: FileText,        label: "Tenders",   path: "/admin/tenders" },
   { icon: Globe,           label: "Websites",  path: "/admin/websites" },
+  { icon: History,         label: "Audit Log", path: "/admin/audit" },
   { icon: Settings,        label: "Settings",  path: "/admin/settings" },
 ];
 
+const TAG_PALETTE: Record<string, string> = {
+  vip: "bg-purple-100 text-purple-800 border-purple-200",
+  "at-risk": "bg-red-100 text-red-800 border-red-200",
+  "high-value": "bg-amber-100 text-amber-800 border-amber-200",
+  "needs-onboarding": "bg-blue-100 text-blue-800 border-blue-200",
+  prospect: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  followup: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  partner: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  enterprise: "bg-slate-200 text-slate-800 border-slate-300",
+};
+function tagClass(t: string) {
+  return TAG_PALETTE[t.toLowerCase()] || "bg-gray-100 text-gray-800 border-gray-200";
+}
+function fmtRand(cents: number) {
+  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+function fmtRandPrecise(cents: number) {
+  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function AdminOverview() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [fin, setFin] = useState<FinancialStats | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/stats", { credentials: "include" })
       .then((r) => r.json())
       .then(setStats)
       .catch(() => toast.error("Failed to load stats"));
+    fetch("/api/admin/financial-stats", { credentials: "include" })
+      .then((r) => r.json())
+      .then(setFin)
+      .catch(() => toast.error("Failed to load financial stats"));
   }, []);
 
   if (!stats) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
@@ -106,6 +169,121 @@ function AdminOverview() {
             <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Recurring revenue snapshot */}
+      <div>
+        <h3 className="text-lg font-bold font-heading mb-3 flex items-center gap-2">
+          <Wallet className="h-5 w-5 text-emerald-600" />
+          Recurring Revenue
+        </h3>
+        {!fin ? (
+          <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Calculating MRR…
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-emerald-700 text-xs font-semibold uppercase tracking-wide">
+                <Wallet className="h-4 w-4" /> MRR
+              </div>
+              <p className="text-3xl font-bold mt-2 text-emerald-900">{fmtRand(fin.mrrCents)}</p>
+              <p className="text-xs text-emerald-700/70 mt-1">{fin.activeSubs} active subs</p>
+            </div>
+            <div className="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-blue-700 text-xs font-semibold uppercase tracking-wide">
+                <TrendingUp className="h-4 w-4" /> ARR
+              </div>
+              <p className="text-3xl font-bold mt-2 text-blue-900">{fmtRand(fin.arrCents)}</p>
+              <p className="text-xs text-blue-700/70 mt-1">Annualised run-rate</p>
+            </div>
+            <div className="rounded-xl border bg-gradient-to-br from-purple-50 to-purple-100/50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-purple-700 text-xs font-semibold uppercase tracking-wide">
+                <DollarSign className="h-4 w-4" /> ARPU
+              </div>
+              <p className="text-3xl font-bold mt-2 text-purple-900">{fmtRand(fin.arpuCents)}</p>
+              <p className="text-xs text-purple-700/70 mt-1">Avg revenue per user</p>
+            </div>
+            <div className="rounded-xl border bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-amber-700 text-xs font-semibold uppercase tracking-wide">
+                <Receipt className="h-4 w-4" /> Paid This Month
+              </div>
+              <p className="text-3xl font-bold mt-2 text-amber-900">{fmtRand(fin.paidThisMonthCents)}</p>
+              <p className="text-xs text-amber-700/70 mt-1">{fin.paidThisMonthCount} invoices</p>
+            </div>
+
+            <div className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                <Clock className="h-4 w-4" /> Active Trials
+              </div>
+              <p className="text-2xl font-bold mt-2">{fin.activeTrials}</p>
+              <p className="text-xs text-muted-foreground mt-1">{fin.expiredTrials} expired</p>
+            </div>
+            <div className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                <CheckCircle2 className="h-4 w-4" /> Trial → Paid
+              </div>
+              <p className="text-2xl font-bold mt-2">{fin.conversionPct}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{fin.convertedToActive} of {fin.totalTrialsEver} converted</p>
+            </div>
+            <div className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                <TrendingDown className="h-4 w-4" /> 30-day Churn
+              </div>
+              <p className={`text-2xl font-bold mt-2 ${fin.churnPct > 5 ? "text-red-600" : ""}`}>{fin.churnPct}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{fin.cancelled30Days} cancelled</p>
+            </div>
+            <div className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                <XCircle className="h-4 w-4" /> Past Due / Failed
+              </div>
+              <p className={`text-2xl font-bold mt-2 ${(fin.pastDue + fin.failedInvoices.count) > 0 ? "text-red-600" : ""}`}>
+                {fin.pastDue + fin.failedInvoices.count}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {fmtRand(fin.failedInvoices.totalCents)} failed · {fmtRand(fin.pendingInvoices.totalCents)} pending
+              </p>
+            </div>
+          </div>
+        )}
+
+        {fin && fin.revenueByMonth.length > 0 && (
+          <div className="mt-4 rounded-xl border bg-card p-6 shadow-sm">
+            <h4 className="text-sm font-bold font-heading mb-3 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-emerald-600" />
+              Subscription revenue (last 6 months)
+            </h4>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={fin.revenueByMonth.map(r => ({ month: r.month, Revenue: r.totalCents / 100 }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `R${v}`} />
+                <Tooltip formatter={(v: number) => `R${v.toFixed(2)}`} />
+                <Bar dataKey="Revenue" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {fin && fin.planDistribution.length > 0 && (
+          <div className="mt-4 rounded-xl border bg-card p-6 shadow-sm">
+            <h4 className="text-sm font-bold font-heading mb-3 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-amber-500" />
+              Plan distribution
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {fin.planDistribution.map(p => (
+                <div key={p.code} className="rounded-lg border p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{p.code}</p>
+                    <p className="font-semibold">{p.name}</p>
+                  </div>
+                  <span className="text-2xl font-bold text-primary">{p.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
@@ -163,6 +341,18 @@ const INV_TEMPLATES = [
 function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "trial" | "active" | "free" | "none" | "past-due">("all");
+  const [planFilter, setPlanFilter] = useState<"all" | "starter" | "pro" | "premium">("all");
+  const [tagFilter, setTagFilter] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "business">("newest");
+
+  // Notes & tags modal state
+  const [notesTarget, setNotesTarget] = useState<Client | null>(null);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
   const navigate = useNavigate();
 
   const [invoiceTarget, setInvoiceTarget] = useState<InvoiceTarget | null>(null);
@@ -367,23 +557,198 @@ function ClientList() {
     }
   };
 
-  const filtered = clients.filter((c) =>
-    c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.business_name || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const openNotesModal = (client: Client) => {
+    setNotesTarget(client);
+    setDraftNotes(client.admin_notes || "");
+    setDraftTags(Array.isArray(client.admin_tags) ? client.admin_tags : []);
+    setTagInput("");
+  };
+
+  const addTagFromInput = () => {
+    const t = tagInput.trim();
+    if (!t) return;
+    if (draftTags.length >= 12) { toast.error("Up to 12 tags per client"); return; }
+    if (draftTags.map(x => x.toLowerCase()).includes(t.toLowerCase())) { setTagInput(""); return; }
+    setDraftTags([...draftTags, t]);
+    setTagInput("");
+  };
+  const removeDraftTag = (t: string) => setDraftTags(draftTags.filter(x => x !== t));
+
+  const saveNotesAndTags = async () => {
+    if (!notesTarget) return;
+    setSavingNotes(true);
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch(`/api/admin/clients/${notesTarget.id}/notes`, {
+          method: "PATCH", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notes: draftNotes }),
+        }),
+        fetch(`/api/admin/clients/${notesTarget.id}/tags`, {
+          method: "PATCH", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tags: draftTags }),
+        }),
+      ]);
+      if (!r1.ok || !r2.ok) { toast.error("Failed to save"); return; }
+      toast.success("Notes & tags saved");
+      setNotesTarget(null);
+      loadClients();
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  // Aggregate tags across all clients for the tag filter bar
+  const allTags = Array.from(new Set(clients.flatMap(c => Array.isArray(c.admin_tags) ? c.admin_tags : []))).sort();
+
+  const matchesStatus = (c: Client) => {
+    const trialActive = c.subscription_status === "TRIAL" &&
+      (!c.trial_end_at || new Date(c.trial_end_at).getTime() > Date.now());
+    if (statusFilter === "trial") return trialActive;
+    if (statusFilter === "active") return c.subscription_status === "ACTIVE";
+    if (statusFilter === "free") return !!c.subscription_exempt;
+    if (statusFilter === "none") return c.role !== "admin" && !c.subscription_exempt && !trialActive && c.subscription_status !== "ACTIVE";
+    if (statusFilter === "past-due") return c.subscription_status === "PAST_DUE";
+    return true;
+  };
+
+  const filtered = clients
+    .filter(c => matchesStatus(c))
+    .filter(c => planFilter === "all" || c.plan_code === planFilter)
+    .filter(c => !tagFilter || (Array.isArray(c.admin_tags) && c.admin_tags.includes(tagFilter)))
+    .filter(c => {
+      const q = searchTerm.toLowerCase();
+      if (!q) return true;
+      return c.full_name.toLowerCase().includes(q)
+        || c.email.toLowerCase().includes(q)
+        || (c.business_name || "").toLowerCase().includes(q)
+        || (c.industry_sector || "").toLowerCase().includes(q)
+        || (Array.isArray(c.admin_tags) && c.admin_tags.some(t => t.toLowerCase().includes(q)))
+        || (c.admin_notes || "").toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "name") return a.full_name.localeCompare(b.full_name);
+      return (a.business_name || "").localeCompare(b.business_name || "");
+    });
+
+  const exportCsv = () => {
+    const header = ["Name", "Email", "Business", "Industry", "Plan", "Status", "Tags", "Joined"];
+    const rows = filtered.map(c => [
+      c.full_name, c.email, c.business_name || "", c.industry_sector || "",
+      c.plan_name || "", c.subscription_status || (c.subscription_exempt ? "FREE_ACCESS" : "NONE"),
+      (c.admin_tags || []).join(" | "),
+      new Date(c.created_at).toLocaleDateString("en-ZA"),
+    ]);
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clients-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold font-heading">Clients</h2>
-          <p className="text-muted-foreground">{clients.length} registered businesses</p>
+          <p className="text-muted-foreground">{clients.length} registered · showing {filtered.length}</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search clients..." className="pl-9 w-64" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1">
+            <FileText className="h-4 w-4" /> Export CSV
+          </Button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search name, email, business, tag, note…" className="pl-9 w-72" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
         </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+            <Filter className="h-3.5 w-3.5" /> Status
+          </span>
+          {([
+            { v: "all", label: "All" },
+            { v: "active", label: "Active" },
+            { v: "trial", label: "Trial" },
+            { v: "past-due", label: "Past Due" },
+            { v: "free", label: "Free Access" },
+            { v: "none", label: "No Subscription" },
+          ] as const).map(opt => (
+            <button
+              key={opt.v}
+              onClick={() => setStatusFilter(opt.v)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                statusFilter === opt.v
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background hover:bg-muted border-input"
+              }`}
+            >{opt.label}</button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Plan</span>
+          {([
+            { v: "all", label: "All plans" },
+            { v: "starter", label: "Enterprize" },
+            { v: "pro", label: "Enterprize Plus" },
+            { v: "premium", label: "Enterprize Premium" },
+          ] as const).map(opt => (
+            <button
+              key={opt.v}
+              onClick={() => setPlanFilter(opt.v)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                planFilter === opt.v
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-background hover:bg-muted border-input"
+              }`}
+            >{opt.label}</button>
+          ))}
+          <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-background border rounded-md px-2 py-1 text-xs"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="name">Name A→Z</option>
+              <option value="business">Business A→Z</option>
+            </select>
+          </span>
+        </div>
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              <TagIcon className="h-3.5 w-3.5" /> Tag
+            </span>
+            <button
+              onClick={() => setTagFilter("")}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                !tagFilter ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-input"
+              }`}
+            >Any</button>
+            {allTags.map(t => (
+              <button
+                key={t}
+                onClick={() => setTagFilter(t === tagFilter ? "" : t)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  tagFilter === t ? "ring-2 ring-primary " : ""
+                } ${tagClass(t)}`}
+              >{t}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -393,6 +758,7 @@ function ClientList() {
               <th className="text-left p-4 font-semibold">Client</th>
               <th className="text-left p-4 font-semibold">Business</th>
               <th className="text-left p-4 font-semibold">Industry</th>
+              <th className="text-left p-4 font-semibold">Tags</th>
               <th className="text-left p-4 font-semibold">Sites</th>
               <th className="text-left p-4 font-semibold">Role</th>
               <th className="text-left p-4 font-semibold">Subscription</th>
@@ -414,6 +780,24 @@ function ClientList() {
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
+                </td>
+                <td className="p-4 max-w-[180px]">
+                  <div className="flex flex-wrap gap-1">
+                    {(client.admin_tags || []).slice(0, 4).map((t) => (
+                      <span key={t} className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${tagClass(t)}`}>{t}</span>
+                    ))}
+                    {(client.admin_tags || []).length > 4 && (
+                      <span className="text-[10px] text-muted-foreground">+{(client.admin_tags || []).length - 4}</span>
+                    )}
+                    {(!client.admin_tags || client.admin_tags.length === 0) && client.admin_notes && (
+                      <span className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                        <StickyNote className="h-3 w-3" /> Has notes
+                      </span>
+                    )}
+                    {(!client.admin_tags || client.admin_tags.length === 0) && !client.admin_notes && (
+                      <span className="text-[10px] text-muted-foreground">-</span>
+                    )}
+                  </div>
                 </td>
                 <td className="p-4">
                   <span className="rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-bold">{client.website_count}</span>
@@ -513,6 +897,9 @@ function ClientList() {
                 <td className="p-4 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString()}</td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50" title="Notes & tags" onClick={() => openNotesModal(client)}>
+                      <StickyNote className="h-4 w-4" />
+                    </Button>
                     {client.role !== "admin" && (
                       <>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Login as user" onClick={() => impersonateUser(client.id, client.full_name)}>
@@ -535,7 +922,7 @@ function ClientList() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-muted-foreground">No clients found.</td>
+                <td colSpan={9} className="p-8 text-center text-muted-foreground">No clients found.</td>
               </tr>
             )}
           </tbody>
@@ -675,6 +1062,283 @@ function ClientList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Notes & Tags modal */}
+      <Dialog open={!!notesTarget} onOpenChange={(open) => { if (!open) setNotesTarget(null); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-amber-600" />
+              Notes & Tags — {notesTarget?.full_name}
+            </DialogTitle>
+            <DialogDescription>
+              Internal admin annotations. Visible only to admins; never shown to the client.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <div>
+              <Label className="text-xs">Tags <span className="text-muted-foreground">(up to 12)</span></Label>
+              <div className="mt-2 flex items-center gap-2 flex-wrap min-h-[40px] p-2 rounded-md border bg-background">
+                {draftTags.length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">No tags yet</span>
+                )}
+                {draftTags.map(t => (
+                  <span key={t} className={`px-2 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1 ${tagClass(t)}`}>
+                    {t}
+                    <button onClick={() => removeDraftTag(t)} className="hover:bg-black/10 rounded-full p-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagFromInput(); } }}
+                  placeholder="Add a tag (e.g. vip, at-risk, high-value)…"
+                  className="text-sm"
+                />
+                <Button type="button" onClick={addTagFromInput} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {["vip", "at-risk", "high-value", "needs-onboarding", "prospect", "followup", "partner", "enterprise"]
+                  .filter(s => !draftTags.includes(s))
+                  .map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => { if (draftTags.length < 12) setDraftTags([...draftTags, s]); }}
+                      className={`px-2 py-0.5 rounded-full text-[10px] border opacity-60 hover:opacity-100 transition-opacity ${tagClass(s)}`}
+                    >+ {s}</button>
+                  ))
+                }
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Notes</Label>
+              <Textarea
+                value={draftNotes}
+                onChange={(e) => setDraftNotes(e.target.value)}
+                placeholder="Anything the team should know about this client — context, history, follow-ups, escalations…"
+                rows={8}
+                className="mt-2 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">{draftNotes.length} characters</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotesTarget(null)}>Cancel</Button>
+            <Button onClick={saveNotesAndTags} disabled={savingNotes} className="bg-amber-600 hover:bg-amber-700 text-white">
+              {savingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ──────────────────────── Audit Log page ────────────────────────
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  "subscription.trial_granted": "Trial granted",
+  "subscription.granted": "Subscription granted",
+  "subscription.revoked": "Subscription revoked",
+  "client.role_changed": "Role changed",
+  "client.free_access_granted": "Free access granted",
+  "client.free_access_removed": "Free access removed",
+  "client.impersonated": "Impersonated user",
+  "client.deleted": "Client deleted",
+  "client.invoice_created": "Invoice created",
+  "client.notes.updated": "Notes updated",
+  "client.tags.updated": "Tags updated",
+};
+
+const AUDIT_ACTION_COLOR: Record<string, string> = {
+  "subscription.trial_granted": "bg-amber-100 text-amber-800",
+  "subscription.granted": "bg-green-100 text-green-800",
+  "subscription.revoked": "bg-red-100 text-red-800",
+  "client.role_changed": "bg-purple-100 text-purple-800",
+  "client.free_access_granted": "bg-purple-100 text-purple-800",
+  "client.free_access_removed": "bg-gray-100 text-gray-800",
+  "client.impersonated": "bg-blue-100 text-blue-800",
+  "client.deleted": "bg-red-100 text-red-800",
+  "client.invoice_created": "bg-emerald-100 text-emerald-800",
+  "client.notes.updated": "bg-amber-50 text-amber-700",
+  "client.tags.updated": "bg-indigo-50 text-indigo-700",
+};
+
+function formatAuditDetails(e: AuditEntry): string {
+  if (!e.details) return "";
+  const d = e.details;
+  if (e.action === "subscription.granted") return `Plan: ${d.plan}`;
+  if (e.action === "subscription.trial_granted") return `Trial ends: ${d.trialEndsAt || ""}`;
+  if (e.action === "client.role_changed") return `${d.from || "?"} → ${d.to || "?"}`;
+  if (e.action === "client.invoice_created") return `${d.invoiceNumber || ""} · R${((d.amountCents || 0) / 100).toFixed(2)}${d.emailSent ? " · emailed" : ""}`;
+  if (e.action === "client.tags.updated") return Array.isArray(d.tags) ? d.tags.join(", ") : "";
+  if (e.action === "client.notes.updated") return `${d.length || 0} chars`;
+  if (e.action === "client.deleted") return d.email || "";
+  return Object.entries(d).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ");
+}
+
+function AuditLog() {
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [actions, setActions] = useState<Array<{ action: string; count: number }>>([]);
+  const [offset, setOffset] = useState(0);
+  const limit = 50;
+
+  const load = () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.set("limit", String(limit));
+    params.set("offset", String(offset));
+    if (search) params.set("q", search);
+    if (actionFilter) params.set("action", actionFilter);
+    fetch(`/api/admin/audit-log?${params.toString()}`, { credentials: "include" })
+      .then(r => r.json())
+      .then((d) => {
+        setEntries(d.entries || []);
+        setTotal(d.total || 0);
+      })
+      .catch(() => toast.error("Failed to load audit log"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetch("/api/admin/audit-log/actions", { credentials: "include" })
+      .then(r => r.json()).then(setActions).catch(() => {});
+  }, []);
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [offset, actionFilter]);
+
+  const onSearch = (e: React.FormEvent) => { e.preventDefault(); setOffset(0); load(); };
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const currentPage = Math.floor(offset / limit) + 1;
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold font-heading flex items-center gap-2">
+            <History className="h-6 w-6 text-primary" />
+            Audit Log
+          </h2>
+          <p className="text-muted-foreground">{total.toLocaleString()} admin actions recorded</p>
+        </div>
+        <form onSubmit={onSearch} className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search admin, target, action…"
+              className="pl-9 w-72"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button type="submit" variant="outline" size="sm">Search</Button>
+        </form>
+      </div>
+
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+            <Filter className="h-3.5 w-3.5" /> Action
+          </span>
+          <button
+            onClick={() => { setActionFilter(""); setOffset(0); }}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+              !actionFilter ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-input"
+            }`}
+          >All ({actions.reduce((s, a) => s + a.count, 0)})</button>
+          {actions.map(a => (
+            <button
+              key={a.action}
+              onClick={() => { setActionFilter(a.action); setOffset(0); }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                actionFilter === a.action ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-input"
+              }`}
+            >{AUDIT_ACTION_LABELS[a.action] || a.action} ({a.count})</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-4 font-semibold">When</th>
+              <th className="text-left p-4 font-semibold">Admin</th>
+              <th className="text-left p-4 font-semibold">Action</th>
+              <th className="text-left p-4 font-semibold">Target</th>
+              <th className="text-left p-4 font-semibold">Details</th>
+              <th className="text-left p-4 font-semibold">IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Loading…
+              </td></tr>
+            )}
+            {!loading && entries.length === 0 && (
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">
+                <Activity className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                No audit entries match your filters.
+              </td></tr>
+            )}
+            {!loading && entries.map(e => (
+              <tr key={e.id} className="border-b hover:bg-muted/30">
+                <td className="p-4 text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(e.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                </td>
+                <td className="p-4">
+                  <div className="font-medium text-sm">{e.admin_name || "—"}</div>
+                  <div className="text-[10px] text-muted-foreground">{e.admin_email}</div>
+                </td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${AUDIT_ACTION_COLOR[e.action] || "bg-gray-100 text-gray-800"}`}>
+                    {AUDIT_ACTION_LABELS[e.action] || e.action}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <div className="text-sm">{e.target_label || <span className="text-muted-foreground">—</span>}</div>
+                  {e.target_id && <div className="text-[10px] text-muted-foreground font-mono">{e.target_id.slice(0, 8)}…</div>}
+                </td>
+                <td className="p-4 text-xs text-muted-foreground max-w-md truncate" title={formatAuditDetails(e)}>
+                  {formatAuditDetails(e)}
+                </td>
+                <td className="p-4 text-[10px] font-mono text-muted-foreground">{e.ip_address || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          Showing {entries.length === 0 ? 0 : offset + 1}–{offset + entries.length} of {total.toLocaleString()}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </Button>
+          <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>
+            Next <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1490,6 +2154,7 @@ export default function AdminDashboard() {
           <Route path="partners" element={<AdminPartners />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
+          <Route path="audit" element={<AuditLog />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </main>
