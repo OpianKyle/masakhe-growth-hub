@@ -621,6 +621,19 @@ export async function runMigrations() {
       await conn.query(`ALTER TABLE users ADD COLUMN subscription_exempt TINYINT(1) NOT NULL DEFAULT 0`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 
+    try {
+      await conn.query(`ALTER TABLE users ADD COLUMN parent_owner_id VARCHAR(36) NULL DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+    await createIndex("idx_users_parent_owner", "users", "parent_owner_id");
+
+    try {
+      await conn.query(`ALTER TABLE workspace_members ADD COLUMN permissions TEXT NULL DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
+    try {
+      await conn.query(`ALTER TABLE workspace_members ADD COLUMN invite_pending TINYINT(1) NOT NULL DEFAULT 0`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
     await conn.query(`
       CREATE TABLE IF NOT EXISTS vehicle_listings (
         id VARCHAR(36) PRIMARY KEY,

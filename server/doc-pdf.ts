@@ -391,10 +391,10 @@ export const docPdfRouter = Router();
 
 docPdfRouter.get("/business-plans/:id/pdf", requireAuth, async (req, res) => {
   try {
-    const doc = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const doc = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!doc) return res.status(404).json({ error: "Not found" });
     if (doc.status !== "generated") return res.status(400).json({ error: "Document not yet generated" });
-    const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.session.userId!]);
+    const user = await queryOne("SELECT * FROM users WHERE id = ?", [getDataOwnerId(req)]);
     const fd = typeof doc.form_data === "string" ? JSON.parse(doc.form_data || "{}") : (doc.form_data || {});
     const gc = typeof doc.generated_content === "string" ? JSON.parse(doc.generated_content || "{}") : (doc.generated_content || {});
     const docObj = { ...doc, form_data: fd, generated_content: gc };
@@ -408,10 +408,10 @@ docPdfRouter.get("/business-plans/:id/pdf", requireAuth, async (req, res) => {
 
 docPdfRouter.get("/funding-proposals/:id/pdf", requireAuth, async (req, res) => {
   try {
-    const doc = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const doc = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!doc) return res.status(404).json({ error: "Not found" });
     if (doc.status !== "generated") return res.status(400).json({ error: "Document not yet generated" });
-    const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.session.userId!]);
+    const user = await queryOne("SELECT * FROM users WHERE id = ?", [getDataOwnerId(req)]);
     const fd = typeof doc.form_data === "string" ? JSON.parse(doc.form_data || "{}") : (doc.form_data || {});
     const gc = typeof doc.generated_content === "string" ? JSON.parse(doc.generated_content || "{}") : (doc.generated_content || {});
     const docObj = { ...doc, form_data: fd, generated_content: gc };
@@ -425,11 +425,11 @@ docPdfRouter.get("/funding-proposals/:id/pdf", requireAuth, async (req, res) => 
 
 docPdfRouter.get("/funding-applications/:id/pdf", requireAuth, async (req, res) => {
   try {
-    const doc = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const doc = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!doc) return res.status(404).json({ error: "Not found" });
     const gc = typeof doc.generated_content === "string" ? JSON.parse(doc.generated_content || "null") : doc.generated_content;
     if (!gc) return res.status(400).json({ error: "Document not yet generated" });
-    const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.session.userId!]);
+    const user = await queryOne("SELECT * FROM users WHERE id = ?", [getDataOwnerId(req)]);
     const fd = typeof doc.form_data === "string" ? JSON.parse(doc.form_data || "{}") : (doc.form_data || {});
     const docObj = { ...doc, form_data: fd, generated_content: gc };
     const pdfBytes = await buildFundingApplicationPdf(docObj, user);

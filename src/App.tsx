@@ -19,6 +19,7 @@ import VehicleDetailPage from "./pages/VehicleDetailPage";
 import PricingPage from "./pages/PricingPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import SetPasswordPage from "./pages/SetPasswordPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/set-password" element={<SetPasswordPage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -13,8 +13,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setBillingChecked(true);
       return;
     }
-    // Admins and partner/reseller accounts have their own billing — skip SMME billing check
-    if (user.role === "admin" || user.is_reseller) {
+    // Admins, partner/reseller accounts, and team members have their own billing path — skip SMME billing check
+    if (user.role === "admin" || user.is_reseller || user.teamMember) {
       setBillingBlocked(false);
       setBillingChecked(true);
       return;
@@ -44,6 +44,14 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   const isOnBillingPage = location.pathname.startsWith("/dashboard/billing");
+  const isOnSettingsPage = location.pathname.startsWith("/dashboard/settings");
+  const isOnTeamPage = location.pathname.startsWith("/dashboard/team");
+  const isOnPartnerPage = location.pathname.startsWith("/dashboard/reseller") || location.pathname.startsWith("/partner");
+
+  // Team members are blocked from owner-only sections
+  if (user.teamMember && (isOnBillingPage || isOnSettingsPage || isOnTeamPage || isOnPartnerPage)) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   if (billingBlocked && !isOnBillingPage) {
     return <Navigate to="/dashboard/billing" replace />;

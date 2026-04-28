@@ -338,6 +338,86 @@ export async function sendPaymentReminderEmail(
   }
 }
 
+export async function sendTeamInviteEmail(
+  toEmail: string,
+  inviteeName: string,
+  ownerName: string,
+  businessName: string,
+  setupToken: string,
+  baseUrl?: string
+) {
+  if (!transporter) return;
+  const firstName = (inviteeName || toEmail).split(" ")[0];
+  const appUrl = baseUrl || getBaseUrl();
+  const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#007749 0%,#005C3A 100%);padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Masakhe</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">You've been invited to join a team</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 16px;color:#1a1a2e;font-size:22px;font-weight:600;">Hi ${firstName},</h2>
+              <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                <strong>${ownerName}</strong> has added you as a team member of <strong>${businessName}</strong> on Masakhe.
+              </p>
+              <p style="margin:0 0 24px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                Click below to set your password and access the dashboard.
+              </p>
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td style="background-color:#007749;border-radius:8px;">
+                    <a href="${setupUrl}" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Set my password</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 12px;color:#4a4a5a;font-size:14px;line-height:1.6;">
+                This link will expire in <strong>7 days</strong>. If you weren't expecting this invitation, you can ignore this email.
+              </p>
+              <p style="margin:0;color:#9a9aaa;font-size:12px;line-height:1.6;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <span style="color:#007749;word-break:break-all;">${setupUrl}</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
+              <p style="margin:0;color:#9a9aaa;font-size:12px;line-height:1.5;">
+                &copy; ${new Date().getFullYear()} Masakhe. A digital platform for South African SMMEs.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      to: toEmail,
+      subject: `${ownerName} invited you to ${businessName} on Masakhe`,
+      html,
+    });
+    console.log(`Team invite email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error(`Failed to send team invite email to ${toEmail}:`, err.message);
+  }
+}
+
 export async function sendPasswordResetEmail(toEmail: string, fullName: string, resetToken: string, baseUrl?: string) {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];

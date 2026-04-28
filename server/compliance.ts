@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { queryOne } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 
 export const complianceRouter = Router();
 complianceRouter.use(requireAuth);
 
 complianceRouter.get("/score", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
 
     const profile = await queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [userId]);
     const website = await queryOne("SELECT id FROM websites WHERE owner_id = ? AND status = 'published' LIMIT 1", [userId]);

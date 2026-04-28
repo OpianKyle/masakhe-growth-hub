@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 
 export const payrollRouter = Router();
@@ -41,7 +41,7 @@ payrollRouter.get("/employees", async (req, res) => {
   try {
     const employees = await queryAll(
       "SELECT * FROM employees WHERE user_id = ? ORDER BY first_name ASC",
-      [req.session.userId!]
+      [getDataOwnerId(req)]
     );
     res.json(employees.map((e: any) => ({ ...e, uif_exempt: !!e.uif_exempt })));
   } catch (err: any) {
@@ -53,7 +53,7 @@ payrollRouter.get("/employees/:id", async (req, res) => {
   try {
     const emp = await queryOne(
       "SELECT * FROM employees WHERE id = ? AND user_id = ?",
-      [req.params.id, req.session.userId!]
+      [req.params.id, getDataOwnerId(req)]
     );
     if (!emp) return res.status(404).json({ error: "Employee not found" });
     res.json({ ...emp, uif_exempt: !!emp.uif_exempt });
@@ -64,7 +64,7 @@ payrollRouter.get("/employees/:id", async (req, res) => {
 
 payrollRouter.post("/employees", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const {
       first_name, last_name, id_number, tax_number, position, department,
       start_date, employment_type, basic_salary, age, uif_exempt,
@@ -95,7 +95,7 @@ payrollRouter.post("/employees", async (req, res) => {
 
 payrollRouter.put("/employees/:id", async (req, res) => {
   try {
-    const existing = await queryOne("SELECT id FROM employees WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const existing = await queryOne("SELECT id FROM employees WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!existing) return res.status(404).json({ error: "Employee not found" });
 
     const {
@@ -123,7 +123,7 @@ payrollRouter.put("/employees/:id", async (req, res) => {
 
 payrollRouter.delete("/employees/:id", async (req, res) => {
   try {
-    const existing = await queryOne("SELECT id FROM employees WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const existing = await queryOne("SELECT id FROM employees WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!existing) return res.status(404).json({ error: "Employee not found" });
     await execute("DELETE FROM payroll_runs WHERE employee_id = ?", [req.params.id]);
     await execute("DELETE FROM employees WHERE id = ?", [req.params.id]);
@@ -136,7 +136,7 @@ payrollRouter.delete("/employees/:id", async (req, res) => {
 payrollRouter.post("/calculate", async (req, res) => {
   try {
     const { employee_id, allowances = [], deductions = [] } = req.body;
-    const emp = await queryOne("SELECT * FROM employees WHERE id = ? AND user_id = ?", [employee_id, req.session.userId!]);
+    const emp = await queryOne("SELECT * FROM employees WHERE id = ? AND user_id = ?", [employee_id, getDataOwnerId(req)]);
     if (!emp) return res.status(404).json({ error: "Employee not found" });
 
     const allowancesTotal = allowances.reduce((s: number, a: any) => s + (Number(a.amount_cents) || 0), 0);
@@ -169,7 +169,7 @@ payrollRouter.get("/runs", async (req, res) => {
     let sql = `SELECT pr.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.position
                FROM payroll_runs pr JOIN employees e ON e.id = pr.employee_id
                WHERE pr.user_id = ?`;
-    const params: any[] = [req.session.userId!];
+    const params: any[] = [getDataOwnerId(req)];
     if (employeeId) { sql += " AND pr.employee_id = ?"; params.push(employeeId); }
     if (period) { sql += " AND pr.pay_period = ?"; params.push(period); }
     sql += " ORDER BY pr.pay_period DESC, pr.created_at DESC";
@@ -192,7 +192,7 @@ payrollRouter.get("/runs/:id", async (req, res) => {
               e.account_type, e.account_number, e.branch_code, e.address as employee_address
        FROM payroll_runs pr JOIN employees e ON e.id = pr.employee_id
        WHERE pr.id = ? AND pr.user_id = ?`,
-      [req.params.id, req.session.userId!]
+      [req.params.id, getDataOwnerId(req)]
     );
     if (!run) return res.status(404).json({ error: "Payroll run not found" });
     res.json({
@@ -207,7 +207,7 @@ payrollRouter.get("/runs/:id", async (req, res) => {
 
 payrollRouter.post("/runs", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { employee_id, pay_period, pay_date, allowances = [], deductions = [], notes } = req.body;
     if (!employee_id || !pay_period || !pay_date) {
       return res.status(400).json({ error: "employee_id, pay_period and pay_date are required" });
@@ -241,7 +241,7 @@ payrollRouter.post("/runs", async (req, res) => {
 
 payrollRouter.delete("/runs/:id", async (req, res) => {
   try {
-    const existing = await queryOne("SELECT id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const existing = await queryOne("SELECT id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!existing) return res.status(404).json({ error: "Run not found" });
     await execute("DELETE FROM payroll_runs WHERE id = ?", [req.params.id]);
     res.json({ ok: true });

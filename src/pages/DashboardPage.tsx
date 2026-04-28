@@ -50,6 +50,8 @@ type NavChild = {
   path: string;
   comingSoon?: boolean;
   requiresPlan?: PlanCode;
+  perm?: string;
+  ownerOnly?: boolean;
 };
 
 type NavGroup = {
@@ -58,6 +60,8 @@ type NavGroup = {
   groupId: string;
   children: NavChild[];
   requiresPlan?: PlanCode;
+  perms?: string[];
+  ownerOnly?: boolean;
 };
 
 type NavSingle = {
@@ -66,6 +70,8 @@ type NavSingle = {
   path: string;
   comingSoon?: boolean;
   requiresPlan?: PlanCode;
+  perm?: string;
+  ownerOnly?: boolean;
 };
 
 type NavItem = NavSingle | NavGroup;
@@ -74,39 +80,41 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 
 
 const baseNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
-  { icon: Globe, label: "Website Builder", path: "/dashboard/website" },
-  { icon: Smartphone, label: "Social Media", path: "/dashboard/social" },
-  { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect" },
+  { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
+  { icon: Globe, label: "Website Builder", path: "/dashboard/website", perm: "website" },
+  { icon: Smartphone, label: "Social Media", path: "/dashboard/social", perm: "social" },
+  { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", perm: "biz_connect" },
   {
     icon: Wallet,
     label: "Transactions",
     groupId: "finance",
     requiresPlan: "pro",
+    perms: ["finance", "invoices", "annual_statements", "management_accounts"],
     children: [
-      { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance", requiresPlan: "pro" },
-      { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", requiresPlan: "pro" },
-      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements", requiresPlan: "pro" },
-      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true, requiresPlan: "pro" },
+      { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance", requiresPlan: "pro", perm: "finance" },
+      { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", requiresPlan: "pro", perm: "invoices" },
+      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements", requiresPlan: "pro", perm: "annual_statements" },
+      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true, requiresPlan: "pro", perm: "management_accounts" },
     ],
   },
-  { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro" },
-  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro" },
+  { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
+  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
   {
     icon: Banknote,
     label: "HR & Payroll",
     groupId: "hr",
     requiresPlan: "premium",
+    perms: ["payroll", "leave"],
     children: [
-      { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresPlan: "premium" },
-      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium" },
+      { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresPlan: "premium", perm: "payroll" },
+      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium", perm: "leave" },
     ],
   },
-  { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium" },
-  { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support" },
-  { icon: Award, label: "Partner Program", path: "/dashboard/reseller" },
-  { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
-  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
+  { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
+  { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
+  { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
+  { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
+  { icon: Settings, label: "Settings", path: "/dashboard/settings", ownerOnly: true },
 ];
 
 export default function DashboardPage() {
@@ -134,6 +142,10 @@ export default function DashboardPage() {
       setPlanCode("premium");
       return;
     }
+    if (user?.teamMember) {
+      // Owner's subscription gates this; team members shouldn't see the SMME billing wall.
+      setSubscriptionActive(true);
+    }
     fetch("/api/billing/status", { credentials: "include" })
       .then(r => r.json())
       .then(d => {
@@ -158,12 +170,30 @@ export default function DashboardPage() {
       .catch(() => {});
   }, [location.pathname]);
 
-  const navItems: NavItem[] = [
+  const teamMember = user?.teamMember || null;
+  const teamPerms = teamMember?.permissions || [];
+  const hasPerm = (p?: string) => !p || teamPerms.includes(p);
+
+  const filterForTeamMember = (items: NavItem[]): NavItem[] => {
+    if (!teamMember) return items;
+    return items.flatMap((item): NavItem[] => {
+      if (item.ownerOnly) return [];
+      if (isGroup(item)) {
+        const allowedChildren = item.children.filter(c => !c.ownerOnly && hasPerm(c.perm));
+        if (allowedChildren.length === 0) return [];
+        return [{ ...item, children: allowedChildren }];
+      }
+      if (!hasPerm(item.perm)) return [];
+      return [item];
+    });
+  };
+
+  const navItems: NavItem[] = filterForTeamMember([
     ...baseNavItems.slice(0, 5),
-    ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles" } as NavSingle] : []),
-    ...(hasBrokerageSite ? [{ icon: Users, label: "Leads", path: "/dashboard/leads" } as NavSingle] : []),
+    ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles", perm: "website" } as NavSingle] : []),
+    ...(hasBrokerageSite ? [{ icon: Users, label: "Leads", path: "/dashboard/leads", perm: "website" } as NavSingle] : []),
     ...baseNavItems.slice(5),
-  ];
+  ]);
 
   const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
     isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]

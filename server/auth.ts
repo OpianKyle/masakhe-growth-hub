@@ -2,9 +2,41 @@ import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendPasswordResetEmail } from "./email";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendTeamInviteEmail } from "./email";
 import { linkResellerClient, autoRegisterReseller } from "./reseller";
 import { OAuth2Client } from "google-auth-library";
+
+/**
+ * For team-member accounts, returns the workspace owner's user_id (so all
+ * data queries hit the owner's records). For owners and standalone users,
+ * returns the logged-in user's own id. Use this in any data-scoped server
+ * endpoint instead of req.session.userId.
+ */
+export function getDataOwnerId(req: Request): string {
+  return (req.session as any).actingAsOwnerId || req.session.userId!;
+}
+
+/** True if the logged-in user is acting as a team member of someone else's business. */
+export function isTeamMember(req: Request): boolean {
+  return !!(req.session as any).actingAsOwnerId;
+}
+
+/**
+ * Block team members from owner-only operations (billing changes, business
+ * profile edits, etc). Owners and admins pass through.
+ */
+export function requireOwner(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.userId) return res.status(401).json({ error: "Not authenticated" });
+  if (isTeamMember(req)) {
+    return res.status(403).json({ error: "Only the business owner can perform this action." });
+  }
+  next();
+}
+
+async function loadActingContext(userId: string): Promise<{ actingAsOwnerId: string | null }> {
+  const u = await queryOne("SELECT parent_owner_id FROM users WHERE id = ?", [userId]);
+  return { actingAsOwnerId: u?.parent_owner_id || null };
+}
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
@@ -17,6 +49,7 @@ declare module "express-session" {
   interface SessionData {
     userId?: string;
     originalAdminId?: string;
+    actingAsOwnerId?: string | null;
   }
 }
 
@@ -114,6 +147,7 @@ authRouter.post("/register", async (req, res) => {
     }
 
     req.session.userId = userId;
+    req.session.actingAsOwnerId = null;
     req.session.save(async () => {
       const user = await queryOne(
         `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
@@ -156,6 +190,8 @@ authRouter.post("/login", async (req, res) => {
     }
 
     req.session.userId = user.id;
+    const ctx = await loadActingContext(user.id);
+    req.session.actingAsOwnerId = ctx.actingAsOwnerId;
     req.session.save(async () => {
       const fullUser = await queryOne(
         `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
@@ -263,8 +299,12 @@ authRouter.get("/me", async (req, res) => {
     return res.json({ user: null });
   }
 
+  // For team members, the dashboard should show the OWNER's business profile,
+  // because the team member is working inside the owner's business. Their own
+  // identity (full_name / email) still comes from their own user row.
+  const ownerId = (req.session as any).actingAsOwnerId || req.session.userId;
   const user = await queryOne(
-    `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
+    `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.parent_owner_id,
             bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
             bp.business_type, bp.years_operating, bp.employee_count, bp.phone, bp.whatsapp,
             bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
@@ -272,14 +312,39 @@ authRouter.get("/me", async (req, res) => {
             bp.vat_number, bp.invoice_color, bp.popia_consent,
             IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
      FROM users u
-     LEFT JOIN business_profiles bp ON bp.user_id = u.id
-     LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
+     LEFT JOIN business_profiles bp ON bp.user_id = ?
+     LEFT JOIN resellers r ON r.user_id = ? AND r.status = 'active'
      WHERE u.id = ?`,
-    [req.session.userId]
+    [ownerId, ownerId, req.session.userId]
   );
 
   if (!user) {
     return res.json({ user: null });
+  }
+
+  // Team-member context: load permissions and owner info.
+  let teamMember: any = null;
+  if (user.parent_owner_id) {
+    const owner = await queryOne(
+      "SELECT u.email, u.full_name, bp.business_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
+      [user.parent_owner_id]
+    );
+    const wm = await queryOne(
+      `SELECT permissions FROM workspace_members wm
+       JOIN workspaces w ON w.id = wm.workspace_id
+       WHERE wm.user_id = ? AND w.owner_id = ?
+       LIMIT 1`,
+      [user.id, user.parent_owner_id]
+    );
+    let permissions: string[] = [];
+    try { permissions = wm?.permissions ? JSON.parse(wm.permissions) : []; } catch {}
+    teamMember = {
+      owner_id: user.parent_owner_id,
+      owner_email: owner?.email || null,
+      owner_full_name: owner?.full_name || null,
+      owner_business_name: owner?.business_name || null,
+      permissions,
+    };
   }
 
   const isImpersonating = !!req.session.originalAdminId;
@@ -289,7 +354,65 @@ authRouter.get("/me", async (req, res) => {
     originalAdminName = adminUser?.full_name || null;
   }
 
-  res.json({ user, isImpersonating, originalAdminName });
+  res.json({ user, isImpersonating, originalAdminName, teamMember });
+});
+
+// ---- Team-member password setup ----
+// Verify a setup token (issued when an owner creates a team-member account).
+// Returns the invitee's email + business name so the page can greet them.
+authRouter.get("/setup-password/:token", async (req, res) => {
+  try {
+    const t = await queryOne(
+      `SELECT prt.user_id, u.email, u.full_name, u.parent_owner_id
+       FROM password_reset_tokens prt
+       JOIN users u ON u.id = prt.user_id
+       WHERE prt.token = ? AND prt.used = 0 AND prt.expires_at > UTC_TIMESTAMP()`,
+      [req.params.token]
+    );
+    if (!t) return res.status(400).json({ error: "This invite link is invalid or has expired. Ask your business admin to send a new one." });
+    let businessName: string | null = null;
+    if (t.parent_owner_id) {
+      const owner = await queryOne(
+        "SELECT bp.business_name, u.full_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
+        [t.parent_owner_id]
+      );
+      businessName = owner?.business_name || owner?.full_name || null;
+    }
+    res.json({ email: t.email, full_name: t.full_name, business_name: businessName });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to validate invite link" });
+  }
+});
+
+// Accept a setup token + new password, set the account password, log the user in.
+authRouter.post("/setup-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
+    if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
+
+    const t = await queryOne(
+      "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > UTC_TIMESTAMP()",
+      [token]
+    );
+    if (!t) return res.status(400).json({ error: "This invite link is invalid or has expired." });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+    await execute("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [passwordHash, now, t.user_id]);
+    await execute("UPDATE password_reset_tokens SET used = 1 WHERE id = ?", [t.id]);
+
+    // Mark workspace_members row as no longer pending invite.
+    await execute("UPDATE workspace_members SET invite_pending = 0 WHERE user_id = ?", [t.user_id]);
+
+    // Log them in.
+    req.session.userId = t.user_id;
+    const ctx = await loadActingContext(t.user_id);
+    req.session.actingAsOwnerId = ctx.actingAsOwnerId;
+    req.session.save(() => res.json({ ok: true }));
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to set password" });
+  }
 });
 
 authRouter.get("/google", (req, res) => {
@@ -367,6 +490,8 @@ authRouter.get("/google/callback", async (req, res) => {
     }
 
     req.session.userId = user.id;
+    const ctx = await loadActingContext(user.id);
+    req.session.actingAsOwnerId = ctx.actingAsOwnerId;
     req.session.save(() => res.redirect("/dashboard"));
   } catch (err: any) {
     console.error("Google OAuth error:", err.message);
@@ -388,6 +513,7 @@ authRouter.post("/impersonate/end", async (req, res) => {
 
     req.session.userId = originalAdminId;
     req.session.originalAdminId = undefined;
+    req.session.actingAsOwnerId = null;
     req.session.save(() => {
       res.json({ ok: true });
     });

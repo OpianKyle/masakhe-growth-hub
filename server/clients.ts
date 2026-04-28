@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 
@@ -11,7 +11,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 // ── List clients ──────────────────────────────────────────────────────────────
 clientsRouter.get("/", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const clients = await queryAll(
       `SELECT id, full_name, id_number, email, phone, employment_status,
               monthly_income_cents, risk_profile, policy_number, status,
@@ -29,7 +29,7 @@ clientsRouter.get("/", requireAuth, async (req, res) => {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 clientsRouter.get("/stats", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const [total, active, prospects, inactive] = await Promise.all([
       queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ?", [userId]),
       queryOne("SELECT COUNT(*) as count FROM broker_clients WHERE user_id = ? AND status = 'active'", [userId]),
@@ -45,7 +45,7 @@ clientsRouter.get("/stats", requireAuth, async (req, res) => {
 // ── Export CSV ────────────────────────────────────────────────────────────────
 clientsRouter.get("/export", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const clients = await queryAll(
       `SELECT full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
               physical_address, postal_address, employment_status, employer_name, occupation,
@@ -90,7 +90,7 @@ clientsRouter.get("/export", requireAuth, async (req, res) => {
 // ── Import CSV ────────────────────────────────────────────────────────────────
 clientsRouter.post("/import", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { rows } = req.body as { rows: any[] };
     if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: "No rows provided" });
 
@@ -143,7 +143,7 @@ clientsRouter.post("/import", requireAuth, async (req, res) => {
 // ── Get single client ─────────────────────────────────────────────────────────
 clientsRouter.get("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const client = await queryOne("SELECT * FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!client) return res.status(404).json({ error: "Client not found" });
     res.json(client);
@@ -155,7 +155,7 @@ clientsRouter.get("/:id", requireAuth, async (req, res) => {
 // ── Create client ─────────────────────────────────────────────────────────────
 clientsRouter.post("/", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const {
       full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
       physical_address, postal_address, employment_status, employer_name, occupation,
@@ -191,7 +191,7 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
 // ── Update client ─────────────────────────────────────────────────────────────
 clientsRouter.put("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Client not found" });
 
@@ -230,7 +230,7 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
 // ── Delete client ─────────────────────────────────────────────────────────────
 clientsRouter.delete("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Client not found" });
     await execute("DELETE FROM broker_clients WHERE id = ?", [req.params.id]);
@@ -243,7 +243,7 @@ clientsRouter.delete("/:id", requireAuth, async (req, res) => {
 // ── List documents for a client ───────────────────────────────────────────────
 clientsRouter.get("/:id/documents", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!client) return res.status(404).json({ error: "Client not found" });
     const docs = await queryAll(
@@ -259,7 +259,7 @@ clientsRouter.get("/:id/documents", requireAuth, async (req, res) => {
 // ── Upload document ───────────────────────────────────────────────────────────
 clientsRouter.post("/:id/documents", requireAuth, upload.single("file"), async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!client) return res.status(404).json({ error: "Client not found" });
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -290,7 +290,7 @@ clientsRouter.post("/:id/documents", requireAuth, upload.single("file"), async (
 // ── Download / view document ──────────────────────────────────────────────────
 clientsRouter.get("/:id/documents/:docId", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!client) return res.status(404).json({ error: "Client not found" });
     const doc = await queryOne("SELECT * FROM broker_client_documents WHERE id = ? AND client_id = ?", [req.params.docId, req.params.id]);
@@ -304,7 +304,7 @@ clientsRouter.get("/:id/documents/:docId", requireAuth, async (req, res) => {
 // ── Delete document ───────────────────────────────────────────────────────────
 clientsRouter.delete("/:id/documents/:docId", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const client = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!client) return res.status(404).json({ error: "Client not found" });
     await execute("DELETE FROM broker_client_documents WHERE id = ? AND client_id = ?", [req.params.docId, req.params.id]);

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId, requireOwner } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { generateSubscriptionToken, verifyResponseToken } from "./adumo";
@@ -173,7 +173,7 @@ billingRouter.get("/plans", async (_req, res) => {
 
 billingRouter.get("/subscription", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
     
     // Admin users always have pro access
@@ -229,7 +229,7 @@ billingRouter.get("/subscription", requireAuth, async (req, res) => {
 
 billingRouter.get("/status", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
     
     // Admin users always have pro access
@@ -271,7 +271,7 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 
 billingRouter.get("/access-status", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
 
     if (user?.role === "admin") {
@@ -361,7 +361,7 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/start-trial", requireAuth, async (req, res) => {
+billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { planCode } = req.body || {};
@@ -423,7 +423,7 @@ billingRouter.post("/start-trial", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
+billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const {
@@ -557,7 +557,7 @@ billingRouter.get("/invoice-info/:id", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/invoice-payment", requireAuth, async (req, res) => {
+billingRouter.post("/invoice-payment", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { invoiceId, recipientName, email, contactNumber } = req.body;
@@ -621,7 +621,7 @@ billingRouter.post("/invoice-payment", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/manual-payment", requireAuth, async (req, res) => {
+billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { planCode, recipientName, email, contactNumber } = req.body;
@@ -829,7 +829,7 @@ async function handleReturnRedirect(req: any, res: any) {
 billingRouter.get("/return-redirect", handleReturnRedirect);
 billingRouter.post("/return-redirect", handleReturnRedirect);
 
-billingRouter.post("/change-plan", requireAuth, async (req, res) => {
+billingRouter.post("/change-plan", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { newPlanCode, recipientName, email, contactNumber, mobileNumber, collectionDay: clientCollectionDay, startDate: clientStartDate, shippingAddress1, shippingAddress2, shippingAddress3 } = req.body;
@@ -941,7 +941,7 @@ billingRouter.post("/change-plan", requireAuth, async (req, res) => {
   }
 });
 
-billingRouter.post("/cancel", requireAuth, async (req, res) => {
+billingRouter.post("/cancel", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const workspace = await queryOne(
@@ -973,7 +973,7 @@ billingRouter.post("/cancel", requireAuth, async (req, res) => {
 
 billingRouter.get("/feature-gate", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const workspace = await queryOne(
       "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
       [userId]

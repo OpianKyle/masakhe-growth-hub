@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 
 export const leadsRouter = Router();
@@ -29,7 +29,7 @@ leadsRouter.post("/submit", async (req, res) => {
 
 leadsRouter.get("/", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const websiteId = req.query.websiteId as string;
     let leads;
     if (websiteId) {
@@ -59,7 +59,7 @@ leadsRouter.get("/", requireAuth, async (req, res) => {
 
 leadsRouter.patch("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM website_leads WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Lead not found" });
 
@@ -83,7 +83,7 @@ leadsRouter.patch("/:id", requireAuth, async (req, res) => {
 
 leadsRouter.delete("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM website_leads WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Lead not found" });
     await execute("DELETE FROM website_leads WHERE id = ?", [req.params.id]);
@@ -95,7 +95,7 @@ leadsRouter.delete("/:id", requireAuth, async (req, res) => {
 
 leadsRouter.get("/export", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const leads = await queryAll(
       `SELECT wl.name, wl.email, wl.phone, wl.message, wl.source, wl.status, wl.notes,
               wl.created_at, vl.make as vehicle_make, vl.model as vehicle_model, vl.year as vehicle_year
@@ -125,7 +125,7 @@ leadsRouter.get("/export", requireAuth, async (req, res) => {
 
 leadsRouter.post("/import", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { rows, websiteId } = req.body as { rows: any[]; websiteId?: string };
     if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: "No rows provided" });
 
@@ -162,7 +162,7 @@ leadsRouter.post("/import", requireAuth, async (req, res) => {
 
 leadsRouter.get("/stats", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const total = await queryOne("SELECT COUNT(*) as count FROM website_leads WHERE user_id = ?", [userId]);
     const newLeads = await queryOne("SELECT COUNT(*) as count FROM website_leads WHERE user_id = ? AND status = 'new'", [userId]);
     const contacted = await queryOne("SELECT COUNT(*) as count FROM website_leads WHERE user_id = ? AND status = 'contacted'", [userId]);

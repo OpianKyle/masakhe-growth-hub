@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
@@ -55,7 +55,7 @@ vehicleRouter.get("/public/detail/:id", async (req, res) => {
 
 vehicleRouter.get("/", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const websiteId = req.query.websiteId as string;
     const cols = "id, website_id, user_id, make, model, variant, year, price, mileage, fuel_type, transmission, color, body_type, description, features, images, status, featured, created_at, updated_at";
     let vehicles;
@@ -87,7 +87,7 @@ vehicleRouter.get("/", requireAuth, async (req, res) => {
 
 vehicleRouter.get("/:id", requireAuth, async (req, res) => {
   try {
-    const vehicle = await queryOne("SELECT * FROM vehicle_listings WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const vehicle = await queryOne("SELECT * FROM vehicle_listings WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
     vehicle.features = typeof vehicle.features === "string" ? JSON.parse(vehicle.features) : vehicle.features;
     vehicle.images = typeof vehicle.images === "string" ? JSON.parse(vehicle.images) : vehicle.images;
@@ -99,7 +99,7 @@ vehicleRouter.get("/:id", requireAuth, async (req, res) => {
 
 vehicleRouter.post("/", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const id = randomUUID();
     const { websiteId, make, model, variant, year, price, mileage, fuelType, transmission, color, bodyType, description, features, images, status, featured } = req.body;
 
@@ -123,7 +123,7 @@ vehicleRouter.post("/", requireAuth, async (req, res) => {
 
 vehicleRouter.put("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM vehicle_listings WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Vehicle not found" });
 
@@ -141,7 +141,7 @@ vehicleRouter.put("/:id", requireAuth, async (req, res) => {
 
 vehicleRouter.delete("/:id", requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM vehicle_listings WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Vehicle not found" });
     await execute("DELETE FROM vehicle_listings WHERE id = ?", [req.params.id]);
@@ -154,7 +154,7 @@ vehicleRouter.delete("/:id", requireAuth, async (req, res) => {
 vehicleRouter.post("/:id/images", requireAuth, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const vehicle = await queryOne("SELECT images FROM vehicle_listings WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 

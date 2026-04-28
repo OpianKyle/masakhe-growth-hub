@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { queryOne, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 
 export const grantsRouter = Router();
 grantsRouter.use(requireAuth);
 
 grantsRouter.get("/readiness", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
 
     const [readiness, profile, invoiceCountRow, ledgerCountRow] = await Promise.all([
       queryOne("SELECT * FROM grant_readiness WHERE user_id = ?", [userId]),
@@ -52,7 +52,7 @@ grantsRouter.get("/readiness", async (req, res) => {
 
 grantsRouter.post("/readiness", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const now = new Date().toISOString();
     const data = req.body;
 

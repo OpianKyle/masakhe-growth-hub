@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId, requireOwner } from "./auth";
 import multer from "multer";
 import path from "path";
 
@@ -22,16 +22,18 @@ const upload = multer({
 
 profileRouter.get("/", async (req, res) => {
   try {
-    const userId = req.session.userId!;
-    const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [userId]);
-    const profile = await queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [userId]);
+    // Team members read their own user record but the owner's business profile.
+    const selfId = req.session.userId!;
+    const ownerId = getDataOwnerId(req);
+    const user = await queryOne("SELECT id, email, full_name, role, created_at FROM users WHERE id = ?", [selfId]);
+    const profile = await queryOne("SELECT * FROM business_profiles WHERE user_id = ?", [ownerId]);
     res.json({ user, profile });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
 
-profileRouter.put("/", async (req, res) => {
+profileRouter.put("/", requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { fullName, businessName, tradingName, businessStatus, businessType, industrySector,
@@ -95,7 +97,7 @@ profileRouter.put("/", async (req, res) => {
   }
 });
 
-profileRouter.post("/logo", upload.single("logo"), async (req, res) => {
+profileRouter.post("/logo", requireOwner, upload.single("logo"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -124,7 +126,7 @@ profileRouter.post("/logo", upload.single("logo"), async (req, res) => {
   }
 });
 
-profileRouter.delete("/logo", async (req, res) => {
+profileRouter.delete("/logo", requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const now = new Date().toISOString();

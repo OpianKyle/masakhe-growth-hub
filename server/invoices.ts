@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb, RGB } from "pdf-lib";
 import fs from "fs";
@@ -1212,7 +1212,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
 
 invoiceRouter.get("/export", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     const header = "Number,Type,Customer Name,Customer Email,Items,Subtotal,VAT (15%),Total,Status,Date";
     const rows = invoices.map((inv: any) => {
@@ -1235,7 +1235,7 @@ invoiceRouter.get("/export", async (req, res) => {
 
 invoiceRouter.post("/import", upload.single("file"), async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
     const content = file.buffer.toString("utf-8");
@@ -1293,7 +1293,7 @@ function parseCSVLine(line: string): string[] {
 
 invoiceRouter.post("/", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig } = req.body;
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
@@ -1321,7 +1321,7 @@ invoiceRouter.post("/", async (req, res) => {
 
 invoiceRouter.get("/", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
     res.json(invoices.map((inv: any) => ({
       ...inv,
@@ -1339,7 +1339,7 @@ invoiceRouter.get("/", async (req, res) => {
 
 invoiceRouter.post("/:id/convert", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Not found" });
     if (invoice.type !== "quote") return res.status(400).json({ error: "Only quotes can be converted" });
@@ -1354,7 +1354,7 @@ invoiceRouter.post("/:id/convert", async (req, res) => {
 
 invoiceRouter.get("/:id/pdf", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
 
@@ -1436,7 +1436,7 @@ invoiceRouter.get("/:id/pdf", async (req, res) => {
 
 invoiceRouter.post("/:id/email", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
     if (!invoice.customer_email) return res.status(400).json({ error: "This invoice has no customer email address." });

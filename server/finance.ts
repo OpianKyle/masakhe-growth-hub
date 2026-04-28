@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import OpenAI from "openai";
@@ -12,7 +12,7 @@ financeRouter.use(requireAuth);
 
 financeRouter.get("/export", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const entries = await queryAll(
       "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at DESC",
       [userId]
@@ -40,7 +40,7 @@ financeRouter.get("/export", async (req, res) => {
 
 financeRouter.post("/import", upload.single("file"), async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -144,7 +144,7 @@ function parseCSVLine(line: string, delimiter: string = ","): string[] {
 
 financeRouter.post("/entries", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { type, amountCents, category, description, occurredAt } = req.body;
 
     if (!type || !amountCents || !category || !occurredAt) {
@@ -171,7 +171,7 @@ financeRouter.post("/entries", async (req, res) => {
 
 financeRouter.get("/entries", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const month = req.query.month as string;
 
     let query = "SELECT * FROM ledger_entries WHERE user_id = ?";
@@ -193,7 +193,7 @@ financeRouter.get("/entries", async (req, res) => {
 
 financeRouter.delete("/entries/:id", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const result = await execute("DELETE FROM ledger_entries WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (result.affectedRows === 0) return res.status(404).json({ error: "Entry not found" });
     res.json({ ok: true });
@@ -269,7 +269,7 @@ If the amount includes VAT, use the total (VAT-inclusive) amount. If date is unc
 
 financeRouter.get("/summary", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const from = req.query.from as string;
     const to = req.query.to as string;
 

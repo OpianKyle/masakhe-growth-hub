@@ -57,7 +57,7 @@ documentsRouter.get("/business-plans", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, status, created_at, updated_at FROM business_plans WHERE user_id = ? ORDER BY updated_at DESC",
-      [req.session.userId!]
+      [getDataOwnerId(req)]
     );
     res.json(rows);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -70,7 +70,7 @@ documentsRouter.post("/business-plans", requireAuth, async (req, res) => {
     const now = new Date().toISOString();
     await execute(
       "INSERT INTO business_plans (id, user_id, title, form_data, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
-      [id, req.session.userId!, title || "Untitled Business Plan", JSON.stringify(formData || {}), "draft", now, now]
+      [id, getDataOwnerId(req), title || "Untitled Business Plan", JSON.stringify(formData || {}), "draft", now, now]
     );
     res.json({ id });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -78,7 +78,7 @@ documentsRouter.post("/business-plans", requireAuth, async (req, res) => {
 
 documentsRouter.get("/business-plans/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json({ ...row, form_data: JSON.parse(row.form_data || "{}"), generated_content: JSON.parse(row.generated_content || "null") });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -86,7 +86,7 @@ documentsRouter.get("/business-plans/:id", requireAuth, async (req, res) => {
 
 documentsRouter.put("/business-plans/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT id FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT id FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const { title, formData } = req.body;
     await execute(
@@ -99,7 +99,7 @@ documentsRouter.put("/business-plans/:id", requireAuth, async (req, res) => {
 
 documentsRouter.delete("/business-plans/:id", requireAuth, async (req, res) => {
   try {
-    await execute("DELETE FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    await execute("DELETE FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -107,7 +107,7 @@ documentsRouter.delete("/business-plans/:id", requireAuth, async (req, res) => {
 documentsRouter.post("/business-plans/:id/generate", requireAuth, async (req, res) => {
   try {
     console.log(`[generate] business-plan ${req.params.id} using model: ${getModel()}`);
-    const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM business_plans WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
 
@@ -162,7 +162,7 @@ documentsRouter.get("/funding-proposals", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, status, created_at, updated_at FROM funding_proposals WHERE user_id = ? ORDER BY updated_at DESC",
-      [req.session.userId!]
+      [getDataOwnerId(req)]
     );
     res.json(rows);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -175,7 +175,7 @@ documentsRouter.post("/funding-proposals", requireAuth, async (req, res) => {
     const now = new Date().toISOString();
     await execute(
       "INSERT INTO funding_proposals (id, user_id, title, form_data, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
-      [id, req.session.userId!, title || "Untitled Funding Proposal", JSON.stringify(formData || {}), "draft", now, now]
+      [id, getDataOwnerId(req), title || "Untitled Funding Proposal", JSON.stringify(formData || {}), "draft", now, now]
     );
     res.json({ id });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -183,7 +183,7 @@ documentsRouter.post("/funding-proposals", requireAuth, async (req, res) => {
 
 documentsRouter.get("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json({ ...row, form_data: JSON.parse(row.form_data || "{}"), generated_content: JSON.parse(row.generated_content || "null") });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -191,7 +191,7 @@ documentsRouter.get("/funding-proposals/:id", requireAuth, async (req, res) => {
 
 documentsRouter.put("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT id FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT id FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const { title, formData } = req.body;
     await execute(
@@ -204,7 +204,7 @@ documentsRouter.put("/funding-proposals/:id", requireAuth, async (req, res) => {
 
 documentsRouter.delete("/funding-proposals/:id", requireAuth, async (req, res) => {
   try {
-    await execute("DELETE FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    await execute("DELETE FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -212,7 +212,7 @@ documentsRouter.delete("/funding-proposals/:id", requireAuth, async (req, res) =
 documentsRouter.post("/funding-proposals/:id/generate", requireAuth, async (req, res) => {
   try {
     console.log(`[generate] funding-proposal ${req.params.id} using model: ${getModel()}`);
-    const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM funding_proposals WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(row.form_data || "{}");
 
@@ -261,7 +261,7 @@ documentsRouter.get("/financial-statements", requireAuth, async (req, res) => {
   try {
     const rows = await queryAll(
       "SELECT id, title, financial_year, created_at, updated_at FROM financial_statements WHERE user_id = ? ORDER BY financial_year DESC",
-      [req.session.userId!]
+      [getDataOwnerId(req)]
     );
     res.json(rows);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -294,7 +294,7 @@ documentsRouter.post("/financial-statements", requireAuth, async (req, res) => {
 
     await execute(
       "INSERT INTO financial_statements (id, user_id, financial_year, title, form_data, computed, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
-      [id, req.session.userId!, year, `Annual Statement ${year}`, JSON.stringify(fd), JSON.stringify(computed), now, now]
+      [id, getDataOwnerId(req), year, `Annual Statement ${year}`, JSON.stringify(fd), JSON.stringify(computed), now, now]
     );
     res.json({ id, computed });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -302,7 +302,7 @@ documentsRouter.post("/financial-statements", requireAuth, async (req, res) => {
 
 documentsRouter.get("/financial-statements/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json({ ...row, form_data: JSON.parse(row.form_data || "{}"), computed: JSON.parse(row.computed || "{}") });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -328,7 +328,7 @@ documentsRouter.put("/financial-statements/:id", requireAuth, async (req, res) =
     const computed = { revenue, costOfSales, opEx, salaries, taxes, assets, liabilities, equity, grossProfit, ebitda, netProfit, totalExpenses, netEquity };
     await execute(
       "UPDATE financial_statements SET form_data = ?, computed = ?, updated_at = ? WHERE id = ? AND user_id = ?",
-      [JSON.stringify(fd), JSON.stringify(computed), new Date().toISOString(), req.params.id, req.session.userId!]
+      [JSON.stringify(fd), JSON.stringify(computed), new Date().toISOString(), req.params.id, getDataOwnerId(req)]
     );
     res.json({ ok: true, computed });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -336,7 +336,7 @@ documentsRouter.put("/financial-statements/:id", requireAuth, async (req, res) =
 
 documentsRouter.delete("/financial-statements/:id", requireAuth, async (req, res) => {
   try {
-    await execute("DELETE FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    await execute("DELETE FROM financial_statements WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -345,7 +345,7 @@ documentsRouter.delete("/financial-statements/:id", requireAuth, async (req, res
 
 documentsRouter.get("/companies", requireAuth, async (req, res) => {
   try {
-    const rows = await queryAll("SELECT * FROM companies WHERE user_id = ? ORDER BY updated_at DESC", [req.session.userId!]);
+    const rows = await queryAll("SELECT * FROM companies WHERE user_id = ? ORDER BY updated_at DESC", [getDataOwnerId(req)]);
     res.json(rows);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -358,7 +358,7 @@ documentsRouter.post("/companies", requireAuth, async (req, res) => {
     await execute(
       `INSERT INTO companies (id, user_id, company_name, registration_number, company_type, registration_date, status, directors, address, financial_year_end, is_verified, created_at, updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?)`,
-      [id, req.session.userId!, companyName, registrationNumber || null, companyType || null, registrationDate || null, status || "Active", directors || null, address || null, financialYearEnd || null, now, now]
+      [id, getDataOwnerId(req), companyName, registrationNumber || null, companyType || null, registrationDate || null, status || "Active", directors || null, address || null, financialYearEnd || null, now, now]
     );
     res.json({ id });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -366,7 +366,7 @@ documentsRouter.post("/companies", requireAuth, async (req, res) => {
 
 documentsRouter.get("/companies/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM companies WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json(row);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -374,7 +374,7 @@ documentsRouter.get("/companies/:id", requireAuth, async (req, res) => {
 
 documentsRouter.put("/companies/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT id FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT id FROM companies WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     const { companyName, registrationNumber, companyType, registrationDate, status, directors, address, financialYearEnd } = req.body;
     await execute(
@@ -387,7 +387,7 @@ documentsRouter.put("/companies/:id", requireAuth, async (req, res) => {
 
 documentsRouter.post("/companies/:id/verify", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM companies WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
 
     if (!row.registration_number) {
@@ -495,7 +495,7 @@ Respond ONLY in JSON:
 
 documentsRouter.delete("/companies/:id", requireAuth, async (req, res) => {
   try {
-    await execute("DELETE FROM companies WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    await execute("DELETE FROM companies WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -508,7 +508,7 @@ documentsRouter.get("/funding-applications", requireAuth, async (req, res) => {
       `SELECT fa.*, c.company_name FROM funding_applications fa
        LEFT JOIN companies c ON fa.company_id = c.id
        WHERE fa.user_id = ? ORDER BY fa.updated_at DESC`,
-      [req.session.userId!]
+      [getDataOwnerId(req)]
     );
     res.json(rows);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -522,7 +522,7 @@ documentsRouter.post("/funding-applications", requireAuth, async (req, res) => {
     await execute(
       `INSERT INTO funding_applications (id, user_id, program, company_id, business_plan_id, financial_statement_id, funding_proposal_id, form_data, status, created_at, updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, req.session.userId!, program, companyId || null, businessPlanId || null, financialStatementId || null, fundingProposalId || null, JSON.stringify(formData || {}), "draft", now, now]
+      [id, getDataOwnerId(req), program, companyId || null, businessPlanId || null, financialStatementId || null, fundingProposalId || null, JSON.stringify(formData || {}), "draft", now, now]
     );
     res.json({ id });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -530,7 +530,7 @@ documentsRouter.post("/funding-applications", requireAuth, async (req, res) => {
 
 documentsRouter.get("/funding-applications/:id", requireAuth, async (req, res) => {
   try {
-    const row = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const row = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json({ ...row, form_data: JSON.parse(row.form_data || "{}"), generated_content: JSON.parse(row.generated_content || "null") });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -541,7 +541,7 @@ documentsRouter.put("/funding-applications/:id", requireAuth, async (req, res) =
     const { formData, program, companyId, businessPlanId, financialStatementId, fundingProposalId } = req.body;
     await execute(
       `UPDATE funding_applications SET program=?, company_id=?, business_plan_id=?, financial_statement_id=?, funding_proposal_id=?, form_data=?, updated_at=? WHERE id=? AND user_id=?`,
-      [program, companyId || null, businessPlanId || null, financialStatementId || null, fundingProposalId || null, JSON.stringify(formData || {}), new Date().toISOString(), req.params.id, req.session.userId!]
+      [program, companyId || null, businessPlanId || null, financialStatementId || null, fundingProposalId || null, JSON.stringify(formData || {}), new Date().toISOString(), req.params.id, getDataOwnerId(req)]
     );
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -549,14 +549,14 @@ documentsRouter.put("/funding-applications/:id", requireAuth, async (req, res) =
 
 documentsRouter.delete("/funding-applications/:id", requireAuth, async (req, res) => {
   try {
-    await execute("DELETE FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    await execute("DELETE FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
 documentsRouter.post("/funding-applications/:id/generate", requireAuth, async (req, res) => {
   try {
-    const appRow = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, req.session.userId!]);
+    const appRow = await queryOne("SELECT * FROM funding_applications WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!appRow) return res.status(404).json({ error: "Not found" });
     const fd = JSON.parse(appRow.form_data || "{}");
 
@@ -649,7 +649,7 @@ Return ONLY valid JSON.`;
 
 documentsRouter.get("/grant-readiness", requireAuth, async (req, res) => {
   try {
-    const uid = req.session.userId!;
+    const uid = getDataOwnerId(req);
     const [companies, plans, statements, proposals, applications] = await Promise.all([
       queryAll("SELECT id, is_verified FROM companies WHERE user_id=?", [uid]),
       queryAll("SELECT id FROM business_plans WHERE user_id=?", [uid]),

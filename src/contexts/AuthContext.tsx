@@ -26,6 +26,13 @@ interface User {
   cipc_number?: string;
   logo_url?: string;
   popia_consent?: number;
+  teamMember?: {
+    owner_id: string;
+    owner_email: string;
+    owner_full_name: string | null;
+    owner_business_name: string | null;
+    permissions: string[];
+  } | null;
 }
 
 interface AuthContextType {
@@ -60,7 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       const data = await res.json();
-      setUser(data.user || null);
+      const merged = data.user ? { ...data.user, teamMember: data.teamMember || null } : null;
+      setUser(merged);
       setIsImpersonating(!!data.isImpersonating);
       setOriginalAdminName(data.originalAdminName || null);
     } catch {
@@ -87,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.ok) {
         setUser(data.user);
+        // Pull full /me so teamMember context (permissions, owner info) is loaded.
+        refreshUser();
         const needsOnboarding = !data.user.popia_consent;
         const isReseller = !!data.user.is_reseller;
         const isAdmin = data.user.role === "admin";

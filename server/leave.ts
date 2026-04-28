@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
-import { requireAuth } from "./auth";
+import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 
 export const leaveRouter = Router();
@@ -78,7 +78,7 @@ async function ensureBalances(userId: string, employeeId: string, year: number) 
 
 leaveRouter.get("/employees", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const employees = await queryAll(
       "SELECT id, first_name, last_name, position, department, status FROM employees WHERE user_id = ? AND status = 'active' ORDER BY first_name",
       [userId]
@@ -91,7 +91,7 @@ leaveRouter.get("/employees", async (req, res) => {
 
 leaveRouter.get("/requests", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { employeeId, status, year } = req.query as any;
 
     let query = `
@@ -117,7 +117,7 @@ leaveRouter.get("/requests", async (req, res) => {
 
 leaveRouter.post("/requests", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { employeeId, leaveType, startDate, endDate, reason } = req.body;
 
     if (!employeeId || !leaveType || !startDate || !endDate) {
@@ -173,7 +173,7 @@ leaveRouter.post("/requests", async (req, res) => {
 
 leaveRouter.put("/requests/:id/status", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { status, reviewNote } = req.body;
 
     if (!["approved", "rejected"].includes(status)) {
@@ -199,7 +199,7 @@ leaveRouter.put("/requests/:id/status", async (req, res) => {
 
 leaveRouter.delete("/requests/:id", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     await execute("DELETE FROM leave_requests WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     res.json({ ok: true });
   } catch (err: any) {
@@ -209,7 +209,7 @@ leaveRouter.delete("/requests/:id", async (req, res) => {
 
 leaveRouter.get("/balances", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const year = parseInt((req.query.year as string) || String(new Date().getFullYear()));
     const employeeId = req.query.employeeId as string | undefined;
 
@@ -270,7 +270,7 @@ leaveRouter.get("/balances", async (req, res) => {
 
 leaveRouter.put("/balances/:employeeId", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const { leaveType, totalDays, year } = req.body;
     const { employeeId } = req.params;
 
