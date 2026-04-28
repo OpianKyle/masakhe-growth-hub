@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
@@ -137,7 +137,7 @@ export default function DashboardPage() {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
+  const refreshBillingStatus = useCallback(() => {
     if (user?.role === "admin") {
       setSubscriptionActive(true);
       setPlanCode("premium");
@@ -155,7 +155,20 @@ export default function DashboardPage() {
         setPlanCode(code && PLAN_TIER[code] ? code : null);
       })
       .catch(() => { setSubscriptionActive(false); setPlanCode(null); });
-  }, [user, location.pathname, location.search]);
+  }, [user]);
+
+  useEffect(() => {
+    refreshBillingStatus();
+  }, [refreshBillingStatus, location.pathname, location.search]);
+
+  // Re-fetch billing/plan when another part of the app (e.g. BillingPage starting
+  // a trial or completing a subscription) tells us things have changed, so the
+  // sidebar lock badges update without a full page reload.
+  useEffect(() => {
+    const handler = () => refreshBillingStatus();
+    window.addEventListener("billing:updated", handler);
+    return () => window.removeEventListener("billing:updated", handler);
+  }, [refreshBillingStatus]);
 
   const userTier = planCode ? PLAN_TIER[planCode] : 0;
   const meetsPlan = (req?: PlanCode) => !req || userTier >= PLAN_TIER[req];

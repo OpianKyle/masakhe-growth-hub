@@ -1323,6 +1323,11 @@ export default function BillingPage() {
       setData({ subscription: null, plan: null });
     } finally {
       setLoading(false);
+      // Tell the rest of the app (e.g. dashboard sidebar lock badges) that
+      // the billing/plan state may have changed, so they can re-fetch.
+      try {
+        window.dispatchEvent(new Event("billing:updated"));
+      } catch {}
     }
   };
 
