@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles
+  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -21,7 +21,6 @@ import BillingPage from "./BillingPage";
 import TendersPage from "./TendersPage";
 import BusinessPlanPage from "./BusinessPlanPage";
 import FundingProposalPage from "./FundingProposalPage";
-import FinancialStatementsPage from "./FinancialStatementsPage";
 import CompanyVerifyPage from "./CompanyVerifyPage";
 import FundingApplicationPage from "./FundingApplicationPage";
 import VehicleManagementPage from "./VehicleManagementPage";
@@ -89,12 +88,10 @@ const baseNavItems: NavItem[] = [
     label: "Transactions",
     groupId: "finance",
     requiresPlan: "pro",
-    perms: ["finance", "invoices", "annual_statements", "management_accounts"],
+    perms: ["finance", "invoices"],
     children: [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance", requiresPlan: "pro", perm: "finance" },
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", requiresPlan: "pro", perm: "invoices" },
-      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements", requiresPlan: "pro", perm: "annual_statements" },
-      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true, requiresPlan: "pro", perm: "management_accounts" },
     ],
   },
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
@@ -575,7 +572,7 @@ export default function DashboardPage() {
             <Route path="tenders" element={<TendersPage />} />
             <Route path="business-plan" element={<Navigate to="/dashboard" replace />} />
             <Route path="funding-proposal" element={<Navigate to="/dashboard" replace />} />
-            <Route path="annual-statements" element={<FinancialStatementsPage />} />
+            <Route path="annual-statements" element={<Navigate to="/dashboard" replace />} />
             <Route path="company-verify" element={<Navigate to="/dashboard" replace />} />
             <Route path="funding-applications" element={<Navigate to="/dashboard" replace />} />
             <Route path="vehicles" element={<VehicleManagementPage />} />

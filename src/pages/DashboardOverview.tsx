@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   TrendingUp, TrendingDown, DollarSign, Receipt, Globe, Smartphone,
   ArrowUpRight, ArrowDownRight, Wallet, ClipboardCheck, CheckCircle2,
-  AlertCircle, FileText, BarChart3, BookOpen, HandCoins, BarChart2,
+  AlertCircle, FileText, BarChart3, BookOpen, HandCoins,
   Building2, Send, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -328,7 +328,6 @@ export default function DashboardOverview() {
                 { icon: ClipboardCheck, label: "Funding", color: "gradient-hero", path: "/dashboard/funding" },
                 { icon: BookOpen, label: "Biz Plan", color: "gradient-warm", path: "/dashboard/business-plan" },
                 { icon: HandCoins, label: "Proposal", color: "gradient-gold", path: "/dashboard/funding-proposal" },
-                { icon: BarChart2, label: "Statements", color: "gradient-hero", path: "/dashboard/annual-statements" },
               ].map((action) => (
                 <Link key={action.label} to={action.path}
                   className={`flex flex-col items-center gap-2 rounded-xl ${action.color} p-3 text-primary-foreground hover:opacity-90 transition-opacity`}>
@@ -369,7 +368,6 @@ export default function DashboardOverview() {
             { icon: Building2, label: "Verify Company", description: "Register & verify your CIPC company profile", path: "/dashboard/company-verify", color: "text-green-600", bg: "bg-green-50" },
             { icon: BookOpen, label: "Business Plan", description: "AI-generated 8-section business plan", path: "/dashboard/business-plan", color: "text-blue-600", bg: "bg-blue-50" },
             { icon: HandCoins, label: "Funding Proposal", description: "Professional funding proposal document", path: "/dashboard/funding-proposal", color: "text-amber-600", bg: "bg-amber-50" },
-            { icon: BarChart2, label: "Financial Statements", description: "Annual income & balance sheet statements", path: "/dashboard/annual-statements", color: "text-purple-600", bg: "bg-purple-50" },
             { icon: ClipboardCheck, label: "Funding Scoring", description: "Track your score for funding", path: "/dashboard/funding", color: "text-primary", bg: "bg-primary/10" },
             { icon: Send, label: "Funding Applications", description: "Apply to SEFA, NEF, NYDA and IDC", path: "/dashboard/funding-applications", color: "text-rose-600", bg: "bg-rose-50" },
           ].map((item) => (

@@ -50,8 +50,6 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
     perms: [
       { key: "finance",             label: "Income & Expenses",   group: "Finance & sales" },
       { key: "invoices",            label: "Quotes & Invoices",   group: "Finance & sales" },
-      { key: "annual_statements",   label: "Annual Statements",   group: "Finance & sales" },
-      { key: "management_accounts", label: "Management Accounts", group: "Finance & sales" },
       { key: "clients",             label: "Clients",             group: "Finance & sales" },
       { key: "campaigns",           label: "Campaigns",           group: "Finance & sales" },
     ],
@@ -61,13 +59,6 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
     perms: [
       { key: "payroll", label: "Payroll",   group: "HR & people" },
       { key: "leave",   label: "Leave & HR", group: "HR & people" },
-    ],
-  },
-  {
-    name: "Funding",
-    perms: [
-      { key: "tenders", label: "Tenders", group: "Funding" },
-      { key: "grants",  label: "Grants",  group: "Funding" },
     ],
   },
 ];

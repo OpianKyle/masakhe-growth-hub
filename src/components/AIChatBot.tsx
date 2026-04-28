@@ -35,7 +35,6 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard/funding": "Funding Readiness",
   "/dashboard/funding-proposal": "Funding Proposal",
   "/dashboard/funding-applications": "Funding Applications",
-  "/dashboard/annual-statements": "Annual Statements",
   "/dashboard/company-verify": "Company Verification",
   "/dashboard/settings": "Settings",
 };

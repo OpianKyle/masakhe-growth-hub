@@ -9,10 +9,9 @@ import { sendTeamInviteEmail } from "../email";
 // Keep in sync with PERMISSION_KEYS on the frontend (TeamMembersPage / DashboardPage).
 const ALLOWED_PERMISSIONS = new Set<string>([
   "overview", "website", "social", "biz_connect", "support",
-  "finance", "invoices", "annual_statements", "management_accounts",
+  "finance", "invoices",
   "clients", "campaigns",
   "payroll", "leave",
-  "tenders", "grants",
 ]);
 
 function sanitizePermissions(input: unknown): string[] {
