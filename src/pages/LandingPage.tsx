@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
 import smmeOwner from "@/assets/smme-owner.jpg";
 import marketStall from "@/assets/market-stall.jpg";
+import PromoPopup from "@/components/PromoPopup";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -136,6 +137,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <PromoPopup variant="smme" />
       <Helmet>
         <title>Masakhe | South African SMME Business Platform</title>
         <meta name="description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media management and client tools — all in one platform. From R599/month." />
