@@ -47,10 +47,23 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isOnSettingsPage = location.pathname.startsWith("/dashboard/settings");
   const isOnTeamPage = location.pathname.startsWith("/dashboard/team");
   const isOnPartnerPage = location.pathname.startsWith("/dashboard/reseller") || location.pathname.startsWith("/partner");
+  const isOnOnboardingPage = location.pathname.startsWith("/onboarding");
 
   // Team members are blocked from owner-only sections
   if (user.teamMember && (isOnBillingPage || isOnSettingsPage || isOnTeamPage || isOnPartnerPage)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Force onboarding for any owner account that hasn't accepted POPIA yet.
+  // Admins, resellers and team members are exempt.
+  const needsOnboarding =
+    !user.popia_consent &&
+    user.role !== "admin" &&
+    !user.is_reseller &&
+    !user.teamMember;
+
+  if (needsOnboarding && !isOnOnboardingPage) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   if (billingBlocked && !isOnBillingPage) {
