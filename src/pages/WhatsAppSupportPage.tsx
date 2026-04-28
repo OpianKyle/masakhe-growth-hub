@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 
-const SUPPORT_NUMBER = "+27 11 026 5544";
+const SUPPORT_NUMBER = "+27 81 038 3955";
 const SUPPORT_NUMBER_DIGITS = SUPPORT_NUMBER.replace(/\D/g, "");
 
 function buildWaLink(message: string) {
