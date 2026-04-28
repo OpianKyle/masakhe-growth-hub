@@ -30,6 +30,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard/leave": "Leave & HR",
   "/dashboard/clients": "Clients CRM",
   "/dashboard/campaigns": "Campaigns",
+  "/dashboard/automations": "Automations",
   "/dashboard/leads": "Leads",
   "/dashboard/business-plan": "Business Plan",
   "/dashboard/funding": "Funding Readiness",

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2 } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
@@ -32,6 +32,8 @@ interface Invoice {
   type: string;
   template: number;
   created_at: string;
+  paid_at?: string | null;
+  late_fee_cents?: number;
 }
 
 const TEMPLATES = [
@@ -406,6 +408,30 @@ export default function InvoicesPage() {
     URL.revokeObjectURL(url);
   };
 
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const markPaid = async (inv: Invoice) => {
+    if (inv.paid_at) return;
+    if (!confirm(`Mark invoice ${inv.invoice_number} as paid? A thank-you receipt will be emailed to the customer.`)) return;
+    setMarkingPaidId(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}/mark-paid`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast.success(`Invoice ${inv.invoice_number} marked paid${inv.customer_email ? " — receipt emailed" : ""}`);
+        loadInvoices();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to mark paid");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to mark paid");
+    } finally {
+      setMarkingPaidId(null);
+    }
+  };
+
   const emailInvoice = async (id: string, customerEmail: string) => {
     setEmailingId(id);
     try {
@@ -687,13 +713,48 @@ export default function InvoicesPage() {
                     {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
                     {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
                   </td>
-                  <td className="p-3 text-right font-bold text-primary">R{(inv.total_cents / 100).toFixed(2)}</td>
-                  <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("en-ZA")}</td>
+                  <td className="p-3 text-right font-bold text-primary">
+                    R{(inv.total_cents / 100).toFixed(2)}
+                    {inv.late_fee_cents && inv.late_fee_cents > 0 ? (
+                      <div className="text-[10px] font-normal text-red-600 mt-0.5">
+                        incl. R{(inv.late_fee_cents / 100).toFixed(2)} late fee
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    <div>{new Date(inv.created_at).toLocaleDateString("en-ZA")}</div>
+                    {inv.type === "invoice" && (
+                      inv.paid_at ? (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <CheckCircle2 className="h-3 w-3" /> Paid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                          Outstanding
+                        </span>
+                      )
+                    )}
+                  </td>
                   <td className="p-3 text-right">
-                    <div className="flex gap-1 justify-end">
+                    <div className="flex gap-1 justify-end flex-wrap">
                       {inv.type === "quote" && (
                         <Button variant="outline" size="sm" onClick={() => handleConvert(inv)} title="Convert to Invoice">
                           <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
+                        </Button>
+                      )}
+                      {inv.type === "invoice" && !inv.paid_at && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={markingPaidId === inv.id}
+                          onClick={() => markPaid(inv)}
+                          className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          title="Mark as paid (sends thank-you receipt)"
+                        >
+                          {markingPaidId === inv.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+                          Mark Paid
                         </Button>
                       )}
                       <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>

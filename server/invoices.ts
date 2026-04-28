@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { getTransporterForUser } from "./email-settings";
+import { sendThankYouReceipt, checkStopCreditAndAlert } from "./automations";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1313,6 +1314,12 @@ invoiceRouter.post("/", async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?)`,
       [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, now]
     );
+
+    // Stop-credit check (invoices only, not quotes; non-blocking)
+    if (docType === "invoice") {
+      checkStopCreditAndAlert(userId, customerName, customerEmail || null).catch(() => {});
+    }
+
     res.json({ ok: true, id, invoiceNumber: docNumber });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to create" });
@@ -1588,6 +1595,49 @@ invoiceRouter.put("/:id", async (req, res) => {
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update" });
+  }
+});
+
+invoiceRouter.post("/:id/mark-paid", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const inv = await queryOne(
+      "SELECT id, type, status, paid_at FROM invoices WHERE id = ? AND user_id = ?",
+      [req.params.id, userId]
+    );
+    if (!inv) return res.status(404).json({ error: "Not found" });
+    if (inv.type !== "invoice") return res.status(400).json({ error: "Only invoices can be marked paid" });
+    if (inv.paid_at) return res.json({ ok: true, alreadyPaid: true });
+
+    await execute(
+      "UPDATE invoices SET status = 'paid', paid_at = NOW() WHERE id = ?",
+      [req.params.id]
+    );
+
+    // Fire thank-you receipt (non-blocking)
+    sendThankYouReceipt(req.params.id).catch(() => {});
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to mark paid" });
+  }
+});
+
+invoiceRouter.post("/:id/mark-unpaid", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const inv = await queryOne(
+      "SELECT id FROM invoices WHERE id = ? AND user_id = ?",
+      [req.params.id, userId]
+    );
+    if (!inv) return res.status(404).json({ error: "Not found" });
+    await execute(
+      "UPDATE invoices SET status = 'sent', paid_at = NULL, thank_you_sent_at = NULL WHERE id = ?",
+      [req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

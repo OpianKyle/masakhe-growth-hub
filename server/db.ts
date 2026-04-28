@@ -935,6 +935,115 @@ export async function runMigrations() {
       await conn.query("CREATE UNIQUE INDEX IF NOT EXISTS uq_resellers_domain ON resellers(custom_domain)");
     } catch (_) {}
 
+    // ── Automations: Money-In + CRM ─────────────────────────────────────────
+    await addColumnIfMissing("invoices", "paid_at", "DATETIME NULL");
+    await addColumnIfMissing("invoices", "recurring_id", "VARCHAR(36) NULL");
+    await addColumnIfMissing("invoices", "valid_until", "DATE NULL");
+    await addColumnIfMissing("invoices", "quote_followups_sent", "INT NOT NULL DEFAULT 0");
+    await addColumnIfMissing("invoices", "last_quote_followup_at", "DATETIME NULL");
+    await addColumnIfMissing("invoices", "quote_expiry_notified_at", "DATETIME NULL");
+    await addColumnIfMissing("invoices", "late_fee_cents", "INT NOT NULL DEFAULT 0");
+    await addColumnIfMissing("invoices", "late_fee_applied_at", "DATETIME NULL");
+    await addColumnIfMissing("invoices", "thank_you_sent_at", "DATETIME NULL");
+
+    await addColumnIfMissing("broker_clients", "client_since", "DATE NULL");
+    await addColumnIfMissing("broker_clients", "company_anniversary", "DATE NULL");
+    await addColumnIfMissing("broker_clients", "last_contacted_at", "DATETIME NULL");
+    await addColumnIfMissing("broker_clients", "inactive_nudge_sent_at", "DATETIME NULL");
+    await addColumnIfMissing("broker_clients", "last_birthday_msg_year", "INT NULL");
+    await addColumnIfMissing("broker_clients", "last_anniversary_msg_year", "INT NULL");
+
+    await addColumnIfMissing("website_leads", "autoreply_sent_at", "DATETIME NULL");
+    await addColumnIfMissing("website_leads", "drip_step", "INT NOT NULL DEFAULT 0");
+    await addColumnIfMissing("website_leads", "drip_last_sent_at", "DATETIME NULL");
+    await addColumnIfMissing("website_leads", "drip_completed", "TINYINT(1) NOT NULL DEFAULT 0");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS automation_settings (
+        user_id VARCHAR(36) PRIMARY KEY,
+        thank_you_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        thank_you_subject VARCHAR(255) NOT NULL DEFAULT 'Thank you — payment received',
+        thank_you_body TEXT NULL,
+        late_fee_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        late_fee_percent DECIMAL(5,2) NOT NULL DEFAULT 5.00,
+        late_fee_after_days INT NOT NULL DEFAULT 7,
+        stop_credit_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        stop_credit_threshold_cents BIGINT NOT NULL DEFAULT 1000000,
+        quote_expiry_days INT NOT NULL DEFAULT 30,
+        quote_followup_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        quote_followup_after_days INT NOT NULL DEFAULT 5,
+        quote_max_followups INT NOT NULL DEFAULT 2,
+        quote_followup_subject VARCHAR(255) NOT NULL DEFAULT 'Following up on your quote',
+        quote_followup_body TEXT NULL,
+        lead_autoreply_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        lead_autoreply_subject VARCHAR(255) NOT NULL DEFAULT 'Thanks for reaching out',
+        lead_autoreply_body TEXT NULL,
+        drip_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        drip_emails_json TEXT NULL,
+        inactive_nudge_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        inactive_nudge_after_days INT NOT NULL DEFAULT 90,
+        inactive_nudge_subject VARCHAR(255) NOT NULL DEFAULT 'We miss you',
+        inactive_nudge_body TEXT NULL,
+        birthday_msg_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        birthday_msg_subject VARCHAR(255) NOT NULL DEFAULT 'Happy birthday from {{business}}!',
+        birthday_msg_body TEXT NULL,
+        anniversary_msg_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        anniversary_msg_subject VARCHAR(255) NOT NULL DEFAULT 'Happy anniversary!',
+        anniversary_msg_body TEXT NULL,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS recurring_invoices (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_email VARCHAR(255) NULL,
+        customer_address TEXT NULL,
+        customer_phone VARCHAR(50) NULL,
+        reference VARCHAR(100) NULL,
+        payment_terms VARCHAR(50) NULL,
+        notes TEXT NULL,
+        items_json TEXT NOT NULL,
+        vat_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        vat_cents INT NOT NULL DEFAULT 0,
+        total_cents INT NOT NULL DEFAULT 0,
+        template INT NOT NULL DEFAULT 1,
+        template_config TEXT NULL,
+        frequency ENUM('weekly','monthly','quarterly','yearly','custom_days') NOT NULL DEFAULT 'monthly',
+        custom_days INT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        next_run_at DATE NOT NULL,
+        last_run_at DATETIME NULL,
+        invoices_generated INT NOT NULL DEFAULT 0,
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        auto_send TINYINT(1) NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        KEY idx_ri_user (user_id),
+        KEY idx_ri_next_run (next_run_at, active)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS automation_log (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        target_id VARCHAR(36) NULL,
+        recipient VARCHAR(255) NULL,
+        message TEXT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'sent',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_al_user_type (user_id, type, created_at)
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

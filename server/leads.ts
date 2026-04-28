@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
+import { sendLeadAutoreply } from "./automations";
 
 export const leadsRouter = Router();
 
@@ -21,6 +22,12 @@ leadsRouter.post("/submit", async (req, res) => {
        VALUES (?,?,?,?,?,?,?,?,?)`,
       [id, websiteId, website.owner_id, vehicleId || null, name, email || null, phone || null, message || null, source || "contact_form"]
     );
+
+    // Fire auto-reply (non-blocking)
+    if (email) {
+      sendLeadAutoreply(id).catch(() => {});
+    }
+
     res.json({ ok: true, id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

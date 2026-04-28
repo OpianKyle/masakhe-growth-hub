@@ -33,6 +33,8 @@ import { clientsRouter } from "./clients";
 import { campaignsRouter } from "./campaigns";
 import { emailSettingsRouter } from "./email-settings";
 import { contactRouter } from "./contact";
+import { automationsRouter } from "./automations";
+import { startAutomationsScheduler } from "./automations-scheduler";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -100,6 +102,7 @@ async function main() {
   app.use("/api/clients", clientsRouter);
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);
+  app.use("/api/automations", automationsRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
 
@@ -119,6 +122,7 @@ async function main() {
     startScheduler();
     startBillingScheduler();
     startInvoiceScheduler();
+    startAutomationsScheduler();
     runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
   });

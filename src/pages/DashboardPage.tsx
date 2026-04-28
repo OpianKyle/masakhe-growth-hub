@@ -30,6 +30,7 @@ import LeavePage from "./LeavePage";
 import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
+import AutomationsPage from "./AutomationsPage";
 import WhatsAppSupportPage from "./WhatsAppSupportPage";
 import TeamMembersPage from "./TeamMembersPage";
 import TrialBanner from "@/components/TrialBanner";
@@ -96,6 +97,7 @@ const baseNavItems: NavItem[] = [
   },
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
+  { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "pro", perm: "automations" },
   {
     icon: Banknote,
     label: "HR & Payroll",
@@ -582,6 +584,7 @@ export default function DashboardPage() {
             <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
+            <Route path="automations" element={<AutomationsPage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
             <Route path="team" element={<TeamMembersPage />} />
             <Route path="billing" element={<BillingPage />} />
