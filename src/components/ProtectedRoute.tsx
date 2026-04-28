@@ -66,7 +66,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (billingBlocked && !isOnBillingPage) {
+  if (billingBlocked && !isOnBillingPage && !isOnOnboardingPage) {
     return <Navigate to="/dashboard/billing" replace />;
   }
 

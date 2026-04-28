@@ -1,0 +1,14 @@
+react-konva.js?v=8e06aa20:27188 Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+    at Navigate (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=3aeb782e:4505:5)
+    at ProtectedRoute (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/src/components/ProtectedRoute.tsx:25:34)
+    at RenderedRoute (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=3aeb782e:4132:5)
+    at Routes (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=3aeb782e:4602:5)
+    at Router (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=3aeb782e:4545:15)
+    at BrowserRouter (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=3aeb782e:5291:5)
+    at CustomDomainGate (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/src/App.tsx:55:29)
+    at AuthProvider (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/src/contexts/AuthContext.tsx:24:32)
+    at Provider (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/chunk-NFLE55ZY.js?v=044ed145:44:15)
+    at TooltipProvider (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=68e19efe:155:5)
+    at QueryClientProvider (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=998ecc6d:3168:3)
+    at _a (https://f9b51f44-10e9-49a6-bee2-c2cd091009ae-00-1jdihswe6y1l5.spock.replit.dev/node_modules/.vite/deps/react-helmet-async.js?v=35c243bd:627:5)
+    at App
