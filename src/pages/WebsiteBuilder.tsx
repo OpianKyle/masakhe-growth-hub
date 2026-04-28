@@ -91,7 +91,19 @@ const defaultSectionData: Record<SectionType, any> = {
   gallery: { title: "Gallery", subtitle: "Our Work", images: [{ url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=80&w=600", caption: "Image 1" }] },
   testimonials: { title: "Testimonials", subtitle: "What Customers Say", items: [{ name: "Customer", role: "Client", text: "Great service!" }] },
   contact: { title: "Contact Us", subtitle: "Get in touch today", phone: "", email: "", address: "", whatsapp: "", enableWhatsApp: false },
-  contact_form: { title: "Get in Touch", subtitle: "Fill out the form below and we'll get back to you shortly.", buttonText: "Submit Enquiry", successMessage: "Thank you! We'll be in touch shortly." },
+  contact_form: {
+    title: "Get in Touch",
+    subtitle: "Fill out the form below and we'll get back to you shortly.",
+    buttonText: "Submit Enquiry",
+    successMessage: "Thank you! We'll be in touch shortly.",
+    showPhone: true,
+    showMessage: true,
+    showService: false,
+    serviceOptions: [],
+    trustBadges: ["Free, no-obligation consultation", "Response within 24 hours", "Your data stays private"],
+    notifyEmail: "",
+    requirePhone: false,
+  },
   vehicle_listings: { title: "Our Vehicles", subtitle: "Browse our current inventory" },
 };
 

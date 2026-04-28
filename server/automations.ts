@@ -423,6 +423,70 @@ export async function sendThankYouReceipt(invoiceId: string) {
   }
 }
 
+// Send a copy of a new lead to the owner / a custom recipient.
+// Called from POST /api/leads/submit when the contact form has notifyEmail set,
+// or when the user has set up a default notification email in their account.
+export async function sendNewLeadNotification(leadId: string, recipient: string) {
+  try {
+    if (!recipient || !leadId) return;
+    const lead = await queryOne(
+      `SELECT wl.*, bp.business_name, bp.trading_name, w.slug as website_slug
+       FROM website_leads wl
+       LEFT JOIN business_profiles bp ON bp.user_id = wl.user_id
+       LEFT JOIN websites w ON w.id = wl.website_id
+       WHERE wl.id = ?`,
+      [leadId]
+    );
+    if (!lead) return;
+
+    const mailer = await getTransporterForUser(lead.user_id);
+    if (!mailer) return;
+
+    const businessName = lead.trading_name || lead.business_name || mailer.fromName;
+    const subject = `New website enquiry from ${lead.name || "a visitor"}`;
+
+    const safeMessage = lead.message ? escapeHtml(lead.message).replace(/\n/g, "<br/>") : "";
+
+    const bodyHtml = `
+      <h2 style="margin:0 0 12px;color:#1d4ed8;font-size:18px;">New lead from your website</h2>
+      <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">You've just received a new enquiry via your website's contact form.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:0 0 16px;">
+        <tr><td style="padding:6px 0;color:#64748b;font-size:13px;width:30%;">Name</td><td style="padding:6px 0;font-weight:600;color:#0f172a;font-size:14px;">${escapeHtml(lead.name || "")}</td></tr>
+        ${lead.email ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;">Email</td><td style="padding:6px 0;color:#0f172a;font-size:14px;border-top:1px solid #e2e8f0;"><a href="mailto:${escapeHtml(lead.email)}" style="color:#1d4ed8;text-decoration:none;">${escapeHtml(lead.email)}</a></td></tr>` : ""}
+        ${lead.phone ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;">Phone</td><td style="padding:6px 0;color:#0f172a;font-size:14px;border-top:1px solid #e2e8f0;"><a href="tel:${escapeHtml(lead.phone)}" style="color:#1d4ed8;text-decoration:none;">${escapeHtml(lead.phone)}</a></td></tr>` : ""}
+        ${lead.source ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;">Source</td><td style="padding:6px 0;color:#0f172a;font-size:14px;border-top:1px solid #e2e8f0;">${escapeHtml(lead.source)}</td></tr>` : ""}
+      </table>
+      ${safeMessage ? `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:0 0 16px;"><div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message</div><div style="color:#0f172a;font-size:14px;line-height:1.6;">${safeMessage}</div></div>` : ""}
+      <p style="margin:0;color:#64748b;font-size:13px;">View and manage all leads in your <a href="${process.env.APP_URL || "https://masakhegroup.co.za"}/dashboard/leads" style="color:#1d4ed8;text-decoration:none;font-weight:600;">Leads dashboard</a>.</p>
+    `;
+
+    const html = wrapEmail({
+      businessName,
+      bodyHtml,
+      fromEmail: mailer.fromEmail,
+      accent: "#1d4ed8",
+    });
+
+    await mailer.transporter.sendMail({
+      from: `"${businessName}" <${mailer.fromEmail}>`,
+      ...(lead.email ? { replyTo: lead.email } : (mailer.replyTo ? { replyTo: mailer.replyTo } : {})),
+      to: recipient,
+      subject,
+      html,
+    });
+
+    await logAutomation({
+      userId: lead.user_id,
+      type: "lead_notification",
+      targetId: leadId,
+      recipient,
+      message: `New lead notification (${lead.name})`,
+    });
+  } catch (err: any) {
+    console.error("[Automations] sendNewLeadNotification failed:", err.message);
+  }
+}
+
 export async function sendLeadAutoreply(leadId: string) {
   try {
     const lead = await queryOne(

@@ -394,15 +394,109 @@ function VehicleListingsEditor({ data, onChange }: { data: any; onChange: (d: an
 
 function ContactFormEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
   const update = (key: string, val: any) => onChange({ ...data, [key]: val });
+  const serviceOptions: string[] = Array.isArray(data.serviceOptions) ? data.serviceOptions : [];
+  const trustBadges: string[] = Array.isArray(data.trustBadges) ? data.trustBadges : [];
+
+  const updateList = (key: string, list: string[]) => update(key, list);
+  const addItem = (key: string, list: string[]) => updateList(key, [...list, ""]);
+  const setItem = (key: string, list: string[], i: number, val: string) => {
+    const next = [...list]; next[i] = val; updateList(key, next);
+  };
+  const removeItem = (key: string, list: string[], i: number) => {
+    const next = list.filter((_, idx) => idx !== i); updateList(key, next);
+  };
+
+  const Toggle = ({ label, value, onToggle, hint }: { label: string; value: boolean; onToggle: () => void; hint?: string }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-left"
+    >
+      <div className="min-w-0">
+        <div className="text-xs font-semibold text-slate-700">{label}</div>
+        {hint && <div className="text-[10px] text-slate-400">{hint}</div>}
+      </div>
+      <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${value ? "bg-blue-600" : "bg-slate-300"}`}>
+        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? "translate-x-4" : "translate-x-0.5"}`} />
+      </span>
+    </button>
+  );
+
   return (
     <div className="space-y-3">
       <div><Label className="text-xs">Section Title</Label><Input value={data.title || ""} onChange={(e) => update("title", e.target.value)} className="mt-1 h-8 text-sm" /></div>
       <div><Label className="text-xs">Subtitle</Label><Input value={data.subtitle || ""} onChange={(e) => update("subtitle", e.target.value)} className="mt-1 h-8 text-sm" /></div>
-      <div><Label className="text-xs">Button Text</Label><Input value={data.buttonText || ""} onChange={(e) => update("buttonText", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Submit Enquiry" /></div>
-      <div><Label className="text-xs">Success Message</Label><Input value={data.successMessage || ""} onChange={(e) => update("successMessage", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Thank you! We'll be in touch." /></div>
-      <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
-        Leads submitted via this form will appear in your <strong>Leads</strong> dashboard. Each submission captures the visitor's name, email, phone, and message.
-      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div><Label className="text-xs">Button Text</Label><Input value={data.buttonText || ""} onChange={(e) => update("buttonText", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Submit Enquiry" /></div>
+        <div><Label className="text-xs">Success Message</Label><Input value={data.successMessage || ""} onChange={(e) => update("successMessage", e.target.value)} className="mt-1 h-8 text-sm" placeholder="Thank you!" /></div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-100">
+        <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Form fields</Label>
+        <div className="mt-2 space-y-1.5">
+          <Toggle label="Show phone number field" value={data.showPhone !== false} onToggle={() => update("showPhone", data.showPhone === false)} />
+          {data.showPhone !== false && (
+            <Toggle label="Make phone number required" value={!!data.requirePhone} onToggle={() => update("requirePhone", !data.requirePhone)} hint="Visitors must enter a phone before submitting" />
+          )}
+          <Toggle label="Show message field" value={data.showMessage !== false} onToggle={() => update("showMessage", data.showMessage === false)} />
+          <Toggle label="Show service / interest dropdown" value={!!data.showService} onToggle={() => update("showService", !data.showService)} hint="Let visitors pick what they're enquiring about" />
+        </div>
+      </div>
+
+      {data.showService && (
+        <div className="pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Dropdown options</Label>
+            <button type="button" onClick={() => addItem("serviceOptions", serviceOptions)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ Add option</button>
+          </div>
+          {serviceOptions.length === 0 && (
+            <p className="text-[10px] text-slate-400 italic">No options yet — add at least one to use the dropdown.</p>
+          )}
+          <div className="space-y-1.5">
+            {serviceOptions.map((opt, i) => (
+              <div key={i} className="flex gap-1">
+                <Input value={opt} onChange={(e) => setItem("serviceOptions", serviceOptions, i, e.target.value)} className="h-8 text-sm" placeholder={`Option ${i + 1}`} />
+                <button type="button" onClick={() => removeItem("serviceOptions", serviceOptions, i)} className="px-2 text-red-400 hover:text-red-600">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Trust badges</Label>
+          <button type="button" onClick={() => addItem("trustBadges", trustBadges)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ Add badge</button>
+        </div>
+        <p className="text-[10px] text-slate-400 mb-1.5">Short reassurances shown next to the form (e.g. "Free quote", "Response within 24 hours").</p>
+        <div className="space-y-1.5">
+          {trustBadges.map((b, i) => (
+            <div key={i} className="flex gap-1">
+              <Input value={b} onChange={(e) => setItem("trustBadges", trustBadges, i, e.target.value)} className="h-8 text-sm" placeholder={`Badge ${i + 1}`} />
+              <button type="button" onClick={() => removeItem("trustBadges", trustBadges, i)} className="px-2 text-red-400 hover:text-red-600">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-100">
+        <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Notifications</Label>
+        <div className="mt-1.5">
+          <Label className="text-xs">Email me at (optional)</Label>
+          <Input
+            type="email"
+            value={data.notifyEmail || ""}
+            onChange={(e) => update("notifyEmail", e.target.value)}
+            className="mt-1 h-8 text-sm"
+            placeholder="leads@yourbusiness.co.za"
+          />
+          <p className="text-[10px] text-slate-400 mt-1">When set, every new submission also gets emailed here. Leads always appear in your Leads dashboard.</p>
+        </div>
+      </div>
     </div>
   );
 }

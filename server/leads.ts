@@ -2,13 +2,13 @@ import { Router } from "express";
 import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
-import { sendLeadAutoreply } from "./automations";
+import { sendLeadAutoreply, sendNewLeadNotification } from "./automations";
 
 export const leadsRouter = Router();
 
 leadsRouter.post("/submit", async (req, res) => {
   try {
-    const { websiteId, vehicleId, name, email, phone, message, source } = req.body;
+    const { websiteId, vehicleId, name, email, phone, message, source, notifyEmail } = req.body;
     if (!websiteId || !name) {
       return res.status(400).json({ error: "Website ID and name are required" });
     }
@@ -23,9 +23,17 @@ leadsRouter.post("/submit", async (req, res) => {
       [id, websiteId, website.owner_id, vehicleId || null, name, email || null, phone || null, message || null, source || "contact_form"]
     );
 
-    // Fire auto-reply (non-blocking)
+    // Fire auto-reply to the visitor (non-blocking)
     if (email) {
       sendLeadAutoreply(id).catch(() => {});
+    }
+
+    // Notify the business owner / configured recipient (non-blocking)
+    const recipient = (notifyEmail && typeof notifyEmail === "string" && /\S+@\S+\.\S+/.test(notifyEmail))
+      ? notifyEmail.trim()
+      : null;
+    if (recipient) {
+      sendNewLeadNotification(id, recipient).catch(() => {});
     }
 
     res.json({ ok: true, id });

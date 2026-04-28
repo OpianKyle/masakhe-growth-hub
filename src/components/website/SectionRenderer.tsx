@@ -1667,12 +1667,25 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", service: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
   const [error, setError] = useState("");
+
+  const showPhone = data.showPhone !== false;
+  const showMessage = data.showMessage !== false;
+  const requirePhone = !!data.requirePhone;
+  const serviceOptions: string[] = Array.isArray(data.serviceOptions)
+    ? data.serviceOptions.filter((o: any) => typeof o === "string" && o.trim().length > 0)
+    : [];
+  const showService = !!data.showService && serviceOptions.length > 0;
+  const trustBadges: string[] = (Array.isArray(data.trustBadges) ? data.trustBadges : [])
+    .filter((b: any) => typeof b === "string" && b.trim().length > 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email) return;
+    if (requirePhone && showPhone && !form.phone) {
+      setError("Please enter your phone number.");
+      return;
+    }
     if (!site.id) { setError("Unable to submit — site not configured."); return; }
     setSubmitting(true);
     setError("");
@@ -1684,9 +1697,10 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
           websiteId: site.id,
           name: form.name,
           email: form.email,
-          phone: form.phone,
-          message: form.service ? `[${form.service}] ${form.message}` : form.message,
+          phone: showPhone ? form.phone : "",
+          message: form.service ? `[${form.service}] ${showMessage ? form.message : ""}`.trim() : (showMessage ? form.message : ""),
           source: "contact_form",
+          notifyEmail: data.notifyEmail || undefined,
         }),
       });
       if (!res.ok) throw new Error("Submission failed");
@@ -1719,48 +1733,53 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
     );
   }
 
+  const inputClass = `w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`;
+  const labelClass = `block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`;
+
   const formFields = (
     <>
       <div>
-        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Full Name *</label>
-        <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+        <label className={labelClass}>Full Name *</label>
+        <input type="text" required autoComplete="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+          className={inputClass}
           placeholder="e.g. John Mokoena" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className={showPhone ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : ""}>
         <div>
-          <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Email *</label>
-          <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-            className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
+          <label className={labelClass}>Email *</label>
+          <input type="email" required autoComplete="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+            className={inputClass}
             placeholder="john@example.co.za" />
         </div>
+        {showPhone && (
+          <div>
+            <label className={labelClass}>Phone {requirePhone ? "*" : ""}</label>
+            <input type="tel" autoComplete="tel" required={requirePhone} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+              className={inputClass}
+              placeholder="+27 82 123 4567" />
+          </div>
+        )}
+      </div>
+      {showService && (
         <div>
-          <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Phone</label>
-          <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-            className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
-            placeholder="+27 82 123 4567" />
+          <label className={labelClass}>How can we help?</label>
+          <select value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
+            className={inputClass}>
+            <option value="">Please choose…</option>
+            {serviceOptions.map((opt, i) => (
+              <option key={i} value={opt}>{opt}</option>
+            ))}
+          </select>
         </div>
-      </div>
-      <div>
-        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Service of Interest</label>
-        <select value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
-          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none" : "rounded-lg border border-slate-200 bg-white"}`}>
-          <option value="">Select a service...</option>
-          <option value="Insurance">Insurance</option>
-          <option value="Financial Planning">Financial Planning</option>
-          <option value="Employee Benefits">Employee Benefits</option>
-          <option value="Medical Aid">Medical Aid</option>
-          <option value="Life Cover">Life Cover</option>
-          <option value="Vehicle Finance">Vehicle Finance</option>
-          <option value="General Enquiry">General Enquiry</option>
-        </select>
-      </div>
-      <div>
-        <label className={`block text-sm font-medium mb-1.5 ${isCinematic ? "text-white/60 tracking-wide uppercase text-xs" : "text-slate-700"}`}>Message</label>
-        <textarea rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-          className={`w-full px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow resize-none ${isCinematic ? "bg-white/[0.06] border border-white/10 text-white rounded-none placeholder:text-white/25" : "rounded-lg border border-slate-200 bg-white"}`}
-          placeholder="Tell us how we can help..." />
-      </div>
+      )}
+      {showMessage && (
+        <div>
+          <label className={labelClass}>Message</label>
+          <textarea rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+            className={`${inputClass} resize-none`}
+            placeholder="Tell us how we can help..." />
+        </div>
+      )}
       <button type="submit" disabled={submitting}
         className={`w-full py-3.5 font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50 ${isCinematic ? "rounded-none text-black bg-white tracking-widest uppercase" : "rounded-lg text-white"}`}
         style={!isCinematic ? { backgroundColor: isProfessional ? site.theme.accent : site.theme.primary } : undefined}>
@@ -1770,6 +1789,9 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
       <p className={`text-xs text-center ${isCinematic ? "text-white/25" : "text-slate-400"}`}>Your information is secure and will never be shared.</p>
     </>
   );
+
+  const defaultBadges = ["Free, no-obligation consultation", "Response within 24 hours", "Your data stays private"];
+  const badgesToShow = trustBadges.length ? trustBadges : defaultBadges;
 
   if (isCinematic) {
     return (
@@ -1782,7 +1804,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
                 <h2 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-6">{data.title || "Get in Touch"}</h2>
                 <p className="text-white/40 text-lg font-light leading-relaxed mb-10">{data.subtitle}</p>
                 <div className="space-y-6">
-                  {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                  {badgesToShow.map((text, i) => (
                     <div key={i} className="flex items-center gap-4">
                       <div className="h-px w-6" style={{ backgroundColor: site.theme.primary }} />
                       <span className="text-sm text-white/50 font-light">{text}</span>
@@ -1812,7 +1834,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
                 <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
                 <p className="text-white/60 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
                 <div className="space-y-4">
-                  {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                  {badgesToShow.map((text, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${site.theme.accent}30` }}>
                         <CheckCircle2 className="h-4 w-4" style={{ color: site.theme.accent }} />
@@ -1839,7 +1861,7 @@ function ContactFormSection({ data, site }: { data: any; site: SiteConfig }) {
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-4">{data.title || "Get in Touch"}</h2>
               <p className="text-slate-500 text-lg mb-8 leading-relaxed">{data.subtitle}</p>
               <div className="space-y-4">
-                {["No-obligation consultation", "Response within 24 hours", "Expert advice tailored to you"].map((text, i) => (
+                {badgesToShow.map((text, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-600">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${site.theme.primary}12` }}>
                       <CheckCircle2 className="h-5 w-5" style={{ color: site.theme.primary }} />
