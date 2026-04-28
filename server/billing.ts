@@ -34,15 +34,17 @@ async function ensureDefaultWorkspace(userId: string): Promise<string> {
 }
 
 /**
- * First-month promo codes. Each code grants a percentage discount on the
- * customer's very first invoice only — recurring monthly debits stay at the
- * full plan price. A user can only redeem ONE first-month promo, ever, and
- * only if they have never started a free trial or had an active subscription.
+ * First-3-months promo codes. Each code grants a percentage discount on the
+ * customer's first three monthly debits. After the 3-month promo period the
+ * subscription naturally ends and the user is prompted to re-subscribe at the
+ * full plan price. A user can only redeem ONE promo, ever, and only if they
+ * have never started a free trial or had an active subscription.
  *
  * To add a new code, just add another entry. Codes are matched case-insensitively.
  */
+const PROMO_MONTHS = 3;
 const PROMO_CODES: Record<string, { percentOff: number; label: string }> = {
-  WELCOME50: { percentOff: 50, label: "50% off your first month" },
+  WELCOME50: { percentOff: 50, label: "50% off your first 3 months" },
 };
 
 function normalisePromoCode(code: string | undefined | null): string | null {
@@ -602,11 +604,22 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
     })();
     const startDateStr = startDateObj.toISOString().split("T")[0];
 
+    // When a promo is applied we run a 3-month half-price subscription that
+    // ends naturally; otherwise the subscription runs for 2 years before
+    // requiring renewal.
     const endDateObj = new Date(startDateObj);
-    endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    if (appliedPromoCode) {
+      endDateObj.setMonth(endDateObj.getMonth() + (PROMO_MONTHS - 1));
+    } else {
+      endDateObj.setFullYear(endDateObj.getFullYear() + 2);
+    }
     const endDateStr = endDateObj.toISOString().split("T")[0];
 
     const userRecord = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+
+    // Recurring debit value: discounted for the duration of the promo,
+    // otherwise the full plan price.
+    const collectionValue = appliedPromoCode ? amount : recurringAmount;
 
     const fields: Record<string, string> = {
       puid,
@@ -623,7 +636,7 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       Qty1: "1",
       ItemRef1: plan.code,
       ItemDescr1: appliedPromoCode
-        ? `${plan.name} Plan — first month ${appliedPromoCode}`
+        ? `${plan.name} Plan — first ${PROMO_MONTHS} months ${appliedPromoCode}`
         : `${plan.name} Plan Subscription`,
       ItemAmount1: amount,
       ShippingCost: "0.00",
@@ -639,9 +652,10 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       accountNumber: `ACC_${Date.now()}`,
       startDate: startDateStr,
       endDate: endDateStr,
-      // First payment (Amount) is the discounted first-month amount; the
-      // recurring monthly debit (collectionValue) stays at the full plan price.
-      collectionValue: recurringAmount,
+      // When a promo is applied, every monthly debit during the promo window
+      // (including the first) stays at the discounted rate. After the 3-month
+      // window the subscription ends and the user re-subscribes at full price.
+      collectionValue,
       contactNumber: contactNumber || "",
       mobileNumber: mobileNumber || contactNumber || "",
       emailAddress: email || userRecord?.email || "",
@@ -803,7 +817,7 @@ billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res
       Qty1: "1",
       ItemRef1: plan.code,
       ItemDescr1: appliedPromoCode
-        ? `${plan.name} — first month ${appliedPromoCode}`
+        ? `${plan.name} — first ${PROMO_MONTHS} months ${appliedPromoCode}`
         : `${plan.name} – Monthly Subscription`,
       ItemAmount1: amount,
       ShippingCost: "0.00",

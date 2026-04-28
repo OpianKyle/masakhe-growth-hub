@@ -13,7 +13,6 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ResellerPortal from "./pages/ResellerPortal";
 import AdminDashboard from "./pages/AdminDashboard";
-import Onboarding from "./pages/Onboarding";
 import PublishedSite from "./pages/PublishedSite";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
 import PricingPage from "./pages/PricingPage";
@@ -104,7 +103,6 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/set-password" element={<SetPasswordPage />} />
               <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

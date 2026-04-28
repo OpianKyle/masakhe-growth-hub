@@ -56,7 +56,6 @@ describe("LoginPage redirect logic", () => {
       ok: true,
       isAdmin: true,
       isReseller: true,
-      needsOnboarding: false,
     });
 
     renderLoginPage();
@@ -73,7 +72,6 @@ describe("LoginPage redirect logic", () => {
       ok: true,
       isAdmin: false,
       isReseller: true,
-      needsOnboarding: false,
     });
 
     renderLoginPage();
@@ -89,7 +87,6 @@ describe("LoginPage redirect logic", () => {
       ok: true,
       isAdmin: false,
       isReseller: false,
-      needsOnboarding: false,
     });
 
     renderLoginPage();

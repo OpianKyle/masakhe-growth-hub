@@ -43,9 +43,6 @@ export default function LoginPage() {
       if (result.isAdmin) {
         toast.success("Welcome back!");
         navigate("/admin", { replace: true });
-      } else if (result.needsOnboarding && !result.isReseller) {
-        toast.success("Welcome! Let's finish setting up your account.");
-        navigate("/onboarding", { replace: true });
       } else if (result.isReseller) {
         toast.success("Welcome back, Partner!");
         navigate("/partner", { replace: true });

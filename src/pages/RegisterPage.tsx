@@ -50,7 +50,6 @@ export default function RegisterPage() {
     surname: "",
     email: "",
     cell: "",
-    businessName: "",
     password: "",
     confirmPassword: "",
   });
@@ -80,11 +79,7 @@ export default function RegisterPage() {
       password: form.password,
       fullName: `${form.firstName} ${form.surname}`.trim(),
       referralCode,
-      businessData: form.businessName
-        ? { businessName: form.businessName, phone: form.cell || null }
-        : form.cell
-        ? { phone: form.cell }
-        : undefined,
+      businessData: form.cell ? { phone: form.cell } : undefined,
     });
     setLoading(false);
 
@@ -280,18 +275,6 @@ export default function RegisterPage() {
                   onChange={e => set("cell", e.target.value)}
                   autoComplete="tel"
                 />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-slate-700">Business Name</Label>
-                <Input
-                  placeholder="e.g. Dlamini Trading"
-                  className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white"
-                  value={form.businessName}
-                  onChange={e => set("businessName", e.target.value)}
-                  autoComplete="organization"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">You can update this later in Settings</p>
               </div>
 
               <div>

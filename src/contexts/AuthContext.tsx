@@ -40,7 +40,7 @@ interface AuthContextType {
   loading: boolean;
   isImpersonating: boolean;
   originalAdminName: string | null;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsOnboarding?: boolean; isReseller?: boolean; isAdmin?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -97,10 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         // Pull full /me so teamMember context (permissions, owner info) is loaded.
         refreshUser();
-        const needsOnboarding = !data.user.popia_consent;
         const isReseller = !!data.user.is_reseller;
         const isAdmin = data.user.role === "admin";
-        return { ok: true, needsOnboarding, isReseller, isAdmin };
+        return { ok: true, isReseller, isAdmin };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {

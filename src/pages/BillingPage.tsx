@@ -78,14 +78,35 @@ const planOptions = [
     name: "Enterprize",
     price: "R599",
     priceCents: 59900,
-    description: "Single user dashboard, Website Builder, Social Media Hub, Biz Connect, WhatsApp Support Portal",
+    description: "Get online with a website, social presence and WhatsApp support.",
+    features: [
+      "7-Day Free Trial",
+      "Single User Dashboard",
+      "Overview Dashboard",
+      "Website Builder",
+      "Social Media Hub",
+      "Biz Connect",
+      "WhatsApp Support Portal",
+    ],
   },
   {
     code: "pro",
     name: "Enterprize Plus",
     price: "R899",
     priceCents: 89900,
-    description: "Everything in Enterprize + Financial Transactions, Leads & Clients, Campaigns, Priority Support",
+    description: "Everything in Enterprize plus financials, clients and campaigns.",
+    features: [
+      "7-Day Free Trial",
+      "Single User Dashboard",
+      "Overview Dashboard",
+      "Website Builder",
+      "Social Media Hub",
+      "Biz Connect",
+      "Financial Transactions (Income/Expenses, Quotes/Invoices)",
+      "Manage Leads & Clients",
+      "Manage Campaigns",
+      "Priority Support",
+    ],
     popular: true,
   },
   {
@@ -93,7 +114,22 @@ const planOptions = [
     name: "Enterprize Premium",
     price: "R1,499",
     priceCents: 149900,
-    description: "Up to 4 users (permission-based) + Manage Employees, Payroll, all future updates and Premium Support",
+    description: "Full multi-user suite with payroll, employee management and premium support.",
+    features: [
+      "7-Day Free Trial",
+      "Multiple User Dashboard — Up to 4 Users, Permission Based",
+      "Overview Dashboard",
+      "Website Builder",
+      "Social Media Hub",
+      "Biz Connect",
+      "Financial Transactions (Income/Expenses, Quotes/Invoices)",
+      "Manage Leads & Clients",
+      "Manage Campaigns",
+      "Manage Employees",
+      "Manage Payroll",
+      "All Future Updates for Free",
+      "Premium Support",
+    ],
   },
 ];
 
@@ -534,6 +570,14 @@ function InlineSubscribeForm({ onSuccess, promo }: { onSuccess: () => void; prom
                             {p.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
+                          <ul className="mt-3 space-y-1.5">
+                            {p.features.map((feat) => (
+                              <li key={feat} className="flex items-start gap-2 text-xs text-foreground/80">
+                                <Check className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
+                                <span>{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </label>
                     ))}
