@@ -142,7 +142,7 @@ export default function DashboardPage() {
         setPlanCode(code && PLAN_TIER[code] ? code : null);
       })
       .catch(() => { setSubscriptionActive(false); setPlanCode(null); });
-  }, [user, location.search]);
+  }, [user, location.pathname, location.search]);
 
   const userTier = planCode ? PLAN_TIER[planCode] : 0;
   const meetsPlan = (req?: PlanCode) => !req || userTier >= PLAN_TIER[req];
