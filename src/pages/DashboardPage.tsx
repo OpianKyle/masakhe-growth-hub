@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles
+  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -25,6 +25,7 @@ import CompanyVerifyPage from "./CompanyVerifyPage";
 import FundingApplicationPage from "./FundingApplicationPage";
 import VehicleManagementPage from "./VehicleManagementPage";
 import LeadsPage from "./LeadsPage";
+import InventoryPage from "./InventoryPage";
 import PayrollPage from "./PayrollPage";
 import LeavePage from "./LeavePage";
 import ResellerDashboard from "./ResellerDashboard";
@@ -96,6 +97,7 @@ const baseNavItems: NavItem[] = [
     ],
   },
   { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
+  { icon: Package, label: "Inventory", path: "/dashboard/inventory", requiresPlan: "pro", perm: "inventory" },
   { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
   { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "pro", perm: "automations" },
   {
@@ -583,6 +585,7 @@ export default function DashboardPage() {
             <Route path="leave" element={<LeavePage />} />
             <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="clients" element={<ClientsPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="automations" element={<AutomationsPage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />

@@ -28,6 +28,7 @@ import { documentsRouter } from "./documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
+import { inventoryRouter } from "./inventory";
 import { payrollRouter } from "./payroll";
 import { clientsRouter } from "./clients";
 import { campaignsRouter } from "./campaigns";
@@ -98,6 +99,7 @@ async function main() {
   app.use("/api/documents", docPdfRouter);
   app.use("/api/vehicles", vehicleRouter);
   app.use("/api/leads", leadsRouter);
+  app.use("/api/inventory", inventoryRouter);
   app.use("/api/payroll", payrollRouter);
   app.use("/api/clients", clientsRouter);
   app.use("/api/campaigns", campaignsRouter);
