@@ -325,7 +325,6 @@ export default function DashboardOverview() {
                 { icon: Globe, label: "Website", color: "gradient-hero", path: "/dashboard/website" },
                 { icon: Receipt, label: "Invoice", color: "gradient-gold", path: "/dashboard/invoices" },
                 { icon: Wallet, label: "Finance", color: "gradient-warm", path: "/dashboard/finance" },
-                { icon: ClipboardCheck, label: "Funding", color: "gradient-hero", path: "/dashboard/funding" },
                 { icon: BookOpen, label: "Biz Plan", color: "gradient-warm", path: "/dashboard/business-plan" },
                 { icon: HandCoins, label: "Proposal", color: "gradient-gold", path: "/dashboard/funding-proposal" },
               ].map((action) => (

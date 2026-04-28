@@ -6,6 +6,23 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 
 import { useToast } from "@/components/ui/use-toast";
+import {
+  User,
+  Building2,
+  CreditCard,
+  ServerCog,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Camera,
+  Upload,
+  Trash2,
+  Save,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
