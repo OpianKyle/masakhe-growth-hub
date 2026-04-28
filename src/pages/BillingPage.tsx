@@ -8,7 +8,7 @@ import {
   CreditCard, Calendar, AlertTriangle,
   Loader2, Shield, CalendarDays, Wallet,
   User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
-  BellRing, Lock,
+  BellRing, Lock, Sparkles, Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1068,6 +1068,135 @@ interface AccessStatus {
   amountCents?: number;
 }
 
+function TrialPickerSection({ onStarted }: { onStarted: () => void }) {
+  const [selected, setSelected] = useState<string>("pro");
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleStartTrial = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/billing/start-trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ planCode: selected }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({
+          title: "Couldn't start your trial",
+          description: json.error || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const days = json.trialDays || 14;
+      toast({
+        title: `Your ${days}-day free trial has started`,
+        description: "Enjoy full access to your plan. Add a payment method anytime before it ends.",
+      });
+      onStarted();
+    } catch {
+      toast({
+        title: "Network error",
+        description: "Couldn't start your trial. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedPlan = planOptions.find((p) => p.code === selected)!;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 }}
+      className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-6"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center shrink-0">
+          <Sparkles className="h-7 w-7 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-2xl font-bold font-heading text-foreground">Pick your plan to start your free trial</h3>
+          <p className="text-muted-foreground text-sm mt-1">
+            Choose the plan that best fits your business. You'll get <strong>14 days free</strong> with the full features of your selected plan — no card required to start.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {planOptions.map((p) => {
+          const isSelected = selected === p.code;
+          const isPopular = (p as any).popular;
+          return (
+            <label
+              key={p.code}
+              className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all ${
+                isSelected
+                  ? "border-primary bg-primary/5 shadow-md"
+                  : "border-border hover:border-primary/40 bg-background"
+              }`}
+            >
+              <input
+                type="radio"
+                name="trialPlan"
+                value={p.code}
+                checked={isSelected}
+                onChange={() => setSelected(p.code)}
+                className="sr-only"
+              />
+              {isPopular && (
+                <span className="absolute -top-2 right-4 gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                  Popular
+                </span>
+              )}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <span className="font-bold text-foreground font-heading">{p.name}</span>
+                {isSelected && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground shrink-0">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xl font-bold font-heading text-foreground">
+                {p.price}
+                <span className="text-xs font-normal text-muted-foreground">/month</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{p.description}</p>
+            </label>
+          );
+        })}
+      </div>
+
+      <div className="rounded-lg bg-muted/40 border border-border/60 p-4 text-sm text-muted-foreground flex items-start gap-3">
+        <Shield className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+        <div>
+          You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>.
+          When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.
+        </div>
+      </div>
+
+      <Button
+        size="lg"
+        className="w-full"
+        onClick={handleStartTrial}
+        disabled={submitting}
+      >
+        {submitting ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</>
+        ) : (
+          <><Rocket className="h-4 w-4 mr-2" />Start my 14-day free trial of {selectedPlan.name}</>
+        )}
+      </Button>
+    </motion.div>
+  );
+}
+
 interface InvoiceInfo {
   id: string;
   invoice_number: string;
@@ -1266,7 +1395,7 @@ export default function BillingPage() {
         <InvoicePayForm invoice={invoiceInfo} onSuccess={fetchBilling} />
       )}
 
-      {accessStatus?.blocked && (
+      {accessStatus?.blocked && accessStatus.subscriptionStatus !== "NONE" && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1276,9 +1405,15 @@ export default function BillingPage() {
             <Lock className="h-5 w-5 text-destructive" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-destructive text-sm">Account Access Suspended</h4>
+            <h4 className="font-semibold text-destructive text-sm">
+              {accessStatus.subscriptionStatus === "TRIAL"
+                ? "Your free trial has ended"
+                : "Account Access Suspended"}
+            </h4>
             <p className="text-sm text-muted-foreground mt-1">
-              Your account has been suspended because payment is overdue. Please settle your outstanding balance to restore full access to all features.
+              {accessStatus.subscriptionStatus === "TRIAL"
+                ? "Subscribe below to continue using your account and keep all your data."
+                : "Your account has been suspended because payment is overdue. Please settle your outstanding balance to restore full access to all features."}
             </p>
           </div>
         </motion.div>
@@ -1319,7 +1454,9 @@ export default function BillingPage() {
         </motion.div>
       )}
 
-      {(!subscription || subscription.status === "CANCELLED") ? (
+      {!subscription ? (
+        <TrialPickerSection onStarted={() => { fetchBilling(); fetchAccessStatus(); }} />
+      ) : subscription.status === "CANCELLED" ? (
         <>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1331,9 +1468,7 @@ export default function BillingPage() {
               <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
                 <CreditCard className="h-7 w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold font-heading text-foreground">
-                {subscription?.status === "CANCELLED" ? "Re-activate Your Subscription" : "Activate Your Subscription"}
-              </h3>
+              <h3 className="text-xl font-bold font-heading text-foreground">Re-activate Your Subscription</h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
                 Pay this month manually or set up an automatic monthly debit order.
               </p>
@@ -1366,6 +1501,51 @@ export default function BillingPage() {
               </div>
             </div>
           </motion.div>
+
+          {subscription.status === "TRIAL" && accessStatus?.blocked && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 shadow-card space-y-5"
+            >
+              <div className="text-center space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Lock className="h-6 w-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold font-heading text-foreground">Free trial ended — subscribe to continue</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Your free trial of {plan?.name} has ended. Pay this month manually or set up an automatic monthly debit order to keep using your account.
+                </p>
+              </div>
+              <SubscribeTabSection onSuccess={fetchBilling} />
+            </motion.div>
+          )}
+
+          {subscription.status === "TRIAL" && !accessStatus?.blocked && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="rounded-xl border border-border bg-card p-6 shadow-card space-y-4"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl gradient-hero flex items-center justify-center shrink-0">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold font-heading text-foreground">Free trial active</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You're trialling <strong className="text-foreground">{plan?.name}</strong>
+                    {subscription.trial_end_at ? <> until <strong className="text-foreground">{formatDate(subscription.trial_end_at)}</strong></> : null}.
+                    Subscribe below anytime to keep your account active when the trial ends.
+                  </p>
+                </div>
+              </div>
+              <Separator />
+              <SubscribeTabSection onSuccess={fetchBilling} />
+            </motion.div>
+          )}
 
           {subscription.status === "ACTIVE" && subscription.next_billing_at && (
             <motion.div

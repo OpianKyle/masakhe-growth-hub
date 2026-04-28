@@ -104,19 +104,10 @@ authRouter.post("/register", async (req, res) => {
       [randomUUID(), wsId, userId, "owner", now]
     );
 
-    const starterPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'starter' LIMIT 1");
-    if (starterPlan) {
-      const isPartner = businessData?.businessStatus === "reseller";
-      const trialDays = isPartner ? 30 : 14;
-      const trialStart = new Date();
-      const trialEnd = new Date(trialStart);
-      trialEnd.setDate(trialEnd.getDate() + trialDays);
-      await execute(
-        `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
-         VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
-        [wsId, starterPlan.id, trialStart.toISOString(), trialEnd.toISOString(), now, now]
-      );
-    }
+    // Trial subscription is no longer auto-created on registration.
+    // After signup the user is redirected to /dashboard/billing where they
+    // pick a plan and the trial is started against that plan via
+    // POST /api/billing/start-trial.
 
     if (businessData?.businessStatus === "reseller") {
       await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});

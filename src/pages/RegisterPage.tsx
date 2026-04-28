@@ -80,8 +80,8 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      toast.success("Welcome to Masakhe! Let's get started.");
-      navigate("/dashboard");
+      toast.success("Welcome to Masakhe! Pick a plan to start your free trial.");
+      navigate("/dashboard/billing");
     } else {
       toast.error(result.error || "Registration failed");
     }

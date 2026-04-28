@@ -286,7 +286,7 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
       [userId]
     );
     if (!workspace) {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: null });
+      return res.json({ blocked: true, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
     }
 
     const subscription = await queryOne(
@@ -300,7 +300,8 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
     );
 
     if (!subscription) {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: null });
+      // Brand-new account that hasn't picked a plan yet — force them to /dashboard/billing
+      return res.json({ blocked: true, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
     }
 
     const now = new Date();
@@ -357,6 +358,68 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+billingRouter.post("/start-trial", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { planCode } = req.body || {};
+
+    if (!planCode || !["starter", "pro", "premium"].includes(planCode)) {
+      return res.status(400).json({ error: "Invalid plan code" });
+    }
+
+    const plan = await queryOne("SELECT id, code FROM billing_plans WHERE code = ?", [planCode]);
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+
+    const workspaceId = await ensureDefaultWorkspace(userId);
+
+    // Don't allow starting another trial if one already exists (active or expired)
+    const existingTrial = await queryOne(
+      "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? AND status = 'TRIAL' ORDER BY created_at DESC LIMIT 1",
+      [workspaceId]
+    );
+    if (existingTrial) {
+      return res.status(400).json({ error: "A trial has already been started for this account." });
+    }
+
+    const existingActive = await queryOne(
+      "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status = 'ACTIVE'",
+      [workspaceId]
+    );
+    if (existingActive) {
+      return res.status(400).json({ error: "You already have an active subscription." });
+    }
+
+    const user = await queryOne(
+      "SELECT bp.business_status FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
+      [userId]
+    );
+    const isPartner = user?.business_status === "reseller";
+    const trialDays = isPartner ? 30 : 14;
+
+    const trialStart = new Date();
+    const trialEnd = new Date(trialStart);
+    trialEnd.setDate(trialEnd.getDate() + trialDays);
+    const now = new Date().toISOString();
+
+    await execute(
+      `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
+       VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
+      [workspaceId, plan.id, trialStart.toISOString(), trialEnd.toISOString(), now, now]
+    );
+
+    res.json({
+      ok: true,
+      planCode: plan.code,
+      trialDays,
+      trialEndsAt: trialEnd.toISOString(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to start trial" });
   }
 });
 
