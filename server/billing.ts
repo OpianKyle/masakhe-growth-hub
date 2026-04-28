@@ -33,6 +33,106 @@ async function ensureDefaultWorkspace(userId: string): Promise<string> {
   return wsId;
 }
 
+/**
+ * First-month promo codes. Each code grants a percentage discount on the
+ * customer's very first invoice only — recurring monthly debits stay at the
+ * full plan price. A user can only redeem ONE first-month promo, ever, and
+ * only if they have never started a free trial or had an active subscription.
+ *
+ * To add a new code, just add another entry. Codes are matched case-insensitively.
+ */
+const PROMO_CODES: Record<string, { percentOff: number; label: string }> = {
+  WELCOME50: { percentOff: 50, label: "50% off your first month" },
+};
+
+function normalisePromoCode(code: string | undefined | null): string | null {
+  if (!code) return null;
+  const trimmed = String(code).trim().toUpperCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Eligibility for a first-month promo:
+ *  - Code exists in PROMO_CODES
+ *  - User has never marked first_month_promo_used
+ *  - User has no past or present trial / active / past-due subscription on any
+ *    of their workspaces (i.e. this is their first paid month)
+ */
+async function checkPromoEligibility(userId: string, rawCode: string): Promise<{
+  eligible: boolean;
+  reason?: string;
+  code?: string;
+  percentOff?: number;
+  label?: string;
+}> {
+  const code = normalisePromoCode(rawCode);
+  if (!code) return { eligible: false, reason: "No code provided" };
+
+  const promo = PROMO_CODES[code];
+  if (!promo) return { eligible: false, reason: "This promo code is not valid" };
+
+  const user = await queryOne(
+    "SELECT first_month_promo_used FROM users WHERE id = ?",
+    [userId]
+  );
+  if (user?.first_month_promo_used) {
+    return {
+      eligible: false,
+      code,
+      percentOff: promo.percentOff,
+      label: promo.label,
+      reason: "You've already used a first-month discount on this account",
+    };
+  }
+
+  // Look across every workspace this user owns / belongs to. If any of them
+  // have ever held a TRIAL / ACTIVE / PAST_DUE subscription, they don't
+  // qualify for a first-month promo any more.
+  const priorSub = await queryOne(
+    `SELECT bs.id, bs.status
+       FROM billing_subscriptions bs
+       JOIN workspace_members wm ON wm.workspace_id = bs.workspace_id
+      WHERE wm.user_id = ?
+        AND bs.status IN ('TRIAL','ACTIVE','PAST_DUE','CANCELLED')
+      LIMIT 1`,
+    [userId]
+  );
+  if (priorSub) {
+    return {
+      eligible: false,
+      code,
+      percentOff: promo.percentOff,
+      label: promo.label,
+      reason:
+        priorSub.status === "TRIAL"
+          ? "Free trial users aren't eligible for the first-month discount"
+          : "This discount is only for brand-new accounts",
+    };
+  }
+
+  return {
+    eligible: true,
+    code,
+    percentOff: promo.percentOff,
+    label: promo.label,
+  };
+}
+
+/**
+ * GET /api/billing/promo/:code
+ * Quick check the front-end uses to decide whether to show the discounted
+ * "Start today" button instead of (or alongside) the free trial.
+ */
+billingRouter.get("/promo/:code", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const result = await checkPromoEligibility(userId, req.params.code);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ eligible: false, reason: err.message });
+  }
+});
+
 billingRouter.get("/terms-pdf", async (_req, res) => {
   try {
     const pdf = await PDFDocument.create();
@@ -437,6 +537,7 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       shippingAddress1,
       shippingAddress2,
       shippingAddress3,
+      promoCode: rawPromoCode,
     } = req.body;
 
     if (!planCode || !['starter', 'pro', 'premium'].includes(planCode)) {
@@ -462,14 +563,31 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       return res.status(400).json({ error: "You already have an active subscription" });
     }
 
+    // Validate the promo code (if any) server-side. We never trust the
+    // discounted amount from the client — we re-derive it here and only apply
+    // it when the user is genuinely eligible.
+    let appliedPromoCode: string | null = null;
+    let firstMonthCents = plan.price_cents;
+    if (rawPromoCode) {
+      const promo = await checkPromoEligibility(userId, rawPromoCode);
+      if (promo.eligible && promo.percentOff) {
+        appliedPromoCode = promo.code!;
+        firstMonthCents = Math.max(
+          100,
+          Math.round(plan.price_cents * (100 - promo.percentOff) / 100)
+        );
+      }
+    }
+
     const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
     const merchantRef = `SUB_${refSuffix}`;
-    const amount = (plan.price_cents / 100).toFixed(2);
+    const amount = (firstMonthCents / 100).toFixed(2);
+    const recurringAmount = (plan.price_cents / 100).toFixed(2);
     const puid = randomUUID();
 
     await execute(
-      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, ?, 'PENDING', ?)",
-      [workspaceId, plan.id, plan.price_cents, plan.currency, merchantRef]
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, original_amount_cents, promo_code, currency, status, merchant_ref) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)",
+      [workspaceId, plan.id, firstMonthCents, plan.price_cents, appliedPromoCode, plan.currency, merchantRef]
     );
 
     const token = generateSubscriptionToken(merchantRef, amount);
@@ -504,10 +622,14 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       Variable2: merchantRef,
       Qty1: "1",
       ItemRef1: plan.code,
-      ItemDescr1: `${plan.name} Plan Subscription`,
+      ItemDescr1: appliedPromoCode
+        ? `${plan.name} Plan — first month ${appliedPromoCode}`
+        : `${plan.name} Plan Subscription`,
       ItemAmount1: amount,
       ShippingCost: "0.00",
-      Discount: "0.00",
+      Discount: appliedPromoCode
+        ? ((plan.price_cents - firstMonthCents) / 100).toFixed(2)
+        : "0.00",
       Recipient: recipientName || userRecord?.full_name || "Customer",
       ShippingAddress1: shippingAddress1 || "",
       ShippingAddress2: shippingAddress2 || "",
@@ -517,7 +639,9 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       accountNumber: `ACC_${Date.now()}`,
       startDate: startDateStr,
       endDate: endDateStr,
-      collectionValue: amount,
+      // First payment (Amount) is the discounted first-month amount; the
+      // recurring monthly debit (collectionValue) stays at the full plan price.
+      collectionValue: recurringAmount,
       contactNumber: contactNumber || "",
       mobileNumber: mobileNumber || contactNumber || "",
       emailAddress: email || userRecord?.email || "",
@@ -624,7 +748,7 @@ billingRouter.post("/invoice-payment", requireAuth, requireOwner, async (req, re
 billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { planCode, recipientName, email, contactNumber } = req.body;
+    const { planCode, recipientName, email, contactNumber, promoCode: rawPromoCode } = req.body;
 
     if (!planCode || !["starter", "pro", "premium"].includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
@@ -636,15 +760,29 @@ billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res
     const plan = await queryOne("SELECT * FROM billing_plans WHERE code = ?", [planCode]);
     if (!plan) return res.status(404).json({ error: "Plan not found" });
 
+    // Re-validate promo server-side and derive the discounted first-payment.
+    let appliedPromoCode: string | null = null;
+    let firstMonthCents = plan.price_cents;
+    if (rawPromoCode) {
+      const promo = await checkPromoEligibility(userId, rawPromoCode);
+      if (promo.eligible && promo.percentOff) {
+        appliedPromoCode = promo.code!;
+        firstMonthCents = Math.max(
+          100,
+          Math.round(plan.price_cents * (100 - promo.percentOff) / 100)
+        );
+      }
+    }
+
     const workspaceId = await ensureDefaultWorkspace(userId);
     const refSuffix = randomUUID().replace(/-/g, "").slice(0, 8);
     const merchantRef = `PAY_${refSuffix}`;
-    const amount = (plan.price_cents / 100).toFixed(2);
+    const amount = (firstMonthCents / 100).toFixed(2);
     const puid = randomUUID();
 
     await execute(
-      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, currency, status, merchant_ref) VALUES (?, ?, ?, ?, 'PENDING', ?)",
-      [workspaceId, plan.id, plan.price_cents, plan.currency, merchantRef]
+      "INSERT INTO billing_invoices (workspace_id, plan_id, amount_cents, original_amount_cents, promo_code, currency, status, merchant_ref) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)",
+      [workspaceId, plan.id, firstMonthCents, plan.price_cents, appliedPromoCode, plan.currency, merchantRef]
     );
 
     const token = generateSubscriptionToken(merchantRef, amount);
@@ -664,10 +802,14 @@ billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res
       Variable2: merchantRef,
       Qty1: "1",
       ItemRef1: plan.code,
-      ItemDescr1: `${plan.name} – Monthly Subscription`,
+      ItemDescr1: appliedPromoCode
+        ? `${plan.name} — first month ${appliedPromoCode}`
+        : `${plan.name} – Monthly Subscription`,
       ItemAmount1: amount,
       ShippingCost: "0.00",
-      Discount: "0.00",
+      Discount: appliedPromoCode
+        ? ((plan.price_cents - firstMonthCents) / 100).toFixed(2)
+        : "0.00",
       Recipient: recipientName || userRecord?.full_name || "Customer",
       contactNumber: contactNumber || "",
       emailAddress: email || userRecord?.email || "",
@@ -745,6 +887,26 @@ async function handleReturnRedirect(req: any, res: any) {
     }
 
     await execute("UPDATE billing_invoices SET status = 'PAID', paid_at = NOW() WHERE id = ?", [invoice.id]);
+
+    // If this invoice was paid with a first-month promo, lock that promo for
+    // the workspace owner so it can't be redeemed again on this account.
+    if (invoice.promo_code) {
+      try {
+        const owner = await queryOne(
+          "SELECT owner_id FROM workspaces WHERE id = ?",
+          [invoice.workspace_id]
+        );
+        if (owner?.owner_id) {
+          await execute(
+            "UPDATE users SET first_month_promo_used = 1, first_month_promo_code = ? WHERE id = ?",
+            [invoice.promo_code, owner.owner_id]
+          );
+          console.log(`[Billing] Promo ${invoice.promo_code} marked as redeemed for user ${owner.owner_id}`);
+        }
+      } catch (e: any) {
+        console.warn("[Billing] Could not mark promo as redeemed:", e.message);
+      }
+    }
 
     const plan = invoice.plan_id
       ? await queryOne("SELECT * FROM billing_plans WHERE id = ?", [invoice.plan_id])

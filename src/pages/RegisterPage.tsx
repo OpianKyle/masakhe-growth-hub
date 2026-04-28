@@ -20,6 +20,15 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get("ref") || undefined;
+  const promoCode = searchParams.get("promo") || undefined;
+
+  // Stash a promo code from the URL (e.g. coming from a marketing-site popup)
+  // so we can re-apply it on the billing page after sign-up.
+  React.useEffect(() => {
+    if (promoCode) {
+      try { sessionStorage.setItem("masakhe.promoCode", promoCode); } catch {}
+    }
+  }, [promoCode]);
 
   React.useEffect(() => {
     const err = searchParams.get("error");
@@ -81,13 +90,17 @@ export default function RegisterPage() {
 
     if (result.ok) {
       toast.success("Welcome to Masakhe! Pick a plan to start your free trial.");
-      navigate("/dashboard/billing");
+      navigate(promoCode ? `/dashboard/billing?promo=${encodeURIComponent(promoCode)}` : "/dashboard/billing");
     } else {
       toast.error(result.error || "Registration failed");
     }
   };
 
-  const googleHref = `/api/auth/google${referralCode ? `?ref=${referralCode}` : ""}`;
+  const googleQs = [
+    referralCode ? `ref=${encodeURIComponent(referralCode)}` : "",
+    promoCode ? `promo=${encodeURIComponent(promoCode)}` : "",
+  ].filter(Boolean).join("&");
+  const googleHref = `/api/auth/google${googleQs ? `?${googleQs}` : ""}`;
 
   return (
     <div className="min-h-screen flex">

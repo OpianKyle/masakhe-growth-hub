@@ -8,7 +8,7 @@ import {
   CreditCard, Calendar, AlertTriangle,
   Loader2, Shield, CalendarDays, Wallet,
   User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
-  BellRing, Lock, Sparkles, Rocket,
+  BellRing, Lock, Sparkles, Rocket, Tag, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +101,112 @@ function formatCents(cents: number): string {
   return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 }
 
+interface PromoState {
+  code: string | null;
+  loading: boolean;
+  eligible: boolean;
+  percentOff: number;
+  label: string;
+  reason?: string;
+}
+
+/**
+ * Reads a promo code from the URL (?promo=) or sessionStorage (set by the
+ * PromoCodeCapture in App.tsx and the RegisterPage), then asks the server
+ * whether this account is eligible to redeem it. The result drives the
+ * "Start today with 50% off" UI on the billing page.
+ */
+function usePromoCode(): PromoState & { clear: () => void } {
+  const [searchParams] = useSearchParams();
+  const urlCode = searchParams.get("promo");
+  const stashedCode = (() => {
+    try { return sessionStorage.getItem("masakhe.promoCode"); } catch { return null; }
+  })();
+  const code = (urlCode || stashedCode || "").trim().toUpperCase() || null;
+
+  const [state, setState] = useState<PromoState>({
+    code,
+    loading: !!code,
+    eligible: false,
+    percentOff: 0,
+    label: "",
+  });
+
+  useEffect(() => {
+    if (!code) {
+      setState({ code: null, loading: false, eligible: false, percentOff: 0, label: "" });
+      return;
+    }
+    let cancelled = false;
+    setState(s => ({ ...s, code, loading: true }));
+    fetch(`/api/billing/promo/${encodeURIComponent(code)}`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        setState({
+          code,
+          loading: false,
+          eligible: !!d.eligible,
+          percentOff: Number(d.percentOff || 0),
+          label: d.label || "",
+          reason: d.reason,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setState({ code, loading: false, eligible: false, percentOff: 0, label: "", reason: "Could not check this code" });
+      });
+    return () => { cancelled = true; };
+  }, [code]);
+
+  const clear = () => {
+    try { sessionStorage.removeItem("masakhe.promoCode"); } catch {}
+    setState({ code: null, loading: false, eligible: false, percentOff: 0, label: "" });
+  };
+
+  return { ...state, clear };
+}
+
+function PromoBanner({ promo }: { promo: PromoState }) {
+  if (!promo.code || promo.loading) return null;
+  if (!promo.eligible) {
+    // Code present but ineligible — let them know politely so they aren't
+    // confused about why the discount isn't being applied.
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-xl border border-border bg-muted/40 p-4 flex items-start gap-3"
+      >
+        <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+        <div className="text-sm text-muted-foreground">
+          <strong className="text-foreground">{promo.code}</strong> can't be applied to this account.
+          {promo.reason ? ` ${promo.reason}.` : ""}
+        </div>
+      </motion.div>
+    );
+  }
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-emerald-400/40 bg-emerald-50 dark:bg-emerald-950/20 p-5 flex items-start gap-4"
+    >
+      <div className="mt-0.5 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+        <Tag className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
+          Promo code <span className="font-mono">{promo.code}</span> applied
+        </h4>
+        <p className="text-sm text-muted-foreground mt-1">
+          Skip the free trial and {promo.label.toLowerCase()}. From month two onwards your subscription continues at the normal monthly price.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
@@ -153,7 +259,7 @@ const manualPaySchema = z.object({
 });
 type ManualPayFormData = z.infer<typeof manualPaySchema>;
 
-function ManualPayNowForm({ onSuccess }: { onSuccess: () => void }) {
+function ManualPayNowForm({ onSuccess, promo }: { onSuccess: () => void; promo?: PromoState }) {
   const { user } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
@@ -182,7 +288,10 @@ function ManualPayNowForm({ onSuccess }: { onSuccess: () => void }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          promoCode: promo?.eligible ? promo.code : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -255,22 +364,42 @@ function ManualPayNowForm({ onSuccess }: { onSuccess: () => void }) {
               </FormItem>
             )} />
           </div>
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-            You will be redirected to Adumo Online to complete your {plan?.price}/month payment securely. Your subscription will be activated for 30 days once payment is confirmed.
-          </div>
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !!paymentData}>
-            {form.formState.isSubmitting || paymentData
-              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
-              : <><CreditCard className="h-4 w-4 mr-2" />Pay {plan?.price} Now</>}
-          </Button>
+          {(() => {
+            const promoActive = !!(promo?.eligible && promo.percentOff && plan);
+            const discountedCents = promoActive
+              ? Math.max(100, Math.round(plan!.priceCents * (100 - promo!.percentOff) / 100))
+              : 0;
+            return (
+              <>
+                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                  <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                  {promoActive ? (
+                    <span>
+                      First payment <strong className="text-foreground">{formatCents(discountedCents)}</strong>
+                      {" "}with code <strong className="text-foreground font-mono">{promo!.code}</strong>
+                      {" "}(was {plan?.price}). After that you'll be billed {plan?.price}/month. Your subscription is active for 30 days once payment is confirmed.
+                    </span>
+                  ) : (
+                    <span>You will be redirected to Adumo Online to complete your {plan?.price}/month payment securely. Your subscription will be activated for 30 days once payment is confirmed.</span>
+                  )}
+                </div>
+                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !!paymentData}>
+                  {form.formState.isSubmitting || paymentData
+                    ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
+                    : promoActive
+                      ? <><Zap className="h-4 w-4 mr-2" />Pay {formatCents(discountedCents)} now ({promo!.percentOff}% off)</>
+                      : <><CreditCard className="h-4 w-4 mr-2" />Pay {plan?.price} Now</>}
+                </Button>
+              </>
+            );
+          })()}
         </form>
       </Form>
     </>
   );
 }
 
-function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
+function InlineSubscribeForm({ onSuccess, promo }: { onSuccess: () => void; promo?: PromoState }) {
   const { user } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
@@ -326,6 +455,7 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
           shippingAddress1: data.shippingAddress1 || "",
           shippingAddress2: data.shippingAddress2 || "",
           shippingAddress3: data.shippingAddress3 || "",
+          promoCode: promo?.eligible ? promo.code : undefined,
         }),
       });
       const json = await res.json();
@@ -643,23 +773,43 @@ function InlineSubscribeForm({ onSuccess }: { onSuccess: () => void }) {
             )}
           />
 
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-            Your debit order will be processed securely via Adumo Online. Your subscription activates immediately upon successful payment.
-          </div>
+          {(() => {
+            const promoActive = !!(promo?.eligible && promo.percentOff && plan);
+            const discountedCents = promoActive
+              ? Math.max(100, Math.round(plan!.priceCents * (100 - promo!.percentOff) / 100))
+              : 0;
+            return (
+              <>
+                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                  <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                  {promoActive ? (
+                    <span>
+                      First debit (today) is <strong className="text-foreground">{formatCents(discountedCents)}</strong>
+                      {" "}with code <strong className="text-foreground font-mono">{promo!.code}</strong> — a {promo!.percentOff}% saving on {plan?.price}.
+                      Recurring monthly debit from next month onwards is {plan?.price}.
+                    </span>
+                  ) : (
+                    <span>Your debit order will be processed securely via Adumo Online. Your subscription activates immediately upon successful payment.</span>
+                  )}
+                </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={form.formState.isSubmitting || !!paymentData}
-          >
-            {form.formState.isSubmitting || paymentData ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
-            ) : (
-              <><Check className="h-4 w-4 mr-2" />Subscribe Now</>
-            )}
-          </Button>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={form.formState.isSubmitting || !!paymentData}
+                >
+                  {form.formState.isSubmitting || paymentData ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
+                  ) : promoActive ? (
+                    <><Zap className="h-4 w-4 mr-2" />Subscribe — pay {formatCents(discountedCents)} today ({promo!.percentOff}% off)</>
+                  ) : (
+                    <><Check className="h-4 w-4 mr-2" />Subscribe Now</>
+                  )}
+                </Button>
+              </>
+            );
+          })()}
         </form>
       </Form>
     </>
@@ -678,8 +828,8 @@ const changePlanSchema = z.object({
 
 type ChangePlanFormData = z.infer<typeof changePlanSchema>;
 
-function SubscribeTabSection({ onSuccess }: { onSuccess: () => void }) {
-  const [tab, setTab] = useState<"manual" | "debit">("manual");
+function SubscribeTabSection({ onSuccess, promo, defaultTab }: { onSuccess: () => void; promo?: PromoState; defaultTab?: "manual" | "debit" }) {
+  const [tab, setTab] = useState<"manual" | "debit">(defaultTab || "manual");
   return (
     <div className="space-y-4">
       <div className="flex rounded-lg border border-border overflow-hidden">
@@ -691,8 +841,8 @@ function SubscribeTabSection({ onSuccess }: { onSuccess: () => void }) {
         </button>
       </div>
       {tab === "manual"
-        ? <ManualPayNowForm onSuccess={onSuccess} />
-        : <InlineSubscribeForm onSuccess={onSuccess} />
+        ? <ManualPayNowForm onSuccess={onSuccess} promo={promo} />
+        : <InlineSubscribeForm onSuccess={onSuccess} promo={promo} />
       }
     </div>
   );
@@ -1068,10 +1218,11 @@ interface AccessStatus {
   amountCents?: number;
 }
 
-function TrialPickerSection({ onStarted }: { onStarted: () => void }) {
+function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () => void; promo?: PromoState; onChoosePaid?: () => void }) {
   const [selected, setSelected] = useState<string>("pro");
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const promoActive = !!(promo?.eligible && promo.percentOff && onChoosePaid);
 
   const handleStartTrial = async () => {
     setSubmitting(true);
@@ -1122,9 +1273,13 @@ function TrialPickerSection({ onStarted }: { onStarted: () => void }) {
           <Sparkles className="h-7 w-7 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-2xl font-bold font-heading text-foreground">Pick your plan to start your free trial</h3>
+          <h3 className="text-2xl font-bold font-heading text-foreground">Pick your plan to get started</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Choose the plan that best fits your business. You'll get <strong>14 days free</strong> with the full features of your selected plan — no card required to start.
+            {promoActive ? (
+              <>Choose the plan that best fits your business. Then <strong>start your 14-day free trial</strong> — or skip the trial and {promo!.label.toLowerCase()} with code <span className="font-mono">{promo!.code}</span>.</>
+            ) : (
+              <>Choose the plan that best fits your business. You'll get <strong>14 days free</strong> with the full features of your selected plan — no card required to start.</>
+            )}
           </p>
         </div>
       </div>
@@ -1181,18 +1336,64 @@ function TrialPickerSection({ onStarted }: { onStarted: () => void }) {
         </div>
       </div>
 
-      <Button
-        size="lg"
-        className="w-full"
-        onClick={handleStartTrial}
-        disabled={submitting}
-      >
-        {submitting ? (
-          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</>
-        ) : (
-          <><Rocket className="h-4 w-4 mr-2" />Start my 14-day free trial of {selectedPlan.name}</>
-        )}
-      </Button>
+      {promoActive ? (
+        <div className="space-y-3">
+          {(() => {
+            const discountedCents = Math.max(100, Math.round(selectedPlan.priceCents * (100 - promo!.percentOff) / 100));
+            return (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full h-auto py-4 flex-col items-start text-left whitespace-normal"
+                    onClick={handleStartTrial}
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <span className="flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</span>
+                    ) : (
+                      <>
+                        <span className="flex items-center font-semibold"><Rocket className="h-4 w-4 mr-2" />Start 14-day free trial</span>
+                        <span className="text-xs text-muted-foreground mt-1 font-normal">No card required. Pay later.</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="w-full h-auto py-4 flex-col items-start text-left whitespace-normal bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => onChoosePaid && onChoosePaid()}
+                    disabled={submitting}
+                  >
+                    <span className="flex items-center font-semibold">
+                      <Zap className="h-4 w-4 mr-2" />Start today — {promo!.percentOff}% off first month
+                    </span>
+                    <span className="text-xs text-white/85 mt-1 font-normal">
+                      Pay {formatCents(discountedCents)} today (was {selectedPlan.price}). Code <span className="font-mono">{promo!.code}</span> applied.
+                    </span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Once you've used (or skipped) the trial, the first-month discount can no longer be applied.
+                </p>
+              </>
+            );
+          })()}
+        </div>
+      ) : (
+        <Button
+          size="lg"
+          className="w-full"
+          onClick={handleStartTrial}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</>
+          ) : (
+            <><Rocket className="h-4 w-4 mr-2" />Start my 14-day free trial of {selectedPlan.name}</>
+          )}
+        </Button>
+      )}
     </motion.div>
   );
 }
@@ -1295,6 +1496,10 @@ export default function BillingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
   const [invoiceInfo, setInvoiceInfo] = useState<InvoiceInfo | null>(null);
+  // When the user clicks "Skip trial — start today with X% off" we replace the
+  // trial picker with the paid-subscribe form (with the promo code applied).
+  const [skipTrialChosen, setSkipTrialChosen] = useState(false);
+  const promo = usePromoCode();
   const { toast } = useToast();
   const payNowRef = useRef<HTMLDivElement>(null);
 
@@ -1400,6 +1605,8 @@ export default function BillingPage() {
         <InvoicePayForm invoice={invoiceInfo} onSuccess={fetchBilling} />
       )}
 
+      <PromoBanner promo={promo} />
+
       {accessStatus?.blocked && accessStatus.subscriptionStatus !== "NONE" && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -1460,7 +1667,36 @@ export default function BillingPage() {
       )}
 
       {!subscription ? (
-        <TrialPickerSection onStarted={() => { fetchBilling(); fetchAccessStatus(); }} />
+        skipTrialChosen && promo.eligible ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold font-heading text-foreground flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-emerald-600" />
+                  Start today with {promo.percentOff}% off your first month
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first month is half price, then your normal monthly rate after that.
+                </p>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => setSkipTrialChosen(false)}>
+                Back to free trial
+              </Button>
+            </div>
+            <SubscribeTabSection onSuccess={() => { fetchBilling(); fetchAccessStatus(); }} promo={promo} />
+          </motion.div>
+        ) : (
+          <TrialPickerSection
+            onStarted={() => { fetchBilling(); fetchAccessStatus(); }}
+            promo={promo}
+            onChoosePaid={() => setSkipTrialChosen(true)}
+          />
+        )
       ) : subscription.status === "CANCELLED" ? (
         <>
           <motion.div
@@ -1478,7 +1714,7 @@ export default function BillingPage() {
                 Pay this month manually or set up an automatic monthly debit order.
               </p>
             </div>
-            <SubscribeTabSection onSuccess={fetchBilling} />
+            <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
           </motion.div>
         </>
       ) : (
@@ -1523,7 +1759,7 @@ export default function BillingPage() {
                   Your free trial of {plan?.name} has ended. Pay this month manually or set up an automatic monthly debit order to keep using your account.
                 </p>
               </div>
-              <SubscribeTabSection onSuccess={fetchBilling} />
+              <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
             </motion.div>
           )}
 
@@ -1548,7 +1784,7 @@ export default function BillingPage() {
                 </div>
               </div>
               <Separator />
-              <SubscribeTabSection onSuccess={fetchBilling} />
+              <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
             </motion.div>
           )}
 

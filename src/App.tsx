@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
@@ -67,6 +67,23 @@ function CustomDomainGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Watches every route for a `?promo=` query param and stashes the code in
+ * sessionStorage so the billing page can pick it up after sign-up — even if
+ * the user lands first on the landing page or the partner portal.
+ */
+function PromoCodeCapture() {
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get("promo");
+    if (code) {
+      try { sessionStorage.setItem("masakhe.promoCode", code.trim().toUpperCase()); } catch {}
+    }
+  }, [location.search]);
+  return null;
+}
+
 const App = () => (
   <HelmetProvider>
   <QueryClientProvider client={queryClient}>
@@ -76,6 +93,7 @@ const App = () => (
       <AuthProvider>
         <CustomDomainGate>
           <BrowserRouter>
+            <PromoCodeCapture />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/landing" element={<LandingPage />} />
