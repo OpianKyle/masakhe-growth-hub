@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award, Linkedin
+  BookOpen, HandCoins, BarChart2, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, Landmark, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -31,14 +31,25 @@ import LeavePage from "./LeavePage";
 import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
+import WhatsAppSupportPage from "./WhatsAppSupportPage";
+import TeamMembersPage from "./TeamMembersPage";
 import TrialBanner from "@/components/TrialBanner";
 import AIChatBot from "@/components/AIChatBot";
+
+type PlanCode = "starter" | "pro" | "premium";
+const PLAN_TIER: Record<PlanCode, number> = { starter: 1, pro: 2, premium: 3 };
+const PLAN_NAME: Record<PlanCode, string> = {
+  starter: "Enterprize",
+  pro: "Enterprize Plus",
+  premium: "Enterprize Premium",
+};
 
 type NavChild = {
   icon: React.ElementType;
   label: string;
   path: string;
   comingSoon?: boolean;
+  requiresPlan?: PlanCode;
 };
 
 type NavGroup = {
@@ -46,6 +57,7 @@ type NavGroup = {
   label: string;
   groupId: string;
   children: NavChild[];
+  requiresPlan?: PlanCode;
 };
 
 type NavSingle = {
@@ -53,6 +65,7 @@ type NavSingle = {
   label: string;
   path: string;
   comingSoon?: boolean;
+  requiresPlan?: PlanCode;
 };
 
 type NavItem = NavSingle | NavGroup;
@@ -69,24 +82,28 @@ const baseNavItems: NavItem[] = [
     icon: Wallet,
     label: "Transactions",
     groupId: "finance",
+    requiresPlan: "pro",
     children: [
-      { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance" },
-      { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices" },
-      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements" },
-      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true },
+      { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance", requiresPlan: "pro" },
+      { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", requiresPlan: "pro" },
+      { icon: BarChart2, label: "Annual Statements", path: "/dashboard/annual-statements", requiresPlan: "pro" },
+      { icon: Landmark, label: "Management Accounts", path: "/dashboard/management-accounts", comingSoon: true, requiresPlan: "pro" },
     ],
   },
+  { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro" },
+  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro" },
   {
     icon: Banknote,
     label: "HR & Payroll",
     groupId: "hr",
+    requiresPlan: "premium",
     children: [
-      { icon: Banknote, label: "Payroll", path: "/dashboard/payroll" },
-      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave" },
+      { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresPlan: "premium" },
+      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium" },
     ],
   },
-  { icon: UserCheck, label: "Clients", path: "/dashboard/clients" },
-  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns" },
+  { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium" },
+  { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support" },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller" },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
@@ -99,6 +116,7 @@ export default function DashboardPage() {
   const [hasShowroomSite, setHasShowroomSite] = useState(false);
   const [hasBrokerageSite, setHasBrokerageSite] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
+  const [planCode, setPlanCode] = useState<PlanCode | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isImpersonating, originalAdminName, stopImpersonating } = useAuth();
@@ -111,12 +129,23 @@ export default function DashboardPage() {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user?.role === "admin") { setSubscriptionActive(true); return; }
+    if (user?.role === "admin") {
+      setSubscriptionActive(true);
+      setPlanCode("premium");
+      return;
+    }
     fetch("/api/billing/status", { credentials: "include" })
       .then(r => r.json())
-      .then(d => setSubscriptionActive(!!d.active))
-      .catch(() => setSubscriptionActive(false));
+      .then(d => {
+        setSubscriptionActive(!!d.active);
+        const code = (d?.plan as PlanCode) || null;
+        setPlanCode(code && PLAN_TIER[code] ? code : null);
+      })
+      .catch(() => { setSubscriptionActive(false); setPlanCode(null); });
   }, [user, location.search]);
+
+  const userTier = planCode ? PLAN_TIER[planCode] : 0;
+  const meetsPlan = (req?: PlanCode) => !req || userTier >= PLAN_TIER[req];
 
   useEffect(() => {
     fetch("/api/websites/mine", { credentials: "include" })
@@ -236,26 +265,42 @@ export default function DashboardPage() {
             if (isGroup(item)) {
               const active = isGroupActive(item);
               const open = openGroups.has(item.groupId) && sidebarWide;
+              const groupLocked = !meetsPlan(item.requiresPlan);
+              const groupReqName = groupLocked && item.requiresPlan ? PLAN_NAME[item.requiresPlan] : "";
               return (
                 <div key={item.groupId}>
                   <button
-                    onClick={() => sidebarWide && toggleGroup(item.groupId)}
+                    onClick={() => {
+                      if (!sidebarWide) return;
+                      if (groupLocked) { navigate("/dashboard/billing"); return; }
+                      toggleGroup(item.groupId);
+                    }}
+                    title={groupLocked ? `Requires ${groupReqName}` : undefined}
                     className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                      active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      groupLocked
+                        ? "text-sidebar-foreground/45 hover:bg-sidebar-accent/30"
+                        : active
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     }`}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
                     {sidebarWide && (
                       <>
                         <span className="flex-1 text-left">{item.label}</span>
-                        <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+                        {groupLocked ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-0.5">
+                            <Crown className="h-2.5 w-2.5" />
+                            {item.requiresPlan === "premium" ? "Premium" : "Plus"}
+                          </span>
+                        ) : (
+                          <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+                        )}
                       </>
                     )}
                     {!sidebarWide && (
                       <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                        {item.label}
+                        {item.label}{groupLocked ? ` — Requires ${groupReqName}` : ""}
                       </span>
                     )}
                   </button>
@@ -263,6 +308,7 @@ export default function DashboardPage() {
                     <div className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
                       {item.children.map(child => {
                         const childActive = location.pathname.startsWith(child.path);
+                        const childLocked = !meetsPlan(child.requiresPlan);
                         if (child.comingSoon) {
                           return (
                             <div
@@ -274,6 +320,24 @@ export default function DashboardPage() {
                               <span className="flex-1">{child.label}</span>
                               <Lock className="h-3 w-3 shrink-0 opacity-60" />
                             </div>
+                          );
+                        }
+                        if (childLocked) {
+                          const reqName = PLAN_NAME[child.requiresPlan as PlanCode];
+                          return (
+                            <Link
+                              key={child.path}
+                              to="/dashboard/billing"
+                              title={`Requires ${reqName}`}
+                              className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
+                            >
+                              <child.icon className="h-4 w-4 shrink-0" />
+                              <span className="flex-1 truncate">{child.label}</span>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-0.5">
+                                <Crown className="h-2.5 w-2.5" />
+                                {child.requiresPlan === "premium" ? "Premium" : "Plus"}
+                              </span>
+                            </Link>
                           );
                         }
                         return (
@@ -300,6 +364,8 @@ export default function DashboardPage() {
             const active = item.path === "/dashboard"
               ? location.pathname === "/dashboard"
               : location.pathname.startsWith(item.path);
+            const itemLocked = !meetsPlan(item.requiresPlan);
+            const itemReqName = itemLocked && item.requiresPlan ? PLAN_NAME[item.requiresPlan] : "";
 
             if (item.comingSoon) {
               return (
@@ -321,6 +387,33 @@ export default function DashboardPage() {
                     </span>
                   )}
                 </div>
+              );
+            }
+
+            if (itemLocked) {
+              return (
+                <Link
+                  key={item.path}
+                  to="/dashboard/billing"
+                  title={`Requires ${itemReqName}`}
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {sidebarWide && (
+                    <>
+                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-0.5">
+                        <Crown className="h-2.5 w-2.5" />
+                        {item.requiresPlan === "premium" ? "Premium" : "Plus"}
+                      </span>
+                    </>
+                  )}
+                  {!sidebarWide && (
+                    <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      {item.label} — Requires {itemReqName}
+                    </span>
+                  )}
+                </Link>
               );
             }
 
@@ -462,6 +555,8 @@ export default function DashboardPage() {
             <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
+            <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
+            <Route path="team" element={<TeamMembersPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />

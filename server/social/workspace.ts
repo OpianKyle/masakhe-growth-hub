@@ -87,14 +87,45 @@ workspaceRouter.post("/:workspaceId/members", requireWorkspaceRole("owner", "adm
   try {
     const { email, role } = req.body;
     if (!email || !role) return res.status(400).json({ error: "email and role required" });
-    const user = await queryOne("SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!["admin", "editor", "viewer"].includes(role)) return res.status(400).json({ error: "Invalid role" });
 
-    const existing = await queryOne("SELECT id FROM workspace_members WHERE workspace_id = ? AND user_id = ?", [req.params.workspaceId, user.id]);
+    // Enforce per-plan seat limit. Only Enterprize Premium supports multi-user (up to 4 seats total).
+    const wsId = req.params.workspaceId;
+    const owner = await queryOne(
+      "SELECT u.id, u.role, u.subscription_exempt FROM users u JOIN workspaces w ON w.owner_id = u.id WHERE w.id = ? LIMIT 1",
+      [wsId]
+    );
+    let planCode: string | null = null;
+    if (owner?.role === "admin" || owner?.subscription_exempt) {
+      planCode = "premium";
+    } else {
+      const sub = await queryOne(
+        `SELECT bp.code FROM billing_subscriptions bs
+         JOIN billing_plans bp ON bp.id = bs.plan_id
+         WHERE bs.workspace_id = ?
+           AND bs.status IN ('ACTIVE','PAST_DUE','TRIAL')
+           AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
+         ORDER BY bs.created_at DESC LIMIT 1`,
+        [wsId]
+      );
+      planCode = sub?.code || null;
+    }
+    if (planCode !== "premium") {
+      return res.status(403).json({ error: "Multi-user is an Enterprize Premium feature. Upgrade to invite teammates." });
+    }
+    const seatCount = await queryOne("SELECT COUNT(*) as c FROM workspace_members WHERE workspace_id = ?", [wsId]);
+    if ((seatCount?.c || 0) >= 4) {
+      return res.status(400).json({ error: "Seat limit reached. Enterprize Premium supports up to 4 users." });
+    }
+
+    const user = await queryOne("SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
+    if (!user) return res.status(404).json({ error: "No Masakhe account found for this email. Ask them to sign up first." });
+
+    const existing = await queryOne("SELECT id FROM workspace_members WHERE workspace_id = ? AND user_id = ?", [wsId, user.id]);
     if (existing) return res.status(400).json({ error: "Already a member" });
 
     const id = randomUUID();
-    await execute("INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)", [id, req.params.workspaceId, user.id, role, new Date().toISOString()]);
+    await execute("INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)", [id, wsId, user.id, role, new Date().toISOString()]);
     res.json({ ok: true, id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

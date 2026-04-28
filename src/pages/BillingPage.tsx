@@ -75,25 +75,25 @@ interface BillingData {
 const planOptions = [
   {
     code: "starter",
-    name: "Enterprise",
+    name: "Enterprize",
     price: "R599",
     priceCents: 59900,
-    description: "Overview Dashboard, Website Builder, Social Media Builder, Transactions",
+    description: "Single user dashboard, Website Builder, Social Media Hub, Biz Connect, WhatsApp Support Portal",
   },
   {
     code: "pro",
-    name: "Enterprise Plus",
+    name: "Enterprize Plus",
     price: "R899",
     priceCents: 89900,
-    description: "Everything in Enterprise + Business Toolkit, Employee Management",
+    description: "Everything in Enterprize + Financial Transactions, Leads & Clients, Campaigns, Priority Support",
     popular: true,
   },
   {
     code: "premium",
-    name: "Enterprise Premium",
+    name: "Enterprize Premium",
     price: "R1,499",
     priceCents: 149900,
-    description: "Everything in Enterprise Plus + Payroll Management, Client Management, Campaign Management",
+    description: "Up to 4 users (permission-based) + Manage Employees, Payroll, all future updates and Premium Support",
   },
 ];
 

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
-import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck, Users, Banknote, BookOpen } from "lucide-react";
+import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck, Users, Banknote, BookOpen, MessageCircle, Linkedin, Receipt, UserCog, UserCheck, Sparkles, Crown, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,30 +17,38 @@ const fadeInUp = {
 const plans = [
   {
     code: "starter",
-    name: "Enterprise",
+    name: "Enterprize",
     price: "R599",
     period: "/month",
-    description: "Everything you need to get your SMME online and running.",
+    description: "Get your SMME online with a website, social presence and direct WhatsApp support.",
     features: [
+      { icon: Gift, label: "7-Day Free Trial" },
+      { icon: UserCheck, label: "Single User Dashboard" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
-      { icon: Smartphone, label: "Social Media Builder" },
-      { icon: Wallet, label: "Transactions" },
-      { icon: Headphones, label: "Basic Support" },
+      { icon: Smartphone, label: "Social Media Hub" },
+      { icon: Linkedin, label: "Biz Connect" },
+      { icon: MessageCircle, label: "WhatsApp Support Portal" },
     ],
     variant: "hero" as const,
     popular: false,
   },
   {
     code: "pro",
-    name: "Enterprise Plus",
+    name: "Enterprize Plus",
     price: "R899",
     period: "/month",
-    description: "Everything in Enterprise plus business tools and employee management.",
+    description: "Everything in Enterprize, plus financials, leads, clients and campaign tools.",
     features: [
-      { icon: Globe, label: "Everything in Enterprise" },
-      { icon: BookOpen, label: "Business Toolkit" },
-      { icon: Users, label: "Employee Management" },
+      { icon: Gift, label: "7-Day Free Trial" },
+      { icon: UserCheck, label: "Single User Dashboard" },
+      { icon: BarChart3, label: "Overview Dashboard" },
+      { icon: Globe, label: "Website Builder" },
+      { icon: Smartphone, label: "Social Media Hub" },
+      { icon: Linkedin, label: "Biz Connect" },
+      { icon: Wallet, label: "Financial Transactions (Income / Expenses, Quotes / Invoices, Mgmt Accounts)" },
+      { icon: Users, label: "Manage Leads & Clients" },
+      { icon: Megaphone, label: "Manage Campaigns" },
       { icon: Headphones, label: "Priority Support" },
     ],
     variant: "gold" as const,
@@ -48,16 +56,24 @@ const plans = [
   },
   {
     code: "premium",
-    name: "Enterprise Premium",
+    name: "Enterprize Premium",
     price: "R1,499",
     period: "/month",
-    description: "Full suite with payroll, client and campaign management.",
+    description: "Full multi-user suite with payroll, employee management and premium support.",
     features: [
-      { icon: Globe, label: "Everything in Enterprise Plus" },
-      { icon: Banknote, label: "Payroll Management" },
-      { icon: Users, label: "Client Management" },
-      { icon: Megaphone, label: "Campaign Management" },
-      { icon: Headphones, label: "Dedicated Support" },
+      { icon: Gift, label: "7-Day Free Trial" },
+      { icon: UserCog, label: "Multiple User Dashboard — Up to 4 users, permission based" },
+      { icon: BarChart3, label: "Overview Dashboard" },
+      { icon: Globe, label: "Website Builder" },
+      { icon: Smartphone, label: "Social Media Hub" },
+      { icon: Linkedin, label: "Biz Connect" },
+      { icon: Wallet, label: "Financial Transactions (Income / Expenses, Quotes / Invoices, Mgmt Accounts)" },
+      { icon: Users, label: "Manage Leads & Clients" },
+      { icon: Megaphone, label: "Manage Campaigns" },
+      { icon: UserCheck, label: "Manage Employees" },
+      { icon: Banknote, label: "Manage Payroll" },
+      { icon: Sparkles, label: "All Future Updates for Free" },
+      { icon: Crown, label: "Premium Support" },
     ],
     variant: "hero" as const,
     popular: false,
