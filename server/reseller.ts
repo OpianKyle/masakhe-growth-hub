@@ -283,8 +283,8 @@ resellerRouter.post("/join", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -651,8 +651,8 @@ resellerRouter.post("/billing/checkout", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -733,8 +733,8 @@ resellerRouter.post("/billing/upgrade", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -888,8 +888,8 @@ resellerRouter.post("/subscription/checkout", requireAuth, async (req, res) => {
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,

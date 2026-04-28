@@ -610,8 +610,8 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -714,8 +714,8 @@ billingRouter.post("/invoice-payment", requireAuth, requireOwner, async (req, re
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -790,8 +790,8 @@ billingRouter.post("/manual-payment", requireAuth, requireOwner, async (req, res
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,
@@ -1056,8 +1056,8 @@ billingRouter.post("/change-plan", requireAuth, requireOwner, async (req, res) =
 
     const fields: Record<string, string> = {
       puid,
-      MerchantID: process.env.ADUMO_MERCHANT_ID!,
-      ApplicationID: process.env.ADUMO_APPLICATION_ID!,
+      MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+      ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: token,

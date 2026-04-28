@@ -5,8 +5,8 @@ function buildTokenPayload(merchantRef: string, amount: string) {
   const now = Math.floor(Date.now() / 1000);
   return {
     iss: "Masakhe",
-    cuid: process.env.ADUMO_MERCHANT_ID,
-    auid: process.env.ADUMO_APPLICATION_ID,
+    cuid: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
+    auid: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
     amount,
     mref: merchantRef,
     jti: randomBytes(32).toString("base64"),

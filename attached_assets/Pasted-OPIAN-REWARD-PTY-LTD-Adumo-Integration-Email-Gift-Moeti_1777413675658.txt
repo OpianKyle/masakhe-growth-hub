@@ -1,0 +1,160 @@
+OPIAN REWARD (PTY) LTD - Adumo Integration Email 
+Gift Moeti<gift.moeti@adumoonline.com>
+​You;​micshaneb@opianfsgroup.com​
+​Demi Van Heerden;​Janeeta Dukey;​Phillip Haarhoff;​Giancarlo Loddo;​+2 others​​
+Good Day.
+
+ 
+
+I can confirm that your 3D secure merchant account application has been approved.
+
+ 
+
+As an integration reference and for verification, the following URL can be used:
+
+https://developers.adumoonline.com/virtual.php
+
+ 
+
+New Merchant Portal:
+
+https://portal.adumoonline.com
+
+ 
+
+Link to the learning guide for the portal:
+
+https://elearning.adumoonline.com/dashboard.html
+
+ 
+
+Should you make use of an E-commerce platform, we have plugins/addons available for the following:
+
+-              Woocommerce (Wordpress).
+
+-              Magento.
+
+-              Shopify.
+
+-              PrestaShop.
+
+-              OpenCart.
+
+-              ZenCart.
+
+URL: https://developers.adumoonline.com/shopping_carts.php
+
+ 
+
+To test that everything is working, the following details can be used in your Dev or QA environment.
+
+URL: https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+
+ 
+
+Staging Credentials:
+
+MerchantID: 9ba5008c-08ee-4286-a349-54af91a621b0
+
+ApplicationID: 4196b0b8-db88-42e5-a06d-294a5e4ded87
+
+JWT Secret: yglTxLCSMm7PEsfaMszAKf2LSRvM2qVW
+
+ 
+
+When moving to production please make sure to change the following:
+
+1.Production URL (https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual)
+
+2.Production MerchantID and ApplicationID
+
+3.Production JWT Secret Key
+
+ 
+
+Log into the Client Portal and to obtain the Production JWT Secret Key.
+
+ 
+
+Once you login follow below steps:
+
+·Click Portal Admin on the left-hand menu
+
+·Click Manage User Groups
+
+·Click on the Edit button/action
+
+·Enable -"View JWT Token”.
+
+ 
+
+Thereafter you can view the JWT Secret Key:
+
+·         Navigate to the E-Commerce tab on the left-hand side.
+
+·         Select the JWT And API Authentication page.
+
+·         Select the relevant application from the Application Name dropdown menu.
+
+·         Once selected, click Reveal to expose your Secret Key as plain text.
+
+ 
+
+Production Credentials:
+
+MerchantUID - DCBB9225-30BE-4CA7-A532-2CC5D481AC98
+
+ApplicationUID - E25FDAF0-55B8-4E4A-8E3E-651613BB00E7
+
+ 
+
+One of our onboarding team members will be in touch with you to schedule a Client Portal training session, to better guide and assist you in navigating the portal.
+
+ 
+
+If you have any queries, please do not hesitate to contact me on 0861 111 665 or log a ticket with support using support@adumoonline.com.
+
+Alternatively, you can respond to this email 😊
+
+ 
+
+Regards,
+
+ 
+
+
+
+
+
+A blue and black logo
+
+Description automatically generated
+
+Gift Moeti
+Integration Support Engineer
+
+icon 086 111 1665   icon  adumo   icon gift.moeti@adumoonline.com
+
+icon  3 Muswell Road, Wedgewood Office Park, Block C & E, Bryanston, 2191
+
+facebook
+
+instagram
+
+linkedin
+
+twitter      
+
+﻿Confidentiality Notice:The contents of and attachments to this e-mail are intended for the addressee only, and may contain the confidential information of Adumo Payments (Pty) Ltd. Any review, use or dissemination thereof by anyone other than the intended addressee is prohibited. If you are not the intended addressee please notify the writer immediately and destroy the e-mail. Adumo Payments (Pty) Ltd distances itself from and accepts no liability for unauthorized use of its e-mail facilities or e-mails sent other than strictly for business purposes.
+
+ 
+
+App Banner Image
+
+ 
+
+  
+
+ 
+
+ 
