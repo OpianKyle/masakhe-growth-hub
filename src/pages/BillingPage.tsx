@@ -873,16 +873,56 @@ const changePlanSchema = z.object({
 type ChangePlanFormData = z.infer<typeof changePlanSchema>;
 
 function SubscribeTabSection({ onSuccess, promo, defaultTab }: { onSuccess: () => void; promo?: PromoState; defaultTab?: "manual" | "debit" }) {
-  const [tab, setTab] = useState<"manual" | "debit">(defaultTab || "manual");
+  // Form is hidden until the user explicitly picks "Pay Now" or "Start Debit Order".
+  const [tab, setTab] = useState<"manual" | "debit" | null>(defaultTab ?? null);
+
+  if (tab === null) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setTab("manual")}
+          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+            <Wallet className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-semibold text-foreground">Pay Now</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">Once-off payment for this month via card or EFT.</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("debit")}
+          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-semibold text-foreground">Start Debit Order</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">Automatic monthly debit order via Adumo Online.</p>
+          </div>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex rounded-lg border border-border overflow-hidden">
-        <button type="button" onClick={() => setTab("manual")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
-          Pay This Month
-        </button>
-        <button type="button" onClick={() => setTab("debit")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
-          Set Up Debit Order
-        </button>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex rounded-lg border border-border overflow-hidden flex-1">
+          <button type="button" onClick={() => setTab("manual")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
+            Pay This Month
+          </button>
+          <button type="button" onClick={() => setTab("debit")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
+            Set Up Debit Order
+          </button>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setTab(null)} className="shrink-0">
+          Cancel
+        </Button>
       </div>
       {tab === "manual"
         ? <ManualPayNowForm onSuccess={onSuccess} promo={promo} />
