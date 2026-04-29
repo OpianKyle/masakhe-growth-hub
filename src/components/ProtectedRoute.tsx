@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -8,7 +8,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [billingBlocked, setBillingBlocked] = useState(false);
   const [billingChecked, setBillingChecked] = useState(false);
 
-  useEffect(() => {
+  const checkAccess = useCallback(() => {
     if (!user) {
       setBillingChecked(true);
       return;
@@ -19,7 +19,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setBillingChecked(true);
       return;
     }
-    fetch("/api/billing/access-status", { credentials: "include" })
+    fetch("/api/billing/access-status", { credentials: "include", cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         setBillingBlocked(data.blocked === true);
@@ -30,6 +30,28 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setBillingChecked(true);
       });
   }, [user]);
+
+  useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
+
+  // Re-check whenever the user navigates within /dashboard so a freshly-started
+  // trial / paid subscription unlocks the rest of the app immediately, without
+  // needing a hard refresh.
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "admin" || user.is_reseller || user.teamMember) return;
+    checkAccess();
+  }, [location.pathname, checkAccess, user]);
+
+  // BillingPage dispatches a `billing:updated` event when the subscription
+  // state changes — re-check immediately so the user can leave the billing
+  // page on the very next click.
+  useEffect(() => {
+    const handler = () => checkAccess();
+    window.addEventListener("billing:updated", handler);
+    return () => window.removeEventListener("billing:updated", handler);
+  }, [checkAccess]);
 
   if (loading || !billingChecked) {
     return (

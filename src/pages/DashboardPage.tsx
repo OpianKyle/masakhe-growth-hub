@@ -483,6 +483,61 @@ export default function DashboardPage() {
           })}
         </nav>
 
+        {/* User identity card */}
+        {user && sidebarWide && (() => {
+          const isAdmin = user.role === "admin";
+          const isTeam = !!user.teamMember;
+          const isPartner = !!user.is_reseller && !isAdmin;
+          let roleLabel = "Business Owner";
+          let roleColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
+          if (isAdmin) {
+            roleLabel = "Super Admin";
+            roleColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+          } else if (isTeam) {
+            roleLabel = "Team Member";
+            roleColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
+          } else if (isPartner) {
+            roleLabel = "Partner";
+            roleColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+          }
+          const initials = (user.full_name || user.email || "?")
+            .split(/\s+/)
+            .map(s => s[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+          return (
+            <div className="shrink-0 mx-2 mb-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
+                  {initials || "U"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-sidebar-foreground">
+                    {user.full_name || user.email}
+                  </div>
+                  <div className="truncate text-[11px] text-sidebar-foreground/55">
+                    {user.email}
+                  </div>
+                </div>
+              </div>
+              <div className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleColor}`}>
+                {isAdmin && <Shield className="h-3 w-3" />}
+                {isTeam && <Users className="h-3 w-3" />}
+                {isPartner && <Award className="h-3 w-3" />}
+                {!isAdmin && !isTeam && !isPartner && <Building2 className="h-3 w-3" />}
+                {roleLabel}
+              </div>
+              {isTeam && user.teamMember?.owner_business_name && (
+                <div className="mt-1.5 truncate text-[10px] text-sidebar-foreground/45">
+                  at {user.teamMember.owner_business_name}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Bottom actions */}
         <div className="shrink-0 px-2 pb-2 space-y-0.5">
           {user?.role === "admin" && (
