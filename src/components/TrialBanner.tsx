@@ -26,6 +26,12 @@ export default function TrialBanner() {
     fetchStatus();
   }, []);
 
+  // Re-check whenever the user navigates so a freshly-started trial /
+  // subscription is reflected immediately (no hard refresh needed).
+  useEffect(() => {
+    fetchStatus();
+  }, [location.pathname]);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("payment") === "success") {
@@ -33,6 +39,13 @@ export default function TrialBanner() {
       setDismissed(false);
     }
   }, [location.search]);
+
+  // BillingPage dispatches `billing:updated` after starting a trial / paying.
+  useEffect(() => {
+    const handler = () => { fetchStatus(); setDismissed(false); };
+    window.addEventListener("billing:updated", handler);
+    return () => window.removeEventListener("billing:updated", handler);
+  }, []);
 
   if (user?.role === "admin") return null;
   if (!loaded) return null;
