@@ -111,7 +111,7 @@ const baseNavItems: NavItem[] = [
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium", perm: "leave" },
     ],
   },
-  { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
+  { icon: Users, label: "User management", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
   { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
