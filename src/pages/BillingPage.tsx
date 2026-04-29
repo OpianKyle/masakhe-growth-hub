@@ -1410,15 +1410,15 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
                     disabled={submitting}
                   >
                     <span className="flex items-center font-semibold">
-                      <Zap className="h-4 w-4 mr-2" />Start today — {promo!.percentOff}% off first month
+                      <Zap className="h-4 w-4 mr-2" />Start today — {promo!.percentOff}% off for 3 months
                     </span>
                     <span className="text-xs text-white/85 mt-1 font-normal">
-                      Pay {formatCents(discountedCents)} today (was {selectedPlan.price}). Code <span className="font-mono">{promo!.code}</span> applied.
+                      Pay {formatCents(discountedCents)}/month for the first 3 months (normally {selectedPlan.price}). Code <span className="font-mono">{promo!.code}</span> applied.
                     </span>
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Once you've used (or skipped) the trial, the first-month discount can no longer be applied.
+                  Once you've used (or skipped) the trial, this discount can no longer be applied.
                 </p>
               </>
             );
@@ -1722,10 +1722,10 @@ export default function BillingPage() {
               <div>
                 <h3 className="text-xl font-bold font-heading text-foreground flex items-center gap-2">
                   <Zap className="h-5 w-5 text-emerald-600" />
-                  Start today with {promo.percentOff}% off your first month
+                  Start today with {promo.percentOff}% off for 3 months
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first month is half price, then your normal monthly rate after that.
+                  Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first 3 months are half price, then your normal monthly rate after that.
                 </p>
               </div>
               <Button size="sm" variant="ghost" onClick={() => setSkipTrialChosen(false)}>

@@ -38,12 +38,12 @@ export default function PromoPopup({ variant = "smme", delayMs = 2500 }: PromoPo
   const headline =
     variant === "partner"
       ? "Welcome, future partner!"
-      : "First month, half price.";
+      : "Three months, half price.";
 
   const subline =
     variant === "partner"
       ? "Use code WELCOME50 to skip the trial and get 50% off your first month on any partner package."
-      : "Use code WELCOME50 to skip the trial and get 50% off your first month on any plan.";
+      : "Use code WELCOME50 to skip the trial and get 50% off for your first 3 months on any plan.";
 
   return (
     <AnimatePresence>
@@ -90,11 +90,11 @@ export default function PromoPopup({ variant = "smme", delayMs = 2500 }: PromoPo
                 <ul className="space-y-2.5 text-sm text-slate-700">
                   <li className="flex items-start gap-2.5">
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
-                    <span>50% off your first month — pay half price today</span>
+                    <span>{variant === "partner" ? "50% off your first month — pay half price today" : "50% off for your first 3 months — pay half price today"}</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
-                    <span>Standard plan price kicks in from month two onwards</span>
+                    <span>{variant === "partner" ? "Standard plan price kicks in from month two onwards" : "Standard plan price kicks in from month four onwards"}</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />

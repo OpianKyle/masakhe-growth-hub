@@ -20,7 +20,7 @@ const plans = [
     name: "Enterprize",
     price: "R599",
     period: "/month",
-    description: "Get your SMME online with a website, social presence and direct WhatsApp support.",
+    description: "Get online with a website, social presence and WhatsApp support.",
     features: [
       { icon: Gift, label: "7-Day Free Trial" },
       { icon: UserCheck, label: "Single User Dashboard" },
@@ -38,7 +38,7 @@ const plans = [
     name: "Enterprize Plus",
     price: "R899",
     period: "/month",
-    description: "Everything in Enterprize, plus financials, leads, clients and campaign tools.",
+    description: "Everything in Enterprize plus financials, clients and campaigns.",
     features: [
       { icon: Gift, label: "7-Day Free Trial" },
       { icon: UserCheck, label: "Single User Dashboard" },
