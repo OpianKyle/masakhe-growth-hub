@@ -1,0 +1,72 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ ^[[200~pm2 logs masakhe --lines 30 --err~
+pm2: command not found
+ubuntu@masahke-group:~/masakhe-growth-hub$ pm2 logs masakhe --lines 30 --err
+[TAILING] Tailing last 30 lines for [masakhe] process (change the value with --lines option)
+/home/ubuntu/.pm2/logs/masakhe-error.log last 30 lines:
+0|masakhe  |     at PacketParser.executeStart (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packet_parser.js:75:16)
+0|masakhe  |     at Socket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:100:25)
+0|masakhe  |     at Socket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+0|masakhe  | [Admin] Migration error: Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)
+0|masakhe  | Failed to start server: Error: Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)
+0|masakhe  |     at Packet.asError (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packets/packet.js:739:17)
+0|masakhe  |     at ClientHandshake.execute (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/commands/command.js:29:26)
+0|masakhe  |     at PoolConnection.handlePacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:508:34)
+0|masakhe  |     at PacketParser.onPacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:93:12)
+0|masakhe  |     at PacketParser.executeStart (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packet_parser.js:75:16)
+0|masakhe  |     at Socket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:100:25)
+0|masakhe  |     at Socket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+
+0|masakhe  | [Admin] Migration error: Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)
+0|masakhe  | Failed to start server: Error: Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)
+0|masakhe  |     at Packet.asError (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packets/packet.js:739:17)
+0|masakhe  |     at ClientHandshake.execute (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/commands/command.js:29:26)
+0|masakhe  |     at PoolConnection.handlePacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:508:34)
+0|masakhe  |     at PacketParser.onPacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:93:12)
+0|masakhe  |     at PacketParser.executeStart (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packet_parser.js:75:16)
+0|masakhe  |     at Socket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:100:25)
+0|masakhe  |     at Socket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+0|masakhe  | Failed to start server: Error: Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)
+0|masakhe  |     at Packet.asError (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packets/packet.js:739:17)
+0|masakhe  |     at ClientHandshake.execute (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/commands/command.js:29:26)
+0|masakhe  |     at PoolConnection.handlePacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:508:34)
+0|masakhe  |     at PacketParser.onPacket (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:93:12)
+0|masakhe  |     at PacketParser.executeStart (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/packet_parser.js:75:16)
+0|masakhe  |     at Socket.<anonymous> (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/base/connection.js:100:25)
+0|masakhe  |     at Socket.emit (node:events:524:28)
+0|masakhe  |     at addChunk (node:internal/streams/readable:561:12)
+0|masakhe  |     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+0|masakhe  |     at Readable.push (node:internal/streams/readable:392:5) {
+0|masakhe  |   code: 'ER_ACCESS_DENIED_ERROR',
+0|masakhe  |   errno: 1045,
+0|masakhe  |   sqlState: '28000',
+0|masakhe  |   sqlMessage: "Access denied for user 'masakhe'@'154.65.110.84' (using password: YES)",
+0|masakhe  |   sql: undefined
+0|masakhe  | }
+0|masakhe  | Failed to st
