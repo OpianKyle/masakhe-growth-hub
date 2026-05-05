@@ -1,0 +1,44 @@
+*** System restart required ***
+Last login: Tue May  5 09:15:15 2026 from 102.39.215.42
+ubuntu@masahke-group:~$ cd masakhe-growth-hub
+ubuntu@masahke-group:~/masakhe-growth-hub$ nano .env
+ubuntu@masahke-group:~/masakhe-growth-hub$ git stash && git pull && NODE_OPTIONS="--max-old-space-size=1024" npm run build && pm2 restart masakhe
+No local changes to save
+remote: Enumerating objects: 5, done.
+remote: Counting objects: 100% (5/5), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 3 (delta 1), reused 3 (delta 1), pack-reused 0 (from 0)
+Unpacking objects: 100% (3/3), 2.10 KiB | 1.05 MiB/s, done.
+From https://github.com/OpianKyle/masakhe-growth-hub
+   7702ac1..222dad8  main       -> origin/main
+Updating 7702ac1..222dad8
+Fast-forward
+ replit.md | 99 ++++++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 50 insertions(+), 49 deletions(-)
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+✓ 3434 modules transformed.
+dist/index.html                            6.09 kB │ gzip:   1.71 kB
+dist/assets/smme-owner-PIY08wAP.jpg       68.45 kB
+dist/assets/market-stall-Cx_EnQtE.jpg     73.15 kB
+dist/assets/hero-image-CRuZCwYR.jpg      315.08 kB
+dist/assets/index-dcrL9L-C.css           151.44 kB │ gzip:  22.87 kB
+dist/assets/index-DHVVCAEk.js          3,474.64 kB │ gzip: 934.74 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 30.27s
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [masakhe](ids: [ 0 ])
+[PM2] [masakhe](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ masakhe            │ fork     │ 78   │ online    │ 0%       │ 45.9mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+ubuntu@masahke-group:~/masakhe-growth-hub$
