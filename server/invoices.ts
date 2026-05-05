@@ -1061,8 +1061,8 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     // right side: title + meta (date sent + invoice number)
     const rightX = W - headerPad.side;
     const afterTitleY = drawDocTitle(rightX, hContentTopY);
-    rText(`# ${invoice.invoice_number}`, rightX, afterTitleY - 4, 9, font, hSub);
-    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, afterTitleY - 16, 9, font, hSub);
+    rText(`# ${invoice.invoice_number}`, rightX, afterTitleY - 12, 9, font, hSub);
+    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, afterTitleY - 24, 9, font, hSub);
 
     y = headerStartY - headerHeight;
   }
