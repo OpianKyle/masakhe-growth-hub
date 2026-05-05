@@ -1058,13 +1058,21 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
       infoY -= 11;
     }
 
-    // right side: title + meta
+    // right side: title + meta — PO/Reference first, then Invoice No, then Due Date
     const rightX = W - headerPad.side;
     const afterTitleY = drawDocTitle(rightX, hContentTopY);
-    rText(`# ${invoice.invoice_number}`, rightX, afterTitleY - 4, 9, font, hSub);
-    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, afterTitleY - 16, 9, font, hSub);
-    const dueDate = new Date(new Date(invoice.created_at).getTime() + 7 * 86400000).toLocaleDateString("en-ZA");
-    rText(`Due: ${dueDate}`, rightX, afterTitleY - 28, 9, font, hSub);
+    let metaY = afterTitleY - 4;
+    if (invoice.reference) {
+      rText(`PO: ${invoice.reference}`, rightX, metaY, 9, font, hSub);
+      metaY -= 12;
+    }
+    rText(`# ${invoice.invoice_number}`, rightX, metaY, 9, font, hSub);
+    metaY -= 12;
+    if (isQuote) {
+      rText(`Valid For: ${invoice.payment_terms || "30 days"}`, rightX, metaY, 9, font, hSub);
+    } else if (invoice.due_date) {
+      rText(`Due: ${fmtDate(invoice.due_date)}`, rightX, metaY, 9, font, hSub);
+    }
 
     y = headerStartY - headerHeight;
   }
