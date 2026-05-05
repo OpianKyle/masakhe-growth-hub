@@ -1058,21 +1058,11 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
       infoY -= 11;
     }
 
-    // right side: title + meta — PO/Reference first, then Invoice No, then Due Date
+    // right side: title + meta (date sent + invoice number)
     const rightX = W - headerPad.side;
     const afterTitleY = drawDocTitle(rightX, hContentTopY);
-    let metaY = afterTitleY - 4;
-    if (invoice.reference) {
-      rText(`PO: ${invoice.reference}`, rightX, metaY, 9, font, hSub);
-      metaY -= 12;
-    }
-    rText(`# ${invoice.invoice_number}`, rightX, metaY, 9, font, hSub);
-    metaY -= 12;
-    if (isQuote) {
-      rText(`Valid For: ${invoice.payment_terms || "30 days"}`, rightX, metaY, 9, font, hSub);
-    } else if (invoice.due_date) {
-      rText(`Due: ${fmtDate(invoice.due_date)}`, rightX, metaY, 9, font, hSub);
-    }
+    rText(`# ${invoice.invoice_number}`, rightX, afterTitleY - 4, 9, font, hSub);
+    rText(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-ZA")}`, rightX, afterTitleY - 16, 9, font, hSub);
 
     y = headerStartY - headerHeight;
   }
@@ -1097,8 +1087,9 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (showAddress && invoice.customer_address) btLines++;
   if (showPhone && invoice.customer_phone) btLines++;
   if (invoice.customer_email) btLines++;
-  let dtLines = 0;
+  let dtLines = 1; // always show invoice number
   if (showRef && invoice.reference) dtLines++;
+  if (invoice.due_date || isQuote) dtLines++;
   if (showTerms && invoice.payment_terms) dtLines++;
   const boxH = Math.max(56, 18 + Math.max(btLines, dtLines) * 11 + 8);
 
@@ -1116,18 +1107,31 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, cMuted); btY -= 11; }
   if (invoice.customer_email) drawText(invoice.customer_email, billToX + 8, btY, 8, font, cMuted, colW - 16);
 
-  // Details
+  // Details — PO/Reference, Invoice Number, Due Date, then Terms
   page.drawRectangle({ x: detailsX, y: y - boxH, width: colW, height: boxH, color: boxBg });
+  const lPad = detailsX + 8;
+  const lW = 62; // fixed label column width
   let detY = y - 14;
   if (showRef && invoice.reference) {
-    drawText("Reference:", detailsX + 8, detY, 8, fontBold, cBody);
-    drawText(invoice.reference, detailsX + 8 + font.widthOfTextAtSize("Reference: ", 8) + 4, detY, 8, font, cMuted, colW - 90);
+    drawText("PO / Ref:", lPad, detY, 8, fontBold, cBody);
+    drawText(invoice.reference, lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
     detY -= 12;
   }
-  if (showTerms && invoice.payment_terms) {
-    drawText("Terms:", detailsX + 8, detY, 8, fontBold, cBody);
-    drawText(invoice.payment_terms, detailsX + 8 + font.widthOfTextAtSize("Terms: ", 8) + 4, detY, 8, font, cMuted, colW - 70);
+  drawText(isQuote ? "Quote No:" : "Invoice No:", lPad, detY, 8, fontBold, cBody);
+  drawText(invoice.invoice_number, lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
+  detY -= 12;
+  if (isQuote) {
+    drawText("Valid For:", lPad, detY, 8, fontBold, cBody);
+    drawText(invoice.payment_terms || "30 days", lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
     detY -= 12;
+  } else if (invoice.due_date) {
+    drawText("Due Date:", lPad, detY, 8, fontBold, cBody);
+    drawText(fmtDate(invoice.due_date), lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
+    detY -= 12;
+  }
+  if (!isQuote && showTerms && invoice.payment_terms) {
+    drawText("Terms:", lPad, detY, 8, fontBold, cBody);
+    drawText(invoice.payment_terms, lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
   }
   y -= boxH + 16;
 
