@@ -1,51 +1,52 @@
 # Masakhe - SMME Business Platform
 
-## Overview
-Masakhe is a digital platform designed to empower South African SMMEs with comprehensive business management tools. It streamlines operations such as business registration, digital presence establishment, tax compliance, financial tracking, social media management, and customer engagement. The platform integrates essential functionalities into a single application, utilizing a South African flag-inspired color palette for its user interface. The project aims to provide a robust, all-in-one solution for SMMEs to thrive in the South African market.
+Masakhe is a digital platform that empowers South African SMMEs with invoicing, payroll, social media, website builder, client management, compliance, and more — all in one place.
 
-## User Preferences
-- Remote MySQL database on Xneelo (no SQLite, no paid Replit services)
-- South African business context (Rand currency, SA tax/compliance)
+## Run & Operate
+- **Dev**: `npm run dev` — starts Express API (port 3001) + Vite frontend (port 5000) concurrently
+- **Build**: `npm run build` — builds frontend to `dist/`
+- **Production**: `NODE_ENV=production npx tsx server/index.ts` — serves built frontend + API on port 5000
+- **Required env vars**: `XNEELO_DB_HOST`, `XNEELO_DB_PORT`, `XNEELO_DB_NAME`, `XNEELO_DB_USER`, `XNEELO_DB_PASSWORD`, `SESSION_SECRET`, `SMTP_*`, `OPENROUTER_API_KEY`, `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`
 
-## System Architecture
-Masakhe employs a modern web architecture with a React 18 frontend, TypeScript, and Vite, interacting with an Express.js backend using `mysql2/promise` for database operations. Styling is managed with Tailwind CSS and `shadcn/ui` components. Navigation is handled by React Router DOM, state management by TanStack React Query, and data visualization by Recharts. Authentication uses `express-session` and `express-mysql-session` with `bcryptjs`.
+## Stack
+- **Frontend**: React 18 + TypeScript + Vite 5 + Tailwind CSS + shadcn/ui + React Router DOM + TanStack Query
+- **Backend**: Node.js 20 (ESM) + Express 5 + mysql2/promise
+- **Database**: Remote MySQL on Xneelo (`sql16.cpt3.host-h.net`)
+- **Session**: express-session + express-mysql-session
+- **Auth**: Custom bcryptjs session auth (no external auth provider)
+- **AI**: Replit OpenAI AI Integrations (`AI_INTEGRATIONS_OPENAI_*`) + OpenRouter (`OPENROUTER_API_KEY`)
 
-Key architectural and feature specifications include:
+## Where things live
+- `server/index.ts` — Express entry point, mounts all routers
+- `server/db.ts` — MySQL pool, migrations (~1000 lines of DDL), query helpers
+- `server/auth.ts` — Session auth, requireAuth middleware
+- `server/routes.ts` — Upload, onboarding, website builder endpoints
+- `server/replit_integrations/` — OpenAI chat/image/audio integration modules
+- `src/App.tsx` — React router + providers
+- `src/pages/` — All page components
+- `src/contexts/AuthContext.tsx` — Frontend auth context
 
--   **Modular Design**: The application is structured into distinct modules for social media, billing, finance, and user management, each with dedicated API routes and logic.
--   **Multi-tenancy**: The Social Media Hub features a workspace system with role-based access (Owner, Admin, Editor, Viewer) to support collaborative business management.
--   **Subscription & Billing**: Implemented via Adumo Online, offering three tiered plans (Enterprize, Enterprize Plus, Enterprize Premium) with plan-tier feature gating in the dashboard. This includes free trials, promo code integration (WELCOME50 for first-month discount), and upgrade/downgrade functionalities.
--   **Registration Flow**: A 6-step payment-free registration process leading to plan selection and trial initiation on the billing page.
--   **Dynamic Dashboard**: Provides real-time insights into business KPIs, financial data, and social media activity through interactive charts and aggregated data.
--   **Content Management**: A Social Media Hub offers a content calendar, multi-platform post builder, and a media library. Scheduled posts are handled by a background worker.
--   **Custom Domain Hosting**: Allows users to link custom domains to their Masakhe-built websites, utilizing a `CustomDomainGate` for direct site rendering.
--   **User & Business Profile Management**: Comprehensive settings for managing user and business details, including logo uploads.
--   **Website Builder**: Features 44 industry-specific templates (41 standard, 3 premium). Includes a Template Picker UI with search, sort, and category filters.
--   **Vehicle Inventory System**: (Pro plan) Integrated for Car Showroom template users, enabling management of vehicle listings with public and authenticated CRUD APIs.
--   **Website Leads System**: (Pro plan) Captures leads from website contact forms, storing them in `website_leads` and providing management, export, and import functionalities.
--   **Clients Management**: A Brokerage CRM for client portfolio management, including document uploads and comprehensive CRUD operations.
--   **Tenders**: Functionality for users to create, browse, apply for, and manage tenders. Admins have full oversight.
--   **Business Funding Toolkit**: A suite of 6 integrated modules: CIPC Company Verification, AI-powered Business Plan Builder, Funding Proposal Generator, Annual Financial Statements, Funding Application Generator, and Funding Scoring (Grant Readiness).
--   **WhatsApp Support Portal**: Provides direct WhatsApp support with pre-filled messages for quick topic resolution.
--   **Team Members**: (Premium plan) Multi-user workspace management with role assignment and seat-limit enforcement.
--   **Notifications**: Real-time notification system with a dashboard bell icon, displaying unread counts and clickable links.
--   **Email System**: Branded HTML emails sent via SMTP using nodemailer for welcome and password reset functionalities.
--   **Password Reset Flow**: Secure password reset mechanism with token-based validation and expiration.
--   **Leave & HR Module**: Full leave management with request creation, approval, and balance tracking.
--   **Payroll Module**: Comprehensive South African payroll management including employee CRUD, live calculation previews, allowances, deductions, and payslip generation.
--   **Admin Impersonation**: Allows administrators to log in as other non-admin users for support, with clear visual indicators and a return function.
--   **Inventory & Stock-take**: (Pro plan) Barcode-driven inventory management including product tracking, stock movements, stock-take sessions with scanner integration, and low-stock alerts.
--   **Admin Enhancements**: Includes client filtering and search, per-client notes and tags, a financial dashboard overview with key metrics, and an auditable log for admin actions.
--   **Data Security**: Utilizes AES-256-GCM encryption for sensitive data such as social account tokens.
--   **PDF Generation**: Employs `pdf-lib` for server-side generation of invoices and other documents.
+## Architecture decisions
+- **Remote MySQL only** — user preference, no SQLite, no Replit PostgreSQL
+- **Split dev ports** — Vite on 5000 proxies `/api` to Express on 3001 in dev; production serves from single port 5000
+- **Custom session auth** — express-session with MySQL store; no JWT for web sessions
+- **OpenRouter for AI text** — used in finance, documents, social media content generation
+- **Replit OpenAI Integration for structured AI** — chat conversations, image generation, audio
 
-## External Dependencies
--   **Database**: Remote MySQL on Xneelo (`sql16.cpt3.host-h.net`).
--   **Payment Gateway**: Adumo Online (Virtual HPP for debit order subscriptions).
--   **Social Media APIs**: Meta (Facebook/Instagram) for OAuth and Graph API publishing. LinkedIn, X, TikTok, and YouTube are currently in mock mode.
--   **Session Management**: `express-mysql-session` for storing session data.
--   **PDF Generation**: `pdf-lib` for creating PDF documents.
--   **File Uploads**: `multer` for handling media file uploads.
--   **CSV Import/Export**: Integrated CSV functionalities for finance ledger entries and invoices.
--   **Automations**: Scheduled and reactive automations for invoices, quotes, leads, and client engagement.
--   **Barcode Scanning**: `@zxing/browser` and `@zxing/library` for client-side barcode scanning.
+## Product
+- Website builder (44 industry templates), social media hub with scheduler, invoicing/billing (Adumo Online), payroll, inventory, CRM, compliance tools, tenders, business funding toolkit, leave management, admin impersonation
+
+## User preferences
+- Remote MySQL on Xneelo (no SQLite, no paid Replit DB services)
+- South African business context (ZAR, SA tax/compliance, POPIA)
+
+## Gotchas
+- DB migrations run on every server start (`runMigrations()`) — takes 5–15s before API is ready
+- Vite proxy to port 3001 will show ECONNREFUSED during that startup window — normal
+- `@zxing/library` requires Node ≥ 24 but runs fine on Node 20 (browser-only usage)
+- Schedulers start after `app.listen`: social (60s), billing (hourly), invoice (6h), automations (30min)
+
+## Pointers
+- DB schema: `server/db.ts` (runMigrations function)
+- Seed data: `server/seed.ts`
+- Replit AI integration docs: `.local/skills/integrations/SKILL.md`
