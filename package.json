@@ -88,7 +88,7 @@
     "mysql2": "^3.18.2",
     "next-themes": "^0.3.0",
     "nodemailer": "^8.0.1",
-    "openai": "^6.26.0",
+    "openai": "^6.36.0",
     "p-limit": "^7.3.0",
     "p-retry": "^7.1.1",
     "pdf-lib": "^1.17.1",

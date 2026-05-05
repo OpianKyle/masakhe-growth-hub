@@ -1,43 +1,66 @@
-import { db } from "../../db";
-import { conversations, messages } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { queryOne, queryAll, execute } from "../../db";
+import { randomUUID } from "crypto";
+
+export interface Conversation {
+  id: number;
+  title: string;
+  createdAt: string;
+}
+
+export interface Message {
+  id: number;
+  conversationId: number;
+  role: string;
+  content: string;
+  createdAt: string;
+}
 
 export interface IChatStorage {
-  getConversation(id: number): Promise<typeof conversations.$inferSelect | undefined>;
-  getAllConversations(): Promise<(typeof conversations.$inferSelect)[]>;
-  createConversation(title: string): Promise<typeof conversations.$inferSelect>;
+  getConversation(id: number): Promise<Conversation | undefined>;
+  getAllConversations(): Promise<Conversation[]>;
+  createConversation(title: string): Promise<Conversation>;
   deleteConversation(id: number): Promise<void>;
-  getMessagesByConversation(conversationId: number): Promise<(typeof messages.$inferSelect)[]>;
-  createMessage(conversationId: number, role: string, content: string): Promise<typeof messages.$inferSelect>;
+  getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  createMessage(conversationId: number, role: string, content: string): Promise<Message>;
 }
 
 export const chatStorage: IChatStorage = {
   async getConversation(id: number) {
-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
-    return conversation;
+    const row = await queryOne("SELECT * FROM ai_conversations WHERE id = ?", [id]);
+    return row || undefined;
   },
 
   async getAllConversations() {
-    return db.select().from(conversations).orderBy(desc(conversations.createdAt));
+    return queryAll("SELECT * FROM ai_conversations ORDER BY created_at DESC");
   },
 
   async createConversation(title: string) {
-    const [conversation] = await db.insert(conversations).values({ title }).returning();
-    return conversation;
+    const result = await execute(
+      "INSERT INTO ai_conversations (title, created_at) VALUES (?, NOW())",
+      [title]
+    );
+    const id = (result as any).insertId;
+    return queryOne("SELECT * FROM ai_conversations WHERE id = ?", [id]);
   },
 
   async deleteConversation(id: number) {
-    await db.delete(messages).where(eq(messages.conversationId, id));
-    await db.delete(conversations).where(eq(conversations.id, id));
+    await execute("DELETE FROM ai_messages WHERE conversation_id = ?", [id]);
+    await execute("DELETE FROM ai_conversations WHERE id = ?", [id]);
   },
 
   async getMessagesByConversation(conversationId: number) {
-    return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+    return queryAll(
+      "SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at ASC",
+      [conversationId]
+    );
   },
 
   async createMessage(conversationId: number, role: string, content: string) {
-    const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
-    return message;
+    const result = await execute(
+      "INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (?, ?, ?, NOW())",
+      [conversationId, role, content]
+    );
+    const id = (result as any).insertId;
+    return queryOne("SELECT * FROM ai_messages WHERE id = ?", [id]);
   },
 };
-
