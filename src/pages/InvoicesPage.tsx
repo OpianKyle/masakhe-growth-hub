@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,6 +206,8 @@ const TEMPLATES = [
 ];
 
 export default function InvoicesPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "admin";
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [activeTab, setActiveTab] = useState<"invoice" | "quote" | "designer">("invoice");
   const [showCreate, setShowCreate] = useState(false);
@@ -797,7 +800,7 @@ export default function InvoicesPage() {
                           <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
                         </Button>
                       )}
-                      {inv.type === "invoice" && !inv.paid_at && (
+                      {isSuperAdmin && inv.type === "invoice" && !inv.paid_at && (
                         <Button
                           variant="outline"
                           size="sm"
