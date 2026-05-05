@@ -53,11 +53,6 @@ function reminderEmailHtml(opts: {
       <tr><td style="padding:8px 0;color:#6b7280;font-size:14px;border-top:1px solid #e5e7eb;">Days Overdue</td><td style="padding:8px 0;color:${accentColor};font-weight:700;text-align:right;font-size:14px;border-top:1px solid #e5e7eb;">${daysOverdue} day${daysOverdue !== 1 ? "s" : ""}</td></tr>
       <tr style="background:#f0fdf4;"><td style="padding:12px;color:#1a1a2e;font-size:16px;font-weight:700;border-top:1px solid #e5e7eb;">Amount Due</td><td style="padding:12px;color:${accentColor};font-size:18px;font-weight:700;text-align:right;border-top:1px solid #e5e7eb;">${formatCents(totalCents)}</td></tr>
     </table>
-    ${isAdmin ? `<table cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
-      <tr><td style="background:${accentColor};border-radius:8px;">
-        <a href="${APP_URL}/dashboard/billing?invId=${invoiceId}" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now — ${formatCents(totalCents)}</a>
-      </td></tr>
-    </table>` : ""}
     <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have already made this payment, please disregard this notice. For any queries, please reply to this email or contact us at ${fromEmail}.</p>
     <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Kind regards,<br><strong style="color:#1a1a2e;">${businessName}</strong></p>
   </td></tr>

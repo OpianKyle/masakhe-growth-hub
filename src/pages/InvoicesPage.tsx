@@ -800,7 +800,7 @@ export default function InvoicesPage() {
                           <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
                         </Button>
                       )}
-                      {isSuperAdmin && inv.type === "invoice" && !inv.paid_at && (
+                      {inv.type === "invoice" && !inv.paid_at && (
                         <Button
                           variant="outline"
                           size="sm"

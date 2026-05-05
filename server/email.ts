@@ -207,14 +207,6 @@ export async function sendSubscriptionInvoiceEmail(
                 </tr>
               </table>
 
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
-                <tr>
-                  <td style="background-color:#007749;border-radius:8px;">
-                    <a href="${appUrl}/dashboard/billing" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Pay Now</a>
-                  </td>
-                </tr>
-              </table>
-
               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;line-height:1.6;">
                 If you have any questions about this invoice, please contact us at admin@masakheportal.co.za.
               </p>
