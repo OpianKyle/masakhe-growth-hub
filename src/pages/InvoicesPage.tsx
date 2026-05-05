@@ -23,6 +23,7 @@ interface Invoice {
   customer_phone: string | null;
   reference: string | null;
   payment_terms: string | null;
+  due_date: string | null;
   notes: string | null;
   total_cents: number;
   vat_enabled: boolean;
@@ -222,12 +223,20 @@ export default function InvoicesPage() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [reference, setReference] = useState("");
-  const [paymentTerms, setPaymentTerms] = useState("Due within 7 days");
+  const [paymentTerms, setPaymentTerms] = useState("30 days");
+  const [dueDate, setDueDate] = useState("");
+  const [startingInvoiceNum, setStartingInvoiceNum] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const defaultDueDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  };
 
   const handleExport = async () => {
     const res = await fetch("/api/invoices/export", { credentials: "include" });
@@ -281,7 +290,9 @@ export default function InvoicesPage() {
     setDocType(type);
     setActiveTab(type);
     setSelectedTemplate(1);
-    setPaymentTerms(type === "quote" ? "30 days" : "Due within 7 days");
+    setPaymentTerms("30 days");
+    setDueDate(type === "invoice" ? defaultDueDate() : "");
+    setStartingInvoiceNum("");
     setShowCreate(true);
     setEditingId(null);
   };
@@ -291,6 +302,7 @@ export default function InvoicesPage() {
     if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
     if (items.some((i) => i.unitPrice <= 0)) { toast.error("All items need a price"); return; }
 
+    const isFirstInvoice = invoices.filter((i) => i.type === "invoice").length === 0;
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -300,12 +312,15 @@ export default function InvoicesPage() {
         customerAddress: customerAddress || undefined,
         customerPhone: customerPhone || undefined,
         reference: reference || undefined,
-        paymentTerms: paymentTerms || undefined,
+        paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
+        dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
         notes: notes || undefined,
         items, vatEnabled,
         type: docType,
         template: selectedTemplate,
         templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
+        customStartSeq: (docType === "invoice" && isFirstInvoice && startingInvoiceNum)
+          ? parseInt(startingInvoiceNum) : undefined,
       }),
     });
 
@@ -330,10 +345,12 @@ export default function InvoicesPage() {
     setCustomerAddress(inv.customer_address || "");
     setCustomerPhone(inv.customer_phone || "");
     setReference(inv.reference || "");
-    setPaymentTerms(inv.payment_terms || (inv.type === "quote" ? "30 days" : "Due within 7 days"));
+    setPaymentTerms(inv.payment_terms || "30 days");
+    setDueDate(inv.due_date ? inv.due_date.slice(0, 10) : (inv.type === "invoice" ? defaultDueDate() : ""));
     setNotes(inv.notes || "");
     setItems(inv.items.length > 0 ? inv.items : [{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(inv.vat_enabled);
+    setStartingInvoiceNum("");
     setShowCreate(false);
   };
 
@@ -342,7 +359,9 @@ export default function InvoicesPage() {
     setShowCreate(false);
     setCustomerName(""); setCustomerEmail(""); setCustomerAddress("");
     setCustomerPhone(""); setReference(""); setNotes("");
-    setPaymentTerms("Due within 7 days");
+    setPaymentTerms("30 days");
+    setDueDate("");
+    setStartingInvoiceNum("");
     setItems([{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(true);
     setSelectedTemplate(1);
@@ -363,7 +382,8 @@ export default function InvoicesPage() {
         customer_address: customerAddress || undefined,
         customer_phone: customerPhone || undefined,
         reference: reference || undefined,
-        payment_terms: paymentTerms || undefined,
+        payment_terms: docType === "quote" ? (paymentTerms || undefined) : undefined,
+        due_date: docType === "invoice" ? (dueDate || undefined) : undefined,
         notes: notes || undefined,
         items, vat_enabled: vatEnabled,
         template: selectedTemplate,
@@ -589,11 +609,42 @@ export default function InvoicesPage() {
                 <Label className="text-xs">Reference / PO Number</Label>
                 <Input value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
               </div>
-              <div>
-                <Label className="text-xs">{docType === "quote" ? "Quote Valid For" : "Payment Terms"}</Label>
-                <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder={docType === "quote" ? "e.g. 30 days" : "e.g. Due within 7 days"} />
-              </div>
+              {docType === "quote" ? (
+                <div>
+                  <Label className="text-xs">Quote Valid For</Label>
+                  <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. 30 days" />
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Due Date</Label>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
+                </div>
+              )}
             </div>
+
+            {/* Invoice number section — below the main fields */}
+            {docType === "invoice" && (
+              <div className="mb-4 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5">
+                {!editingId && invoices.filter((i) => i.type === "invoice").length === 0 ? (
+                  <div>
+                    <Label className="text-xs font-semibold">Starting Invoice Number</Label>
+                    <p className="text-xs text-muted-foreground mb-2">This is your first invoice. Enter the number to start from (e.g. 1001). Leave blank to use the default.</p>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={startingInvoiceNum}
+                      onChange={(e) => setStartingInvoiceNum(e.target.value)}
+                      className="mt-1 max-w-[200px]"
+                      placeholder="e.g. 1001"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Invoice No:</span> Auto-assigned on creation
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2 mb-4">
               <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">

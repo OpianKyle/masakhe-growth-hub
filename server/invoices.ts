@@ -220,10 +220,25 @@ function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
   page.drawRectangle({ x: 50, y: y + 2, width: 495, height: 0.5, color: lightGrey });
   y -= 14;
 
-  const termLabel = isQuote ? "Valid For:" : "Payment Terms:";
-  const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
-  page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
-  page.drawText(termValue, { x: 128, y, size: 9, font, color: black });
+  // Invoice/Quote number box
+  const numBoxW = 230;
+  page.drawRectangle({ x: 50, y: y - 6, width: numBoxW, height: 20, color: lighten(accentColor, 0.88) });
+  const numLabel = isQuote ? "Quote No:" : "Invoice No:";
+  page.drawText(numLabel, { x: 56, y: y + 1, size: 8.5, font: fontBold, color: grey });
+  page.drawText(invoice.invoice_number, { x: 115, y: y + 1, size: 8.5, font: fontBold, color: accentColor });
+  y -= 22;
+
+  // Due date / terms line
+  if (!isQuote && invoice.due_date) {
+    const dueDateStr = new Date(invoice.due_date).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+    page.drawText("Due Date:", { x: 50, y, size: 9, font: fontBold, color: grey });
+    page.drawText(dueDateStr, { x: 110, y, size: 9, font, color: black });
+  } else {
+    const termLabel = isQuote ? "Valid For:" : "Payment Terms:";
+    const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
+    page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
+    page.drawText(termValue, { x: 128, y, size: 9, font, color: black });
+  }
   y -= 13;
 
   if (invoice.notes) {
@@ -1295,7 +1310,7 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq } = req.body;
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
     const docType = type === "quote" ? "quote" : "invoice";
@@ -1304,15 +1319,35 @@ invoiceRouter.post("/", async (req, res) => {
     const vatCents = vatEnabled ? Math.round(subtotalCents * 0.15) : 0;
     const totalCents = subtotalCents + vatCents;
     const prefix = docType === "quote" ? "QUO" : "INV";
-    const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = ?", [userId, docType]))?.c || 0;
-    const docNumber = `${prefix}-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
+    const year = new Date().getFullYear();
+
+    let docNumber: string;
+    if (docType === "invoice") {
+      const userRow = await queryOne("SELECT invoice_next_seq FROM users WHERE id = ?", [userId]);
+      if (userRow?.invoice_next_seq != null) {
+        docNumber = `INV-${year}-${userRow.invoice_next_seq}`;
+        await execute("UPDATE users SET invoice_next_seq = invoice_next_seq + 1 WHERE id = ?", [userId]);
+      } else if (customStartSeq && Number.isInteger(Number(customStartSeq)) && Number(customStartSeq) > 0) {
+        const seq = Number(customStartSeq);
+        docNumber = `INV-${year}-${seq}`;
+        await execute("UPDATE users SET invoice_next_seq = ? WHERE id = ?", [seq + 1, userId]);
+      } else {
+        const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
+        docNumber = `INV-${year}-${String(count + 1).padStart(3, "0")}`;
+      }
+    } else {
+      const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'quote'", [userId]))?.c || 0;
+      docNumber = `QUO-${year}-${String(count + 1).padStart(3, "0")}`;
+    }
+
     const id = randomUUID();
     const now = new Date().toISOString();
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
+    const dueDateVal = (docType === "invoice" && dueDate) ? dueDate : null;
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?)`,
-      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?)`,
+      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, now]
     );
 
     // Stop-credit check (invoices only, not quotes; non-blocking)
@@ -1350,8 +1385,16 @@ invoiceRouter.post("/:id/convert", async (req, res) => {
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Not found" });
     if (invoice.type !== "quote") return res.status(400).json({ error: "Only quotes can be converted" });
-    const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
+    const year = new Date().getFullYear();
+    let invoiceNumber: string;
+    const userRow = await queryOne("SELECT invoice_next_seq FROM users WHERE id = ?", [userId]);
+    if (userRow?.invoice_next_seq != null) {
+      invoiceNumber = `INV-${year}-${userRow.invoice_next_seq}`;
+      await execute("UPDATE users SET invoice_next_seq = invoice_next_seq + 1 WHERE id = ?", [userId]);
+    } else {
+      const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
+      invoiceNumber = `INV-${year}-${String(count + 1).padStart(3, "0")}`;
+    }
     await execute("UPDATE invoices SET type = 'invoice', invoice_number = ? WHERE id = ?", [invoiceNumber, invoice.id]);
     res.json({ ok: true, invoiceNumber });
   } catch (err: any) {
@@ -1579,7 +1622,7 @@ invoiceRouter.put("/:id", async (req, res) => {
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template, templateConfig } = req.body;
+    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
     if (!customer_name || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customer_name and items are required" });
     const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
@@ -1589,8 +1632,8 @@ invoiceRouter.put("/:id", async (req, res) => {
     const vatCents = vatOn ? Math.round(subtotalCents * 0.15) : 0;
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     await execute(
-      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=? WHERE id=?`,
-      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, req.params.id]
+      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=?, due_date=? WHERE id=?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, due_date || null, req.params.id]
     );
     res.json({ ok: true });
   } catch (err: any) {

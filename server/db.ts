@@ -1068,6 +1068,14 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    await addColumnIfMissing("invoices", "due_date", "DATE NULL");
+    await addColumnIfMissing("users", "invoice_next_seq", "INT NULL");
+
+    // Seed admin@masakhe.co.za starting invoice sequence at 1315 (only if not yet set)
+    await conn.query(
+      `UPDATE users SET invoice_next_seq = 1315 WHERE email = 'admin@masakhe.co.za' AND invoice_next_seq IS NULL`
+    );
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

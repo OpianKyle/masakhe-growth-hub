@@ -479,21 +479,26 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
 
     const workspaceId = await ensureDefaultWorkspace(userId);
 
-    // Don't allow starting another trial if one already exists (active or expired)
-    const existingTrial = await queryOne(
-      "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? AND status = 'TRIAL' ORDER BY created_at DESC LIMIT 1",
+    // Block trial if ANY subscription record exists (trial used, active, cancelled, past-due)
+    // or if the user has ever made a payment — free trials are one-time only
+    const existingSub = await queryOne(
+      "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 1",
       [workspaceId]
     );
-    if (existingTrial) {
-      return res.status(400).json({ error: "A trial has already been started for this account." });
+    if (existingSub) {
+      if (existingSub.status === "ACTIVE") {
+        return res.status(400).json({ error: "You already have an active subscription." });
+      }
+      return res.status(400).json({ error: "A free trial can only be used once. Please subscribe to continue." });
     }
 
-    const existingActive = await queryOne(
-      "SELECT id FROM billing_subscriptions WHERE workspace_id = ? AND status = 'ACTIVE'",
+    // Also block if any paid billing invoice exists for this workspace
+    const paidInvoice = await queryOne(
+      "SELECT id FROM billing_invoices WHERE workspace_id = ? AND status = 'PAID' LIMIT 1",
       [workspaceId]
     );
-    if (existingActive) {
-      return res.status(400).json({ error: "You already have an active subscription." });
+    if (paidInvoice) {
+      return res.status(400).json({ error: "A free trial is not available after a payment has been made." });
     }
 
     const user = await queryOne(
