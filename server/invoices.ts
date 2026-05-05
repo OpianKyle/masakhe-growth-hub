@@ -138,6 +138,12 @@ function truncate(str: string, maxLen: number) {
   return str.length > maxLen ? str.slice(0, maxLen - 1) + "…" : str;
 }
 
+function fmtDate(d: any): string {
+  if (!d) return "";
+  const s = d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+  return new Date(s + "T12:00:00").toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function drawCustomerInfo(ctx: TemplateCtx, x: number, y: number, labelColor: RGB): number {
   const { page, font, fontBold, invoice, isQuote } = ctx;
   const label = isQuote ? "QUOTE FOR:" : "BILL TO:";
@@ -228,18 +234,16 @@ function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
   page.drawText(invoice.invoice_number, { x: 115, y: y + 1, size: 8.5, font: fontBold, color: accentColor });
   y -= 22;
 
-  // Due date / terms line
-  if (!isQuote && invoice.due_date) {
-    const dueDateStr = new Date(invoice.due_date).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
-    page.drawText("Due Date:", { x: 50, y, size: 9, font: fontBold, color: grey });
-    page.drawText(dueDateStr, { x: 110, y, size: 9, font, color: black });
-  } else {
+  // Payment terms line (due date is now shown in the header meta area)
+  if (invoice.payment_terms || isQuote) {
     const termLabel = isQuote ? "Valid For:" : "Payment Terms:";
-    const termValue = invoice.payment_terms || (isQuote ? "30 days" : "Due within 7 days");
-    page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
-    page.drawText(termValue, { x: 128, y, size: 9, font, color: black });
+    const termValue = invoice.payment_terms || (isQuote ? "30 days" : "");
+    if (termValue) {
+      page.drawText(termLabel, { x: 50, y, size: 9, font: fontBold, color: grey });
+      page.drawText(termValue, { x: 128, y, size: 9, font, color: black });
+      y -= 13;
+    }
   }
-  y -= 13;
 
   if (invoice.notes) {
     page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
@@ -332,21 +336,22 @@ function renderTemplate1(ctx: TemplateCtx) {
   page.drawRectangle({ x: 25, y, width: 547, height: 2, color: green });
   y -= 18;
 
-  // Meta row
+  // Meta row — PO/Reference first, then Invoice No + Due Date
+  if (invoice.reference) {
+    page.drawText("PO / Ref:", { x: 25, y, size: 9, font, color: grey });
+    page.drawText(invoice.reference, { x: 100, y, size: 9, font: fontBold, color: black }); y -= 14;
+  }
   const numLabel = isQuote ? "Quote No:" : "Invoice No:";
   page.drawText(numLabel, { x: 25, y, size: 9, font, color: grey });
   page.drawText(invoice.invoice_number, { x: 100, y, size: 9, font: fontBold, color: black });
-  page.drawText("Date:", { x: 370, y, size: 9, font, color: grey });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black }); y -= 14;
-  if (invoice.reference) {
-    page.drawText("Reference:", { x: 25, y, size: 9, font, color: grey });
-    page.drawText(invoice.reference, { x: 100, y, size: 9, font: fontBold, color: black }); y -= 14;
-  }
   if (isQuote) {
-    page.drawText("Valid For:", { x: 370, y: y + 14, size: 9, font, color: grey });
-    page.drawText(invoice.payment_terms || "30 days", { x: 420, y: y + 14, size: 9, font: fontBold, color: black });
+    page.drawText("Valid For:", { x: 370, y, size: 9, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 435, y, size: 9, font: fontBold, color: black });
+  } else if (invoice.due_date) {
+    page.drawText("Due Date:", { x: 370, y, size: 9, font, color: grey });
+    page.drawText(fmtDate(invoice.due_date), { x: 425, y, size: 9, font: fontBold, color: black });
   }
-  y -= 12;
+  y -= 26;
   y = drawCustomerInfo(ctx, 25, y, green);
   y -= 14;
   y = drawStandardTable(ctx, y, green, white, mintBg);
@@ -373,16 +378,20 @@ function renderTemplate2(ctx: TemplateCtx) {
   page.drawRectangle({ x: 360, y: boxY - boxH, width: 185, height: boxH, color: navy });
   const docTitle = isQuote ? "QUOTE" : "TAX INVOICE";
   page.drawText(docTitle, { x: 380, y: boxY - 20, size: 13, font: fontBold, color: white });
-  page.drawText(invoice.invoice_number, { x: 380, y: boxY - 38, size: 10, font: fontBold, color: navyHighlight });
-  page.drawText("Dated:", { x: 380, y: boxY - 52, size: 8, font, color: navyHighlight });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 420, y: boxY - 52, size: 8, font: fontBold, color: white });
+  let t2Row = 38;
   if (invoice.reference) {
-    page.drawText("Ref:", { x: 380, y: boxY - 66, size: 8, font, color: navyHighlight });
-    page.drawText(invoice.reference, { x: 404, y: boxY - 66, size: 8, font: fontBold, color: white });
+    page.drawText("PO/Ref:", { x: 380, y: boxY - t2Row, size: 8, font, color: navyHighlight });
+    page.drawText(invoice.reference, { x: 416, y: boxY - t2Row, size: 8, font: fontBold, color: white });
+    t2Row += 14;
   }
+  page.drawText(invoice.invoice_number, { x: 380, y: boxY - t2Row, size: 10, font: fontBold, color: navyHighlight });
+  t2Row += 14;
   if (isQuote) {
-    page.drawText("Valid:", { x: 380, y: boxY - 80, size: 8, font, color: navyHighlight });
-    page.drawText(invoice.payment_terms || "30 days", { x: 410, y: boxY - 80, size: 8, font: fontBold, color: white });
+    page.drawText("Valid:", { x: 380, y: boxY - t2Row, size: 8, font, color: navyHighlight });
+    page.drawText(invoice.payment_terms || "30 days", { x: 410, y: boxY - t2Row, size: 8, font: fontBold, color: white });
+  } else if (invoice.due_date) {
+    page.drawText("Due:", { x: 380, y: boxY - t2Row, size: 8, font, color: navyHighlight });
+    page.drawText(fmtDate(invoice.due_date), { x: 404, y: boxY - t2Row, size: 8, font: fontBold, color: white });
   }
 
   // Business info left side
@@ -439,9 +448,14 @@ function renderTemplate3(ctx: TemplateCtx) {
   const docTitle = isQuote ? "QUOTE" : "INVOICE";
   const dtW = fontBold.widthOfTextAtSize(docTitle, 32);
   page.drawText(docTitle, { x: W - 35 - dtW, y: 842 - 40, size: 32, font: fontBold, color: orange });
-  rText(page, invoice.invoice_number, W - 30, 842 - 58, 9, fontBold, rgb(0.88, 0.88, 0.88));
-  rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 30, 842 - 71, 8, font, dimGrey);
-  if (invoice.reference) rText(page, `Ref: ${invoice.reference}`, W - 30, 842 - 84, 8, font, dimGrey);
+  let t3Y = 58;
+  if (invoice.reference) { rText(page, `PO: ${invoice.reference}`, W - 30, 842 - t3Y, 8, font, dimGrey); t3Y += 13; }
+  rText(page, invoice.invoice_number, W - 30, 842 - t3Y, 9, fontBold, rgb(0.88, 0.88, 0.88)); t3Y += 13;
+  if (!isQuote && invoice.due_date) {
+    rText(page, `Due: ${fmtDate(invoice.due_date)}`, W - 30, 842 - t3Y, 8, font, dimGrey);
+  } else {
+    rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 30, 842 - t3Y, 8, font, dimGrey);
+  }
 
   let y = 842 - headerH - 7 - 18;
 
@@ -498,17 +512,21 @@ function renderTemplate4(ctx: TemplateCtx) {
   const detailLabel = isQuote ? "QUOTE DETAILS" : "INVOICE DETAILS";
   page.drawText(detailLabel, { x: 319, y: boxY + boxH - 12, size: 8.5, font: fontBold, color: white });
   const numLabel = isQuote ? "Quote No:" : "Invoice No:";
-  page.drawText(numLabel, { x: 319, y: boxY + boxH - 28, size: 8, font, color: grey });
-  page.drawText(invoice.invoice_number, { x: 395, y: boxY + boxH - 28, size: 8, font: fontBold, color: black });
-  page.drawText("Date:", { x: 319, y: boxY + boxH - 42, size: 8, font, color: grey });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 395, y: boxY + boxH - 42, size: 8, font: fontBold, color: black });
+  let t4Row = 28;
   if (invoice.reference) {
-    page.drawText("Ref:", { x: 319, y: boxY + boxH - 56, size: 8, font, color: grey });
-    page.drawText(truncate(invoice.reference, 20), { x: 395, y: boxY + boxH - 56, size: 8, font: fontBold, color: black });
+    page.drawText("PO / Ref:", { x: 319, y: boxY + boxH - t4Row, size: 8, font, color: grey });
+    page.drawText(truncate(invoice.reference, 20), { x: 395, y: boxY + boxH - t4Row, size: 8, font: fontBold, color: black });
+    t4Row += 14;
   }
+  page.drawText(numLabel, { x: 319, y: boxY + boxH - t4Row, size: 8, font, color: grey });
+  page.drawText(invoice.invoice_number, { x: 395, y: boxY + boxH - t4Row, size: 8, font: fontBold, color: black });
+  t4Row += 14;
   if (isQuote) {
-    page.drawText("Valid For:", { x: 319, y: boxY + boxH - 70, size: 8, font, color: grey });
-    page.drawText(invoice.payment_terms || "30 days", { x: 395, y: boxY + boxH - 70, size: 8, font: fontBold, color: black });
+    page.drawText("Valid For:", { x: 319, y: boxY + boxH - t4Row, size: 8, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 395, y: boxY + boxH - t4Row, size: 8, font: fontBold, color: black });
+  } else if (invoice.due_date) {
+    page.drawText("Due Date:", { x: 319, y: boxY + boxH - t4Row, size: 8, font, color: grey });
+    page.drawText(fmtDate(invoice.due_date), { x: 395, y: boxY + boxH - t4Row, size: 8, font: fontBold, color: black });
   }
 
   y = boxY - 16;
@@ -571,20 +589,22 @@ function renderTemplate5(ctx: TemplateCtx) {
   const dtW = fontBold.widthOfTextAtSize(docTitle, 13);
   page.drawText(docTitle, { x: (W - dtW) / 2, y, size: 13, font: fontBold, color: burg }); y -= 20;
 
-  // Meta row
+  // Meta row — PO/Reference first, then Invoice No + Due Date
+  if (invoice.reference) {
+    page.drawText("PO / Ref:", { x: 50, y, size: 9, font, color: grey });
+    page.drawText(invoice.reference, { x: 120, y, size: 9, font: fontBold, color: black }); y -= 14;
+  }
   const numLabel = isQuote ? "Quote No:" : "Invoice No:";
   page.drawText(numLabel, { x: 50, y, size: 9, font, color: grey });
   page.drawText(invoice.invoice_number, { x: 120, y, size: 9, font: fontBold, color: black });
-  page.drawText("Date:", { x: 370, y, size: 9, font, color: grey });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y, size: 9, font: fontBold, color: black }); y -= 14;
-  if (invoice.reference) {
-    page.drawText("Reference:", { x: 50, y, size: 9, font, color: grey });
-    page.drawText(invoice.reference, { x: 120, y, size: 9, font: fontBold, color: black }); y -= 14;
-  }
   if (isQuote) {
-    page.drawText("Valid For:", { x: 370, y: y + 14, size: 9, font, color: grey });
-    page.drawText(invoice.payment_terms || "30 days", { x: 420, y: y + 14, size: 9, font: fontBold, color: black });
+    page.drawText("Valid For:", { x: 370, y, size: 9, font, color: grey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 435, y, size: 9, font: fontBold, color: black });
+  } else if (invoice.due_date) {
+    page.drawText("Due Date:", { x: 370, y, size: 9, font, color: grey });
+    page.drawText(fmtDate(invoice.due_date), { x: 425, y, size: 9, font: fontBold, color: black });
   }
+  y -= 14;
 
   // Dotted divider
   y -= 10;
@@ -650,9 +670,14 @@ function renderTemplate6(ctx: TemplateCtx) {
 
   // Invoice number badge (dark pill) — anchored to top-right
   page.drawRectangle({ x: W - 210, y: 842 - 78, width: 180, height: 20, color: purpleDark });
-  rText(page, invoice.invoice_number, W - 32, 842 - 73, 9, fontBold, white);
-  rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 32, 842 - 89, 8, font, midPurple);
-  if (invoice.reference) rText(page, `Ref: ${invoice.reference}`, W - 32, 842 - 101, 8, font, midPurple);
+  let t6Y = 73;
+  if (invoice.reference) { rText(page, `PO: ${invoice.reference}`, W - 32, 842 - t6Y, 8, font, midPurple); t6Y += 13; }
+  rText(page, invoice.invoice_number, W - 32, 842 - t6Y, 9, fontBold, white); t6Y += 13;
+  if (!isQuote && invoice.due_date) {
+    rText(page, `Due: ${fmtDate(invoice.due_date)}`, W - 32, 842 - t6Y, 8, font, midPurple);
+  } else {
+    rText(page, new Date(invoice.created_at).toLocaleDateString("en-ZA"), W - 32, 842 - t6Y, 8, font, midPurple);
+  }
 
   // Left purple sidebar (body only, below header)
   page.drawRectangle({ x: 0, y: 40, width: 8, height: 842 - headerH - 40, color: purple });
@@ -724,17 +749,21 @@ function renderTemplate7(ctx: TemplateCtx) {
   const detailLabel = isQuote ? "QUOTE DETAILS" : "INVOICE DETAILS";
   page.drawText(detailLabel, { x: 319, y: boxY + boxH - 13, size: 8.5, font: fontBold, color: white });
   const numLabel = isQuote ? "Quote No:" : "Invoice No:";
-  page.drawText(numLabel, { x: 319, y: boxY + boxH - 30, size: 8, font, color: midGrey });
-  page.drawText(invoice.invoice_number, { x: 400, y: boxY + boxH - 30, size: 8, font: fontBold, color: darkGrey });
-  page.drawText("Date:", { x: 319, y: boxY + boxH - 44, size: 8, font, color: midGrey });
-  page.drawText(new Date(invoice.created_at).toLocaleDateString("en-ZA"), { x: 400, y: boxY + boxH - 44, size: 8, font: fontBold, color: darkGrey });
+  let t7Row = 30;
   if (invoice.reference) {
-    page.drawText("Ref:", { x: 319, y: boxY + boxH - 58, size: 8, font, color: midGrey });
-    page.drawText(truncate(invoice.reference, 20), { x: 400, y: boxY + boxH - 58, size: 8, font: fontBold, color: darkGrey });
+    page.drawText("PO / Ref:", { x: 319, y: boxY + boxH - t7Row, size: 8, font, color: midGrey });
+    page.drawText(truncate(invoice.reference, 20), { x: 400, y: boxY + boxH - t7Row, size: 8, font: fontBold, color: darkGrey });
+    t7Row += 14;
   }
+  page.drawText(numLabel, { x: 319, y: boxY + boxH - t7Row, size: 8, font, color: midGrey });
+  page.drawText(invoice.invoice_number, { x: 400, y: boxY + boxH - t7Row, size: 8, font: fontBold, color: darkGrey });
+  t7Row += 14;
   if (isQuote) {
-    page.drawText("Valid For:", { x: 319, y: boxY + boxH - 72, size: 8, font, color: midGrey });
-    page.drawText(invoice.payment_terms || "30 days", { x: 400, y: boxY + boxH - 72, size: 8, font: fontBold, color: darkGrey });
+    page.drawText("Valid For:", { x: 319, y: boxY + boxH - t7Row, size: 8, font, color: midGrey });
+    page.drawText(invoice.payment_terms || "30 days", { x: 400, y: boxY + boxH - t7Row, size: 8, font: fontBold, color: darkGrey });
+  } else if (invoice.due_date) {
+    page.drawText("Due Date:", { x: 319, y: boxY + boxH - t7Row, size: 8, font, color: midGrey });
+    page.drawText(fmtDate(invoice.due_date), { x: 400, y: boxY + boxH - t7Row, size: 8, font: fontBold, color: darkGrey });
   }
 
   y = boxY - 16;
