@@ -605,46 +605,50 @@ export default function InvoicesPage() {
                 <Label className="text-xs">Customer Address</Label>
                 <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
               </div>
-              <div>
+
+              {/* Reference / PO Number — full width */}
+              <div className="md:col-span-2">
                 <Label className="text-xs">Reference / PO Number</Label>
                 <Input value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
               </div>
+
+              {/* Due Date / Valid For + Invoice Number — below PO Reference */}
               {docType === "quote" ? (
-                <div>
+                <div className="md:col-span-2">
                   <Label className="text-xs">Quote Valid For</Label>
-                  <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. 30 days" />
+                  <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1 max-w-xs" placeholder="e.g. 30 days" />
                 </div>
               ) : (
-                <div>
-                  <Label className="text-xs">Due Date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
-                </div>
+                <>
+                  <div>
+                    <Label className="text-xs">Due Date</Label>
+                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Invoice Number</Label>
+                    {!editingId && invoices.filter((i) => i.type === "invoice").length === 0 ? (
+                      <>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={startingInvoiceNum}
+                          onChange={(e) => setStartingInvoiceNum(e.target.value)}
+                          className="mt-1"
+                          placeholder="Starting number e.g. 1001"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">First invoice — set your starting number or leave blank for default.</p>
+                      </>
+                    ) : (
+                      <Input
+                        value={editingId ? (invoices.find(i => i.id === editingId)?.invoice_number ?? "Auto-assigned") : "Auto-assigned on save"}
+                        readOnly
+                        className="mt-1 bg-muted/50 text-muted-foreground cursor-default"
+                      />
+                    )}
+                  </div>
+                </>
               )}
             </div>
-
-            {/* Invoice number section — below the main fields */}
-            {docType === "invoice" && (
-              <div className="mb-4 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5">
-                {!editingId && invoices.filter((i) => i.type === "invoice").length === 0 ? (
-                  <div>
-                    <Label className="text-xs font-semibold">Starting Invoice Number</Label>
-                    <p className="text-xs text-muted-foreground mb-2">This is your first invoice. Enter the number to start from (e.g. 1001). Leave blank to use the default.</p>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={startingInvoiceNum}
-                      onChange={(e) => setStartingInvoiceNum(e.target.value)}
-                      className="mt-1 max-w-[200px]"
-                      placeholder="e.g. 1001"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">Invoice No:</span> Auto-assigned on creation
-                  </p>
-                )}
-              </div>
-            )}
 
             <div className="space-y-2 mb-4">
               <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
