@@ -3,6 +3,7 @@ import { queryOne, queryAll, execute } from "./db";
 import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb, RGB } from "pdf-lib";
+import * as XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
@@ -1285,6 +1286,131 @@ invoiceRouter.get("/export", async (req, res) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="invoices-export-${new Date().toISOString().split("T")[0]}.csv"`);
     res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+invoiceRouter.get("/export/xlsx", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+    const rows = invoices.map((inv: any) => {
+      const items = JSON.parse(inv.items_json || "[]");
+      const itemsSummary = items.map((it: any) => `${it.qty || 1}x ${it.name || "Item"} @ R${(it.unitPrice || 0).toFixed(2)}`).join("; ");
+      return {
+        "Number": inv.invoice_number,
+        "Type": inv.type || "invoice",
+        "Customer": inv.customer_name || "",
+        "Email": inv.customer_email || "",
+        "Reference": inv.reference || "",
+        "Items": itemsSummary,
+        "Subtotal (R)": ((inv.total_cents - (inv.vat_cents || 0)) / 100).toFixed(2),
+        "VAT (R)": ((inv.vat_cents || 0) / 100).toFixed(2),
+        "Total (R)": (inv.total_cents / 100).toFixed(2),
+        "Status": inv.status || "final",
+        "Date": inv.created_at ? String(inv.created_at).slice(0, 10) : "",
+        "Due Date": inv.due_date ? String(inv.due_date).slice(0, 10) : "",
+        "Payment Terms": inv.payment_terms || "",
+        "Notes": inv.notes || "",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const today = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="invoices-${today}.xlsx"`);
+    res.send(buf);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+invoiceRouter.get("/export/pdf", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+    const user = await queryOne(
+      "SELECT u.full_name, bp.business_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
+      [userId]
+    );
+    const bizName = (user as any)?.business_name || (user as any)?.full_name || "Business";
+    const today = new Date().toLocaleDateString("en-ZA");
+
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const green = rgb(0.08, 0.42, 0.25);
+    const black = rgb(0, 0, 0);
+    const white = rgb(1, 1, 1);
+    const grey = rgb(0.5, 0.5, 0.5);
+    const lightGrey = rgb(0.95, 0.95, 0.95);
+
+    const PAGE_W = 842, PAGE_H = 595, L = 30, R = PAGE_W - 30, TW = R - L;
+    const cols = [
+      { label: "Invoice #", w: TW * 0.13 },
+      { label: "Type", w: TW * 0.07 },
+      { label: "Customer", w: TW * 0.20 },
+      { label: "Reference", w: TW * 0.12 },
+      { label: "Date", w: TW * 0.09 },
+      { label: "Due Date", w: TW * 0.09 },
+      { label: "Subtotal", w: TW * 0.09 },
+      { label: "VAT", w: TW * 0.07 },
+      { label: "Total", w: TW * 0.09 },
+      { label: "Status", w: TW * 0.05 },
+    ];
+    const ROW_H = 17, HDR_H = 22;
+    const ROWS_PER_PAGE = Math.floor((PAGE_H - 80 - HDR_H) / ROW_H);
+    const totalPages = Math.max(1, Math.ceil(invoices.length / ROWS_PER_PAGE));
+
+    for (let pi = 0; pi < totalPages; pi++) {
+      const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      let y = PAGE_H - 28;
+
+      page.drawText(bizName, { x: L, y, size: 13, font: fontBold, color: green });
+      page.drawText(`Invoice Export — ${today}   (Page ${pi + 1}/${totalPages})`, { x: L, y: y - 14, size: 9, font, color: grey });
+      y -= 38;
+
+      page.drawRectangle({ x: L, y: y - HDR_H, width: TW, height: HDR_H, color: green });
+      let cx = L + 4;
+      for (const col of cols) {
+        page.drawText(col.label, { x: cx, y: y - HDR_H + 8, size: 7.5, font: fontBold, color: white });
+        cx += col.w;
+      }
+      y -= HDR_H;
+
+      const slice = invoices.slice(pi * ROWS_PER_PAGE, (pi + 1) * ROWS_PER_PAGE);
+      for (let i = 0; i < slice.length; i++) {
+        const inv = slice[i] as any;
+        if (i % 2 === 0) page.drawRectangle({ x: L, y: y - ROW_H, width: TW, height: ROW_H, color: lightGrey });
+        const vals = [
+          inv.invoice_number, inv.type || "invoice", inv.customer_name || "",
+          inv.reference || "",
+          inv.created_at ? String(inv.created_at).slice(0, 10) : "",
+          inv.due_date ? String(inv.due_date).slice(0, 10) : "",
+          `R${((inv.total_cents - (inv.vat_cents || 0)) / 100).toFixed(2)}`,
+          `R${((inv.vat_cents || 0) / 100).toFixed(2)}`,
+          `R${(inv.total_cents / 100).toFixed(2)}`,
+          inv.status || "final",
+        ];
+        cx = L + 4;
+        for (let j = 0; j < cols.length; j++) {
+          let txt = String(vals[j] || "");
+          while (txt.length > 1 && font.widthOfTextAtSize(txt, 7.5) > cols[j].w - 6) txt = txt.slice(0, -1);
+          page.drawText(txt, { x: cx, y: y - ROW_H + 5, size: 7.5, font, color: black });
+          cx += cols[j].w;
+        }
+        y -= ROW_H;
+      }
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    const fileDate = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="invoices-${fileDate}.pdf"`);
+    res.send(Buffer.from(pdfBytes));
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });
   }

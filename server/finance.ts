@@ -4,6 +4,8 @@ import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import OpenAI from "openai";
+import * as XLSX from "xlsx";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -33,6 +35,124 @@ financeRouter.get("/export", async (req, res) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="finance-export-${today}.csv"`);
     res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+financeRouter.get("/export/xlsx", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const entries = await queryAll("SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at DESC", [userId]);
+    const rows = entries.map((e: any) => ({
+      "Date": e.occurred_at ? String(e.occurred_at).slice(0, 10) : "",
+      "Type": e.type || "",
+      "Category": e.category || "",
+      "Amount (R)": (e.amount_cents / 100).toFixed(2),
+      "Description": e.description || "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Income & Expenses");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const today = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-${today}.xlsx"`);
+    res.send(buf);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+financeRouter.get("/export/pdf", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const entries = await queryAll("SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at DESC", [userId]);
+    const user = await queryOne(
+      "SELECT u.full_name, bp.business_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
+      [userId]
+    );
+    const bizName = (user as any)?.business_name || (user as any)?.full_name || "Business";
+    const today = new Date().toLocaleDateString("en-ZA");
+
+    const totalIncome = entries.filter((e: any) => e.type === "INCOME").reduce((s: number, e: any) => s + e.amount_cents, 0);
+    const totalExpense = entries.filter((e: any) => e.type === "EXPENSE").reduce((s: number, e: any) => s + e.amount_cents, 0);
+
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const green = rgb(0.08, 0.42, 0.25);
+    const red = rgb(0.75, 0.15, 0.15);
+    const black = rgb(0, 0, 0);
+    const white = rgb(1, 1, 1);
+    const grey = rgb(0.5, 0.5, 0.5);
+    const lightGrey = rgb(0.95, 0.95, 0.95);
+
+    const PAGE_W = 595, PAGE_H = 842, L = 30, R = PAGE_W - 30, TW = R - L;
+    const cols = [
+      { label: "Date", w: TW * 0.16 },
+      { label: "Type", w: TW * 0.13 },
+      { label: "Category", w: TW * 0.20 },
+      { label: "Amount (R)", w: TW * 0.15 },
+      { label: "Description", w: TW * 0.36 },
+    ];
+    const ROW_H = 17, HDR_H = 22;
+    const ROWS_PER_PAGE = Math.floor((PAGE_H - 110 - HDR_H) / ROW_H);
+    const totalPages = Math.max(1, Math.ceil(entries.length / ROWS_PER_PAGE));
+
+    for (let pi = 0; pi < totalPages; pi++) {
+      const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      let y = PAGE_H - 28;
+
+      page.drawText(bizName, { x: L, y, size: 13, font: fontBold, color: green });
+      page.drawText(`Income & Expense Export — ${today}   (Page ${pi + 1}/${totalPages})`, { x: L, y: y - 14, size: 9, font, color: grey });
+      y -= 28;
+
+      if (pi === 0) {
+        page.drawText(`Total Income: R${(totalIncome / 100).toFixed(2)}`, { x: L, y, size: 9, font: fontBold, color: green });
+        page.drawText(`Total Expenses: R${(totalExpense / 100).toFixed(2)}`, { x: L + 180, y, size: 9, font: fontBold, color: red });
+        const net = totalIncome - totalExpense;
+        page.drawText(`Net: R${(net / 100).toFixed(2)}`, { x: L + 360, y, size: 9, font: fontBold, color: net >= 0 ? green : red });
+        y -= 20;
+      }
+
+      page.drawRectangle({ x: L, y: y - HDR_H, width: TW, height: HDR_H, color: green });
+      let cx = L + 4;
+      for (const col of cols) {
+        page.drawText(col.label, { x: cx, y: y - HDR_H + 8, size: 7.5, font: fontBold, color: white });
+        cx += col.w;
+      }
+      y -= HDR_H;
+
+      const slice = entries.slice(pi * ROWS_PER_PAGE, (pi + 1) * ROWS_PER_PAGE);
+      for (let i = 0; i < slice.length; i++) {
+        const e = slice[i] as any;
+        if (i % 2 === 0) page.drawRectangle({ x: L, y: y - ROW_H, width: TW, height: ROW_H, color: lightGrey });
+        const isIncome = e.type === "INCOME";
+        const vals = [
+          e.occurred_at ? String(e.occurred_at).slice(0, 10) : "",
+          e.type || "",
+          e.category || "",
+          (e.amount_cents / 100).toFixed(2),
+          e.description || "",
+        ];
+        cx = L + 4;
+        for (let j = 0; j < cols.length; j++) {
+          let txt = String(vals[j] || "");
+          while (txt.length > 1 && font.widthOfTextAtSize(txt, 7.5) > cols[j].w - 6) txt = txt.slice(0, -1);
+          const col = j === 3 ? (isIncome ? green : red) : black;
+          page.drawText(txt, { x: cx, y: y - ROW_H + 5, size: 7.5, font: j === 3 ? fontBold : font, color: col });
+          cx += cols[j].w;
+        }
+        y -= ROW_H;
+      }
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    const fileDate = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-${fileDate}.pdf"`);
+    res.send(Buffer.from(pdfBytes));
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });
   }

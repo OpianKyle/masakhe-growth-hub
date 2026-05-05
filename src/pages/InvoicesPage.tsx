@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -241,14 +242,18 @@ export default function InvoicesPage() {
     return d.toISOString().slice(0, 10);
   };
 
-  const handleExport = async () => {
-    const res = await fetch("/api/invoices/export", { credentials: "include" });
+  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
+    const endpoint = format === "csv" ? "/api/invoices/export"
+      : format === "xlsx" ? "/api/invoices/export/xlsx"
+      : "/api/invoices/export/pdf";
+    const ext = format === "csv" ? "csv" : format === "xlsx" ? "xlsx" : "pdf";
+    const res = await fetch(endpoint, { credentials: "include" });
     if (!res.ok) { toast.error("Failed to export"); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `invoices-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `invoices-${new Date().toISOString().slice(0, 10)}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -485,9 +490,18 @@ export default function InvoicesPage() {
           <p className="text-muted-foreground">Create and manage your quotes and invoices</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" /> Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>CSV (.csv)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("xlsx")}>Excel (.xlsx)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>PDF (.pdf)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>

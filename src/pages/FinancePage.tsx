@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,21 +108,25 @@ export default function FinancePage() {
     if (res.ok) { toast.success("Deleted"); loadEntries(); loadSummary(); }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
     try {
-      const res = await fetch("/api/finance/export", { credentials: "include" });
+      const endpoint = format === "csv" ? "/api/finance/export"
+        : format === "xlsx" ? "/api/finance/export/xlsx"
+        : "/api/finance/export/pdf";
+      const ext = format;
+      const res = await fetch(endpoint, { credentials: "include" });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `finance-export-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `finance-${new Date().toISOString().split("T")[0]}.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error("Failed to export CSV");
+      toast.error("Failed to export");
     }
   };
 
@@ -209,9 +214,18 @@ export default function FinancePage() {
           <p className="text-muted-foreground">Track your income and expenses</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" /> Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>CSV (.csv)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("xlsx")}>Excel (.xlsx)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>PDF (.pdf)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
