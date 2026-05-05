@@ -1,0 +1,52 @@
+/home/ubuntu/.pm2/logs/masakhe-error.log last 50 lines:
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011434735:2:3744)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011434735:2:4243)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011434735:2:4984)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011434735:2:5355)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+0|masakhe  |
+0|masakhe  | node:internal/modules/run_main:123
+0|masakhe  |     triggerUncaughtException(
+0|masakhe  |     ^
+0|masakhe  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'xlsx' imported from /home/ubuntu/masakhe-growth-hub/server/finance.ts
+0|masakhe  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|masakhe  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011435385:2:3744)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011435385:2:4243)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011435385:2:4984)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011435385:2:5355)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+0|masakhe  |
+0|masakhe  | node:internal/modules/run_main:123
+0|masakhe  |     triggerUncaughtException(
+0|masakhe  |     ^
+0|masakhe  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'xlsx' imported from /home/ubuntu/masakhe-growth-hub/server/finance.ts
+0|masakhe  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|masakhe  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011436029:2:3744)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011436029:2:4243)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011436029:2:4984)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/esm/index.mjs?1778011436029:2:5355)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+
