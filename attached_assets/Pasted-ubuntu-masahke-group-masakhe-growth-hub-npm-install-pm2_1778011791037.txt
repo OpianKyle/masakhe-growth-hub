@@ -1,0 +1,85 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ npm install && pm2 restart masakhe
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@zxing/library@0.22.0',
+npm warn EBADENGINE   required: { node: '>= 24.0.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.1', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+added 9 packages, changed 1 package, and audited 888 packages in 6s
+
+179 packages are looking for funding
+  run `npm fund` for details
+
+27 vulnerabilities (3 low, 10 moderate, 14 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [masakhe](ids: [ 0 ])
+[PM2] [masakhe](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ masakhe            │ fork     │ 94   │ online    │ 0%       │ 4.0kb    │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+ubuntu@masahke-group:~/masakhe-growth-hub$ git stash && git pull && npm install && NODE_OPTIONS="--max-old-space-size=1024" npm run build && pm2 restart masakhe
+No local changes to save
+Already up to date.
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@zxing/library@0.22.0',
+npm warn EBADENGINE   required: { node: '>= 24.0.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.1', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+up to date, audited 888 packages in 4s
+
+179 packages are looking for funding
+  run `npm fund` for details
+
+27 vulnerabilities (3 low, 10 moderate, 14 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+✓ 3434 modules transformed.
+dist/index.html                            6.09 kB │ gzip:   1.71 kB
+dist/assets/smme-owner-PIY08wAP.jpg       68.45 kB
+dist/assets/market-stall-Cx_EnQtE.jpg     73.15 kB
+dist/assets/hero-image-CRuZCwYR.jpg      315.08 kB
+dist/assets/index-dcrL9L-C.css           151.44 kB │ gzip:  22.87 kB
+dist/assets/index-DHVVCAEk.js          3,474.64 kB │ gzip: 934.74 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 59.06s
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [masakhe](ids: [ 0 ])
+[PM2] [masakhe](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ masakhe            │ fork     │ 117  │ online    │ 0%       │ 16.3mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+ubuntu@masahke-group:~/masakhe-growth-hub$
