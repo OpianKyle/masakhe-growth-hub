@@ -872,7 +872,7 @@ function ClientList() {
                         className="h-7 px-2 text-[10px] gap-1 border-green-300 text-green-700 hover:bg-green-50"
                         onClick={() => grantSubscription(client.id, "starter", client.full_name)}
                       >
-                        <CreditCard className="h-3 w-3" /> Starter
+                        <CreditCard className="h-3 w-3" /> Enterprize
                       </Button>
                       <Button
                         variant="outline"
@@ -880,7 +880,7 @@ function ClientList() {
                         className="h-7 px-2 text-[10px] gap-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                         onClick={() => grantSubscription(client.id, "pro", client.full_name)}
                       >
-                        <BanknoteIcon className="h-3 w-3" /> Pro
+                        <BanknoteIcon className="h-3 w-3" /> Enterprize Plus
                       </Button>
                       <Button
                         variant="outline"

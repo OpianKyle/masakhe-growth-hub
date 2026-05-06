@@ -81,7 +81,7 @@ const planOptions = [
     description: "Get online with a website, social presence and WhatsApp support.",
     features: [
       "7-Day Free Trial",
-      "Single User Dashboard",
+      "2 Users (Owner + 1 Team Member)",
       "Overview Dashboard",
       "Website Builder",
       "Social Media Hub",
@@ -97,7 +97,7 @@ const planOptions = [
     description: "Everything in Enterprize plus financials, clients and campaigns.",
     features: [
       "7-Day Free Trial",
-      "Single User Dashboard",
+      "3 Users (Owner + 2 Team Members)",
       "Overview Dashboard",
       "Website Builder",
       "Social Media Hub",
@@ -117,7 +117,7 @@ const planOptions = [
     description: "Full multi-user suite with payroll, employee management and premium support.",
     features: [
       "7-Day Free Trial",
-      "Multiple User Dashboard — Up to 4 Users, Permission Based",
+      "10 Users (Owner + 9 Team Members, Permission Based)",
       "Overview Dashboard",
       "Website Builder",
       "Social Media Hub",

@@ -65,7 +65,20 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
 
 const ALL_PERM_KEYS = PERMISSION_GROUPS.flatMap(g => g.perms.map(p => p.key));
 const DEFAULT_PERMS = ["overview"];
-const MAX_SEATS = 4;
+
+function getMaxSeats(plan: string | null): number {
+  if (plan === "premium") return 9;
+  if (plan === "pro") return 2;
+  if (plan === "starter") return 1;
+  return 0;
+}
+
+function getPlanLabel(plan: string | null): string {
+  if (plan === "premium") return "Enterprize Premium";
+  if (plan === "pro") return "Enterprize Plus";
+  if (plan === "starter") return "Enterprize";
+  return "your current plan";
+}
 
 export default function TeamMembersPage() {
   const { user } = useAuth();
@@ -85,9 +98,11 @@ export default function TeamMembersPage() {
   const [editingPerms, setEditingPerms] = useState<string[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const MAX_SEATS = getMaxSeats(planCode);
   const seatsUsed = members.filter(m => m.role !== "owner").length;
   const seatsRemaining = Math.max(0, MAX_SEATS - seatsUsed);
   const isPremium = planCode === "premium";
+  const hasTeamAccess = planCode === "starter" || planCode === "pro" || planCode === "premium";
 
   useEffect(() => {
     fetch("/api/billing/status", { credentials: "include" })
@@ -226,7 +241,7 @@ export default function TeamMembersPage() {
     );
   }
 
-  if (!isPremium) {
+  if (!hasTeamAccess) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <motion.div
@@ -238,17 +253,20 @@ export default function TeamMembersPage() {
             <Lock className="h-8 w-8 text-amber-600" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground">
-            Team Members is an Enterprize Premium feature
+            Team Members requires an active subscription
           </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-            Upgrade to <span className="font-semibold text-foreground">Enterprize Premium</span> to invite up to {MAX_SEATS} team members
-            and choose exactly which dashboard sections each can access.
+            Subscribe to any Masakhe plan to start adding team members.
+            <br />
+            <span className="font-semibold text-foreground">Enterprize</span> — 2 users &nbsp;·&nbsp;
+            <span className="font-semibold text-foreground">Enterprize Plus</span> — 3 users &nbsp;·&nbsp;
+            <span className="font-semibold text-foreground">Enterprize Premium</span> — 10 users
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <Link to="/dashboard/billing">
               <Button className="gradient-gold text-sa-black font-semibold">
                 <Sparkles className="h-4 w-4 mr-2" />
-                Upgrade to Premium
+                View Plans
               </Button>
             </Link>
             <Link to="/pricing">
@@ -313,7 +331,7 @@ export default function TeamMembersPage() {
             Team Members
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Invite up to {MAX_SEATS} team members and choose exactly which sections of your dashboard they can access.
+            Invite up to {MAX_SEATS} team member{MAX_SEATS !== 1 ? "s" : ""} on your {getPlanLabel(planCode)} plan and choose exactly which sections they can access.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -375,7 +393,7 @@ export default function TeamMembersPage() {
       {seatsRemaining === 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          You've reached the {MAX_SEATS}-team-member limit on Enterprize Premium. Remove a member to free up a seat.
+          You've reached the {MAX_SEATS}-team-member limit on {getPlanLabel(planCode)}. Remove a member to free up a seat.
         </div>
       )}
 

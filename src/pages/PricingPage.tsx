@@ -23,7 +23,7 @@ const plans = [
     description: "Get online with a website, social presence and WhatsApp support.",
     features: [
       { icon: Gift, label: "7-Day Free Trial" },
-      { icon: UserCheck, label: "Single User Dashboard" },
+      { icon: UserCheck, label: "2 Users (Owner + 1 Team Member)" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
       { icon: Smartphone, label: "Social Media Hub" },
@@ -41,7 +41,7 @@ const plans = [
     description: "Everything in Enterprize plus financials, clients and campaigns.",
     features: [
       { icon: Gift, label: "7-Day Free Trial" },
-      { icon: UserCheck, label: "Single User Dashboard" },
+      { icon: UserCheck, label: "3 Users (Owner + 2 Team Members)" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
       { icon: Smartphone, label: "Social Media Hub" },
@@ -62,7 +62,7 @@ const plans = [
     description: "Full multi-user suite with payroll, employee management and premium support.",
     features: [
       { icon: Gift, label: "7-Day Free Trial" },
-      { icon: UserCog, label: "Multiple User Dashboard — Up to 4 users, permission based" },
+      { icon: UserCog, label: "10 Users (Owner + 9 Team Members, Permission Based)" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
       { icon: Smartphone, label: "Social Media Hub" },
