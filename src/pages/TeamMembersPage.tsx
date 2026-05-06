@@ -296,18 +296,15 @@ export default function TeamMembersPage() {
             <div className="space-y-1.5">
               {group.perms.map(p => {
                 const checked = perms.includes(p.key);
-                const isOverview = p.key === "overview";
                 return (
                   <label key={p.key} className={`flex items-center gap-2 text-sm cursor-pointer rounded px-1.5 py-1 hover:bg-background ${checked ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={isOverview}
-                      onChange={() => !isOverview && togglePerm(perms, setPerms, p.key)}
-                      className="h-4 w-4 rounded border-border accent-primary disabled:opacity-60"
+                      onChange={() => togglePerm(perms, setPerms, p.key)}
+                      className="h-4 w-4 rounded border-border accent-primary"
                     />
                     <span className="flex-1">{p.label}</span>
-                    {isOverview && <span className="text-[9px] uppercase font-bold text-muted-foreground">always on</span>}
                   </label>
                 );
               })}
