@@ -53,6 +53,7 @@ interface RegisterData {
   fullName: string;
   businessData?: Record<string, any>;
   referralCode?: string;
+  franchiseCode?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

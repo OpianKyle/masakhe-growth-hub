@@ -73,7 +73,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
 authRouter.post("/register", async (req, res) => {
   try {
-    const { email, password, fullName, businessData, referralCode } = req.body;
+    const { email, password, fullName, businessData, referralCode, franchiseCode } = req.body;
 
     if (!email || !password || !fullName) {
       return res.status(400).json({ error: "Email, password, and full name are required" });
@@ -144,6 +144,24 @@ authRouter.post("/register", async (req, res) => {
 
     if (businessData?.businessStatus === "reseller") {
       await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});
+    }
+
+    if (franchiseCode) {
+      try {
+        const franchise = await queryOne(
+          "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
+          [franchiseCode]
+        );
+        if (franchise) {
+          const { randomUUID: uuid } = await import("crypto");
+          await execute(
+            "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+            [uuid(), franchise.id, userId]
+          );
+        }
+      } catch (e: any) {
+        console.error("[Auth] franchise auto-link error:", e.message);
+      }
     }
 
     req.session.userId = userId;

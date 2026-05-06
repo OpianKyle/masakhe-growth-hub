@@ -62,7 +62,23 @@ async function getMyFranchise(userId: string) {
   return queryOne("SELECT * FROM franchises WHERE owner_user_id = ?", [userId]);
 }
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Public Routes (no auth) ──────────────────────────────────────────────────
+
+// GET /api/franchise/info/:code — public, used by signup page to show franchise name
+franchiseRouter.get("/info/:code", async (req, res) => {
+  try {
+    const franchise = await queryOne(
+      "SELECT name, code FROM franchises WHERE code = ? AND status = 'active'",
+      [req.params.code]
+    );
+    if (!franchise) return res.status(404).json({ error: "Franchise not found" });
+    res.json({ name: franchise.name, code: franchise.code });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Authenticated Routes ────────────────────────────────────────────────────
 franchiseRouter.use(requireAuth);
 
 // GET /api/franchise/me

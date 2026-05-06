@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Users, ChevronRight, ChevronLeft, Loader2,
   Building2, CreditCard, LogOut, Eye, Crown, TrendingUp,
   Search, RefreshCw, CheckCircle2, Clock, XCircle, Banknote,
+  Link2, Copy, Check,
 } from "lucide-react";
 
 const PLAN_COLORS: Record<string, string> = {
@@ -31,6 +32,7 @@ const SUB_STATUS: Record<string, { label: string; icon: any; color: string }> = 
 function FranchiseOverview() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/franchise/me", { credentials: "include" })
@@ -39,6 +41,19 @@ function FranchiseOverview() {
       .catch(() => toast.error("Failed to load franchise data"))
       .finally(() => setLoading(false));
   }, []);
+
+  const signupLink = data?.franchise?.code
+    ? `${window.location.origin}/register?franchise=${encodeURIComponent(data.franchise.code)}`
+    : null;
+
+  const copyLink = () => {
+    if (!signupLink) return;
+    navigator.clipboard.writeText(signupLink).then(() => {
+      setCopied(true);
+      toast.success("Signup link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -73,12 +88,40 @@ function FranchiseOverview() {
         ))}
       </div>
 
+      {signupLink && (
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10">
+              <Link2 className="h-4 w-4 text-indigo-600" />
+            </div>
+            <h3 className="font-semibold">Business Signup Link</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Share this link with businesses to let them sign up directly under your franchise. Their accounts will be automatically linked to you.
+          </p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-lg border bg-muted/40 px-3 py-2.5 font-mono text-xs text-muted-foreground truncate select-all">
+              {signupLink}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyLink}
+              className="shrink-0 gap-1.5"
+            >
+              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copied!" : "Copy"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <h3 className="font-semibold mb-1">Getting Started</h3>
         <p className="text-sm text-muted-foreground">
+          Share your signup link above so businesses can register directly under your franchise.
           Go to <strong>Clients</strong> to view and manage your registered businesses,
           assign subscription plans, and log into any client account to assist them.
-          Contact your super admin to add new clients to your franchise.
         </p>
       </div>
     </div>

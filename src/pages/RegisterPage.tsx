@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import React, { useState } from "react";
-import { Check, Loader2, Eye, EyeOff } from "lucide-react";
+import { Check, Loader2, Eye, EyeOff, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,13 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [franchiseName, setFranchiseName] = useState<string | null>(null);
   const { register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get("ref") || undefined;
   const promoCode = searchParams.get("promo") || undefined;
+  const franchiseCode = searchParams.get("franchise") || undefined;
 
   // Stash a promo code from the URL (e.g. coming from a marketing-site popup)
   // so we can re-apply it on the billing page after sign-up.
@@ -44,6 +46,15 @@ export default function RegisterPage() {
         .catch(() => {});
     }
   }, [referralCode]);
+
+  React.useEffect(() => {
+    if (franchiseCode) {
+      fetch(`/api/franchise/info/${encodeURIComponent(franchiseCode)}`)
+        .then(r => r.json())
+        .then(d => { if (d.name) setFranchiseName(d.name); })
+        .catch(() => {});
+    }
+  }, [franchiseCode]);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -79,6 +90,7 @@ export default function RegisterPage() {
       password: form.password,
       fullName: `${form.firstName} ${form.surname}`.trim(),
       referralCode,
+      franchiseCode,
       businessData: form.cell ? { phone: form.cell } : undefined,
     });
     setLoading(false);
@@ -179,6 +191,19 @@ export default function RegisterPage() {
 
         <div className="flex-1 flex items-center justify-center px-6 py-10">
           <div className="w-full max-w-md">
+
+            {/* Franchise banner */}
+            {franchiseName && (
+              <div className="mb-6 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-indigo-800">Signing up under {franchiseName}</p>
+                  <p className="text-xs text-indigo-600">Your account will be linked to this franchise partner.</p>
+                </div>
+              </div>
+            )}
 
             {/* Referral banner */}
             {referrerName && (
