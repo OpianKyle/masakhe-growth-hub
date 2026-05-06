@@ -885,6 +885,14 @@ function ClientList() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                        onClick={() => grantSubscription(client.id, "premium", client.full_name)}
+                      >
+                        <Crown className="h-3 w-3" /> Enterprize Premium
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="h-7 px-2 text-[10px] gap-1 border-purple-300 text-purple-700 hover:bg-purple-50"
                         onClick={() => toggleExempt(client.id, client.full_name, false)}
                         title="Grant free access — no subscription required"
