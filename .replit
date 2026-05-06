@@ -55,10 +55,6 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-XNEELO_DB_HOST = "sql16.cpt3.host-h.net"
-XNEELO_DB_PORT = "3306"
-XNEELO_DB_NAME = "opiandigital"
-XNEELO_DB_USER = "admin"
 ADUMO_ENV = "staging"
 ADUMO_API_URL = "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
 ADUMO_APPLICATION_ID = "4794E7D1-F159-4A02-936F-65A20BD901C6"
