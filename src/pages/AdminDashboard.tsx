@@ -5,7 +5,8 @@ import {
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
-  Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter
+  Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter,
+  Store, RefreshCw, UserPlus, Link2, Unlink
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -91,13 +92,14 @@ interface AuditEntry {
 }
 
 const adminNavItems = [
-  { icon: LayoutDashboard, label: "Overview",  path: "/admin" },
-  { icon: Users,           label: "Clients",   path: "/admin/clients" },
-  { icon: Handshake,       label: "Partners",  path: "/admin/partners" },
-  { icon: FileText,        label: "Tenders",   path: "/admin/tenders" },
-  { icon: Globe,           label: "Websites",  path: "/admin/websites" },
-  { icon: History,         label: "Audit Log", path: "/admin/audit" },
-  { icon: Settings,        label: "Settings",  path: "/admin/settings" },
+  { icon: LayoutDashboard, label: "Overview",   path: "/admin" },
+  { icon: Users,           label: "Clients",    path: "/admin/clients" },
+  { icon: Handshake,       label: "Partners",   path: "/admin/partners" },
+  { icon: Store,           label: "Franchises", path: "/admin/franchises" },
+  { icon: FileText,        label: "Tenders",    path: "/admin/tenders" },
+  { icon: Globe,           label: "Websites",   path: "/admin/websites" },
+  { icon: History,         label: "Audit Log",  path: "/admin/audit" },
+  { icon: Settings,        label: "Settings",   path: "/admin/settings" },
 ];
 
 const TAG_PALETTE: Record<string, string> = {
@@ -2088,6 +2090,311 @@ function AdminPartners() {
   );
 }
 
+// ─────────────────────────── Admin Franchises ────────────────────────────────
+function AdminFranchises() {
+  const [franchises, setFranchises] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedFranchise, setSelectedFranchise] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [addingClient, setAddingClient] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const [newName, setNewName] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const [newOwnerId, setNewOwnerId] = useState("");
+  const [newClientId, setNewClientId] = useState("");
+
+  const loadFranchises = () => {
+    setLoading(true);
+    fetch("/api/admin/franchises", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setFranchises(Array.isArray(d) ? d : []))
+      .catch(() => toast.error("Failed to load franchises"))
+      .finally(() => setLoading(false));
+  };
+
+  const loadAllUsers = () => {
+    fetch("/api/admin/clients", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setAllUsers(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  };
+
+  useEffect(() => { loadFranchises(); loadAllUsers(); }, []);
+
+  const selectFranchise = (f: any) => {
+    setSelectedFranchise(f);
+    setLoadingClients(true);
+    fetch(`/api/admin/franchises/${f.id}/clients`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setClients(Array.isArray(d) ? d : []))
+      .catch(() => toast.error("Failed to load clients"))
+      .finally(() => setLoadingClients(false));
+  };
+
+  const createFranchise = async () => {
+    if (!newName || !newCode || !newOwnerId) { toast.error("All fields are required"); return; }
+    setCreating(true);
+    const res = await fetch("/api/admin/franchises", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName, code: newCode, owner_user_id: newOwnerId }),
+    });
+    const d = await res.json();
+    setCreating(false);
+    if (!res.ok) { toast.error(d.error || "Failed"); return; }
+    toast.success("Franchise created");
+    setShowCreate(false); setNewName(""); setNewCode(""); setNewOwnerId("");
+    loadFranchises();
+  };
+
+  const addClient = async () => {
+    if (!newClientId || !selectedFranchise) return;
+    setAddingClient(true);
+    const res = await fetch(`/api/admin/franchises/${selectedFranchise.id}/clients`, {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_user_id: newClientId }),
+    });
+    const d = await res.json();
+    setAddingClient(false);
+    if (!res.ok) { toast.error(d.error || "Failed"); return; }
+    toast.success("Client linked to franchise");
+    setShowAddClient(false); setNewClientId("");
+    selectFranchise(selectedFranchise);
+  };
+
+  const unlinkClient = async (clientId: string, name: string) => {
+    if (!selectedFranchise) return;
+    if (!confirm(`Unlink ${name} from this franchise?`)) return;
+    await fetch(`/api/admin/franchises/${selectedFranchise.id}/clients/${clientId}`, {
+      method: "DELETE", credentials: "include",
+    });
+    toast.success("Client unlinked");
+    selectFranchise(selectedFranchise);
+  };
+
+  const toggleStatus = async (f: any) => {
+    const next = f.status === "active" ? "suspended" : "active";
+    if (!confirm(`${next === "suspended" ? "Suspend" : "Reactivate"} franchise "${f.name}"?`)) return;
+    const res = await fetch(`/api/admin/franchises/${f.id}/status`, {
+      method: "PATCH", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    if (res.ok) { toast.success(`Franchise ${next}`); loadFranchises(); if (selectedFranchise?.id === f.id) setSelectedFranchise({ ...selectedFranchise, status: next }); }
+    else toast.error("Failed to update status");
+  };
+
+  const deleteFranchise = async (f: any) => {
+    if (!confirm(`Delete franchise "${f.name}"? The owner will be demoted to a regular user.`)) return;
+    await fetch(`/api/admin/franchises/${f.id}`, { method: "DELETE", credentials: "include" });
+    toast.success("Franchise deleted");
+    if (selectedFranchise?.id === f.id) setSelectedFranchise(null);
+    loadFranchises();
+  };
+
+  const filtered = franchises.filter(f => {
+    const q = search.toLowerCase();
+    return !q || f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q) || f.owner_name?.toLowerCase().includes(q);
+  });
+
+  const unlinkedUsers = allUsers.filter(u =>
+    u.role !== "admin" && u.role !== "franchise" &&
+    !clients.some(c => c.id === u.id)
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold font-heading flex items-center gap-2">
+            <Store className="h-6 w-6 text-primary" /> Franchises
+          </h2>
+          <p className="text-sm text-muted-foreground">{franchises.length} franchise{franchises.length !== 1 ? "s" : ""} registered</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={loadFranchises}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
+          <Button size="sm" onClick={() => setShowCreate(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Plus className="h-4 w-4 mr-1" /> New Franchise
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Franchise list */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, code, owner…"
+              className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-40"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">No franchises yet. Create the first one.</div>
+          ) : filtered.map(f => (
+            <div
+              key={f.id}
+              onClick={() => selectFranchise(f)}
+              className={`rounded-xl border p-4 cursor-pointer transition-colors ${selectedFranchise?.id === f.id ? "border-indigo-400 bg-indigo-50/60" : "bg-card hover:bg-muted/40"}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{f.name}</span>
+                    <span className="font-mono text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">{f.code}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${f.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                      {f.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{f.owner_name} · {f.owner_email}</p>
+                  <p className="text-xs text-muted-foreground">{f.client_count} client{f.client_count !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleStatus(f)}>
+                    {f.status === "active" ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600 hover:text-red-700" onClick={() => deleteFranchise(f)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Client panel */}
+        <div className="rounded-xl border bg-card shadow-sm">
+          {!selectedFranchise ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-2">
+              <Store className="h-10 w-10 opacity-30" />
+              <p className="text-sm">Select a franchise to manage its clients</p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">{selectedFranchise.name} — Clients</h3>
+                  <p className="text-xs text-muted-foreground">{clients.length} linked clients</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setShowAddClient(true)}>
+                  <UserPlus className="h-4 w-4 mr-1" /> Add Client
+                </Button>
+              </div>
+
+              {loadingClients ? (
+                <div className="flex items-center justify-center h-32"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : clients.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No clients linked yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {clients.map(c => (
+                    <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 bg-background">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.business_name || c.full_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{c.email}</p>
+                        {c.plan_code && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{c.plan_name || c.plan_code}</span>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-700 shrink-0" onClick={() => unlinkClient(c.id, c.full_name)}>
+                        <Unlink className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create franchise dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Franchise</DialogTitle>
+            <DialogDescription>Promote a user to franchise owner and assign them a franchise code.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Franchise Name</Label>
+              <Input className="mt-1" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Gauteng North Franchise" />
+            </div>
+            <div>
+              <Label className="text-xs">Franchise Code <span className="text-muted-foreground">(unique, short identifier)</span></Label>
+              <Input className="mt-1 font-mono uppercase" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="e.g. GPN01" maxLength={12} />
+            </div>
+            <div>
+              <Label className="text-xs">Owner (select from existing users)</Label>
+              <select
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none"
+                value={newOwnerId}
+                onChange={e => setNewOwnerId(e.target.value)}
+              >
+                <option value="">— select owner —</option>
+                {allUsers.filter(u => u.role === "user").map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name} ({u.email})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button onClick={createFranchise} disabled={creating} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Store className="h-4 w-4 mr-2" />}
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add client dialog */}
+      <Dialog open={showAddClient} onOpenChange={setShowAddClient}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Client to {selectedFranchise?.name}</DialogTitle>
+            <DialogDescription>Link an existing user account to this franchise.</DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label className="text-xs">Select Client</Label>
+            <select
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none"
+              value={newClientId}
+              onChange={e => setNewClientId(e.target.value)}
+            >
+              <option value="">— select client —</option>
+              {unlinkedUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.full_name} ({u.email})</option>
+              ))}
+            </select>
+            {unlinkedUsers.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">All eligible users are already linked to this franchise.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddClient(false)}>Cancel</Button>
+            <Button onClick={addClient} disabled={addingClient || !newClientId} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {addingClient ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+              Link Client
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -2160,6 +2467,7 @@ export default function AdminDashboard() {
           <Route index element={<AdminOverview />} />
           <Route path="clients" element={<ClientList />} />
           <Route path="partners" element={<AdminPartners />} />
+          <Route path="franchises" element={<AdminFranchises />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
           <Route path="audit" element={<AuditLog />} />

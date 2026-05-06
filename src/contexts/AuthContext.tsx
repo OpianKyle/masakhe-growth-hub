@@ -4,7 +4,7 @@ interface User {
   id: string;
   email: string;
   full_name: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "franchise";
   created_at: string;
   business_name?: string;
   trading_name?: string;
@@ -40,7 +40,7 @@ interface AuthContextType {
   loading: boolean;
   isImpersonating: boolean;
   originalAdminName: string | null;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean; isFranchise?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -99,7 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshUser();
         const isReseller = !!data.user.is_reseller;
         const isAdmin = data.user.role === "admin";
-        return { ok: true, isReseller, isAdmin };
+        const isFranchise = data.user.role === "franchise";
+        return { ok: true, isReseller, isAdmin, isFranchise };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {

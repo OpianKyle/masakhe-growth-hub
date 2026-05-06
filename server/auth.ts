@@ -507,8 +507,8 @@ authRouter.post("/impersonate/end", async (req, res) => {
     }
 
     const admin = await queryOne("SELECT id, role FROM users WHERE id = ?", [originalAdminId]);
-    if (!admin || admin.role !== "admin") {
-      return res.status(403).json({ error: "Original session is no longer an admin" });
+    if (!admin || (admin.role !== "admin" && admin.role !== "franchise")) {
+      return res.status(403).json({ error: "Original session is no longer an admin or franchise owner" });
     }
 
     req.session.userId = originalAdminId;

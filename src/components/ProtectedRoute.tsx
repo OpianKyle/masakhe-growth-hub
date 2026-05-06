@@ -14,7 +14,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return;
     }
     // Admins, partner/reseller accounts, and team members have their own billing path — skip SMME billing check
-    if (user.role === "admin" || user.is_reseller || user.teamMember) {
+    if (user.role === "admin" || user.role === "franchise" || user.is_reseller || user.teamMember) {
       setBillingBlocked(false);
       setBillingChecked(true);
       return;
@@ -40,7 +40,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // needing a hard refresh.
   useEffect(() => {
     if (!user) return;
-    if (user.role === "admin" || user.is_reseller || user.teamMember) return;
+    if (user.role === "admin" || user.role === "franchise" || user.is_reseller || user.teamMember) return;
     checkAccess();
   }, [location.pathname, checkAccess, user]);
 
@@ -99,6 +99,29 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+export function FranchiseRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (user.role !== "franchise" && user.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
 

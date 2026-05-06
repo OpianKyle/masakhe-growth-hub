@@ -35,6 +35,7 @@ Masakhe is a digital platform that empowers South African SMMEs with invoicing, 
 
 ## Product
 - Website builder (44 industry templates), social media hub with scheduler, invoicing/billing (Adumo Online), payroll, inventory, CRM, compliance tools, tenders, business funding toolkit, leave management, admin impersonation
+- **Franchise system**: super admins create franchises and link clients; franchise owners get `/franchise` portal with client management, subscription granting, and scoped client impersonation
 
 ## User preferences
 - Remote MySQL on Xneelo (no SQLite, no paid Replit DB services)

@@ -24,6 +24,7 @@ import { startBillingScheduler } from "./billing-scheduler";
 import { startInvoiceScheduler } from "./invoice-scheduler";
 import { leaveRouter, runLeaveMigrations } from "./leave";
 import { resellerRouter, runResellerMigrations } from "./reseller";
+import { franchiseRouter, runFranchiseMigrations } from "./franchise";
 import { documentsRouter } from "./documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
@@ -93,6 +94,7 @@ async function main() {
   app.use("/api/support-chat", supportChatRouter);
   app.use("/api/leave", leaveRouter);
   app.use("/api/reseller", resellerRouter);
+  app.use("/api/franchise", franchiseRouter);
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
@@ -127,6 +129,7 @@ async function main() {
     startAutomationsScheduler();
     runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
+    runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));
   });
 }
 

@@ -728,6 +728,156 @@ function safeJsonParse(s: string): any {
   try { return JSON.parse(s); } catch { return null; }
 }
 
+// ─── Franchise admin endpoints ────────────────────────────────────────────────
+
+// GET /api/admin/franchises
+adminRouter.get("/franchises", async (_req, res) => {
+  try {
+    const rows = await queryAll(`
+      SELECT f.*, u.full_name as owner_name, u.email as owner_email,
+             COUNT(fc.id) as client_count
+      FROM franchises f
+      JOIN users u ON u.id = f.owner_user_id
+      LEFT JOIN franchise_clients fc ON fc.franchise_id = f.id AND fc.status = 'active'
+      GROUP BY f.id
+      ORDER BY f.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/franchises — create franchise, promote user to franchise role
+adminRouter.post("/franchises", async (req, res) => {
+  try {
+    const { name, code, owner_user_id } = req.body;
+    if (!name || !code || !owner_user_id) {
+      return res.status(400).json({ error: "name, code, and owner_user_id are required" });
+    }
+
+    const owner = await queryOne("SELECT id, role FROM users WHERE id = ?", [owner_user_id]);
+    if (!owner) return res.status(404).json({ error: "Owner user not found" });
+
+    const existing = await queryOne("SELECT id FROM franchises WHERE owner_user_id = ?", [owner_user_id]);
+    if (existing) return res.status(400).json({ error: "This user already owns a franchise" });
+
+    const codeExists = await queryOne("SELECT id FROM franchises WHERE code = ?", [code.toUpperCase()]);
+    if (codeExists) return res.status(400).json({ error: "Franchise code already in use" });
+
+    const id = randomUUID();
+    await execute(
+      "INSERT INTO franchises (id, name, code, owner_user_id, status) VALUES (?, ?, ?, ?, 'active')",
+      [id, name, code.toUpperCase(), owner_user_id]
+    );
+    await execute("UPDATE users SET role = 'franchise' WHERE id = ?", [owner_user_id]);
+
+    res.json({ ok: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/franchises/:id/clients
+adminRouter.get("/franchises/:id/clients", async (req, res) => {
+  try {
+    const rows = await queryAll(`
+      SELECT u.id, u.email, u.full_name, u.created_at,
+             COALESCE(bp2.business_name, bp2.trading_name, u.full_name) as business_name,
+             bpl.code as plan_code, bpl.name as plan_name,
+             bs.status as sub_status, fc.linked_at, fc.status as link_status
+      FROM franchise_clients fc
+      JOIN users u ON u.id = fc.client_user_id
+      LEFT JOIN business_profiles bp2 ON bp2.user_id = u.id
+      LEFT JOIN workspace_members wm ON wm.user_id = u.id
+      LEFT JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status IN ('ACTIVE','TRIAL')
+      LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
+      WHERE fc.franchise_id = ?
+      ORDER BY fc.linked_at DESC
+    `, [req.params.id]);
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/franchises/:id/clients — assign a client to franchise
+adminRouter.post("/franchises/:id/clients", async (req, res) => {
+  try {
+    const { client_user_id } = req.body;
+    if (!client_user_id) return res.status(400).json({ error: "client_user_id is required" });
+
+    const franchise = await queryOne("SELECT id FROM franchises WHERE id = ?", [req.params.id]);
+    if (!franchise) return res.status(404).json({ error: "Franchise not found" });
+
+    const client = await queryOne("SELECT id, role FROM users WHERE id = ?", [client_user_id]);
+    if (!client) return res.status(404).json({ error: "Client user not found" });
+    if (client.role === "admin" || client.role === "franchise") {
+      return res.status(400).json({ error: "Cannot link admin or franchise users as clients" });
+    }
+
+    const existing = await queryOne("SELECT id FROM franchise_clients WHERE client_user_id = ?", [client_user_id]);
+    if (existing) {
+      await execute("UPDATE franchise_clients SET franchise_id = ?, status = 'active' WHERE client_user_id = ?", [req.params.id, client_user_id]);
+    } else {
+      const id = randomUUID();
+      await execute(
+        "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+        [id, req.params.id, client_user_id]
+      );
+    }
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/franchises/:id/clients/:clientId — unlink client
+adminRouter.delete("/franchises/:id/clients/:clientId", async (req, res) => {
+  try {
+    await execute(
+      "UPDATE franchise_clients SET status = 'inactive' WHERE franchise_id = ? AND client_user_id = ?",
+      [req.params.id, req.params.clientId]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/admin/franchises/:id/status
+adminRouter.patch("/franchises/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["active", "suspended"].includes(status)) {
+      return res.status(400).json({ error: "status must be active or suspended" });
+    }
+    await execute("UPDATE franchises SET status = ? WHERE id = ?", [status, req.params.id]);
+    if (status === "suspended") {
+      const f = await queryOne("SELECT owner_user_id FROM franchises WHERE id = ?", [req.params.id]);
+      if (f) await execute("UPDATE users SET role = 'user' WHERE id = ?", [f.owner_user_id]);
+    }
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/franchises/:id — delete franchise
+adminRouter.delete("/franchises/:id", async (req, res) => {
+  try {
+    const f = await queryOne("SELECT owner_user_id FROM franchises WHERE id = ?", [req.params.id]);
+    if (!f) return res.status(404).json({ error: "Franchise not found" });
+    await execute("UPDATE franchise_clients SET status = 'inactive' WHERE franchise_id = ?", [req.params.id]);
+    await execute("UPDATE users SET role = 'user' WHERE id = ?", [f.owner_user_id]);
+    await execute("DELETE FROM franchises WHERE id = ?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 adminRouter.get("/audit-log/actions", async (req, res) => {
   try {
     const rows = await queryAll(
