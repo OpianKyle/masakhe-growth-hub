@@ -213,7 +213,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Platform Modules ── */}
-      <section id="platform" className="py-28 bg-white">
+      <section id="platform" className="hidden py-28 bg-white">
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-[1fr_2fr] gap-16 items-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="lg:sticky lg:top-28">
@@ -262,7 +262,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── How It Works ── */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 to-blue-950 relative overflow-hidden">
+      <section className="hidden py-24 bg-gradient-to-br from-slate-900 to-blue-950 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-blue-400 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-cyan-400 blur-3xl" />
@@ -309,7 +309,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Registration Process ── */}
-      <section className="py-20 bg-[#efefef]">
+      <section className="hidden py-20 bg-[#efefef]">
         <div className="container mx-auto px-6">
           <div className="mb-14">
             <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest">Registration Process</h2>
@@ -399,7 +399,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Website Builder feature ── */}
-      <section id="features" className="relative min-h-[80vh] flex items-center overflow-hidden">
+      <section id="features" className="hidden relative min-h-[80vh] flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${smmeOwner})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/20" />
 
@@ -452,7 +452,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Invoicing & Finance feature ── */}
-      <section className="grid lg:grid-cols-2 min-h-[70vh]">
+      <section className="hidden grid lg:grid-cols-2 min-h-[70vh]">
         <div className="bg-slate-900 flex items-center py-20">
           <div className="px-8 lg:px-14 xl:px-20 max-w-xl w-full">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-8">
@@ -502,7 +502,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="py-24 bg-slate-950">
+      <section id="pricing" className="hidden py-24 bg-slate-950">
         <div className="container mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-blue-300 mb-5">
@@ -589,7 +589,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="relative py-32 overflow-hidden">
+      <section className="hidden relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950" />
         <div className="absolute inset-0">
           <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-green-600/20 blur-[120px]" />
@@ -653,7 +653,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Contact Form ── */}
-      <section id="contact" className="py-24 bg-slate-50">
+      <section id="contact" className="hidden py-24 bg-slate-50">
         <div className="container mx-auto px-6 max-w-5xl">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
             <motion.p custom={0} variants={fadeUp} className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-3">Get In Touch</motion.p>
