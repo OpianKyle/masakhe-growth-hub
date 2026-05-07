@@ -158,11 +158,6 @@ export default function LandingPage() {
             <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold font-heading text-slate-900">Masakhe</span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            {["Platform", "Features", "Pricing"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-slate-500 hover:text-slate-900 transition-colors">{item}</a>
-            ))}
-          </div>
           <div className="flex items-center gap-3">
             <Link to="/login"><Button variant="ghost" size="sm" className="text-slate-600">Sign In</Button></Link>
             <Link to="/register">
