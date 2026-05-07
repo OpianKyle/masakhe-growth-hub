@@ -410,6 +410,95 @@ export async function sendTeamInviteEmail(
   }
 }
 
+export async function sendFranchiseApplicationEmail(opts: {
+  applicantName: string;
+  applicantEmail: string;
+  businessName: string;
+  phone: string;
+  message: string;
+}) {
+  if (!transporter) {
+    console.warn("SMTP not configured — franchise application email skipped");
+    return false;
+  }
+  const { applicantName, applicantEmail, businessName, phone, message } = opts;
+  const submittedAt = new Date().toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "long", timeStyle: "short" });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#4f46e5 0%,#3730a3 100%);padding:32px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">Masakhe</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">New Franchise Application</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <h2 style="margin:0 0 20px;color:#1a1a2e;font-size:22px;">New Franchise Application</h2>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+              <tr style="background:#f9fafb;">
+                <td colspan="2" style="padding:10px 16px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;border-bottom:1px solid #e5e7eb;">Applicant Details</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280;width:160px;">Name</td>
+                <td style="padding:12px 16px;font-size:14px;color:#1a1a2e;">${applicantName}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280;">Email</td>
+                <td style="padding:12px 16px;font-size:14px;color:#1a1a2e;"><a href="mailto:${applicantEmail}" style="color:#4f46e5;">${applicantEmail}</a></td>
+              </tr>
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280;">Business</td>
+                <td style="padding:12px 16px;font-size:14px;color:#1a1a2e;">${businessName || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280;">Phone</td>
+                <td style="padding:12px 16px;font-size:14px;color:#1a1a2e;">${phone || "Not provided"}</td>
+              </tr>
+            </table>
+            ${message ? `
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:24px;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">Message</p>
+              <p style="margin:0;font-size:14px;color:#1a1a2e;line-height:1.6;">${message.replace(/\n/g, "<br>")}</p>
+            </div>` : ""}
+            <p style="margin:0 0 16px;color:#6b7280;font-size:13px;">Submitted: ${submittedAt}</p>
+            <p style="margin:0;color:#4a4a5a;font-size:14px;line-height:1.6;">
+              Reply directly to this email or use the applicant's contact details above to follow up.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
+            <p style="margin:0;color:#9a9aaa;font-size:12px;">&copy; ${new Date().getFullYear()} Masakhe. A digital platform for South African SMMEs.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Masakhe Platform" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      to: "admin@masakhegroup.co.za",
+      replyTo: applicantEmail,
+      subject: `Franchise Application — ${applicantName} (${businessName || applicantEmail})`,
+      html,
+    });
+    return true;
+  } catch (err: any) {
+    console.error("Failed to send franchise application email:", err.message);
+    return false;
+  }
+}
+
 export async function sendPasswordResetEmail(toEmail: string, fullName: string, resetToken: string, baseUrl?: string) {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];

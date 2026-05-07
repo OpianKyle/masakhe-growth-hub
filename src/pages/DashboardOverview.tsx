@@ -4,12 +4,17 @@ import {
   TrendingUp, TrendingDown, DollarSign, Receipt, Globe, Smartphone,
   ArrowUpRight, ArrowDownRight, Wallet, ClipboardCheck, CheckCircle2,
   AlertCircle, FileText, BarChart3, BookOpen, HandCoins,
-  Building2, Send, ShieldCheck
+  Building2, Send, ShieldCheck, Handshake, Phone, Loader2, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import ComplianceScoreCard from "@/components/ComplianceScoreCard";
+import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
@@ -55,6 +60,32 @@ export default function DashboardOverview() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const firstName = user?.full_name?.split(" ")[0] || "there";
+
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [applyPhone, setApplyPhone] = useState("");
+  const [applyMessage, setApplyMessage] = useState("");
+  const [applySubmitting, setApplySubmitting] = useState(false);
+  const [applyDone, setApplyDone] = useState(false);
+
+  const submitFranchiseApplication = async () => {
+    setApplySubmitting(true);
+    try {
+      const res = await fetch("/api/franchise/apply", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: applyPhone, message: applyMessage }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || "Failed to send application"); return; }
+      setApplyDone(true);
+      toast.success("Application submitted! The Masakhe team will contact you soon.");
+    } catch {
+      toast.error("Network error — please try again");
+    } finally {
+      setApplySubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/dashboard/overview", { credentials: "include" })
@@ -351,6 +382,34 @@ export default function DashboardOverview() {
 
       <ComplianceScoreCard />
 
+      {/* Franchise Application Card */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
+        className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+            <Handshake className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold font-heading text-indigo-900">Become a Masakhe Franchise Partner</h3>
+            <p className="text-sm text-indigo-700 mt-1">
+              Grow your own portfolio of businesses using the Masakhe platform. Franchise partners get a dedicated portal to manage, support and subscribe clients — and earn recurring revenue.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-3">
+              {["Earn recurring revenue", "Manage client subscriptions", "Dedicated franchise portal"].map(b => (
+                <span key={b} className="flex items-center gap-1.5 text-xs font-medium text-indigo-800">
+                  <Star className="h-3.5 w-3.5 text-indigo-500" /> {b}
+                </span>
+              ))}
+            </div>
+          </div>
+          <Button
+            onClick={() => { setApplyOpen(true); setApplyDone(false); setApplyPhone(""); setApplyMessage(""); }}
+            className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+            <Send className="h-4 w-4" /> Apply Now
+          </Button>
+        </div>
+      </motion.div>
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
         className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex items-center justify-between mb-5">
@@ -388,6 +447,78 @@ export default function DashboardOverview() {
           ))}
         </div>
       </motion.div>
+
+      {/* Franchise Application Modal */}
+      <Dialog open={applyOpen} onOpenChange={open => { if (!open) setApplyOpen(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5 text-indigo-600" /> Franchise Partner Application
+            </DialogTitle>
+            <DialogDescription>
+              Fill in the details below and the Masakhe team will contact you to discuss the opportunity.
+            </DialogDescription>
+          </DialogHeader>
+
+          {applyDone ? (
+            <div className="py-8 text-center space-y-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 mx-auto">
+                <CheckCircle2 className="h-7 w-7 text-green-600" />
+              </div>
+              <h3 className="font-bold text-lg">Application Sent!</h3>
+              <p className="text-sm text-muted-foreground">
+                Your application has been submitted to the Masakhe team at <strong>admin@masakhegroup.co.za</strong>.
+                Someone will reach out to you within 1–2 business days.
+              </p>
+              <Button onClick={() => setApplyOpen(false)} className="mt-2">Close</Button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-2">
+                <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                  Your name, email and business name will be included automatically from your profile.
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="apply-phone" className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" /> Contact Phone Number
+                  </Label>
+                  <Input
+                    id="apply-phone"
+                    value={applyPhone}
+                    onChange={e => setApplyPhone(e.target.value)}
+                    placeholder="+27 72 000 0000"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="apply-message">Tell us about yourself <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Textarea
+                    id="apply-message"
+                    value={applyMessage}
+                    onChange={e => setApplyMessage(e.target.value)}
+                    placeholder="E.g. your experience, the region you'd like to cover, why you're interested…"
+                    rows={4}
+                    className="resize-none text-sm"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setApplyOpen(false)}>Cancel</Button>
+                <Button
+                  onClick={submitFranchiseApplication}
+                  disabled={applySubmitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                  {applySubmitting
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                    : <><Send className="h-4 w-4" /> Submit Application</>}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

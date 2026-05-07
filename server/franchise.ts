@@ -2,6 +2,7 @@ import { Router } from "express";
 import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
+import { sendFranchiseApplicationEmail } from "./email";
 
 export const franchiseRouter = Router();
 
@@ -351,6 +352,38 @@ franchiseRouter.post("/clients/:id/impersonate", async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Franchise Application ────────────────────────────────────────────────────
+franchiseRouter.post("/apply", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne(
+      `SELECT u.full_name, u.email,
+              COALESCE(bp.business_name, bp.trading_name) as business_name,
+              bp.phone
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       WHERE u.id = ?`,
+      [userId]
+    );
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { message, phone } = req.body;
+
+    const sent = await sendFranchiseApplicationEmail({
+      applicantName: user.full_name || user.email,
+      applicantEmail: user.email,
+      businessName: user.business_name || "",
+      phone: phone || user.phone || "",
+      message: message || "",
+    });
+
+    res.json({ ok: true, emailSent: sent });
+  } catch (err: any) {
+    console.error("Franchise apply error:", err.message);
+    res.status(500).json({ error: "Failed to submit application" });
   }
 });
 
