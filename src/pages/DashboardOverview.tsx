@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, TrendingDown, DollarSign, Receipt, Globe, Smartphone,
-  ArrowUpRight, ArrowDownRight, Wallet, ClipboardCheck, CheckCircle2,
+  ArrowUpRight, ArrowDownRight, Wallet, CheckCircle2,
   AlertCircle, FileText, BarChart3, BookOpen, HandCoins,
-  Building2, Send, ShieldCheck, Handshake, Phone, Loader2, Star
+  Send, Handshake, Phone, Loader2, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import ComplianceScoreCard from "@/components/ComplianceScoreCard";
 import { toast } from "sonner";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -166,9 +165,6 @@ export default function DashboardOverview() {
           )}
         </div>
         <div className="flex gap-3 mt-4">
-          <Link to="/dashboard/funding">
-            <Button variant="gold" size="sm">Funding Scoring</Button>
-          </Link>
           <Link to="/dashboard/settings">
             <Button variant="ghost" size="sm" className="text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
               Edit Profile
@@ -196,6 +192,34 @@ export default function DashboardOverview() {
           </motion.div>
         ))}
       </div>
+
+      {/* Franchise Application Card */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+            <Handshake className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold font-heading text-indigo-900">Become a Masakhe Franchise Partner</h3>
+            <p className="text-sm text-indigo-700 mt-1">
+              Grow your own portfolio of businesses using the Masakhe platform. Franchise partners get a dedicated portal to manage, support and subscribe clients — and earn recurring revenue.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-3">
+              {["Earn recurring revenue", "Manage client subscriptions", "Dedicated franchise portal"].map(b => (
+                <span key={b} className="flex items-center gap-1.5 text-xs font-medium text-indigo-800">
+                  <Star className="h-3.5 w-3.5 text-indigo-500" /> {b}
+                </span>
+              ))}
+            </div>
+          </div>
+          <Button
+            onClick={() => { setApplyOpen(true); setApplyDone(false); setApplyPhone(""); setApplyMessage(""); }}
+            className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+            <Send className="h-4 w-4" /> Apply Now
+          </Button>
+        </div>
+      </motion.div>
 
       {hasFinanceData && data?.revenueChart && data.revenueChart.length > 0 ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
@@ -379,74 +403,6 @@ export default function DashboardOverview() {
           </div>
         </div>
       </div>
-
-      <ComplianceScoreCard />
-
-      {/* Franchise Application Card */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
-        className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
-            <Handshake className="h-6 w-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold font-heading text-indigo-900">Become a Masakhe Franchise Partner</h3>
-            <p className="text-sm text-indigo-700 mt-1">
-              Grow your own portfolio of businesses using the Masakhe platform. Franchise partners get a dedicated portal to manage, support and subscribe clients — and earn recurring revenue.
-            </p>
-            <div className="flex flex-wrap gap-4 mt-3">
-              {["Earn recurring revenue", "Manage client subscriptions", "Dedicated franchise portal"].map(b => (
-                <span key={b} className="flex items-center gap-1.5 text-xs font-medium text-indigo-800">
-                  <Star className="h-3.5 w-3.5 text-indigo-500" /> {b}
-                </span>
-              ))}
-            </div>
-          </div>
-          <Button
-            onClick={() => { setApplyOpen(true); setApplyDone(false); setApplyPhone(""); setApplyMessage(""); }}
-            className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
-            <Send className="h-4 w-4" /> Apply Now
-          </Button>
-        </div>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        className="rounded-xl border border-border bg-card p-6 shadow-card">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-lg font-bold font-heading text-foreground flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Business Funding Toolkit
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">Everything you need to prepare, apply and qualify for South African funding</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {[
-            { icon: Building2, label: "Verify Company", description: "Register & verify your CIPC company profile", path: "/dashboard/company-verify", color: "text-green-600", bg: "bg-green-50" },
-            { icon: BookOpen, label: "Business Plan", description: "AI-generated 8-section business plan", path: "/dashboard/business-plan", color: "text-blue-600", bg: "bg-blue-50" },
-            { icon: HandCoins, label: "Funding Proposal", description: "Professional funding proposal document", path: "/dashboard/funding-proposal", color: "text-amber-600", bg: "bg-amber-50" },
-            { icon: ClipboardCheck, label: "Funding Scoring", description: "Track your score for funding", path: "/dashboard/funding", color: "text-primary", bg: "bg-primary/10" },
-            { icon: Send, label: "Funding Applications", description: "Apply to SEFA, NEF, NYDA and IDC", path: "/dashboard/funding-applications", color: "text-rose-600", bg: "bg-rose-50" },
-          ].map((item) => (
-            <Link key={item.label} to={item.path}
-              className="group flex flex-col gap-3 rounded-xl border border-border hover:border-primary/40 p-4 transition-all hover:shadow-sm">
-              <div className={`h-10 w-10 rounded-lg ${item.bg} flex items-center justify-center`}>
-                <item.icon className={`h-5 w-5 ${item.color}`} />
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">{item.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.description}</p>
-              </div>
-              <div className="mt-auto">
-                <span className="text-xs font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Open <ArrowUpRight className="h-3 w-3" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </motion.div>
 
       {/* Franchise Application Modal */}
       <Dialog open={applyOpen} onOpenChange={open => { if (!open) setApplyOpen(false); }}>
