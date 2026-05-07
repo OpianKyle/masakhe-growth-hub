@@ -48,7 +48,7 @@ export async function runFranchiseMigrations() {
   }
 }
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 export async function requireFranchise(req: any, res: any, next: any) {
   if (!req.session?.userId) return res.status(401).json({ error: "Not authenticated" });
   const user = await queryOne("SELECT role FROM users WHERE id = ?", [req.session.userId]);
@@ -62,9 +62,28 @@ async function getMyFranchise(userId: string) {
   return queryOne("SELECT * FROM franchises WHERE owner_user_id = ?", [userId]);
 }
 
+async function ensureWorkspace(clientUserId: string): Promise<string> {
+  let wm = await queryOne("SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1", [clientUserId]);
+  if (wm) return wm.workspace_id;
+  const wsId = randomUUID();
+  const now = new Date().toISOString();
+  const u = await queryOne("SELECT full_name FROM users WHERE id = ?", [clientUserId]);
+  await execute("INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+    [wsId, u?.full_name || "Business", clientUserId, now, now]);
+  await execute("INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
+    [randomUUID(), wsId, clientUserId, "owner", now]);
+  return wsId;
+}
+
+async function assertClientInFranchise(franchiseId: string, clientId: string) {
+  return queryOne(
+    "SELECT id FROM franchise_clients WHERE franchise_id = ? AND client_user_id = ? AND status = 'active'",
+    [franchiseId, clientId]
+  );
+}
+
 // ─── Public Routes (no auth) ──────────────────────────────────────────────────
 
-// GET /api/franchise/info/:code — public, used by signup page to show franchise name
 franchiseRouter.get("/info/:code", async (req, res) => {
   try {
     const franchise = await queryOne(
@@ -125,8 +144,10 @@ franchiseRouter.get("/clients", async (req, res) => {
 
     const clients = await queryAll(`
       SELECT u.id, u.email, u.full_name, u.created_at,
+             u.admin_notes, u.admin_tags, u.subscription_exempt,
              COALESCE(bp2.business_name, bp2.trading_name, u.full_name) as business_name,
-             bpl.code as plan_code, bpl.name as plan_name,
+             bp2.phone, bp2.industry_sector,
+             bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents,
              bs.status as sub_status, bs.trial_end_at,
              fc.linked_at, fc.status as link_status
       FROM franchise_clients fc
@@ -139,41 +160,116 @@ franchiseRouter.get("/clients", async (req, res) => {
       ORDER BY fc.linked_at DESC
     `, [franchise.id]);
 
-    res.json(clients);
+    const parsed = clients.map((c: any) => ({
+      ...c,
+      admin_tags: typeof c.admin_tags === "string"
+        ? (() => { try { return JSON.parse(c.admin_tags); } catch { return []; } })()
+        : (c.admin_tags || []),
+      subscription_exempt: !!c.subscription_exempt,
+    }));
+
+    res.json(parsed);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/franchise/clients/:id/subscription
+// ─── Notes ───────────────────────────────────────────────────────────────────
+franchiseRouter.patch("/clients/:id/notes", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    const { notes } = req.body;
+    await execute("UPDATE users SET admin_notes = ?, updated_at = ? WHERE id = ?",
+      [notes ?? null, new Date().toISOString(), req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Tags ────────────────────────────────────────────────────────────────────
+franchiseRouter.patch("/clients/:id/tags", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    const tags = Array.isArray(req.body?.tags) ? req.body.tags : [];
+    const cleaned = Array.from(new Set(
+      tags.map((t: any) => String(t || "").trim()).filter((t: string) => t.length > 0 && t.length <= 40)
+    )).slice(0, 12);
+    await execute("UPDATE users SET admin_tags = ?, updated_at = ? WHERE id = ?",
+      [JSON.stringify(cleaned), new Date().toISOString(), req.params.id]);
+    res.json({ ok: true, tags: cleaned });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Grant Trial ─────────────────────────────────────────────────────────────
+franchiseRouter.post("/clients/:id/trial", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    const premiumPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium'");
+    if (!premiumPlan) return res.status(404).json({ error: "Premium plan not found" });
+
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 7);
+    const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    const workspaceId = await ensureWorkspace(req.params.id);
+    const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [workspaceId]);
+    if (existing) {
+      await execute(
+        "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
+        [premiumPlan.id, now, trialEndStr, existing.id]
+      );
+    } else {
+      await execute(
+        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
+        [workspaceId, premiumPlan.id, now, trialEndStr]
+      );
+    }
+    res.json({ ok: true, trialEndsAt: trialEndStr });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Grant Subscription ───────────────────────────────────────────────────────
 franchiseRouter.post("/clients/:id/subscription", async (req, res) => {
   try {
     const userId = req.session.userId!;
     const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
-    if (!user || (user.role !== "franchise" && user.role !== "admin")) {
-      return res.status(403).json({ error: "Franchise access required" });
-    }
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
     const franchise = await getMyFranchise(userId);
     if (!franchise) return res.status(404).json({ error: "No franchise found" });
-
-    const link = await queryOne(
-      "SELECT id FROM franchise_clients WHERE franchise_id = ? AND client_user_id = ? AND status = 'active'",
-      [franchise.id, req.params.id]
-    );
-    if (!link) return res.status(403).json({ error: "This client is not in your franchise" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
 
     const { plan } = req.body;
-    if (!["starter", "pro", "premium"].includes(plan)) {
-      return res.status(400).json({ error: "Invalid plan. Use starter, pro, or premium." });
-    }
+    if (!["starter", "pro", "premium"].includes(plan)) return res.status(400).json({ error: "Invalid plan." });
 
     const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [plan]);
     if (!billingPlan) return res.status(404).json({ error: "Billing plan not found" });
 
-    const wm = await queryOne("SELECT workspace_id FROM workspace_members WHERE user_id = ? LIMIT 1", [req.params.id]);
-    if (!wm) return res.status(404).json({ error: "Client workspace not found" });
-
-    const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [wm.workspace_id]);
+    const workspaceId = await ensureWorkspace(req.params.id);
+    const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [workspaceId]);
     if (existing) {
       await execute(
         "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, cancelled_at = NULL, updated_at = NOW() WHERE id = ?",
@@ -182,33 +278,65 @@ franchiseRouter.post("/clients/:id/subscription", async (req, res) => {
     } else {
       await execute(
         "INSERT INTO billing_subscriptions (workspace_id, plan_id, status) VALUES (?, ?, 'ACTIVE')",
-        [wm.workspace_id, billingPlan.id]
+        [workspaceId, billingPlan.id]
       );
     }
-
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/franchise/clients/:id/impersonate
+// ─── Revoke Subscription ──────────────────────────────────────────────────────
+franchiseRouter.delete("/clients/:id/subscription", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    const workspaceId = await ensureWorkspace(req.params.id);
+    await execute(
+      "UPDATE billing_subscriptions SET status = 'CANCELLED', cancelled_at = NOW(), updated_at = NOW() WHERE workspace_id = ? AND status IN ('ACTIVE','TRIAL')",
+      [workspaceId]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Free Access (Exemption) ──────────────────────────────────────────────────
+franchiseRouter.patch("/clients/:id/exempt", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    const value = req.body.exempt ? 1 : 0;
+    await execute("UPDATE users SET subscription_exempt = ?, updated_at = ? WHERE id = ?",
+      [value, new Date().toISOString(), req.params.id]);
+    res.json({ ok: true, exempt: !!value });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Impersonate ──────────────────────────────────────────────────────────────
 franchiseRouter.post("/clients/:id/impersonate", async (req, res) => {
   try {
     const franchiseOwnerId = req.session.userId!;
     const user = await queryOne("SELECT role FROM users WHERE id = ?", [franchiseOwnerId]);
-    if (!user || (user.role !== "franchise" && user.role !== "admin")) {
-      return res.status(403).json({ error: "Franchise access required" });
-    }
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
 
     const franchise = await getMyFranchise(franchiseOwnerId);
     if (!franchise) return res.status(404).json({ error: "No franchise found" });
-
-    const link = await queryOne(
-      "SELECT id FROM franchise_clients WHERE franchise_id = ? AND client_user_id = ? AND status = 'active'",
-      [franchise.id, req.params.id]
-    );
-    if (!link) return res.status(403).json({ error: "This client is not in your franchise" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
 
     const target = await queryOne("SELECT id, full_name, email, role FROM users WHERE id = ?", [req.params.id]);
     if (!target) return res.status(404).json({ error: "User not found" });
@@ -221,6 +349,26 @@ franchiseRouter.post("/clients/:id/impersonate", async (req, res) => {
     req.session.save(() => {
       res.json({ ok: true, targetName: target.full_name });
     });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Unlink Client ────────────────────────────────────────────────────────────
+franchiseRouter.delete("/clients/:id", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!await assertClientInFranchise(franchise.id, req.params.id)) return res.status(403).json({ error: "Client not in your franchise" });
+
+    await execute(
+      "UPDATE franchise_clients SET status = 'inactive' WHERE franchise_id = ? AND client_user_id = ?",
+      [franchise.id, req.params.id]
+    );
+    res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
