@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { queryOne, queryAll, execute } from "../db";
-import { requireAuth } from "../auth";
+import { requireAuth, getDataOwnerId } from "../auth";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { sendTeamInviteEmail } from "../email";
@@ -38,6 +38,13 @@ export function requireWorkspaceRole(...roles: WorkspaceRole[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const workspaceId = req.params.workspaceId || req.body?.workspaceId || req.query?.workspaceId;
     if (!workspaceId) return res.status(400).json({ error: "workspaceId required" });
+    // Super admins can access any workspace
+    const sessionUser = await queryOne("SELECT role FROM users WHERE id = ?", [req.session.userId!]);
+    if (sessionUser?.role === "admin") {
+      (req as any).workspaceRole = "owner";
+      (req as any).workspaceId = workspaceId;
+      return next();
+    }
     const role = await getWorkspaceRole(workspaceId as string, req.session.userId!);
     if (!role) return res.status(403).json({ error: "Not a member of this workspace" });
     if (!roles.includes(role)) return res.status(403).json({ error: `Requires role: ${roles.join(" or ")}` });
@@ -67,7 +74,7 @@ async function ensureDefaultWorkspace(userId: string): Promise<string> {
 
 workspaceRouter.get("/mine", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = getDataOwnerId(req);
     const wsId = await ensureDefaultWorkspace(userId);
     const workspaces = await queryAll(
       `SELECT w.*, wm.role as my_role,
