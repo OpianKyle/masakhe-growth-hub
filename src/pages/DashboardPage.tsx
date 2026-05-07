@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, ClipboardCheck, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package
+  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package, Briefcase
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -96,22 +96,31 @@ const baseNavItems: NavItem[] = [
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", requiresPlan: "pro", perm: "invoices" },
     ],
   },
-  { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
-  { icon: Package, label: "Inventory", path: "/dashboard/inventory", requiresPlan: "pro", perm: "inventory" },
-  { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
-  { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "pro", perm: "automations" },
+  {
+    icon: Briefcase,
+    label: "Operations",
+    groupId: "operations",
+    requiresPlan: "pro",
+    perms: ["clients", "inventory", "campaigns", "automations"],
+    children: [
+      { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
+      { icon: Package, label: "Inventory", path: "/dashboard/inventory", requiresPlan: "pro", perm: "inventory" },
+      { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
+      { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "pro", perm: "automations" },
+    ],
+  },
   {
     icon: Banknote,
-    label: "HR & Payroll",
+    label: "People & HR",
     groupId: "hr",
     requiresPlan: "premium",
     perms: ["payroll", "leave"],
     children: [
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresPlan: "premium", perm: "payroll" },
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium", perm: "leave" },
+      { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
     ],
   },
-  { icon: Users, label: "User management", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
   { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
@@ -320,7 +329,7 @@ export default function DashboardPage() {
                       toggleGroup(item.groupId);
                     }}
                     title={groupLocked ? `Requires ${groupReqName}` : undefined}
-                    className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                    className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                       groupLocked
                         ? "text-sidebar-foreground/45 hover:bg-sidebar-accent/30"
                         : active
@@ -416,7 +425,7 @@ export default function DashboardPage() {
                 <div
                   key={item.path}
                   title="Coming soon to enterprises"
-                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-not-allowed text-sidebar-foreground/35 select-none"
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm cursor-not-allowed text-sidebar-foreground/35 select-none"
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {sidebarWide && (
@@ -440,7 +449,7 @@ export default function DashboardPage() {
                   key={item.path}
                   to="/dashboard/billing"
                   title={`Requires ${itemReqName}`}
-                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {sidebarWide && (
@@ -465,7 +474,7 @@ export default function DashboardPage() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
@@ -543,7 +552,7 @@ export default function DashboardPage() {
           {user?.role === "admin" && (
             <Link
               to="/admin"
-              className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             >
               <Shield className="h-5 w-5 shrink-0" />
               {sidebarWide && <span>Admin Panel</span>}
@@ -556,7 +565,7 @@ export default function DashboardPage() {
           )}
           <button
             onClick={handleLogout}
-            className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <LogOut className="h-5 w-5 shrink-0" />
             {sidebarWide && <span>Sign Out</span>}
