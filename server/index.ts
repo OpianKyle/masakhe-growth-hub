@@ -66,6 +66,7 @@ async function main() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+  const isProxyHttps = process.env.REPLIT_DEV_DOMAIN || process.env.NODE_ENV === "production";
   app.use(session({
     store: sessionStore,
     secret: process.env.SESSION_SECRET || "masakhe-dev-secret-change-in-prod",
@@ -73,8 +74,8 @@ async function main() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: !!isProxyHttps,
+      sameSite: isProxyHttps ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }));
