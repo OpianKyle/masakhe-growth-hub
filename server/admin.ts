@@ -781,8 +781,8 @@ adminRouter.post("/franchises/invite", requireAdmin, async (req, res) => {
     // Create workspace for the user
     const wsId = randomUUID();
     await execute(
-      "INSERT INTO workspaces (id, owner_user_id, name, created_at) VALUES (?,?,?,?)",
-      [wsId, userId, `${name.trim()}'s Workspace`, now]
+      "INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+      [wsId, `${name.trim()}'s Workspace`, userId, now, now]
     );
     await execute(
       "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
