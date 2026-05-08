@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAdmin } from "./auth";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 import { getTransporterForUser } from "./email-settings";
+import { sendFranchiseOwnerInviteEmail } from "./email";
 
 export const adminRouter = Router();
 
@@ -744,6 +746,72 @@ adminRouter.get("/franchises", async (_req, res) => {
     `);
     res.json(rows);
   } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/franchises/invite — create user + franchise in one step, send invite email
+adminRouter.post("/franchises/invite", requireAdmin, async (req, res) => {
+  try {
+    const { name, email, franchise_name, franchise_code } = req.body;
+    if (!name || !email || !franchise_name || !franchise_code) {
+      return res.status(400).json({ error: "name, email, franchise_name, and franchise_code are all required" });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+
+    // Check email not already taken
+    const existing = await queryOne("SELECT id, role FROM users WHERE email = ?", [emailLower]);
+    if (existing) return res.status(400).json({ error: "A user with this email already exists. Use 'Create Franchise' and select them instead." });
+
+    // Check franchise code not taken
+    const codeExists = await queryOne("SELECT id FROM franchises WHERE code = ?", [franchise_code.toUpperCase()]);
+    if (codeExists) return res.status(400).json({ error: "Franchise code is already in use. Choose a different code." });
+
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    // Create user (no password yet — set via invite link)
+    const userId = randomUUID();
+    const tempHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
+    await execute(
+      "INSERT INTO users (id, email, full_name, password_hash, role, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
+      [userId, emailLower, name.trim(), tempHash, "franchise", now, now]
+    );
+
+    // Create workspace for the user
+    const wsId = randomUUID();
+    await execute(
+      "INSERT INTO workspaces (id, owner_user_id, name, created_at) VALUES (?,?,?,?)",
+      [wsId, userId, `${name.trim()}'s Workspace`, now]
+    );
+    await execute(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
+      [randomUUID(), wsId, userId, "owner", now]
+    );
+
+    // Create the franchise record
+    const franchiseId = randomUUID();
+    await execute(
+      "INSERT INTO franchises (id, name, code, owner_user_id, status) VALUES (?,?,?,?,'active')",
+      [franchiseId, franchise_name.trim(), franchise_code.toUpperCase(), userId]
+    );
+
+    // Create setup token (7 days)
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+    await execute(
+      "INSERT INTO password_reset_tokens (id, user_id, token, expires_at, used) VALUES (?,?,?,?,0)",
+      [randomUUID(), userId, token, expiresAt]
+    );
+
+    // Send the invite email (non-blocking — don't fail the request if email fails)
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    sendFranchiseOwnerInviteEmail(emailLower, name.trim(), franchise_name.trim(), franchise_code.toUpperCase(), token, baseUrl)
+      .catch(err => console.error("[franchise invite email]", err));
+
+    res.json({ ok: true, franchise_id: franchiseId, user_id: userId, invite_sent: true });
+  } catch (err: any) {
+    console.error("[franchise invite]", err);
     res.status(500).json({ error: err.message });
   }
 });

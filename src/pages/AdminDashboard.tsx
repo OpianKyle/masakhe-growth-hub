@@ -2109,6 +2109,14 @@ function AdminFranchises() {
   const [newOwnerId, setNewOwnerId] = useState("");
   const [newClientId, setNewClientId] = useState("");
 
+  // Invite flow state
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFranchiseName, setInviteFranchiseName] = useState("");
+  const [inviteFranchiseCode, setInviteFranchiseCode] = useState("");
+
   const loadFranchises = () => {
     setLoading(true);
     fetch("/api/admin/franchises", { credentials: "include" })
@@ -2135,6 +2143,30 @@ function AdminFranchises() {
       .then(d => setClients(Array.isArray(d) ? d : []))
       .catch(() => toast.error("Failed to load clients"))
       .finally(() => setLoadingClients(false));
+  };
+
+  const inviteFranchise = async () => {
+    if (!inviteName || !inviteEmail || !inviteFranchiseName || !inviteFranchiseCode) {
+      toast.error("All fields are required"); return;
+    }
+    setInviting(true);
+    const res = await fetch("/api/admin/franchises/invite", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: inviteName,
+        email: inviteEmail,
+        franchise_name: inviteFranchiseName,
+        franchise_code: inviteFranchiseCode,
+      }),
+    });
+    const d = await res.json();
+    setInviting(false);
+    if (!res.ok) { toast.error(d.error || "Failed to send invite"); return; }
+    toast.success(`Invite sent to ${inviteEmail}! They'll receive an email to set their password.`);
+    setShowInvite(false);
+    setInviteName(""); setInviteEmail(""); setInviteFranchiseName(""); setInviteFranchiseCode("");
+    loadFranchises();
   };
 
   const createFranchise = async () => {
@@ -2220,8 +2252,11 @@ function AdminFranchises() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadFranchises}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
-          <Button size="sm" onClick={() => setShowCreate(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            <Plus className="h-4 w-4 mr-1" /> New Franchise
+          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+            <Plus className="h-4 w-4 mr-1" /> Existing User
+          </Button>
+          <Button size="sm" onClick={() => setShowInvite(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Mail className="h-4 w-4 mr-1" /> Invite Franchise
           </Button>
         </div>
       </div>
@@ -2354,6 +2389,56 @@ function AdminFranchises() {
             <Button onClick={createFranchise} disabled={creating} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Store className="h-4 w-4 mr-2" />}
               Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite franchise dialog */}
+      <Dialog open={showInvite} onOpenChange={setShowInvite}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-indigo-600" /> Invite Franchise Owner
+            </DialogTitle>
+            <DialogDescription>
+              Enter the franchise details and owner's info. We'll create their account and email them a link to set their password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs font-medium">Owner Full Name</Label>
+                <Input className="mt-1" value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="e.g. Sipho Dlamini" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium">Owner Email Address</Label>
+                <Input className="mt-1" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="e.g. sipho@example.co.za" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium">Franchise Name</Label>
+                <Input className="mt-1" value={inviteFranchiseName} onChange={e => setInviteFranchiseName(e.target.value)} placeholder="e.g. Gauteng North Franchise" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium">Franchise Code <span className="text-muted-foreground font-normal">(unique short ID)</span></Label>
+                <Input
+                  className="mt-1 font-mono uppercase"
+                  value={inviteFranchiseCode}
+                  onChange={e => setInviteFranchiseCode(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                  placeholder="e.g. GPN01"
+                  maxLength={12}
+                />
+              </div>
+            </div>
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-3 text-xs text-indigo-700 leading-relaxed">
+              An account will be created for this person with franchise-level access. They'll receive an email with a link to set their password — valid for 7 days.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
+            <Button onClick={inviteFranchise} disabled={inviting} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {inviting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+              Send Invite
             </Button>
           </DialogFooter>
         </DialogContent>
