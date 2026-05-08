@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LayoutDashboard, Users, ChevronRight, ChevronLeft, Loader2,
   Building2, CreditCard, LogOut, Eye, Crown, TrendingUp,
   Search, RefreshCw, CheckCircle2, Clock, XCircle, Banknote,
   Link2, Copy, Check, StickyNote, Star, BadgeCheck, Unlink,
-  Tag as TagIcon, X, Filter, ArrowUpDown,
+  Tag as TagIcon, X, Filter, ArrowUpDown, UserPlus, LayoutGrid,
+  Mail,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -150,6 +152,10 @@ function FranchiseClients() {
   const [draftTags, setDraftTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
   const navigate = useNavigate();
 
   const load = () => {
@@ -273,6 +279,36 @@ function FranchiseClients() {
     }
   };
 
+  const sendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) { toast.error("Email is required"); return; }
+    setInviting(true);
+    try {
+      const res = await fetch("/api/franchise/clients/invite", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), fullName: inviteName.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || "Failed to send invite"); return; }
+      if (d.created) {
+        toast.success(d.emailSent
+          ? `Invite sent to ${inviteEmail}! They'll receive a link to set their password.`
+          : `Account created for ${inviteEmail} and linked. (Email could not be sent — check SMTP config.)`
+        );
+      } else {
+        toast.success(`${inviteEmail} already had an account and has been linked to your franchise.`);
+      }
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteName("");
+      load();
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const allTags = Array.from(new Set(clients.flatMap(c => Array.isArray(c.admin_tags) ? c.admin_tags : []))).sort();
 
   const matchesStatus = (c: any) => {
@@ -314,9 +350,15 @@ function FranchiseClients() {
           </h2>
           <p className="text-sm text-muted-foreground">{clients.length} registered · showing {filtered.length}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={load}>
-          <RefreshCw className="h-4 w-4 mr-1" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={load}>
+            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+          </Button>
+          <Button size="sm" className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600"
+            onClick={() => setInviteOpen(true)}>
+            <UserPlus className="h-4 w-4" /> Invite Client
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -535,6 +577,53 @@ function FranchiseClients() {
         </div>
       )}
 
+      {/* Invite Client Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={open => { if (!open) { setInviteOpen(false); setInviteEmail(""); setInviteName(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-indigo-600" /> Invite a Client
+            </DialogTitle>
+            <DialogDescription>
+              Enter the client's email address. If they don't have a Masakhe account yet, we'll create one and send them a setup link. If they already have an account, they'll be linked directly.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={sendInvite} className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email">Email address <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="client@example.com"
+                  className="pl-9"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-name">Full name <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                id="invite-name"
+                placeholder="Jane Smith"
+                value={inviteName}
+                onChange={e => setInviteName(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">If left blank we'll use the email address as the display name.</p>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={inviting} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                {inviting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</> : <><Mail className="h-4 w-4 mr-2" /> Send Invite</>}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Notes & Tags Modal */}
       <Dialog open={!!notesTarget} onOpenChange={open => { if (!open) setNotesTarget(null); }}>
         <DialogContent className="max-w-lg">
@@ -654,11 +743,22 @@ export default function FranchiseDashboard() {
         </nav>
 
         <div className="px-2 pb-4 space-y-1">
+          <Link to="/dashboard"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white transition-colors">
+            <LayoutGrid className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>My Business</span>}
+          </Link>
           {!collapsed && (
             <button onClick={logout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white transition-colors">
               <LogOut className="h-5 w-5" />
               <span>Sign Out</span>
+            </button>
+          )}
+          {collapsed && (
+            <button onClick={logout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white transition-colors">
+              <LogOut className="h-5 w-5" />
             </button>
           )}
         </div>

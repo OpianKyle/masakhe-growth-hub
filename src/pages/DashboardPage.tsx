@@ -563,6 +563,20 @@ export default function DashboardPage() {
               )}
             </Link>
           )}
+          {user?.role === "franchise" && (
+            <Link
+              to="/franchise"
+              className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            >
+              <Building2 className="h-5 w-5 shrink-0" />
+              {sidebarWide && <span>Franchise Portal</span>}
+              {!sidebarWide && (
+                <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                  Franchise Portal
+                </span>
+              )}
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"

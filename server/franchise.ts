@@ -2,7 +2,8 @@ import { Router } from "express";
 import { queryOne, queryAll, execute, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
-import { sendFranchiseApplicationEmail } from "./email";
+import { sendFranchiseApplicationEmail, sendFranchiseClientInviteEmail } from "./email";
+import bcrypt from "bcryptjs";
 
 export const franchiseRouter = Router();
 
@@ -352,6 +353,90 @@ franchiseRouter.post("/clients/:id/impersonate", async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Invite Client (creates account if needed) ───────────────────────────────
+franchiseRouter.post("/clients/invite", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const franchiseOwner = await queryOne(
+      `SELECT u.id, u.full_name, u.email, f.id as franchise_id, f.name as franchise_name
+       FROM users u
+       JOIN franchises f ON f.owner_user_id = u.id
+       WHERE u.id = ? AND (u.role = 'franchise' OR u.role = 'admin') AND f.status = 'active'`,
+      [userId]
+    );
+    if (!franchiseOwner) return res.status(403).json({ error: "Franchise access required" });
+
+    const { email, fullName } = req.body;
+    if (!email || typeof email !== "string") return res.status(400).json({ error: "Email is required" });
+    const cleanEmail = email.toLowerCase().trim();
+
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    let existing = await queryOne("SELECT id, full_name FROM users WHERE email = ?", [cleanEmail]);
+
+    if (existing) {
+      const alreadyLinked = await queryOne(
+        "SELECT id FROM franchise_clients WHERE franchise_id = ? AND client_user_id = ? AND status = 'active'",
+        [franchiseOwner.franchise_id, existing.id]
+      );
+      if (alreadyLinked) return res.status(409).json({ error: "This client is already linked to your franchise." });
+
+      await execute(
+        "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+        [randomUUID(), franchiseOwner.franchise_id, existing.id]
+      );
+      return res.json({ ok: true, created: false, message: "Existing user linked to your franchise." });
+    }
+
+    const name = (fullName || "").trim() || cleanEmail.split("@")[0];
+    const tempHash = await bcrypt.hash(randomUUID(), 10);
+    const newUserId = randomUUID();
+
+    await execute(
+      `INSERT INTO users (id, email, password_hash, full_name, role, parent_owner_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'user', ?, ?, ?)`,
+      [newUserId, cleanEmail, tempHash, name, userId, now, now]
+    );
+
+    const wsId = randomUUID();
+    await execute(
+      "INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+      [wsId, `${name}'s Business`, newUserId, now, now]
+    );
+    await execute(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?, ?, ?, 'owner', ?)",
+      [randomUUID(), wsId, newUserId, now]
+    );
+
+    await execute(
+      "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+      [randomUUID(), franchiseOwner.franchise_id, newUserId]
+    );
+
+    const tokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+    const setupToken = randomUUID().replace(/-/g, "");
+    await execute(
+      "INSERT INTO password_reset_tokens (id, user_id, token, expires_at, used) VALUES (?, ?, ?, ?, 0)",
+      [randomUUID(), newUserId, setupToken, tokenExpiry]
+    );
+
+    const baseUrl = req.headers.origin || process.env.APP_URL || "https://masakheportal.co.za";
+    const emailSent = await sendFranchiseClientInviteEmail(
+      cleanEmail,
+      name,
+      franchiseOwner.franchise_name,
+      franchiseOwner.full_name || franchiseOwner.email,
+      setupToken,
+      baseUrl
+    );
+
+    res.json({ ok: true, created: true, emailSent, message: "Account created and invite email sent." });
+  } catch (err: any) {
+    console.error("[Franchise invite]", err.message);
+    res.status(500).json({ error: err.message || "Failed to send invite" });
   }
 });
 

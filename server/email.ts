@@ -410,6 +410,88 @@ export async function sendTeamInviteEmail(
   }
 }
 
+export async function sendFranchiseClientInviteEmail(
+  toEmail: string,
+  inviteeName: string,
+  franchiseName: string,
+  ownerName: string,
+  setupToken: string,
+  baseUrl?: string
+) {
+  if (!transporter) return false;
+  const firstName = (inviteeName || toEmail).split(" ")[0];
+  const appUrl = baseUrl || getBaseUrl();
+  const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#4f46e5 0%,#3730a3 100%);padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Masakhe</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">You've been invited to get started</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 16px;color:#1a1a2e;font-size:22px;font-weight:600;">Hi ${firstName},</h2>
+              <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                <strong>${ownerName}</strong> from <strong>${franchiseName}</strong> has invited you to start using the Masakhe SMME platform.
+              </p>
+              <p style="margin:0 0 24px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                An account has been created for you. Click the button below to set your password and access your dashboard.
+              </p>
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td style="background-color:#4f46e5;border-radius:8px;">
+                    <a href="${setupUrl}" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Set my password &amp; get started</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 12px;color:#4a4a5a;font-size:14px;line-height:1.6;">
+                This link will expire in <strong>7 days</strong>. If you weren't expecting this invitation, you can ignore this email.
+              </p>
+              <p style="margin:0;color:#9a9aaa;font-size:12px;line-height:1.6;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <span style="color:#4f46e5;word-break:break-all;">${setupUrl}</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
+              <p style="margin:0;color:#9a9aaa;font-size:12px;line-height:1.5;">
+                &copy; ${new Date().getFullYear()} Masakhe. A digital platform for South African SMMEs.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      to: toEmail,
+      subject: `${ownerName} invited you to Masakhe`,
+      html,
+    });
+    console.log(`Franchise client invite email sent to ${toEmail}`);
+    return true;
+  } catch (err: any) {
+    console.error(`Failed to send franchise client invite email to ${toEmail}:`, err.message);
+    return false;
+  }
+}
+
 export async function sendFranchiseApplicationEmail(opts: {
   applicantName: string;
   applicantEmail: string;
