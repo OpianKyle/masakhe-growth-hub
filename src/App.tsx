@@ -20,6 +20,7 @@ import PricingPage from "./pages/PricingPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SetPasswordPage from "./pages/SetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -112,6 +113,7 @@ const App = () => (
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/meta-deletion-status" element={<MetaDeletionStatusPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

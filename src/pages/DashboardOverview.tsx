@@ -18,6 +18,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from "recharts";
+import { Mail, X } from "lucide-react";
 
 interface OverviewData {
   kpis: {
@@ -59,6 +60,29 @@ export default function DashboardOverview() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const firstName = user?.full_name?.split(" ")[0] || "there";
+  const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setVerificationResent(true);
+        toast.success("Verification email sent! Check your inbox.");
+      } else {
+        toast.error("Failed to send verification email. Please try again.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyPhone, setApplyPhone] = useState("");
@@ -172,6 +196,35 @@ export default function DashboardOverview() {
           </Link>
         </div>
       </motion.div>
+
+      {/* Email verification banner */}
+      {user && !user.email_verified && !verifyBannerDismissed && (
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 flex-shrink-0 mt-0.5">
+            <Mail className="h-5 w-5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">Please verify your email address</p>
+            <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+              We sent a verification link to <strong>{user.email}</strong>. Click the link in that email to fully activate your account.
+            </p>
+            {!verificationResent ? (
+              <button
+                onClick={handleResendVerification}
+                disabled={resendingVerification}
+                className="mt-2 text-xs text-amber-800 underline underline-offset-2 font-medium hover:text-amber-900 disabled:opacity-50"
+              >
+                {resendingVerification ? "Sending…" : "Didn't get it? Resend verification email"}
+              </button>
+            ) : (
+              <p className="mt-2 text-xs text-green-700 font-medium">Verification email resent — check your inbox!</p>
+            )}
+          </div>
+          <button onClick={() => setVerifyBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 flex-shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((kpi, i) => (

@@ -26,6 +26,7 @@ interface User {
   cipc_number?: string;
   logo_url?: string;
   popia_consent?: number;
+  email_verified?: number;
   teamMember?: {
     owner_id: string;
     owner_email: string;

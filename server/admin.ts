@@ -256,7 +256,7 @@ adminRouter.get("/clients", async (req, res) => {
       `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.subscription_exempt,
               u.admin_notes, u.admin_tags,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
-              bp.industry_sector, bp.phone, bp.physical_address,
+              bp.industry_sector, COALESCE(u.phone, bp.phone) as phone, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
               bs.status as subscription_status, bs.trial_end_at,
               bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents

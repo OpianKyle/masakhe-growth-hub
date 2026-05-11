@@ -772,8 +772,21 @@ function ClientList() {
             {filtered.map((client) => (
               <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors">
                 <td className="p-4">
-                  <div className="font-medium">{client.full_name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{client.full_name}</span>
+                    {(() => {
+                      const days = (Date.now() - new Date(client.created_at).getTime()) / 86400000;
+                      return days <= 7 ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">NEW</span>
+                      ) : null;
+                    })()}
+                  </div>
                   <div className="text-xs text-muted-foreground">{client.email}</div>
+                  {client.phone && (
+                    <a href={`tel:${client.phone}`} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5">
+                      📞 {client.phone}
+                    </a>
+                  )}
                 </td>
                 <td className="p-4">{client.business_name || <span className="text-muted-foreground italic">Not set</span>}</td>
                 <td className="p-4">

@@ -2,7 +2,17 @@ import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendPasswordResetEmail, sendTeamInviteEmail } from "./email";
+import {
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+  sendTeamInviteEmail,
+  sendAdminSignupNotification,
+  sendEmailVerificationEmail,
+  sendOnboardingCallEmail,
+  sendDripEmail,
+  getBaseUrl,
+} from "./email";
+import { sendWelcomeSMS, sendCallScheduledSMS } from "./sms";
 import { linkResellerClient, autoRegisterReseller } from "./reseller";
 import { OAuth2Client } from "google-auth-library";
 
@@ -87,11 +97,12 @@ authRouter.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const userId = randomUUID();
     const now = new Date().toISOString();
+    const phone = businessData?.phone || null;
 
     await execute(
-      `INSERT INTO users (id, email, password_hash, full_name, role, referred_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'user', ?, ?, ?)`,
-      [userId, email.toLowerCase(), passwordHash, fullName, referralCode || null, now, now]
+      `INSERT INTO users (id, email, password_hash, full_name, role, referred_by, phone, email_verified, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'user', ?, ?, 0, ?, ?)`,
+      [userId, email.toLowerCase(), passwordHash, fullName, referralCode || null, phone, now, now]
     );
 
     if (businessData) {
@@ -168,9 +179,9 @@ authRouter.post("/register", async (req, res) => {
     req.session.actingAsOwnerId = null;
     req.session.save(async () => {
       const user = await queryOne(
-        `SELECT u.id, u.email, u.full_name, u.role, u.created_at,
+        `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.phone, u.email_verified,
                 bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
-                bp.business_type, bp.years_operating, bp.employee_count, bp.phone, bp.whatsapp,
+                bp.business_type, bp.years_operating, bp.employee_count, bp.phone as bp_phone, bp.whatsapp,
                 bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
                 bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
                 bp.vat_number, bp.invoice_color, bp.popia_consent,
@@ -181,12 +192,83 @@ authRouter.post("/register", async (req, res) => {
          WHERE u.id = ?`,
         [userId]
       );
-      sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
+
+      const baseUrl = getBaseUrl(req.get("origin") || req.get("referer"));
+
+      // 1. Send improved welcome email
+      sendWelcomeEmail(email.toLowerCase(), fullName, baseUrl).catch(() => {});
+
+      // 2. Send email verification link
+      const verifyToken = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      execute(
+        "INSERT INTO email_verifications (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)",
+        [randomUUID(), userId, verifyToken, expiresAt]
+      ).then(() => {
+        const verifyUrl = `${baseUrl}/verify-email?token=${verifyToken}`;
+        sendEmailVerificationEmail(email.toLowerCase(), fullName, verifyUrl).catch(() => {});
+      }).catch(() => {});
+
+      // 3. Notify admin of new signup
+      sendAdminSignupNotification(email.toLowerCase(), fullName, phone, baseUrl).catch(() => {});
+
+      // 4. Send onboarding call scheduled email to client
+      sendOnboardingCallEmail(email.toLowerCase(), fullName, baseUrl).catch(() => {});
+
+      // 5. Send welcome SMS if phone provided
+      if (phone) {
+        sendWelcomeSMS(phone, fullName).catch(() => {});
+        sendCallScheduledSMS(phone, fullName).catch(() => {});
+      }
+
+      // 6. Log day-0 drip (welcome already sent) so scheduler skips it, then queue day-1
+      execute(
+        "INSERT IGNORE INTO drip_email_log (id, user_id, campaign_day, sent_at) VALUES (?, ?, 0, NOW())",
+        [randomUUID(), userId]
+      ).catch(() => {});
+
       if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
       res.json({ ok: true, user });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Registration failed" });
+  }
+});
+
+authRouter.get("/verify-email", async (req, res) => {
+  const { token } = req.query as { token?: string };
+  if (!token) return res.status(400).json({ error: "Token required" });
+  try {
+    const record = await queryOne(
+      "SELECT * FROM email_verifications WHERE token = ? AND used = 0 AND expires_at > NOW()",
+      [token]
+    );
+    if (!record) return res.status(400).json({ error: "Invalid or expired verification link" });
+    await execute("UPDATE users SET email_verified = 1 WHERE id = ?", [record.user_id]);
+    await execute("UPDATE email_verifications SET used = 1 WHERE id = ?", [record.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+authRouter.post("/resend-verification", requireAuth, async (req, res) => {
+  try {
+    const user = await queryOne("SELECT id, email, full_name, email_verified FROM users WHERE id = ?", [req.session.userId]);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (user.email_verified) return res.json({ ok: true, message: "Already verified" });
+    const verifyToken = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await execute(
+      "INSERT INTO email_verifications (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)",
+      [randomUUID(), user.id, verifyToken, expiresAt]
+    );
+    const baseUrl = getBaseUrl(req.get("origin") || req.get("referer"));
+    const verifyUrl = `${baseUrl}/verify-email?token=${verifyToken}`;
+    await sendEmailVerificationEmail(user.email, user.full_name, verifyUrl);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -37,6 +37,7 @@ import { emailSettingsRouter } from "./email-settings";
 import { contactRouter } from "./contact";
 import { automationsRouter } from "./automations";
 import { startAutomationsScheduler } from "./automations-scheduler";
+import { startDripScheduler } from "./drip-scheduler";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -128,6 +129,7 @@ async function main() {
     startBillingScheduler();
     startInvoiceScheduler();
     startAutomationsScheduler();
+    startDripScheduler();
     runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
     runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));

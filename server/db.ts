@@ -1076,6 +1076,34 @@ export async function runMigrations() {
       `UPDATE users SET invoice_next_seq = 1315 WHERE email = 'admin@masakhe.co.za' AND invoice_next_seq IS NULL`
     );
 
+    // Onboarding additions
+    await addColumnIfMissing("users", "phone", "VARCHAR(20) NULL");
+    await addColumnIfMissing("users", "email_verified", "TINYINT(1) NOT NULL DEFAULT 0");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        token VARCHAR(128) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used TINYINT(1) NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_ev_token (token),
+        KEY idx_ev_user (user_id)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS drip_email_log (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        campaign_day INT NOT NULL,
+        sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_drip_user_day (user_id, campaign_day),
+        KEY idx_drip_user (user_id)
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();
