@@ -74,6 +74,19 @@ interface BillingData {
 
 const planOptions = [
   {
+    code: "starter",
+    name: "Enterprize Free",
+    price: "Free",
+    priceCents: 0,
+    description: "Get online with a website and basic dashboard — no subscription needed.",
+    features: [
+      "Website Builder",
+      "Overview Dashboard",
+      "WhatsApp Support Portal",
+    ],
+    isFree: true,
+  },
+  {
     code: "pro",
     name: "Enterprize Plus",
     price: "R899",
@@ -1352,7 +1365,7 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-3">
         {planOptions.map((p) => {
           const isSelected = selected === p.code;
           const isPopular = (p as any).popular;
@@ -1388,7 +1401,8 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
               </div>
               <p className="text-xl font-bold font-heading text-foreground">
                 {p.price}
-                <span className="text-xs font-normal text-muted-foreground">/month</span>
+                {!(p as any).isFree && <span className="text-xs font-normal text-muted-foreground">/month</span>}
+                {(p as any).isFree && <span className="text-xs font-normal text-muted-foreground"> forever</span>}
               </p>
               <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{p.description}</p>
             </label>
@@ -1399,12 +1413,24 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
       <div className="rounded-lg bg-muted/40 border border-border/60 p-4 text-sm text-muted-foreground flex items-start gap-3">
         <Shield className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <div>
-          You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>.
-          When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.
+          {(selectedPlan as any).isFree ? (
+            <>The <strong className="text-foreground">Enterprize Free</strong> plan gives you access to the Website Builder and Overview Dashboard — completely free, no card required.</>
+          ) : (
+            <>You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>. When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.</>
+          )}
         </div>
       </div>
 
-      {promoActive ? (
+      {(selectedPlan as any).isFree ? (
+        <Button
+          size="lg"
+          variant="outline"
+          className="w-full"
+          onClick={onStarted}
+        >
+          <Check className="h-4 w-4 mr-2" />Continue with Enterprize Free
+        </Button>
+      ) : promoActive ? (
         <div className="space-y-3">
           {(() => {
             const discountedCents = Math.max(100, Math.round(selectedPlan.priceCents * (100 - promo!.percentOff) / 100));
