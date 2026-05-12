@@ -50,6 +50,7 @@ export default function TrialBanner() {
   if (user?.role === "admin") return null;
   if (!loaded) return null;
   if (status === "ACTIVE") return null;
+  if (status === "NONE" || !status) return null;
   if (dismissed) return null;
   if (location.pathname.startsWith("/dashboard/billing")) return null;
 
@@ -58,7 +59,7 @@ export default function TrialBanner() {
       <div className="flex items-center gap-2">
         <CreditCard className="h-4 w-4 shrink-0" />
         <span>
-          <strong>No active subscription.</strong> Subscribe to unlock all Masakhe features for your business.
+          <strong>Upgrade your plan</strong> to unlock Social Media, Finance, Payroll and more.
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">

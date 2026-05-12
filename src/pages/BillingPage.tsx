@@ -74,22 +74,6 @@ interface BillingData {
 
 const planOptions = [
   {
-    code: "starter",
-    name: "Enterprize",
-    price: "R599",
-    priceCents: 59900,
-    description: "Get online with a website, social presence and WhatsApp support.",
-    features: [
-      "7-Day Free Trial",
-      "2 Users (Owner + 1 Team Member)",
-      "Overview Dashboard",
-      "Website Builder",
-      "Social Media Hub",
-      "Biz Connect",
-      "WhatsApp Support Portal",
-    ],
-  },
-  {
     code: "pro",
     name: "Enterprize Plus",
     price: "R899",
@@ -268,7 +252,7 @@ function statusBadge(status: string) {
 }
 
 const checkoutSchema = z.object({
-  planCode: z.enum(["starter", "pro", "premium"]),
+  planCode: z.enum(["pro", "premium"]),
   recipientName: z.string().min(2, "Full name is required"),
   email: z.string().email("A valid email address is required"),
   contactNumber: z.string().min(7, "Contact number is required"),
@@ -288,7 +272,7 @@ function ordinal(n: number) {
 }
 
 const manualPaySchema = z.object({
-  planCode: z.enum(["starter", "pro", "premium"]),
+  planCode: z.enum(["pro", "premium"]),
   recipientName: z.string().min(2, "Full name is required"),
   email: z.string().email("A valid email address is required"),
   contactNumber: z.string().min(7, "Contact number is required"),
@@ -304,7 +288,7 @@ function ManualPayNowForm({ onSuccess, promo }: { onSuccess: () => void; promo?:
   const form = useForm<ManualPayFormData>({
     resolver: zodResolver(manualPaySchema),
     defaultValues: {
-      planCode: "starter",
+      planCode: "pro",
       recipientName: user?.full_name || "",
       email: user?.email || "",
       contactNumber: "",
@@ -451,7 +435,7 @@ function InlineSubscribeForm({ onSuccess, promo }: { onSuccess: () => void; prom
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      planCode: "starter",
+      planCode: "pro",
       recipientName: user?.full_name || "",
       email: user?.email || "",
       contactNumber: user?.phone || "",
@@ -1368,7 +1352,7 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {planOptions.map((p) => {
           const isSelected = selected === p.code;
           const isPopular = (p as any).popular;

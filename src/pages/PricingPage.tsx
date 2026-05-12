@@ -18,20 +18,17 @@ const plans = [
   {
     code: "starter",
     name: "Enterprize",
-    price: "R599",
-    period: "/month",
-    description: "Get online with a website, social presence and WhatsApp support.",
+    price: "Free",
+    period: "",
+    description: "Start building your business online — no subscription, no credit card.",
     features: [
-      { icon: Gift, label: "7-Day Free Trial" },
-      { icon: UserCheck, label: "2 Users (Owner + 1 Team Member)" },
-      { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
-      { icon: Smartphone, label: "Social Media Hub" },
-      { icon: Linkedin, label: "Biz Connect" },
+      { icon: BarChart3, label: "Overview Dashboard" },
       { icon: MessageCircle, label: "WhatsApp Support Portal" },
     ],
     variant: "hero" as const,
     popular: false,
+    isFree: true,
   },
   {
     code: "pro",
@@ -40,7 +37,7 @@ const plans = [
     period: "/month",
     description: "Everything in Enterprize plus financials, clients and campaigns.",
     features: [
-      { icon: Gift, label: "7-Day Free Trial" },
+      { icon: Gift, label: "7-Day Free Trial included" },
       { icon: UserCheck, label: "3 Users (Owner + 2 Team Members)" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
@@ -61,7 +58,7 @@ const plans = [
     period: "/month",
     description: "Full multi-user suite with payroll, employee management and premium support.",
     features: [
-      { icon: Gift, label: "7-Day Free Trial" },
+      { icon: Gift, label: "7-Day Free Trial included" },
       { icon: UserCog, label: "10 Users (Owner + 9 Team Members, Permission Based)" },
       { icon: BarChart3, label: "Overview Dashboard" },
       { icon: Globe, label: "Website Builder" },
@@ -201,7 +198,8 @@ export default function PricingPage() {
 
                 <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10">
                   <span className="text-5xl font-black font-heading text-foreground">{plan.price}</span>
-                  <span className="text-muted-foreground text-sm ml-2 font-medium">{plan.period}</span>
+                  {plan.period && <span className="text-muted-foreground text-sm ml-2 font-medium">{plan.period}</span>}
+                  {(plan as any).isFree && <span className="text-muted-foreground text-sm ml-2 font-medium">forever</span>}
                 </div>
 
                 <ul className="space-y-4 mb-10 flex-1">
@@ -229,7 +227,11 @@ export default function PricingPage() {
                   }`}
                   onClick={() => handleStartTrial(plan.code)}
                 >
-                  Subscribe Now <ArrowRight className="ml-2 h-4 w-4" />
+                  {(plan as any).isFree ? (
+                    <>Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></>
+                  ) : (
+                    <>Subscribe Now <ArrowRight className="ml-2 h-4 w-4" /></>
+                  )}
                 </Button>
               </motion.div>
             ))}
