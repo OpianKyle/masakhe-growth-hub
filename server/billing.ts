@@ -11,9 +11,13 @@ const ADUMO_URL = process.env.ADUMO_ENV === "production"
   ? "https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
   : "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual";
 
-const APP_URL = process.env.ADUMO_ENV === "production"
+const APP_URL = (process.env.ADUMO_ENV === "production"
   ? (process.env.APP_URL || "https://masakheportal.co.za")
-  : `https://${process.env.REPLIT_DEV_DOMAIN || `localhost:${process.env.PORT || 5000}`}`;
+  : `https://${process.env.REPLIT_DEV_DOMAIN || `localhost:${process.env.PORT || 5000}`}`
+).replace(/\/+$/, "");
+
+console.log(`[Billing] ADUMO_ENV=${process.env.ADUMO_ENV} → endpoint: ${ADUMO_URL}`);
+console.log(`[Billing] APP_URL (redirect base): ${APP_URL}`);
 
 async function ensureDefaultWorkspace(userId: string): Promise<string> {
   const existing = await queryOne(

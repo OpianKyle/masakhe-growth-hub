@@ -55,8 +55,6 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-ADUMO_ENV = "staging"
-ADUMO_API_URL = "https://staging-apiv3.adumoonline.com/product/payment/v1/initialisevirtual"
 ADUMO_APPLICATION_ID = "4794E7D1-F159-4A02-936F-65A20BD901C6"
 ADUMO_MERCHANT_ID = "9BA5008C-08EE-4286-A349-54AF91A621B0"
 SMTP_HOST = "smtp.masakhegroup.co.za"
