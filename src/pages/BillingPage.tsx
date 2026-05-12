@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1568,6 +1568,7 @@ export default function BillingPage() {
   // trial picker with the paid-subscribe form (with the promo code applied).
   const [skipTrialChosen, setSkipTrialChosen] = useState(false);
   const promo = usePromoCode();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const payNowRef = useRef<HTMLDivElement>(null);
 
@@ -1792,6 +1793,21 @@ export default function BillingPage() {
               onChoosePaid={() => setSkipTrialChosen(true)}
             />
           )}
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="text-center"
+          >
+            <Button
+              variant="ghost"
+              className="text-muted-foreground hover:text-foreground text-sm"
+              onClick={() => navigate("/dashboard")}
+            >
+              Continue with Free plan
+            </Button>
+          </motion.div>
         </>
       ) : subscription.status === "CANCELLED" ? (
         <>
