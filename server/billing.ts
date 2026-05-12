@@ -388,7 +388,7 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
       [userId]
     );
     if (!workspace) {
-      return res.json({ blocked: true, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
     }
 
     const subscription = await queryOne(
@@ -402,8 +402,8 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
     );
 
     if (!subscription) {
-      // Brand-new account that hasn't picked a plan yet — force them to /dashboard/billing
-      return res.json({ blocked: true, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
+      // No subscription yet — website builder is free, no block
+      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
     }
 
     const now = new Date();

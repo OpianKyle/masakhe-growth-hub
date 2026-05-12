@@ -83,8 +83,8 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website", perm: "website" },
-  { icon: Smartphone, label: "Social Media", path: "/dashboard/social", perm: "social" },
-  { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", perm: "biz_connect" },
+  { icon: Smartphone, label: "Social Media", path: "/dashboard/social", requiresPlan: "starter" as PlanCode, perm: "social" },
+  { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresPlan: "starter" as PlanCode, perm: "biz_connect" },
   {
     icon: Wallet,
     label: "Transactions",
@@ -127,6 +127,44 @@ const baseNavItems: NavItem[] = [
   { icon: Settings, label: "Settings", path: "/dashboard/settings", ownerOnly: true },
 ];
 
+function UpgradeGate({ requiredPlan, planName, onUpgrade }: { requiredPlan: PlanCode; planName: string; onUpgrade: () => void }) {
+  const features: Record<PlanCode, string[]> = {
+    starter: ["Social Media Hub", "Biz Connect Network", "Website Builder"],
+    pro: ["Invoicing & Quotes", "Income/Expense Tracking", "Clients & Leads CRM", "Inventory Management", "Campaigns & Automations"],
+    premium: ["Payroll Management", "Leave & HR Tools", "Team Members (up to 10)"],
+  };
+  return (
+    <div className="flex items-center justify-center h-full min-h-[400px] p-8">
+      <div className="text-center space-y-6 max-w-md mx-auto">
+        <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
+          <Crown className="h-8 w-8 text-amber-500" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold font-heading mb-2">Upgrade to {planName}</h2>
+          <p className="text-muted-foreground leading-relaxed text-sm">
+            This feature is included in the <strong>{planName}</strong> plan. Upgrade to unlock it and grow your business.
+          </p>
+        </div>
+        <div className="rounded-lg bg-muted/50 p-4 text-left space-y-2">
+          {(features[requiredPlan] || []).map((f) => (
+            <div key={f} className="flex items-center gap-2 text-sm">
+              <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+              <span>{f}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onUpgrade}
+          className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-8 py-2.5 font-semibold text-sm hover:bg-primary/90 transition-colors"
+        >
+          <Crown className="h-4 w-4" />
+          View Plans & Upgrade
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -135,6 +173,7 @@ export default function DashboardPage() {
   const [hasBrokerageSite, setHasBrokerageSite] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const [planCode, setPlanCode] = useState<PlanCode | null>(null);
+  const [upgradeModalPlan, setUpgradeModalPlan] = useState<PlanCode | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isImpersonating, originalAdminName, stopImpersonating } = useAuth();
@@ -325,7 +364,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => {
                       if (!sidebarWide) return;
-                      if (groupLocked) { navigate("/dashboard/billing"); return; }
+                      if (groupLocked) { setUpgradeModalPlan(item.requiresPlan!); return; }
                       toggleGroup(item.groupId);
                     }}
                     title={groupLocked ? `Requires ${groupReqName}` : undefined}
@@ -378,19 +417,19 @@ export default function DashboardPage() {
                         if (childLocked) {
                           const reqName = PLAN_NAME[child.requiresPlan as PlanCode];
                           return (
-                            <Link
+                            <button
                               key={child.path}
-                              to="/dashboard/billing"
+                              onClick={() => setUpgradeModalPlan(child.requiresPlan as PlanCode)}
                               title={`Requires ${reqName}`}
-                              className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
+                              className="group relative w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
                             >
                               <child.icon className="h-4 w-4 shrink-0" />
-                              <span className="flex-1 truncate">{child.label}</span>
+                              <span className="flex-1 text-left truncate">{child.label}</span>
                               <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-0.5">
                                 <Crown className="h-2.5 w-2.5" />
-                                {child.requiresPlan === "premium" ? "Premium" : "Plus"}
+                                {child.requiresPlan === "premium" ? "Premium" : child.requiresPlan === "starter" ? "Upgrade" : "Plus"}
                               </span>
-                            </Link>
+                            </button>
                           );
                         }
                         return (
@@ -445,19 +484,19 @@ export default function DashboardPage() {
 
             if (itemLocked) {
               return (
-                <Link
+                <button
                   key={item.path}
-                  to="/dashboard/billing"
+                  onClick={() => setUpgradeModalPlan(item.requiresPlan as PlanCode)}
                   title={`Requires ${itemReqName}`}
-                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
+                  className="group relative w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/45 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground/70 transition-colors"
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {sidebarWide && (
                     <>
-                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="flex-1 text-left truncate">{item.label}</span>
                       <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-0.5">
                         <Crown className="h-2.5 w-2.5" />
-                        {item.requiresPlan === "premium" ? "Premium" : "Plus"}
+                        {item.requiresPlan === "premium" ? "Premium" : item.requiresPlan === "starter" ? "Upgrade" : "Plus"}
                       </span>
                     </>
                   )}
@@ -466,7 +505,7 @@ export default function DashboardPage() {
                       {item.label} — Requires {itemReqName}
                     </span>
                   )}
-                </Link>
+                </button>
               );
             }
 
@@ -659,11 +698,40 @@ export default function DashboardPage() {
           <Routes>
             <Route index element={<DashboardOverview />} />
             <Route path="website" element={<WebsiteBuilder />} />
-            <Route path="finance" element={<FinancePage />} />
-            <Route path="invoices" element={<InvoicesPage />} />
+            <Route path="social/*" element={
+              meetsPlan("starter") ? <SocialHub /> : <UpgradeGate requiredPlan="starter" planName={PLAN_NAME["starter"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="biz-connect/*" element={
+              meetsPlan("starter") ? <BizConnectHub /> : <UpgradeGate requiredPlan="starter" planName={PLAN_NAME["starter"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="finance" element={
+              meetsPlan("pro") ? <FinancePage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="invoices" element={
+              meetsPlan("pro") ? <InvoicesPage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="clients" element={
+              meetsPlan("pro") ? <ClientsPage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="inventory" element={
+              meetsPlan("pro") ? <InventoryPage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="campaigns" element={
+              meetsPlan("pro") ? <CampaignsPage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="automations" element={
+              meetsPlan("pro") ? <AutomationsPage /> : <UpgradeGate requiredPlan="pro" planName={PLAN_NAME["pro"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="payroll" element={
+              meetsPlan("premium") ? <PayrollPage /> : <UpgradeGate requiredPlan="premium" planName={PLAN_NAME["premium"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="leave" element={
+              meetsPlan("premium") ? <LeavePage /> : <UpgradeGate requiredPlan="premium" planName={PLAN_NAME["premium"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="team" element={
+              meetsPlan("premium") ? <TeamMembersPage /> : <UpgradeGate requiredPlan="premium" planName={PLAN_NAME["premium"]} onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
             <Route path="funding" element={<Navigate to="/dashboard" replace />} />
-            <Route path="social/*" element={<SocialHub />} />
-            <Route path="biz-connect/*" element={<BizConnectHub />} />
             <Route path="tenders" element={<TendersPage />} />
             <Route path="business-plan" element={<Navigate to="/dashboard" replace />} />
             <Route path="funding-proposal" element={<Navigate to="/dashboard" replace />} />
@@ -672,62 +740,54 @@ export default function DashboardPage() {
             <Route path="funding-applications" element={<Navigate to="/dashboard" replace />} />
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="leads" element={<LeadsPage />} />
-            <Route path="payroll" element={<PayrollPage />} />
-            <Route path="leave" element={<LeavePage />} />
             <Route path="reseller" element={<ResellerDashboard />} />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="inventory" element={<InventoryPage />} />
-            <Route path="campaigns" element={<CampaignsPage />} />
-            <Route path="automations" element={<AutomationsPage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
-            <Route path="team" element={<TeamMembersPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardOverview />} />
           </Routes>
-
-          {subscriptionActive === false &&
-            !location.pathname.startsWith("/dashboard/billing") &&
-            !location.pathname.startsWith("/dashboard/settings") && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/95 backdrop-blur-sm">
-              <div className="text-center space-y-5 p-8 max-w-md mx-auto">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Lock className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold font-heading mb-2">Subscription Required</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    You need an active Masakhe subscription to access this section.
-                    Subscribe to unlock all features and start building your business.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-4 text-left space-y-1.5">
-                  {[
-                    "Website Builder & Publishing",
-                    "Financial Tracking & Invoicing",
-                    "Social Media Hub",
-                    "Payroll Management",
-                    "Business Funding Toolkit",
-                    "Leads & Clients CRM",
-                  ].map((f) => (
-                    <div key={f} className="flex items-center gap-2 text-sm">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => navigate("/dashboard/billing")}
-                  className="w-full rounded-lg bg-primary text-primary-foreground py-2.5 font-semibold text-sm hover:bg-primary/90 transition-colors"
-                >
-                  View Plans & Subscribe
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
       <AIChatBot />
+
+      {upgradeModalPlan && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setUpgradeModalPlan(null)}
+        >
+          <div
+            className="bg-background rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center space-y-5 border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Crown className="h-7 w-7 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold font-heading mb-1.5">
+                Upgrade to {PLAN_NAME[upgradeModalPlan]}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                This feature is available on the <strong>{PLAN_NAME[upgradeModalPlan]}</strong> plan.
+                Upgrade to unlock it and access all the tools your business needs to grow.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setUpgradeModalPlan(null)}
+                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={() => { setUpgradeModalPlan(null); navigate("/dashboard/billing"); }}
+                className="flex-1 rounded-lg bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                View Plans
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
