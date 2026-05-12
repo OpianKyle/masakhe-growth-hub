@@ -8,7 +8,7 @@ import {
   CreditCard, Calendar, AlertTriangle,
   Loader2, Shield, CalendarDays, Wallet,
   User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
-  BellRing, Lock, Sparkles, Rocket, Tag, Zap,
+  BellRing, Lock, Sparkles, Rocket, Tag, Zap, Globe, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,19 +73,6 @@ interface BillingData {
 }
 
 const planOptions = [
-  {
-    code: "starter",
-    name: "Enterprize Free",
-    price: "Free",
-    priceCents: 0,
-    description: "Get online with a website and basic dashboard — no subscription needed.",
-    features: [
-      "Website Builder",
-      "Overview Dashboard",
-      "WhatsApp Support Portal",
-    ],
-    isFree: true,
-  },
   {
     code: "pro",
     name: "Enterprize Plus",
@@ -1351,21 +1338,21 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
     >
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center shrink-0">
-          <Sparkles className="h-7 w-7 text-white" />
+          <ArrowRight className="h-7 w-7 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-2xl font-bold font-heading text-foreground">Pick your plan to get started</h3>
+          <h3 className="text-2xl font-bold font-heading text-foreground">Upgrade your plan</h3>
           <p className="text-muted-foreground text-sm mt-1">
             {promoActive ? (
-              <>Choose the plan that best fits your business. Then <strong>start your 14-day free trial</strong> — or skip the trial and {promo!.label.toLowerCase()} with code <span className="font-mono">{promo!.code}</span>.</>
+              <>Unlock more features with a paid plan. <strong>Start your 14-day free trial</strong> — or skip the trial and {promo!.label.toLowerCase()} with code <span className="font-mono">{promo!.code}</span>.</>
             ) : (
-              <>Choose the plan that best fits your business. You'll get <strong>14 days free</strong> with the full features of your selected plan — no card required to start.</>
+              <>Unlock Social Media, Finance, Payroll and more. You'll get <strong>14 days free</strong> — no card required to start.</>
             )}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {planOptions.map((p) => {
           const isSelected = selected === p.code;
           const isPopular = (p as any).popular;
@@ -1413,24 +1400,11 @@ function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () 
       <div className="rounded-lg bg-muted/40 border border-border/60 p-4 text-sm text-muted-foreground flex items-start gap-3">
         <Shield className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <div>
-          {(selectedPlan as any).isFree ? (
-            <>The <strong className="text-foreground">Enterprize Free</strong> plan gives you access to the Website Builder and Overview Dashboard — completely free, no card required.</>
-          ) : (
-            <>You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>. When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.</>
-          )}
+          You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>. When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.
         </div>
       </div>
 
-      {(selectedPlan as any).isFree ? (
-        <Button
-          size="lg"
-          variant="outline"
-          className="w-full"
-          onClick={onStarted}
-        >
-          <Check className="h-4 w-4 mr-2" />Continue with Enterprize Free
-        </Button>
-      ) : promoActive ? (
+      {promoActive ? (
         <div className="space-y-3">
           {(() => {
             const discountedCents = Math.max(100, Math.round(selectedPlan.priceCents * (100 - promo!.percentOff) / 100));
@@ -1761,36 +1735,64 @@ export default function BillingPage() {
       )}
 
       {!subscription ? (
-        skipTrialChosen && promo.eligible ? (
+        <>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-5"
+            className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 sm:p-8 shadow-card space-y-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-xl font-bold font-heading text-foreground flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-emerald-600" />
-                  Start today with {promo.percentOff}% off for 3 months
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first 3 months are half price, then your normal monthly rate after that.
-                </p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center shrink-0">
+                <Globe className="h-6 w-6 text-white" />
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setSkipTrialChosen(false)}>
-                Back to free trial
-              </Button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xl font-bold font-heading text-foreground">Enterprize Free</h3>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    <Check className="h-3 w-3" /> Current Plan
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Website Builder, Overview Dashboard &amp; WhatsApp Support — completely free, forever.</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-2xl font-black font-heading text-foreground">Free</p>
+                <p className="text-xs text-muted-foreground">forever</p>
+              </div>
             </div>
-            <SubscribeTabSection onSuccess={() => { fetchBilling(); fetchAccessStatus(); }} promo={promo} />
           </motion.div>
-        ) : (
-          <TrialPickerSection
-            onStarted={() => { fetchBilling(); fetchAccessStatus(); }}
-            promo={promo}
-            onChoosePaid={() => setSkipTrialChosen(true)}
-          />
-        )
+
+          {skipTrialChosen && promo.eligible ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold font-heading text-foreground flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-emerald-600" />
+                    Start today with {promo.percentOff}% off for 3 months
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first 3 months are half price, then your normal monthly rate after that.
+                  </p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setSkipTrialChosen(false)}>
+                  Back to free trial
+                </Button>
+              </div>
+              <SubscribeTabSection onSuccess={() => { fetchBilling(); fetchAccessStatus(); }} promo={promo} />
+            </motion.div>
+          ) : (
+            <TrialPickerSection
+              onStarted={() => { fetchBilling(); fetchAccessStatus(); }}
+              promo={promo}
+              onChoosePaid={() => setSkipTrialChosen(true)}
+            />
+          )}
+        </>
       ) : subscription.status === "CANCELLED" ? (
         <>
           <motion.div
