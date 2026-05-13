@@ -86,7 +86,7 @@ export default function TeamMembersPage() {
   const [planLoading, setPlanLoading] = useState(true);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -115,15 +115,15 @@ export default function TeamMembersPage() {
   }, []);
 
   useEffect(() => {
-    if (!isPremium) return;
+    if (!hasTeamAccess) return;
     fetch("/api/social/workspaces/mine", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setWorkspaceId(d.defaultId || null))
       .catch(() => setWorkspaceId(null));
-  }, [isPremium]);
+  }, [hasTeamAccess]);
 
   const loadMembers = () => {
-    if (!workspaceId) return;
+    if (!workspaceId) { setLoading(false); return; }
     setLoading(true);
     fetch(`/api/social/workspaces/${workspaceId}/members`, { credentials: "include" })
       .then((r) => r.json())
