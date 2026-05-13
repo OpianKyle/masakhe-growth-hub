@@ -210,10 +210,10 @@ workspaceRouter.post("/:workspaceId/members", requireWorkspaceRole("owner", "adm
   }
 });
 
-// Update a team member's permissions.
+// Update a team member's permissions and optionally their name/email.
 workspaceRouter.patch("/:workspaceId/members/:memberId", requireWorkspaceRole("owner", "admin"), async (req, res) => {
   try {
-    const { permissions } = req.body || {};
+    const { permissions, full_name, email } = req.body || {};
     if (!Array.isArray(permissions)) return res.status(400).json({ error: "permissions array required" });
 
     const member = await queryOne(
@@ -228,6 +228,18 @@ workspaceRouter.patch("/:workspaceId/members/:memberId", requireWorkspaceRole("o
       "UPDATE workspace_members SET permissions = ? WHERE id = ? AND workspace_id = ?",
       [JSON.stringify(perms), req.params.memberId, req.params.workspaceId]
     );
+
+    if (full_name || email) {
+      const updates: string[] = [];
+      const vals: any[] = [];
+      if (full_name) { updates.push("full_name = ?"); vals.push(full_name.trim()); }
+      if (email) { updates.push("email = ?"); vals.push(email.trim().toLowerCase()); }
+      if (updates.length) {
+        vals.push(member.user_id);
+        await execute(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, vals);
+      }
+    }
+
     res.json({ ok: true, permissions: perms });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

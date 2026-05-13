@@ -96,6 +96,8 @@ export default function TeamMembersPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPerms, setEditingPerms] = useState<string[]>([]);
+  const [editingName, setEditingName] = useState("");
+  const [editingEmail, setEditingEmail] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   const MAX_SEATS = getMaxSeats(planCode);
@@ -192,25 +194,33 @@ export default function TeamMembersPage() {
   const startEdit = (m: Member) => {
     setEditingId(m.id);
     setEditingPerms(m.permissions || []);
+    setEditingName(m.full_name || "");
+    setEditingEmail(m.email || "");
   };
 
   const saveEdit = async (member: Member) => {
     if (!workspaceId) return;
+    if (!editingName.trim()) { toast.error("Name is required"); return; }
+    if (!editingEmail.trim()) { toast.error("Email is required"); return; }
     setSavingEdit(true);
     try {
       const res = await fetch(`/api/social/workspaces/${workspaceId}/members/${member.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ permissions: editingPerms }),
+        body: JSON.stringify({
+          permissions: editingPerms,
+          full_name: editingName.trim(),
+          email: editingEmail.trim(),
+        }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to update permissions");
-      toast.success("Permissions updated.");
+      if (!res.ok) throw new Error(json.error || "Failed to update member");
+      toast.success("Member updated.");
       setEditingId(null);
       loadMembers();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update permissions.");
+      toast.error(err.message || "Failed to update member.");
     } finally {
       setSavingEdit(false);
     }
@@ -484,12 +494,36 @@ export default function TeamMembersPage() {
                   )}
 
                   {!isOwner && isEditing && (
-                    <div className="rounded-lg border border-border bg-background p-4 space-y-3">
-                      {renderPermPicker(editingPerms, setEditingPerms)}
+                    <div className="rounded-lg border border-border bg-background p-4 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                          <Input
+                            value={editingName}
+                            onChange={e => setEditingName(e.target.value)}
+                            placeholder="Full name"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Email Address</label>
+                          <Input
+                            value={editingEmail}
+                            onChange={e => setEditingEmail(e.target.value)}
+                            placeholder="Email address"
+                            type="email"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Permissions</p>
+                        {renderPermPicker(editingPerms, setEditingPerms)}
+                      </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <Button variant="outline" size="sm" onClick={() => setEditingId(null)} disabled={savingEdit}>Cancel</Button>
                         <Button size="sm" onClick={() => saveEdit(m)} disabled={savingEdit}>
-                          {savingEdit ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</> : <><Check className="h-4 w-4 mr-2" />Save permissions</>}
+                          {savingEdit ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</> : <><Check className="h-4 w-4 mr-2" />Save changes</>}
                         </Button>
                       </div>
                     </div>

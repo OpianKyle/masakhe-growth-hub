@@ -234,6 +234,7 @@ export default function InvoicesPage() {
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultDueDate = () => {
@@ -341,6 +342,25 @@ export default function InvoicesPage() {
     } else {
       const data = await res.json();
       toast.error(data.error || "Failed to create");
+    }
+  };
+
+  const handleDelete = async (inv: Invoice) => {
+    if (!window.confirm(`Delete ${inv.type === "quote" ? "quote" : "invoice"} ${inv.invoice_number}? This cannot be undone.`)) return;
+    setDeletingId(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) {
+        toast.success(`${inv.type === "quote" ? "Quote" : "Invoice"} deleted`);
+        loadInvoices();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error || "Failed to delete");
+      }
+    } catch {
+      toast.error("Failed to delete");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -849,6 +869,18 @@ export default function InvoicesPage() {
                           Email
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deletingId === inv.id}
+                        onClick={() => handleDelete(inv)}
+                        className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                        title="Delete"
+                      >
+                        {deletingId === inv.id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <Trash2 className="h-3.5 w-3.5" />}
+                      </Button>
                     </div>
                   </td>
                 </tr>

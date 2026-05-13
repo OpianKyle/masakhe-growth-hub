@@ -53,6 +53,7 @@ export default function SettingsPage() {
     saId: u?.sa_id || "",
     cipcNumber: u?.cipc_number || "",
     registrationNumber: u?.registration_number || "",
+    vatNumber: u?.vat_number || "",
   });
 
   const [form, setForm] = useState(buildForm(user));
@@ -486,6 +487,9 @@ export default function SettingsPage() {
               </FieldGroup>
               <FieldGroup icon={CreditCard} label="Branch Code">
                 <Input value={form.branchCode} onChange={e => handleChange("branchCode", e.target.value)} placeholder="Branch code" />
+              </FieldGroup>
+              <FieldGroup icon={CreditCard} label="VAT Number">
+                <Input value={form.vatNumber} onChange={e => handleChange("vatNumber", e.target.value)} placeholder="e.g. 4123456789" />
               </FieldGroup>
             </div>
           </>
