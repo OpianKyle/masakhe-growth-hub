@@ -1000,7 +1000,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (cfg.headerTagline) bizLines.push(cfg.headerTagline);
   if (headerShowAddress && user?.physical_address) bizLines.push(user.physical_address);
   if (headerShowPhone && user?.phone) bizLines.push(user.phone);
-  if (showVatNum && user?.vat_number) bizLines.push(`VAT: ${user.vat_number}`);
+  // VAT number goes in the details box (right side), not in the header bizLines
 
   // Header height: top pad + max(logo, biz block) + bottom pad
   const bizTextBlockH = 16 /* name */ + bizLines.length * 11;
@@ -1092,6 +1092,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (showRef && invoice.reference) dtLines++;
   if (invoice.due_date || isQuote) dtLines++;
   if (showTerms && invoice.payment_terms) dtLines++;
+  if (showVatNum && user?.vat_number) dtLines++;
   const boxH = Math.max(56, 18 + Math.max(btLines, dtLines) * 11 + 8);
 
   const boxBg = rgb(0.97, 0.97, 0.97);
@@ -1121,6 +1122,11 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   drawText(isQuote ? "Quote No:" : "Invoice No:", lPad, detY, 8, fontBold, cBody);
   drawText(invoice.invoice_number, lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
   detY -= 12;
+  if (showVatNum && user?.vat_number) {
+    drawText("VAT No:", lPad, detY, 8, fontBold, cBody);
+    drawText(user.vat_number, lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
+    detY -= 12;
+  }
   if (isQuote) {
     drawText("Valid For:", lPad, detY, 8, fontBold, cBody);
     drawText(invoice.payment_terms || "30 days", lPad + lW, detY, 8, font, cMuted, colW - lW - 16);
@@ -1217,7 +1223,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
       { label: "BRANCH CODE", value: user.branch_code },
     ].filter(b => b.value);
     if (bCols.length === 0) return curY;
-    const bColW = W2 / 4;
+    const bColW = W2 / bCols.length;
     for (let i = 0; i < bCols.length; i++) {
       const bx = L + i * bColW;
       drawText(bCols[i].label, bx, by, 7, fontBold, cBankLbl);
