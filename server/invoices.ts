@@ -1250,7 +1250,10 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (notesPos === "after-items") order.push("notes");
   if (bankPos === "after-totals") order.push("bank");
   if (notesPos === "after-bank") order.push("notes");
-  if (bankPos === "footer") order.push("bank");
+  // When bankPos === "footer", skip bank in normal flow and pin it to bottom instead
+  if (bankPos !== "footer") {
+    // already handled above for "after-totals"; no-op for footer
+  }
   order.push("footer");
 
   for (const id of order) {
@@ -1258,6 +1261,12 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     else if (id === "notes") y = drawNotes(y);
     else if (id === "bank") y = drawBank(y);
     else if (id === "footer") y = drawFooter(y);
+  }
+
+  // When bankPos === "footer", pin bank details to an absolute Y near bottom of page
+  if (bankPos === "footer") {
+    // pin to Y=115 from bottom (above the 4pt accent bar, leaving room for the ~40pt bank block)
+    drawBank(115);
   }
 
   // Bottom accent bar
