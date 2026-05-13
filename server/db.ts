@@ -1104,6 +1104,16 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS finance_balance (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL UNIQUE,
+        opening_balance_cents BIGINT NOT NULL DEFAULT 0,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();
