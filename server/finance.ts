@@ -39,17 +39,46 @@ financeRouter.post("/balance", async (req, res) => {
   }
 });
 
-// ─── Export CSV ─────────────────────────────────────────────────────────────
+// ─── Shared: fetch entries for export (optional month filter) ────────────────
+
+async function getExportEntries(userId: string, month?: string): Promise<any[]> {
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    return queryAll(
+      "SELECT * FROM ledger_entries WHERE user_id = ? AND DATE_FORMAT(occurred_at, '%Y-%m') = ? ORDER BY occurred_at ASC, created_at ASC",
+      [userId, month]
+    );
+  }
+  return queryAll(
+    "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at ASC, created_at ASC",
+    [userId]
+  );
+}
+
+// Opening balance before the start of the given month (running balance up to that point)
+async function getOpeningCentsForMonth(userId: string, month?: string): Promise<number> {
+  const balRow = await queryOne("SELECT opening_balance_cents FROM finance_balance WHERE user_id = ?", [userId]);
+  const globalOpening: number = balRow?.opening_balance_cents ?? 0;
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) return globalOpening;
+  // Sum all entries before this month
+  const prior = await queryAll(
+    "SELECT type, amount_cents FROM ledger_entries WHERE user_id = ? AND DATE_FORMAT(occurred_at, '%Y-%m') < ? ORDER BY occurred_at ASC, created_at ASC",
+    [userId, month]
+  );
+  let running = globalOpening;
+  for (const e of prior as any[]) {
+    running = e.type === "INCOME" ? running + e.amount_cents : running - e.amount_cents;
+  }
+  return running;
+}
+
+// ─── Export CSV (bank statement format) ──────────────────────────────────────
 
 financeRouter.get("/export", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const entries = await queryAll(
-      "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at ASC, created_at ASC",
-      [userId]
-    );
-    const balRow = await queryOne("SELECT opening_balance_cents FROM finance_balance WHERE user_id = ?", [userId]);
-    const openingCents: number = balRow?.opening_balance_cents ?? 0;
+    const month = (req.query.month as string) || "";
+    const entries = await getExportEntries(userId, month);
+    const openingCents = await getOpeningCentsForMonth(userId, month);
 
     const header = "Date,Type,Category,Description,Payments,Deposits,Balance";
     let runningCents = openingCents;
@@ -66,11 +95,75 @@ financeRouter.get("/export", async (req, res) => {
       return `${date},${e.type},"${cat}","${desc}",${payments},${deposits},${balance}`;
     });
 
+    const periodLabel = month || "all";
+    const csv = [`Opening Balance,${(openingCents / 100).toFixed(2)}`, header, ...rows, `Closing Balance,${(runningCents / 100).toFixed(2)}`].join("\n");
+    const today = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="statement-${periodLabel}-${today}.csv"`);
+    res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+// ─── Export Plain CSV (reimportable: Date,Type,Category,Amount,Description) ──
+
+financeRouter.get("/export/plain-csv", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const month = (req.query.month as string) || "";
+    const entries = await getExportEntries(userId, month);
+
+    const header = "Date,Type,Category,Amount,Description";
+    const rows = entries.map((e: any) => {
+      const date = e.occurred_at ? e.occurred_at.split("T")[0] : "";
+      const amount = (e.amount_cents / 100).toFixed(2);
+      const desc = (e.description || "").replace(/"/g, '""');
+      const cat = (e.category || "").replace(/"/g, '""');
+      return `${date},${e.type},"${cat}",${amount},"${desc}"`;
+    });
+
+    const periodLabel = month || "all";
     const csv = [header, ...rows].join("\n");
     const today = new Date().toISOString().split("T")[0];
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename="finance-export-${today}.csv"`);
+    res.setHeader("Content-Disposition", `attachment; filename="finance-plain-${periodLabel}-${today}.csv"`);
     res.send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to export" });
+  }
+});
+
+// ─── Export Plain XLSX (reimportable: Date,Type,Category,Amount,Description) ─
+
+financeRouter.get("/export/plain-xlsx", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const month = (req.query.month as string) || "";
+    const entries = await getExportEntries(userId, month);
+
+    const aoa: any[][] = [];
+    aoa.push(["Date", "Type", "Category", "Amount", "Description"]);
+    for (const e of entries as any[]) {
+      aoa.push([
+        e.occurred_at ? String(e.occurred_at).slice(0, 10) : "",
+        e.type,
+        e.category || "",
+        (e.amount_cents / 100).toFixed(2),
+        e.description || "",
+      ]);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 14 }, { wch: 10 }, { wch: 22 }, { wch: 14 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Finance");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const periodLabel = month || "all";
+    const fileDate = new Date().toISOString().split("T")[0];
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-plain-${periodLabel}-${fileDate}.xlsx"`);
+    res.send(buf);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });
   }
@@ -81,34 +174,25 @@ financeRouter.get("/export", async (req, res) => {
 financeRouter.get("/export/xlsx", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const entries = await queryAll(
-      "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at ASC, created_at ASC",
-      [userId]
-    );
-    const balRow = await queryOne("SELECT opening_balance_cents FROM finance_balance WHERE user_id = ?", [userId]);
-    const openingCents: number = balRow?.opening_balance_cents ?? 0;
+    const month = (req.query.month as string) || "";
+    const entries = await getExportEntries(userId, month);
+    const openingCents = await getOpeningCentsForMonth(userId, month);
     const user = await queryOne(
       "SELECT u.full_name, bp.business_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
       [userId]
     );
     const bizName = (user as any)?.business_name || (user as any)?.full_name || "Business";
     const today = new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "2-digit" });
+    const periodLabel = month || "all";
 
     const aoa: any[][] = [];
 
-    // Title row
-    aoa.push([bizName, `Statement Export — ${today}`, "", "", "", ""]);
+    aoa.push([bizName, `Statement Export — ${month ? month : "All Months"} — ${today}`, "", "", "", ""]);
     aoa.push([]);
-
-    // Header row
     aoa.push(["Date", "Description", "Category", "Payments", "Deposits", "Balance"]);
-
-    // Opening balance row
-    const openingFmt = (openingCents / 100).toFixed(2);
-    aoa.push(["", "OPENING BALANCE", "", "", "", openingFmt]);
+    aoa.push(["", "OPENING BALANCE", "", "", "", (openingCents / 100).toFixed(2)]);
 
     let runningCents = openingCents;
-
     for (const e of entries as any[]) {
       const date = e.occurred_at ? String(e.occurred_at).slice(0, 10) : "";
       const isIncome = e.type === "INCOME";
@@ -126,13 +210,10 @@ financeRouter.get("/export/xlsx", async (req, res) => {
       aoa.push(["", isIncome ? "DEPOSIT / INCOME" : "PAYMENT / EXPENSE", "", "", "", ""]);
     }
 
-    // Closing balance
     aoa.push([]);
     aoa.push(["", "CLOSING BALANCE", "", "", "", (runningCents / 100).toFixed(2)]);
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    // Column widths
     ws["!cols"] = [
       { wch: 14 }, { wch: 40 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
     ];
@@ -142,7 +223,7 @@ financeRouter.get("/export/xlsx", async (req, res) => {
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
     const fileDate = new Date().toISOString().split("T")[0];
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="statement-${fileDate}.xlsx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="statement-${periodLabel}-${fileDate}.xlsx"`);
     res.send(buf);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });
@@ -154,18 +235,16 @@ financeRouter.get("/export/xlsx", async (req, res) => {
 financeRouter.get("/export/pdf", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const entries = await queryAll(
-      "SELECT * FROM ledger_entries WHERE user_id = ? ORDER BY occurred_at ASC, created_at ASC",
-      [userId]
-    );
-    const balRow = await queryOne("SELECT opening_balance_cents FROM finance_balance WHERE user_id = ?", [userId]);
-    const openingCents: number = balRow?.opening_balance_cents ?? 0;
+    const month = (req.query.month as string) || "";
+    const entries = await getExportEntries(userId, month);
+    const openingCents = await getOpeningCentsForMonth(userId, month);
     const user = await queryOne(
       "SELECT u.full_name, bp.business_name FROM users u LEFT JOIN business_profiles bp ON bp.user_id = u.id WHERE u.id = ?",
       [userId]
     );
     const bizName = (user as any)?.business_name || (user as any)?.full_name || "Business";
     const today = new Date().toLocaleDateString("en-ZA");
+    const periodLabel = month || "all";
 
     const totalIncome = entries.filter((e: any) => e.type === "INCOME").reduce((s: number, e: any) => s + e.amount_cents, 0);
     const totalExpense = entries.filter((e: any) => e.type === "EXPENSE").reduce((s: number, e: any) => s + e.amount_cents, 0);
@@ -263,7 +342,7 @@ financeRouter.get("/export/pdf", async (req, res) => {
     const pdfBytes = await pdfDoc.save();
     const fileDate = new Date().toISOString().split("T")[0];
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="statement-${fileDate}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="statement-${periodLabel}-${fileDate}.pdf"`);
     res.send(Buffer.from(pdfBytes));
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to export" });

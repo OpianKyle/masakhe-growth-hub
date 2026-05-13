@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, TrendingUp, TrendingDown, DollarSign, Download, Upload,
-  ScanLine, Loader2, CheckCircle2, X, Wallet, Pencil, Check
+  ScanLine, Loader2, CheckCircle2, X, Wallet, Pencil, Check, FileSpreadsheet, FileText, Table2
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -66,6 +67,10 @@ export default function FinancePage() {
 
   const [scanning, setScanning] = useState(false);
   const [scannedBanner, setScannedBanner] = useState(false);
+
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportMonth, setExportMonth] = useState(currentMonth());
+  const [exportAllMonths, setExportAllMonths] = useState(false);
 
   const loadEntries = async () => {
     const res = await fetch(`/api/finance/entries?month=${month}`, { credentials: "include" });
@@ -170,20 +175,29 @@ export default function FinancePage() {
     if (res.ok) { toast.success("Deleted"); loadEntries(); loadSummary(); loadAllEntries(); }
   };
 
-  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf" | "plain-csv" | "plain-xlsx") => {
     try {
-      const endpoint = format === "csv" ? "/api/finance/export"
-        : format === "xlsx" ? "/api/finance/export/xlsx"
-        : "/api/finance/export/pdf";
+      const monthParam = exportAllMonths ? "" : exportMonth;
+      const qs = monthParam ? `?month=${monthParam}` : "";
+      const endpoint =
+        format === "csv" ? `/api/finance/export${qs}`
+        : format === "xlsx" ? `/api/finance/export/xlsx${qs}`
+        : format === "pdf" ? `/api/finance/export/pdf${qs}`
+        : format === "plain-csv" ? `/api/finance/export/plain-csv${qs}`
+        : `/api/finance/export/plain-xlsx${qs}`;
+
       const res = await fetch(endpoint, { credentials: "include" });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `statement-${new Date().toISOString().split("T")[0]}.${format}`;
+      const ext = format === "plain-csv" ? "csv" : format === "plain-xlsx" ? "xlsx" : format;
+      const periodLabel = exportAllMonths ? "all" : monthParam;
+      a.download = `finance-${periodLabel}-${new Date().toISOString().split("T")[0]}.${ext}`;
       document.body.appendChild(a); a.click(); a.remove();
       window.URL.revokeObjectURL(url);
+      setExportDialogOpen(false);
     } catch {
       toast.error("Failed to export");
     }
@@ -269,16 +283,9 @@ export default function FinancePage() {
           <p className="text-muted-foreground">Track your income and expenses</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline"><Download className="h-4 w-4 mr-2" /> Export</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("csv")}>CSV (.csv)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("xlsx")}>Excel Statement (.xlsx)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("pdf")}>PDF Statement (.pdf)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" onClick={() => { setExportMonth(month); setExportAllMonths(false); setExportDialogOpen(true); }}>
+            <Download className="h-4 w-4 mr-2" /> Export
+          </Button>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import
           </Button>
@@ -297,6 +304,79 @@ export default function FinancePage() {
       </div>
       <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputRef} onChange={handleImport} className="hidden" />
       <input type="file" accept="image/*" capture="environment" ref={receiptInputRef} onChange={handleScanReceipt} className="hidden" />
+
+      {/* Export Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Download className="h-4 w-4" /> Export Finance Data</DialogTitle>
+          </DialogHeader>
+
+          {/* Period selector */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Period</Label>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={exportAllMonths}
+                  onChange={(e) => setExportAllMonths(e.target.checked)}
+                  className="rounded"
+                />
+                All months
+              </label>
+              {!exportAllMonths && (
+                <Input
+                  type="month"
+                  value={exportMonth}
+                  onChange={(e) => setExportMonth(e.target.value)}
+                  className="h-8 w-40 text-sm"
+                />
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Plain / reimportable formats */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Plain Format — Reimportable</p>
+            <p className="text-xs text-muted-foreground">Simple columns (Date, Type, Category, Amount, Description) that can be imported back into Masakhe.</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("plain-csv")}>
+                <Table2 className="h-4 w-4 text-green-600" />
+                <span className="text-sm">Plain CSV</span>
+              </Button>
+              <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("plain-xlsx")}>
+                <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                <span className="text-sm">Plain Excel</span>
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Bank statement formats */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank Statement Format</p>
+            <p className="text-xs text-muted-foreground">Formatted with opening/closing balances, Payments and Deposits columns.</p>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("csv")}>
+                <Table2 className="h-4 w-4 text-blue-600" />
+                <span className="text-sm">CSV</span>
+              </Button>
+              <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("xlsx")}>
+                <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+                <span className="text-sm">Excel</span>
+              </Button>
+              <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("pdf")}>
+                <FileText className="h-4 w-4 text-red-600" />
+                <span className="text-sm">PDF</span>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
