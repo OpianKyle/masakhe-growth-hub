@@ -580,34 +580,60 @@ export default function FinancePage() {
         </div>
       )}
 
-      {/* Income / Expenses Table */}
+      {/* Income / Expenses Table — bank statement format */}
       {tab !== "summary" && (
         <Card className="overflow-hidden">
+          <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
+            <h3 className="font-semibold text-sm capitalize">{tab} — {month}</h3>
+            <div className="flex gap-4 text-xs">
+              {tab === "income" ? (
+                <span className="text-green-600 font-medium">Total Deposits: {fmtR(totalIncome)}</span>
+              ) : (
+                <span className="text-red-600 font-medium">Total Payments: {fmtR(totalExpense)}</span>
+              )}
+              <span className={`font-bold ${closingBalance >= 0 ? "text-foreground" : "text-red-600"}`}>
+                Closing Balance: {fmtR(closingBalance)}
+              </span>
+            </div>
+          </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b bg-muted/40">
                 <th className="text-left p-3 font-semibold text-xs">Date</th>
-                <th className="text-left p-3 font-semibold text-xs hidden sm:table-cell">Category</th>
                 <th className="text-left p-3 font-semibold text-xs">Description</th>
-                <th className="text-right p-3 font-semibold text-xs">
-                  {tab === "income" ? "Deposits" : "Payments"}
-                </th>
+                <th className="text-left p-3 font-semibold text-xs hidden md:table-cell">Category</th>
+                <th className="text-right p-3 font-semibold text-xs">Payments</th>
+                <th className="text-right p-3 font-semibold text-xs">Deposits</th>
                 <th className="text-right p-3 font-semibold text-xs">Balance</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
             <tbody>
+              {/* Opening balance row */}
+              <tr className="border-b bg-blue-50/40">
+                <td className="p-3 text-xs text-muted-foreground">—</td>
+                <td className="p-3 text-xs font-semibold text-blue-700">Opening Balance</td>
+                <td className="p-3 hidden md:table-cell"></td>
+                <td className="p-3 text-right"></td>
+                <td className="p-3 text-right"></td>
+                <td className="p-3 text-right text-xs font-bold text-blue-700">{fmtR(balanceBeforeMonth)}</td>
+                <td></td>
+              </tr>
+
               {filteredWithBalance.map((entry) => (
                 <tr key={entry.id} className="border-b hover:bg-muted/30 transition-colors">
                   <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{fmtDate(entry.occurred_at)}</td>
-                  <td className="p-3 hidden sm:table-cell">
+                  <td className="p-3 text-xs">{entry.description || entry.category}</td>
+                  <td className="p-3 hidden md:table-cell">
                     <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{entry.category}</span>
                   </td>
-                  <td className="p-3 text-xs text-muted-foreground">{entry.description || "—"}</td>
-                  <td className={`p-3 text-right font-bold text-xs ${entry.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
-                    {entry.type === "INCOME" ? "+" : "−"}{fmtR(entry.amount_cents)}
+                  <td className="p-3 text-right text-xs font-semibold text-red-600">
+                    {entry.type === "EXPENSE" ? fmtR(entry.amount_cents) : ""}
                   </td>
-                  <td className={`p-3 text-right font-bold text-xs ${entry.runningBalance >= 0 ? "text-foreground" : "text-red-600"}`}>
+                  <td className="p-3 text-right text-xs font-semibold text-green-600">
+                    {entry.type === "INCOME" ? fmtR(entry.amount_cents) : ""}
+                  </td>
+                  <td className={`p-3 text-right text-xs font-bold ${entry.runningBalance >= 0 ? "text-foreground" : "text-red-600"}`}>
                     {fmtR(entry.runningBalance)}
                   </td>
                   <td className="p-3">
@@ -617,8 +643,28 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
+
               {filteredWithBalance.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No entries for this period.</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No entries for this period.</td></tr>
+              )}
+
+              {/* Closing balance row */}
+              {filteredWithBalance.length > 0 && (
+                <tr className="bg-muted/40 border-t-2">
+                  <td className="p-3"></td>
+                  <td className="p-3 text-xs font-bold">Closing Balance</td>
+                  <td className="hidden md:table-cell"></td>
+                  <td className="p-3 text-right text-xs font-semibold text-red-600">
+                    {tab === "expenses" ? fmtR(totalExpense) : ""}
+                  </td>
+                  <td className="p-3 text-right text-xs font-semibold text-green-600">
+                    {tab === "income" ? fmtR(totalIncome) : ""}
+                  </td>
+                  <td className={`p-3 text-right text-xs font-bold ${closingBalance >= 0 ? "text-foreground" : "text-red-600"}`}>
+                    {fmtR(closingBalance)}
+                  </td>
+                  <td></td>
+                </tr>
               )}
             </tbody>
           </table>
