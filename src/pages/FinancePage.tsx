@@ -175,6 +175,24 @@ export default function FinancePage() {
     if (res.ok) { toast.success("Deleted"); loadEntries(); loadSummary(); loadAllEntries(); }
   };
 
+  const handleTemplateDownload = async (format: "csv" | "xlsx") => {
+    try {
+      const endpoint = format === "csv" ? "/api/finance/export/template-csv" : "/api/finance/export/template-xlsx";
+      const res = await fetch(endpoint, { credentials: "include" });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `finance-import-template.${format}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+      setExportDialogOpen(false);
+    } catch {
+      toast.error("Failed to download template");
+    }
+  };
+
   const handleExport = async (format: "csv" | "xlsx" | "pdf" | "plain-csv" | "plain-xlsx") => {
     try {
       const monthParam = exportAllMonths ? "" : exportMonth;
@@ -338,10 +356,30 @@ export default function FinancePage() {
 
           <Separator />
 
+          {/* Blank template */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Blank Import Template</p>
+            <p className="text-xs text-muted-foreground">
+              Empty file with the correct columns and instructions. Fill it in with your own data, then import it back using the <strong>Import</strong> button.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Button variant="outline" className="justify-start gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleTemplateDownload("csv")}>
+                <Table2 className="h-4 w-4" />
+                <span className="text-sm">Template CSV</span>
+              </Button>
+              <Button variant="outline" className="justify-start gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleTemplateDownload("xlsx")}>
+                <FileSpreadsheet className="h-4 w-4" />
+                <span className="text-sm">Template Excel</span>
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Plain / reimportable formats */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Plain Format — Reimportable</p>
-            <p className="text-xs text-muted-foreground">Simple columns (Date, Type, Category, Amount, Description) that can be imported back into Masakhe.</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Export Your Data — Reimportable</p>
+            <p className="text-xs text-muted-foreground">Your existing entries in a simple format that can be imported back into Masakhe.</p>
             <div className="grid grid-cols-2 gap-2 mt-2">
               <Button variant="outline" className="justify-start gap-2" onClick={() => handleExport("plain-csv")}>
                 <Table2 className="h-4 w-4 text-green-600" />

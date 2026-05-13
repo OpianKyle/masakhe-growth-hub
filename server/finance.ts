@@ -134,6 +134,67 @@ financeRouter.get("/export/plain-csv", async (req, res) => {
   }
 });
 
+// ─── Download Import Template (CSV) ─────────────────────────────────────────
+
+financeRouter.get("/export/template-csv", async (_req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const lines = [
+      "Date,Type,Category,Amount,Description",
+      `# Instructions: Fill in your data below. Delete these comment lines before importing.`,
+      `# Date format: YYYY-MM-DD  |  Type: INCOME or EXPENSE  |  Amount: numbers only (no R or commas)`,
+      `# Valid INCOME categories: Sales, Consulting, Rental Income, Investment, Grant, Other Income`,
+      `# Valid EXPENSE categories: Rent, Utilities, Salaries, Marketing, Travel, Supplies, Tax, Insurance, Other Expense`,
+      `${today},INCOME,Sales,1500.00,Invoice payment from client`,
+      `${today},EXPENSE,Rent,5000.00,Monthly office rent`,
+      `${today},EXPENSE,Utilities,350.00,Electricity bill`,
+    ];
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-import-template.csv"`);
+    res.send(lines.join("\n"));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to generate template" });
+  }
+});
+
+// ─── Download Import Template (XLSX) ────────────────────────────────────────
+
+financeRouter.get("/export/template-xlsx", async (_req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    const aoa: any[][] = [
+      ["Date", "Type", "Category", "Amount", "Description"],
+      [today, "INCOME", "Sales", 1500.00, "Invoice payment from client"],
+      [today, "EXPENSE", "Rent", 5000.00, "Monthly office rent"],
+      [today, "EXPENSE", "Utilities", 350.00, "Electricity bill"],
+      [],
+      ["--- INSTRUCTIONS ---", "", "", "", ""],
+      ["Date format", "YYYY-MM-DD (e.g. 2026-05-01)", "", "", ""],
+      ["Type", "Must be exactly: INCOME or EXPENSE", "", "", ""],
+      ["Category (Income)", "Sales | Consulting | Rental Income | Investment | Grant | Other Income", "", "", ""],
+      ["Category (Expense)", "Rent | Utilities | Salaries | Marketing | Travel | Supplies | Tax | Insurance | Other Expense", "", "", ""],
+      ["Amount", "Numbers only — no R symbol, no commas (e.g. 1500.00)", "", "", ""],
+      ["Description", "Optional free text", "", "", ""],
+      [],
+      ["Delete the instruction rows above before importing.", "", "", "", ""],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 40 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="finance-import-template.xlsx"`);
+    res.send(buf);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to generate template" });
+  }
+});
+
 // ─── Export Plain XLSX (reimportable: Date,Type,Category,Amount,Description) ─
 
 financeRouter.get("/export/plain-xlsx", async (req, res) => {
