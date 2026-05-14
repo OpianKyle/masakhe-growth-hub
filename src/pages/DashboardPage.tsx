@@ -307,7 +307,7 @@ export default function DashboardPage() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto
+        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto
           ${sidebarWide ? "w-64" : "w-16"}
           ${mobileMenuOpen ? "flex" : "hidden md:flex"}
         `}
