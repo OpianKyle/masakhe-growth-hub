@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import PromoPopup from "@/components/PromoPopup";
 
 const BG_IMAGE = "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&q=80&w=1400";
 
@@ -122,7 +121,6 @@ export default function ResellerRegisterPage() {
 
   return (
     <div className="min-h-screen flex">
-      <PromoPopup variant="partner" />
       <Helmet>
         <title>Join the Partner Programme | Masakhe</title>
         <meta name="description" content="Become a Masakhe referral partner. Earn commissions by referring South African businesses to our all-in-one SMME platform." />
