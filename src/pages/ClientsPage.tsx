@@ -253,7 +253,7 @@ export default function ClientsPage() {
 
   const handleSave = async () => {
     if (!formData.full_name?.trim()) {
-      toast({ title: "Full name is required", variant: "destructive" });
+      toast({ title: formData.client_type === "business" ? "Contact person name is required" : "Full name is required", variant: "destructive" });
       return;
     }
     setSaving(true);

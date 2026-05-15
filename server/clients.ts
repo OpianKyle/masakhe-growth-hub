@@ -247,7 +247,7 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
       business_name, business_registration, vat_number, business_type,
       business_website, business_email, business_phone, business_whatsapp, business_address,
     } = req.body;
-    if (!full_name) return res.status(400).json({ error: "Full name is required" });
+    if (!full_name) return res.status(400).json({ error: client_type === "business" ? "Contact person name is required" : "Full name is required" });
 
     const id = randomUUID();
     await execute(

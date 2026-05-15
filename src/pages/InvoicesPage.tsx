@@ -7,13 +7,21 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2 } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
   name: string;
   qty: number;
   unitPrice: number;
+}
+
+interface InventoryProduct {
+  id: string;
+  name: string;
+  sku?: string;
+  price_cents: number;
+  unit?: string;
 }
 
 interface ClientForInvoice {
@@ -239,7 +247,6 @@ export default function InvoicesPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [reference, setReference] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("30 days");
   const [dueDate, setDueDate] = useState("");
   const [startingInvoiceNum, setStartingInvoiceNum] = useState("");
@@ -253,6 +260,8 @@ export default function InvoicesPage() {
   const [invoiceClients, setInvoiceClients] = useState<ClientForInvoice[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
+  const [openItemDropdownIndex, setOpenItemDropdownIndex] = useState<number | null>(null);
 
   const defaultDueDate = () => {
     const d = new Date();
@@ -307,6 +316,13 @@ export default function InvoicesPage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    fetch("/api/inventory/products", { credentials: "include" })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setInventoryProducts(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
   const filteredInvoiceClients = invoiceClients.filter(c => {
     if (!clientSearch) return true;
     const q = clientSearch.toLowerCase();
@@ -347,6 +363,12 @@ export default function InvoicesPage() {
     (updated[i] as any)[key] = val;
     setItems(updated);
   };
+  const selectInventoryProduct = (itemIndex: number, prod: InventoryProduct) => {
+    const updated = [...items];
+    updated[itemIndex] = { ...updated[itemIndex], name: prod.name, unitPrice: prod.price_cents / 100 };
+    setItems(updated);
+    setOpenItemDropdownIndex(null);
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
   const vatAmount = vatEnabled ? subtotal * 0.15 : 0;
@@ -375,7 +397,6 @@ export default function InvoicesPage() {
       customerEmail: email || undefined,
       customerAddress: address || undefined,
       customerPhone: phone || undefined,
-      reference: reference || undefined,
       paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
       dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
       notes: notes || undefined,
@@ -462,7 +483,6 @@ export default function InvoicesPage() {
     setCustomerEmail(inv.customer_email || "");
     setCustomerAddress(inv.customer_address || "");
     setCustomerPhone(inv.customer_phone || "");
-    setReference(inv.reference || "");
     setPaymentTerms(inv.payment_terms || "30 days");
     setDueDate(inv.due_date ? inv.due_date.slice(0, 10) : (inv.type === "invoice" ? defaultDueDate() : ""));
     setNotes(inv.notes || "");
@@ -476,7 +496,7 @@ export default function InvoicesPage() {
     setEditingId(null);
     setShowCreate(false);
     setCustomerName(""); setCustomerEmail(""); setCustomerAddress("");
-    setCustomerPhone(""); setReference(""); setNotes("");
+    setCustomerPhone(""); setNotes("");
     setPaymentTerms("30 days");
     setDueDate("");
     setStartingInvoiceNum("");
@@ -501,7 +521,6 @@ export default function InvoicesPage() {
         customer_email: customerEmail || undefined,
         customer_address: customerAddress || undefined,
         customer_phone: customerPhone || undefined,
-        reference: reference || undefined,
         payment_terms: docType === "quote" ? (paymentTerms || undefined) : undefined,
         due_date: docType === "invoice" ? (dueDate || undefined) : undefined,
         notes: notes || undefined,
@@ -821,13 +840,7 @@ export default function InvoicesPage() {
                 <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
               </div>
 
-              {/* Reference / PO Number — full width */}
-              <div className="md:col-span-2">
-                <Label className="text-xs">Reference / PO Number</Label>
-                <Input value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1" placeholder="e.g. PO-2024-001" />
-              </div>
-
-              {/* Due Date / Valid For + Invoice Number — below PO Reference */}
+              {/* Due Date / Valid For + Invoice Number */}
               {docType === "quote" ? (
                 <div className="md:col-span-2">
                   <Label className="text-xs">Quote Valid For</Label>
@@ -875,8 +888,37 @@ export default function InvoicesPage() {
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-dashed border-muted last:border-0">
-                  <div className="col-span-5">
-                    <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-9 text-sm" placeholder="Item description" />
+                  <div className="col-span-5 relative">
+                    <div className="flex gap-1">
+                      <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-9 text-sm flex-1" placeholder="Item description" />
+                      {inventoryProducts.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 flex-shrink-0"
+                          title="Select from inventory"
+                          onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
+                        >
+                          <Package className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                    {openItemDropdownIndex === i && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-52 overflow-y-auto">
+                        {inventoryProducts.map(prod => (
+                          <button
+                            key={prod.id}
+                            type="button"
+                            className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
+                            onClick={() => selectInventoryProduct(i, prod)}
+                          >
+                            <span className="truncate">{prod.name}{prod.sku ? <span className="text-muted-foreground ml-1 text-xs">({prod.sku})</span> : null}</span>
+                            <span className="text-primary font-medium flex-shrink-0">R{(prod.price_cents / 100).toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <Input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 1)} className="h-9 text-sm" />
