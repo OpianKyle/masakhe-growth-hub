@@ -19,7 +19,7 @@ clientsRouter.get("/", requireAuth, async (req, res) => {
               whatsapp, physical_address, postal_address, employer_name, dependants,
               property_interest, notes,
               business_name, business_registration, vat_number, business_type,
-              business_website, business_email, business_phone, business_address,
+              business_website, business_email, business_phone, business_whatsapp, business_address,
               client_type, created_at, updated_at
        FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
       [userId]
@@ -245,7 +245,7 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
       monthly_income, dependants, risk_profile, credit_score, policy_number,
       property_interest, status, notes, client_type,
       business_name, business_registration, vat_number, business_type,
-      business_website, business_email, business_phone, business_address,
+      business_website, business_email, business_phone, business_whatsapp, business_address,
     } = req.body;
     if (!full_name) return res.status(400).json({ error: "Full name is required" });
 
@@ -256,8 +256,8 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
         physical_address, postal_address, employment_status, employer_name, occupation,
         monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes,
         client_type, business_name, business_registration, vat_number, business_type,
-        business_website, business_email, business_phone, business_address)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        business_website, business_email, business_phone, business_whatsapp, business_address)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         id, userId, full_name, id_number || null, date_of_birth || null, gender || null,
         marital_status || null, email || null, phone || null, whatsapp || null,
@@ -269,7 +269,7 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
         policy_number || null, property_interest || null, status || "prospect", notes || null,
         client_type || "personal",
         business_name || null, business_registration || null, vat_number || null, business_type || null,
-        business_website || null, business_email || null, business_phone || null, business_address || null,
+        business_website || null, business_email || null, business_phone || null, business_whatsapp || null, business_address || null,
       ]
     );
     res.json({ ok: true, id });
@@ -291,7 +291,7 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
       monthly_income, dependants, risk_profile, credit_score, policy_number,
       property_interest, status, notes, client_type,
       business_name, business_registration, vat_number, business_type,
-      business_website, business_email, business_phone, business_address,
+      business_website, business_email, business_phone, business_whatsapp, business_address,
     } = req.body;
 
     await execute(
@@ -301,7 +301,7 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
        monthly_income_cents=?, dependants=?, risk_profile=?, credit_score=?, policy_number=?,
        property_interest=?, status=?, notes=?, client_type=?,
        business_name=?, business_registration=?, vat_number=?, business_type=?,
-       business_website=?, business_email=?, business_phone=?, business_address=?,
+       business_website=?, business_email=?, business_phone=?, business_whatsapp=?, business_address=?,
        updated_at=NOW()
        WHERE id = ?`,
       [
@@ -315,7 +315,7 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
         policy_number || null, property_interest || null, status || "prospect", notes || null,
         client_type || "personal",
         business_name || null, business_registration || null, vat_number || null, business_type || null,
-        business_website || null, business_email || null, business_phone || null, business_address || null,
+        business_website || null, business_email || null, business_phone || null, business_whatsapp || null, business_address || null,
         req.params.id,
       ]
     );

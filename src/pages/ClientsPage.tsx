@@ -41,6 +41,7 @@ interface Client {
   business_website?: string;
   business_email?: string;
   business_phone?: string;
+  business_whatsapp?: string;
   business_address?: string;
   client_type?: string;
   created_at: string;
@@ -63,7 +64,7 @@ const EMPTY_CLIENT: Omit<Client, "id" | "created_at"> = {
   credit_score: undefined, policy_number: "", property_interest: "", status: "prospect", notes: "",
   client_type: "personal",
   business_name: "", business_registration: "", vat_number: "", business_type: "",
-  business_website: "", business_email: "", business_phone: "", business_address: "",
+  business_website: "", business_email: "", business_phone: "", business_whatsapp: "", business_address: "",
 };
 
 const DOC_TYPES = [
@@ -473,7 +474,7 @@ export default function ClientsPage() {
             <Briefcase className="h-6 w-6 text-primary" />
             Clients
           </h2>
-          <p className="text-muted-foreground mt-1">Manage your brokerage client portfolio and documents.</p>
+          <p className="text-muted-foreground mt-1">Manage your client portfolio and documents.</p>
         </div>
         <div className="relative flex items-center gap-2 flex-wrap">
           <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
@@ -702,6 +703,7 @@ export default function ClientsPage() {
                         <Field label="VAT Number" value={selectedClient.vat_number} />
                         <Field label="Business Email" value={selectedClient.business_email} />
                         <Field label="Business Phone" value={selectedClient.business_phone} />
+                        <Field label="Business WhatsApp" value={selectedClient.business_whatsapp} />
                         {selectedClient.business_website && (
                           <div className="col-span-2">
                             <p className="text-xs text-muted-foreground">Website</p>
@@ -1116,6 +1118,10 @@ export default function ClientsPage() {
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Business Phone</label>
                       <Input value={formData.business_phone || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_phone: e.target.value }))} placeholder="+27 11 000 0000" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business WhatsApp</label>
+                      <Input value={formData.business_whatsapp || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_whatsapp: e.target.value }))} placeholder="+27 82 000 0000" />
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Website</label>

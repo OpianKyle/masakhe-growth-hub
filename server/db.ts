@@ -963,6 +963,7 @@ export async function runMigrations() {
     await addColumnIfMissing("broker_clients", "business_website", "VARCHAR(255) NULL");
     await addColumnIfMissing("broker_clients", "business_email", "VARCHAR(255) NULL");
     await addColumnIfMissing("broker_clients", "business_phone", "VARCHAR(30) NULL");
+    await addColumnIfMissing("broker_clients", "business_whatsapp", "VARCHAR(30) NULL");
     await addColumnIfMissing("broker_clients", "business_address", "TEXT NULL");
     await addColumnIfMissing("broker_clients", "client_type", "VARCHAR(20) NOT NULL DEFAULT 'personal'");
     await addColumnIfMissing("invoices", "client_id", "VARCHAR(36) NULL");
