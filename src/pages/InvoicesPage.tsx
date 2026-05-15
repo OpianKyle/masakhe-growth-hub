@@ -253,7 +253,6 @@ export default function InvoicesPage() {
   const [invoiceClients, setInvoiceClients] = useState<ClientForInvoice[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
-  const [showClientPicker, setShowClientPicker] = useState(false);
 
   const defaultDueDate = () => {
     const d = new Date();
@@ -371,7 +370,7 @@ export default function InvoicesPage() {
     if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
     if (items.some((i) => i.unitPrice <= 0)) { toast.error("All items need a price"); return; }
 
-    const buildPayload = (name: string, email: string, phone: string, address: string, isFirst: boolean) => ({
+    const buildPayload = (name: string, email: string, phone: string, address: string, isFirst: boolean, cId?: string) => ({
       customerName: name,
       customerEmail: email || undefined,
       customerAddress: address || undefined,
@@ -385,6 +384,7 @@ export default function InvoicesPage() {
       template: selectedTemplate,
       templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
       customStartSeq: (docType === "invoice" && isFirst && startingInvoiceNum) ? parseInt(startingInvoiceNum) : undefined,
+      clientId: cId || undefined,
     });
 
     if (selectedClientIds.length > 1) {
@@ -402,7 +402,7 @@ export default function InvoicesPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0)),
+          body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0, clientId)),
         });
         created++;
       }
@@ -415,11 +415,12 @@ export default function InvoicesPage() {
 
     if (!customerName.trim()) { toast.error("Customer name is required"); return; }
     const isFirstInvoice = invoices.filter((i) => i.type === "invoice").length === 0;
+    const singleClientId = selectedClientIds.length === 1 ? selectedClientIds[0] : undefined;
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(buildPayload(customerName, customerEmail, customerPhone, customerAddress, isFirstInvoice)),
+      body: JSON.stringify(buildPayload(customerName, customerEmail, customerPhone, customerAddress, isFirstInvoice, singleClientId)),
     });
 
     if (res.ok) {
@@ -484,7 +485,6 @@ export default function InvoicesPage() {
     setSelectedTemplate(1);
     setSelectedClientIds([]);
     setClientSearch("");
-    setShowClientPicker(false);
   };
 
   const handleUpdate = async () => {
@@ -720,19 +720,10 @@ export default function InvoicesPage() {
             {/* Client Picker */}
             {invoiceClients.length > 0 && (
               <div className="mb-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-semibold flex items-center gap-1.5">
-                    <Users className="h-4 w-4 text-primary" />
-                    Select from Clients
-                  </Label>
-                  <button
-                    type="button"
-                    onClick={() => setShowClientPicker(!showClientPicker)}
-                    className="text-xs text-primary underline underline-offset-2 hover:opacity-70"
-                  >
-                    {showClientPicker ? "Hide" : "Browse Clients"}
-                  </button>
-                </div>
+                <Label className="text-sm font-semibold flex items-center gap-1.5 mb-3">
+                  <Users className="h-4 w-4 text-primary" />
+                  Select Client
+                </Label>
 
                 {selectedClientIds.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -757,60 +748,57 @@ export default function InvoicesPage() {
                   </div>
                 )}
 
-                {showClientPicker && (
-                  <div>
-                    <div className="relative mb-2">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by name, business or email..."
-                        value={clientSearch}
-                        onChange={(e) => setClientSearch(e.target.value)}
-                        className="pl-8 h-8 text-sm"
-                      />
-                    </div>
-                    <div className="max-h-52 overflow-y-auto space-y-0.5 rounded-md border border-border bg-background p-1">
-                      {filteredInvoiceClients.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-4">No clients found</p>
-                      ) : filteredInvoiceClients.map(c => {
-                        const selected = selectedClientIds.includes(c.id);
-                        const displayName = c.business_name || c.full_name;
-                        const initial = displayName.charAt(0).toUpperCase();
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => toggleClientSelection(c.id)}
-                            className={`w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-colors ${
-                              selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60"
-                            }`}
-                          >
-                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                              selected ? "bg-primary" : "bg-gradient-to-br from-gray-400 to-gray-500"
-                            }`}>
-                              {initial}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium truncate">{c.full_name}</div>
-                              {c.business_name && c.business_name !== c.full_name && (
-                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                  <Building2 className="h-2.5 w-2.5" />{c.business_name}
-                                </div>
-                              )}
-                              {(c.business_email || c.email) && (
-                                <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
-                              )}
-                            </div>
-                            {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, business or email..."
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      className="pl-8 h-8 text-sm"
+                    />
                   </div>
-                )}
-
-                {selectedClientIds.length === 0 && !showClientPicker && (
-                  <p className="text-xs text-muted-foreground">Or fill in customer details manually below.</p>
-                )}
+                  <div className="max-h-48 overflow-y-auto space-y-0.5 rounded-md border border-border bg-background p-1">
+                    {filteredInvoiceClients.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">No clients found</p>
+                    ) : filteredInvoiceClients.map(c => {
+                      const selected = selectedClientIds.includes(c.id);
+                      const displayName = c.business_name || c.full_name;
+                      const initial = displayName.charAt(0).toUpperCase();
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleClientSelection(c.id)}
+                          className={`w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-colors ${
+                            selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60"
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                            selected ? "bg-primary" : "bg-gradient-to-br from-gray-400 to-gray-500"
+                          }`}>
+                            {initial}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{c.full_name}</div>
+                            {c.business_name && c.business_name !== c.full_name && (
+                              <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                <Building2 className="h-2.5 w-2.5" />{c.business_name}
+                              </div>
+                            )}
+                            {(c.business_email || c.email) && (
+                              <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
+                            )}
+                          </div>
+                          {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedClientIds.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">Select a client above or fill in customer details manually below.</p>
+                  )}
+                </div>
               </div>
             )}
 

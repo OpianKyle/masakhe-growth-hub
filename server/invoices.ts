@@ -1492,7 +1492,7 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId } = req.body;
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
     const docType = type === "quote" ? "quote" : "invoice";
@@ -1527,9 +1527,9 @@ invoiceRouter.post("/", async (req, res) => {
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     const dueDateVal = (docType === "invoice" && dueDate) ? dueDate : null;
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?)`,
-      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, client_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?, ?)`,
+      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, clientId || null, now]
     );
 
     // Stop-credit check (invoices only, not quotes; non-blocking)

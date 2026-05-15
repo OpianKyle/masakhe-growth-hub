@@ -42,6 +42,7 @@ interface Client {
   business_email?: string;
   business_phone?: string;
   business_address?: string;
+  client_type?: string;
   created_at: string;
 }
 
@@ -60,6 +61,7 @@ const EMPTY_CLIENT: Omit<Client, "id" | "created_at"> = {
   employment_status: "", employer_name: "", occupation: "",
   monthly_income_cents: 0, dependants: 0, risk_profile: "medium",
   credit_score: undefined, policy_number: "", property_interest: "", status: "prospect", notes: "",
+  client_type: "personal",
   business_name: "", business_registration: "", vat_number: "", business_type: "",
   business_website: "", business_email: "", business_phone: "", business_address: "",
 };
@@ -182,7 +184,9 @@ export default function ClientsPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docType, setDocType] = useState("other");
   const [docName, setDocName] = useState("");
-  const [activeTab, setActiveTab] = useState<"details" | "documents">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "documents" | "statements">("details");
+  const [statements, setStatements] = useState<{ invoices: any[]; monthly: any[] }>({ invoices: [], monthly: [] });
+  const [loadingStatements, setLoadingStatements] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const docUploadRef = useRef<HTMLInputElement>(null);
 
@@ -211,10 +215,20 @@ export default function ClientsPage() {
       .finally(() => setLoadingDocs(false));
   };
 
+  const fetchStatements = (clientId: string) => {
+    setLoadingStatements(true);
+    fetch(`/api/clients/${clientId}/invoices`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setStatements(data && Array.isArray(data.invoices) ? data : { invoices: [], monthly: [] }))
+      .catch(() => {})
+      .finally(() => setLoadingStatements(false));
+  };
+
   const openClient = (client: Client) => {
     setSelectedClient(client);
     setActiveTab("details");
     fetchDocs(client.id);
+    fetchStatements(client.id);
   };
 
   const openAdd = () => {
@@ -597,10 +611,10 @@ export default function ClientsPage() {
 
             {/* Tabs */}
             <div className="flex border-b border-border bg-muted/20">
-              {(["details", "documents"] as const).map((tab) => (
+              {(["details", "documents", "statements"] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`px-5 py-3 text-sm font-medium transition-colors ${activeTab === tab ? "border-b-2 border-primary text-primary bg-background" : "text-muted-foreground hover:text-foreground"}`}>
-                  {tab === "details" ? "Client Details" : `Documents`}
+                  {tab === "details" ? "Client Details" : tab === "documents" ? "Documents" : "Statements"}
                 </button>
               ))}
             </div>
@@ -654,9 +668,9 @@ export default function ClientsPage() {
                     </div>
                   </section>
 
-                  {/* Brokerage */}
+                  {/* Client Profile */}
                   <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
-                    <SectionHeader icon={Shield} label="Brokerage Profile" iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
+                    <SectionHeader icon={Shield} label="Client Profile" iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Risk Profile" value={selectedClient.risk_profile ? selectedClient.risk_profile.charAt(0).toUpperCase() + selectedClient.risk_profile.slice(1) : undefined} />
                       <Field label="Credit Score" value={selectedClient.credit_score} />
@@ -791,6 +805,68 @@ export default function ClientsPage() {
                   )}
                 </div>
               )}
+
+              {activeTab === "statements" && (
+                <div className="space-y-5">
+                  {loadingStatements ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : statements.invoices.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+                        <FileText className="h-7 w-7 opacity-40" />
+                      </div>
+                      <p className="text-sm font-medium">No invoices found</p>
+                      <p className="text-xs mt-1">Invoices sent to this client will appear here.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {statements.monthly.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Monthly Summary</p>
+                          <div className="space-y-2">
+                            {statements.monthly.map((m: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{m.month}</p>
+                                  <p className="text-xs text-muted-foreground">{m.count} {m.count === 1 ? "invoice" : "invoices"}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-foreground">R {(m.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
+                                  {m.paid_cents > 0 && (
+                                    <p className="text-xs text-green-600">R {(m.paid_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })} paid</p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Invoice History</p>
+                        <div className="space-y-2">
+                          {statements.invoices.map((inv: any) => (
+                            <div key={inv.id} className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 hover:border-primary/30 transition-colors">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-foreground">{inv.invoice_number}</p>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : inv.status === "sent" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
+                                    {inv.status}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground capitalize">{inv.type}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(inv.created_at)}</p>
+                              </div>
+                              <p className="text-sm font-bold text-foreground shrink-0">R {(inv.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -809,19 +885,41 @@ export default function ClientsPage() {
               </div>
 
               <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+                {/* Client Type Toggle */}
+                <div className="rounded-xl bg-muted/40 border border-border p-4">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 block">Client Type</label>
+                  <div className="flex rounded-lg overflow-hidden border border-border">
+                    <button type="button"
+                      onClick={() => setFormData((p: any) => ({ ...p, client_type: "personal" }))}
+                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${formData.client_type !== "business" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}>
+                      Personal Client
+                    </button>
+                    <button type="button"
+                      onClick={() => setFormData((p: any) => ({ ...p, client_type: "business" }))}
+                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${formData.client_type === "business" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}>
+                      Business Client
+                    </button>
+                  </div>
+                </div>
+
                 {/* Personal */}
                 <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
                       <User className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Personal Information</h4>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      {formData.client_type === "business" ? "Contact Person" : "Personal Information"}
+                    </h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="sm:col-span-2">
-                      <label className="text-xs text-muted-foreground mb-1 block">Full Name *</label>
-                      <Input value={formData.full_name || ""} onChange={(e) => setFormData((p: any) => ({ ...p, full_name: e.target.value }))} placeholder="Full legal name" />
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {formData.client_type === "business" ? "Contact Person Name *" : "Full Name *"}
+                      </label>
+                      <Input value={formData.full_name || ""} onChange={(e) => setFormData((p: any) => ({ ...p, full_name: e.target.value }))} placeholder={formData.client_type === "business" ? "Contact person at the business" : "Full legal name"} />
                     </div>
+                    {formData.client_type !== "business" && (<>
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">ID / Passport Number</label>
                       <Input value={formData.id_number || ""} onChange={(e) => setFormData((p: any) => ({ ...p, id_number: e.target.value }))} placeholder="RSA ID or Passport" />
@@ -851,6 +949,7 @@ export default function ClientsPage() {
                       <label className="text-xs text-muted-foreground mb-1 block">Dependants</label>
                       <Input type="number" min="0" value={formData.dependants || 0} onChange={(e) => setFormData((p: any) => ({ ...p, dependants: parseInt(e.target.value) || 0 }))} />
                     </div>
+                    </>)}
                   </div>
                 </section>
 
@@ -890,7 +989,7 @@ export default function ClientsPage() {
                   </div>
                 </section>
 
-                {/* Employment & Finance */}
+                {formData.client_type !== "business" && (
                 <section className="rounded-xl bg-teal-50/60 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600">
@@ -922,14 +1021,15 @@ export default function ClientsPage() {
                     </div>
                   </div>
                 </section>
+                )}
 
-                {/* Brokerage */}
+                {/* Client Profile */}
                 <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
                       <Shield className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Brokerage Profile</h4>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Client Profile</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -969,6 +1069,7 @@ export default function ClientsPage() {
                 </section>
 
                 {/* Business Details */}
+                {formData.client_type === "business" && (
                 <section className="rounded-xl bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
@@ -1024,6 +1125,7 @@ export default function ClientsPage() {
                     </div>
                   </div>
                 </section>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
