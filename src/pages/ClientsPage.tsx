@@ -892,7 +892,7 @@ export default function ClientsPage() {
                     <button type="button"
                       onClick={() => setFormData((p: any) => ({ ...p, client_type: "personal" }))}
                       className={`flex-1 py-2.5 text-sm font-medium transition-colors ${formData.client_type !== "business" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}>
-                      Personal Client
+                      Individual Client
                     </button>
                     <button type="button"
                       onClick={() => setFormData((p: any) => ({ ...p, client_type: "business" }))}
@@ -954,6 +954,7 @@ export default function ClientsPage() {
                 </section>
 
                 {/* Contact */}
+                {formData.client_type !== "business" && (
                 <section className="rounded-xl bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -988,6 +989,7 @@ export default function ClientsPage() {
                     </div>
                   </div>
                 </section>
+                )}
 
                 {formData.client_type !== "business" && (
                 <section className="rounded-xl bg-teal-50/60 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/20 p-4">
@@ -1023,13 +1025,14 @@ export default function ClientsPage() {
                 </section>
                 )}
 
-                {/* Client Profile */}
+                {/* Financial Profile */}
+                {formData.client_type !== "business" && (
                 <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
                       <Shield className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Client Profile</h4>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Financial Profile</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -1067,6 +1070,7 @@ export default function ClientsPage() {
                     </div>
                   </div>
                 </section>
+                )}
 
                 {/* Business Details */}
                 {formData.client_type === "business" && (
