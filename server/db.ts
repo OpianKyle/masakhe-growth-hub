@@ -956,6 +956,14 @@ export async function runMigrations() {
     await addColumnIfMissing("broker_clients", "inactive_nudge_sent_at", "DATETIME NULL");
     await addColumnIfMissing("broker_clients", "last_birthday_msg_year", "INT NULL");
     await addColumnIfMissing("broker_clients", "last_anniversary_msg_year", "INT NULL");
+    await addColumnIfMissing("broker_clients", "business_name", "VARCHAR(255) NULL");
+    await addColumnIfMissing("broker_clients", "business_registration", "VARCHAR(100) NULL");
+    await addColumnIfMissing("broker_clients", "vat_number", "VARCHAR(50) NULL");
+    await addColumnIfMissing("broker_clients", "business_type", "VARCHAR(100) NULL");
+    await addColumnIfMissing("broker_clients", "business_website", "VARCHAR(255) NULL");
+    await addColumnIfMissing("broker_clients", "business_email", "VARCHAR(255) NULL");
+    await addColumnIfMissing("broker_clients", "business_phone", "VARCHAR(30) NULL");
+    await addColumnIfMissing("broker_clients", "business_address", "TEXT NULL");
 
     await addColumnIfMissing("website_leads", "autoreply_sent_at", "DATETIME NULL");
     await addColumnIfMissing("website_leads", "drip_step", "INT NOT NULL DEFAULT 0");

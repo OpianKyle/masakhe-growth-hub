@@ -16,7 +16,27 @@ clientsRouter.get("/", requireAuth, async (req, res) => {
       `SELECT id, full_name, id_number, email, phone, employment_status,
               monthly_income_cents, risk_profile, policy_number, status,
               date_of_birth, gender, marital_status, occupation, credit_score,
+              whatsapp, physical_address, postal_address, employer_name, dependants,
+              property_interest, notes,
+              business_name, business_registration, vat_number, business_type,
+              business_website, business_email, business_phone, business_address,
               created_at, updated_at
+       FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
+      [userId]
+    );
+    res.json(clients);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Lightweight client list for invoice/quote picker ──────────────────────────
+clientsRouter.get("/for-invoice", requireAuth, async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const clients = await queryAll(
+      `SELECT id, full_name, business_name, email, business_email, phone, business_phone,
+              physical_address, business_address, vat_number
        FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
       [userId]
     );
@@ -161,6 +181,8 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
       physical_address, postal_address, employment_status, employer_name, occupation,
       monthly_income, dependants, risk_profile, credit_score, policy_number,
       property_interest, status, notes,
+      business_name, business_registration, vat_number, business_type,
+      business_website, business_email, business_phone, business_address,
     } = req.body;
     if (!full_name) return res.status(400).json({ error: "Full name is required" });
 
@@ -169,8 +191,10 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
       `INSERT INTO broker_clients
        (id, user_id, full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
         physical_address, postal_address, employment_status, employer_name, occupation,
-        monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes,
+        business_name, business_registration, vat_number, business_type,
+        business_website, business_email, business_phone, business_address)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         id, userId, full_name, id_number || null, date_of_birth || null, gender || null,
         marital_status || null, email || null, phone || null, whatsapp || null,
@@ -180,6 +204,8 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
         dependants || 0, risk_profile || "medium",
         credit_score ? parseInt(credit_score) : null,
         policy_number || null, property_interest || null, status || "prospect", notes || null,
+        business_name || null, business_registration || null, vat_number || null, business_type || null,
+        business_website || null, business_email || null, business_phone || null, business_address || null,
       ]
     );
     res.json({ ok: true, id });
@@ -200,6 +226,8 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
       physical_address, postal_address, employment_status, employer_name, occupation,
       monthly_income, dependants, risk_profile, credit_score, policy_number,
       property_interest, status, notes,
+      business_name, business_registration, vat_number, business_type,
+      business_website, business_email, business_phone, business_address,
     } = req.body;
 
     await execute(
@@ -207,7 +235,10 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
        full_name=?, id_number=?, date_of_birth=?, gender=?, marital_status=?, email=?, phone=?, whatsapp=?,
        physical_address=?, postal_address=?, employment_status=?, employer_name=?, occupation=?,
        monthly_income_cents=?, dependants=?, risk_profile=?, credit_score=?, policy_number=?,
-       property_interest=?, status=?, notes=?, updated_at=NOW()
+       property_interest=?, status=?, notes=?,
+       business_name=?, business_registration=?, vat_number=?, business_type=?,
+       business_website=?, business_email=?, business_phone=?, business_address=?,
+       updated_at=NOW()
        WHERE id = ?`,
       [
         full_name, id_number || null, date_of_birth || null, gender || null,
@@ -218,6 +249,8 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
         dependants || 0, risk_profile || "medium",
         credit_score ? parseInt(credit_score) : null,
         policy_number || null, property_interest || null, status || "prospect", notes || null,
+        business_name || null, business_registration || null, vat_number || null, business_type || null,
+        business_website || null, business_email || null, business_phone || null, business_address || null,
         req.params.id,
       ]
     );

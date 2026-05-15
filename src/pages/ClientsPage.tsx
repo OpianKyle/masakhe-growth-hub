@@ -34,6 +34,14 @@ interface Client {
   property_interest?: string;
   status: string;
   notes?: string;
+  business_name?: string;
+  business_registration?: string;
+  vat_number?: string;
+  business_type?: string;
+  business_website?: string;
+  business_email?: string;
+  business_phone?: string;
+  business_address?: string;
   created_at: string;
 }
 
@@ -52,6 +60,8 @@ const EMPTY_CLIENT: Omit<Client, "id" | "created_at"> = {
   employment_status: "", employer_name: "", occupation: "",
   monthly_income_cents: 0, dependants: 0, risk_profile: "medium",
   credit_score: undefined, policy_number: "", property_interest: "", status: "prospect", notes: "",
+  business_name: "", business_registration: "", vat_number: "", business_type: "",
+  business_website: "", business_email: "", business_phone: "", business_address: "",
 };
 
 const DOC_TYPES = [
@@ -667,6 +677,36 @@ export default function ClientsPage() {
                     )}
                   </section>
 
+                  {/* Business Details */}
+                  {(selectedClient.business_name || selectedClient.business_registration || selectedClient.vat_number || selectedClient.business_address) && (
+                    <section className="rounded-xl bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 p-4">
+                      <SectionHeader icon={Building2} label="Business Details" iconBg="bg-gradient-to-br from-emerald-500 to-teal-600" />
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                        <Field label="Business / Trading Name" value={selectedClient.business_name} />
+                        <Field label="Business Type" value={selectedClient.business_type} />
+                        <Field label="CIPC Registration" value={selectedClient.business_registration} />
+                        <Field label="VAT Number" value={selectedClient.vat_number} />
+                        <Field label="Business Email" value={selectedClient.business_email} />
+                        <Field label="Business Phone" value={selectedClient.business_phone} />
+                        {selectedClient.business_website && (
+                          <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground">Website</p>
+                            <a href={selectedClient.business_website} target="_blank" rel="noopener noreferrer"
+                              className="text-sm font-medium text-primary underline underline-offset-2 truncate block">
+                              {selectedClient.business_website}
+                            </a>
+                          </div>
+                        )}
+                        {selectedClient.business_address && (
+                          <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground">Business Address</p>
+                            <p className="text-sm font-medium text-foreground whitespace-pre-line">{selectedClient.business_address}</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
+
                   <p className="text-xs text-muted-foreground px-1">Added {fmtDate(selectedClient.created_at)}</p>
                 </div>
               )}
@@ -924,6 +964,63 @@ export default function ClientsPage() {
                       <textarea value={formData.notes || ""} onChange={(e) => setFormData((p: any) => ({ ...p, notes: e.target.value }))}
                         rows={3} placeholder="Additional notes..."
                         className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none" />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Business Details */}
+                <section className="rounded-xl bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                      <Building2 className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Business Details</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business / Trading Name</label>
+                      <Input value={formData.business_name || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_name: e.target.value }))} placeholder="e.g. Acme Pty Ltd" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business Type</label>
+                      <select value={formData.business_type || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_type: e.target.value }))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="">Select type</option>
+                        <option>Sole Proprietor</option>
+                        <option>Partnership</option>
+                        <option>Close Corporation (CC)</option>
+                        <option>Private Company (Pty Ltd)</option>
+                        <option>Public Company (Ltd)</option>
+                        <option>Non-Profit Organisation</option>
+                        <option>Trust</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">CIPC Registration Number</label>
+                      <Input value={formData.business_registration || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_registration: e.target.value }))} placeholder="e.g. 2023/123456/07" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">VAT Number</label>
+                      <Input value={formData.vat_number || ""} onChange={(e) => setFormData((p: any) => ({ ...p, vat_number: e.target.value }))} placeholder="e.g. 4123456789" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business Email</label>
+                      <Input type="email" value={formData.business_email || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_email: e.target.value }))} placeholder="info@business.co.za" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business Phone</label>
+                      <Input value={formData.business_phone || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_phone: e.target.value }))} placeholder="+27 11 000 0000" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Website</label>
+                      <Input value={formData.business_website || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_website: e.target.value }))} placeholder="https://www.business.co.za" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-muted-foreground mb-1 block">Business Address</label>
+                      <textarea value={formData.business_address || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_address: e.target.value }))}
+                        rows={2} placeholder="Street, Suburb, City, Code"
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none min-h-[60px]" />
                     </div>
                   </div>
                 </section>

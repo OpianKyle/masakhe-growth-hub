@@ -7,13 +7,26 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2 } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
   name: string;
   qty: number;
   unitPrice: number;
+}
+
+interface ClientForInvoice {
+  id: string;
+  full_name: string;
+  business_name?: string;
+  email?: string;
+  business_email?: string;
+  phone?: string;
+  business_phone?: string;
+  physical_address?: string;
+  business_address?: string;
+  vat_number?: string;
 }
 
 interface Invoice {
@@ -237,6 +250,11 @@ export default function InvoicesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [invoiceClients, setInvoiceClients] = useState<ClientForInvoice[]>([]);
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [showClientPicker, setShowClientPicker] = useState(false);
+
   const defaultDueDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -283,6 +301,46 @@ export default function InvoicesPage() {
 
   useEffect(() => { loadInvoices(); }, []);
 
+  useEffect(() => {
+    fetch("/api/clients/for-invoice", { credentials: "include" })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setInvoiceClients(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  const filteredInvoiceClients = invoiceClients.filter(c => {
+    if (!clientSearch) return true;
+    const q = clientSearch.toLowerCase();
+    return `${c.full_name} ${c.business_name || ""} ${c.email || ""} ${c.business_email || ""}`.toLowerCase().includes(q);
+  });
+
+  const applyClientToForm = (c: ClientForInvoice) => {
+    setCustomerName(c.business_name || c.full_name);
+    setCustomerEmail(c.business_email || c.email || "");
+    setCustomerPhone(c.business_phone || c.phone || "");
+    setCustomerAddress(c.business_address || c.physical_address || "");
+  };
+
+  const toggleClientSelection = (id: string) => {
+    setSelectedClientIds(prev => {
+      if (prev.includes(id)) {
+        const next = prev.filter(x => x !== id);
+        if (next.length === 1) {
+          const c = invoiceClients.find(cl => cl.id === next[0]);
+          if (c) applyClientToForm(c);
+        }
+        return next;
+      } else {
+        const next = [...prev, id];
+        if (next.length === 1) {
+          const c = invoiceClients.find(cl => cl.id === id);
+          if (c) applyClientToForm(c);
+        }
+        return next;
+      }
+    });
+  };
+
   const addItem = () => setItems([...items, { name: "", qty: 1, unitPrice: 0 }]);
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
   const updateItem = (i: number, key: keyof InvoiceItem, val: any) => {
@@ -304,33 +362,64 @@ export default function InvoicesPage() {
     setStartingInvoiceNum("");
     setShowCreate(true);
     setEditingId(null);
+    setSelectedClientIds([]);
+    setClientSearch("");
+    setShowClientPicker(false);
   };
 
   const handleCreate = async () => {
-    if (!customerName.trim()) { toast.error("Customer name is required"); return; }
     if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
     if (items.some((i) => i.unitPrice <= 0)) { toast.error("All items need a price"); return; }
 
+    const buildPayload = (name: string, email: string, phone: string, address: string, isFirst: boolean) => ({
+      customerName: name,
+      customerEmail: email || undefined,
+      customerAddress: address || undefined,
+      customerPhone: phone || undefined,
+      reference: reference || undefined,
+      paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
+      dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
+      notes: notes || undefined,
+      items, vatEnabled,
+      type: docType,
+      template: selectedTemplate,
+      templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
+      customStartSeq: (docType === "invoice" && isFirst && startingInvoiceNum) ? parseInt(startingInvoiceNum) : undefined,
+    });
+
+    if (selectedClientIds.length > 1) {
+      if (items.some((i) => !i.name.trim()) || items.some((i) => i.unitPrice <= 0)) return;
+      let created = 0;
+      const isFirst = invoices.filter((i) => i.type === "invoice").length === 0;
+      for (const clientId of selectedClientIds) {
+        const c = invoiceClients.find(cl => cl.id === clientId);
+        if (!c) continue;
+        const name = c.business_name || c.full_name;
+        const email = c.business_email || c.email || "";
+        const phone = c.business_phone || c.phone || "";
+        const address = c.business_address || c.physical_address || "";
+        await fetch("/api/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0)),
+        });
+        created++;
+      }
+      toast.success(`${created} ${docType === "quote" ? "quotes" : "invoices"} created`);
+      resetForm();
+      setShowCreate(false);
+      loadInvoices();
+      return;
+    }
+
+    if (!customerName.trim()) { toast.error("Customer name is required"); return; }
     const isFirstInvoice = invoices.filter((i) => i.type === "invoice").length === 0;
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        customerName, customerEmail: customerEmail || undefined,
-        customerAddress: customerAddress || undefined,
-        customerPhone: customerPhone || undefined,
-        reference: reference || undefined,
-        paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
-        dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
-        notes: notes || undefined,
-        items, vatEnabled,
-        type: docType,
-        template: selectedTemplate,
-        templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
-        customStartSeq: (docType === "invoice" && isFirstInvoice && startingInvoiceNum)
-          ? parseInt(startingInvoiceNum) : undefined,
-      }),
+      body: JSON.stringify(buildPayload(customerName, customerEmail, customerPhone, customerAddress, isFirstInvoice)),
     });
 
     if (res.ok) {
@@ -393,6 +482,9 @@ export default function InvoicesPage() {
     setItems([{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(true);
     setSelectedTemplate(1);
+    setSelectedClientIds([]);
+    setClientSearch("");
+    setShowClientPicker(false);
   };
 
   const handleUpdate = async () => {
@@ -625,10 +717,108 @@ export default function InvoicesPage() {
               </div>
             </div>
 
+            {/* Client Picker */}
+            {invoiceClients.length > 0 && (
+              <div className="mb-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-primary" />
+                    Select from Clients
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowClientPicker(!showClientPicker)}
+                    className="text-xs text-primary underline underline-offset-2 hover:opacity-70"
+                  >
+                    {showClientPicker ? "Hide" : "Browse Clients"}
+                  </button>
+                </div>
+
+                {selectedClientIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {selectedClientIds.map(id => {
+                      const c = invoiceClients.find(cl => cl.id === id);
+                      if (!c) return null;
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 bg-primary/15 text-primary text-xs font-medium px-2.5 py-1 rounded-full">
+                          <Building2 className="h-3 w-3" />
+                          {c.business_name || c.full_name}
+                          <button type="button" onClick={() => toggleClientSelection(id)} className="ml-0.5 hover:text-red-500 transition-colors">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                    {selectedClientIds.length > 1 && (
+                      <p className="w-full text-xs text-amber-600 font-medium mt-1">
+                        {selectedClientIds.length} clients selected — a separate {docType} will be created for each.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {showClientPicker && (
+                  <div>
+                    <div className="relative mb-2">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name, business or email..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-8 h-8 text-sm"
+                      />
+                    </div>
+                    <div className="max-h-52 overflow-y-auto space-y-0.5 rounded-md border border-border bg-background p-1">
+                      {filteredInvoiceClients.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-4">No clients found</p>
+                      ) : filteredInvoiceClients.map(c => {
+                        const selected = selectedClientIds.includes(c.id);
+                        const displayName = c.business_name || c.full_name;
+                        const initial = displayName.charAt(0).toUpperCase();
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => toggleClientSelection(c.id)}
+                            className={`w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-colors ${
+                              selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60"
+                            }`}
+                          >
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                              selected ? "bg-primary" : "bg-gradient-to-br from-gray-400 to-gray-500"
+                            }`}>
+                              {initial}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{c.full_name}</div>
+                              {c.business_name && c.business_name !== c.full_name && (
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                  <Building2 className="h-2.5 w-2.5" />{c.business_name}
+                                </div>
+                              )}
+                              {(c.business_email || c.email) && (
+                                <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
+                              )}
+                            </div>
+                            {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedClientIds.length === 0 && !showClientPicker && (
+                  <p className="text-xs text-muted-foreground">Or fill in customer details manually below.</p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <Label className="text-xs">Customer Name *</Label>
-                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name" />
+                <Label className="text-xs">Customer Name *{selectedClientIds.length > 1 ? " (auto-filled per client)" : ""}</Label>
+                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name"
+                  disabled={selectedClientIds.length > 1} />
               </div>
               <div>
                 <Label className="text-xs">Customer Email</Label>
