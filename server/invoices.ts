@@ -1799,8 +1799,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
 
 invoiceRouter.put("/:id", async (req, res) => {
   try {
-    const userId = req.session?.userId;
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
     const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
@@ -1867,8 +1866,7 @@ invoiceRouter.post("/:id/mark-unpaid", async (req, res) => {
 
 invoiceRouter.delete("/:id", async (req, res) => {
   try {
-    const userId = req.session?.userId;
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
     await execute("DELETE FROM invoices WHERE id = ?", [req.params.id]);
