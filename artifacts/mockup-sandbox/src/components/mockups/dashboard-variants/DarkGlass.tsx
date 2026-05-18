@@ -1,18 +1,19 @@
 import './_group.css';
 
-/* ── Inline SVG icons (stroke-based, 15×15) ── */
+const A = '#059669'; // SA green accent
+
 const Ic = {
-  grid:     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="1" width="5.5" height="5.5" rx="1"/><rect x="1" y="8.5" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1"/></svg>,
-  globe:    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="7.5" cy="7.5" r="6"/><ellipse cx="7.5" cy="7.5" rx="3" ry="6"/><line x1="1.5" y1="7.5" x2="13.5" y2="7.5"/></svg>,
-  file:     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M3 1h6l3 3v10H3V1z"/><polyline points="9,1 9,4 12,4"/><line x1="5" y1="7" x2="10" y2="7"/><line x1="5" y1="10" x2="10" y2="10"/></svg>,
-  users:    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="5.5" cy="5" r="2.5"/><path d="M1 13c0-2.5 2-4.5 4.5-4.5S10 10.5 10 13"/><path d="M10 5a2.5 2.5 0 0 1 0 5M12 13a3.5 3.5 0 0 0-2-3"/></svg>,
-  chart:    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><polyline points="1.5,12 5,7 8.5,9.5 13,4"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5"/></svg>,
-  share:    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="12" cy="3" r="1.5"/><circle cx="3" cy="7.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><line x1="4.5" y1="6.8" x2="10.5" y2="3.7"/><line x1="4.5" y1="8.2" x2="10.5" y2="11.3"/></svg>,
-  wallet:   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="4" width="13" height="9" rx="1"/><path d="M4 4V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V4"/><circle cx="11" cy="8.5" r="1"/></svg>,
-  bell:     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M7.5 1.5a5 5 0 0 1 5 5v3l1 1.5H1.5L2.5 9.5v-3a5 5 0 0 1 5-1z"/><path d="M6 12.5a1.5 1.5 0 0 0 3 0"/></svg>,
-  plus:     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>,
-  up:       <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="2,8 5.5,3.5 9,8"/></svg>,
-  down:     <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="2,3.5 5.5,8 9,3.5"/></svg>,
+  grid:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="5" height="5" rx="0.8"/><rect x="8" y="1" width="5" height="5" rx="0.8"/><rect x="1" y="8" width="5" height="5" rx="0.8"/><rect x="8" y="8" width="5" height="5" rx="0.8"/></svg>,
+  globe:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="7" cy="7" r="5.5"/><ellipse cx="7" cy="7" rx="2.8" ry="5.5"/><line x1="1.5" y1="7" x2="12.5" y2="7"/></svg>,
+  file:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M3 1h5l3 3v9H3V1z"/><polyline points="8,1 8,4 11,4"/><line x1="5" y1="7" x2="9" y2="7"/><line x1="5" y1="9.5" x2="9" y2="9.5"/></svg>,
+  users:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="5" cy="4.5" r="2.2"/><path d="M1 12c0-2.2 1.8-4 4-4s4 1.8 4 4"/><path d="M9.5 4.5a2.2 2.2 0 0 1 0 4.4M11.5 12a3.2 3.2 0 0 0-2-3"/></svg>,
+  chart:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><polyline points="1.5,11 5,6.5 8,8.5 12.5,3.5"/><line x1="1.5" y1="12.5" x2="12.5" y2="12.5"/></svg>,
+  share:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="2.5" r="1.4"/><circle cx="3" cy="7" r="1.4"/><circle cx="11" cy="11.5" r="1.4"/><line x1="4.4" y1="6.2" x2="9.6" y2="3.3"/><line x1="4.4" y1="7.8" x2="9.6" y2="10.7"/></svg>,
+  wallet: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="4" width="12" height="8" rx="1"/><path d="M4 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><circle cx="10.5" cy="8" r="0.9" fill="currentColor"/></svg>,
+  bell:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M7 1.5a4.5 4.5 0 0 1 4.5 4.5v2.5l1 1.5H1.5L2.5 8.5V6A4.5 4.5 0 0 1 7 1.5z"/><path d="M5.5 11.5a1.5 1.5 0 0 0 3 0"/></svg>,
+  plus:   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6"><line x1="6.5" y1="1.5" x2="6.5" y2="11.5"/><line x1="1.5" y1="6.5" x2="11.5" y2="6.5"/></svg>,
+  up:     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1.5,7.5 5,3 8.5,7.5"/></svg>,
+  down:   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1.5,3 5,7.5 8.5,3"/></svg>,
 };
 
 const NAV = [
@@ -26,193 +27,181 @@ const NAV = [
 ];
 
 const STATS = [
-  { label: 'Revenue',           value: 'R 42,800', trend: '+12.4%', up: true  },
-  { label: 'Expenses',          value: 'R 18,200', trend: '−5.2%',  up: false },
-  { label: 'Outstanding Inv.',  value: 'R 286,400',trend: '24 open', up: true },
-  { label: 'Client Retention',  value: '94.2%',    trend: '+1.8pp',  up: true  },
+  { label: 'Revenue MTD',       value: 'R 42,800',  trend: '+12.4%',  up: true  },
+  { label: 'Expenses MTD',      value: 'R 18,200',  trend: '−5.2%',   up: false },
+  { label: 'Outstanding',       value: 'R 286,400', trend: '24 open', up: true  },
+  { label: 'Client Retention',  value: '94.2%',     trend: '+1.8pp',  up: true  },
 ];
 
 const MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
-const REV =  [28, 32, 29, 38, 35, 40, 42.8];
-const EXP =  [16, 18, 15, 20, 17, 19, 18.2];
-const MAX = 46; const CW = 360; const CH = 100;
+const REV = [28,32,29,38,35,40,42.8];
+const EXP = [16,18,15,20,17,19,18.2];
+const MAX = 46; const W = 320; const H = 95;
 
-function smooth(data: number[], close = false) {
-  const pts = data.map((v, i) => [(i / (data.length - 1)) * CW, CH - (v / MAX) * CH] as [number, number]);
-  let d = `M ${pts[0][0]},${pts[0][1]}`;
-  for (let i = 1; i < pts.length; i++) {
-    const cpx = (pts[i-1][0] + pts[i][0]) / 2;
-    d += ` C ${cpx},${pts[i-1][1]} ${cpx},${pts[i][1]} ${pts[i][0]},${pts[i][1]}`;
-  }
-  return close ? d + ` L ${CW},${CH} L 0,${CH} Z` : d;
+function sp(data: number[], close = false) {
+  const p = data.map((v,i) => [(i/(data.length-1))*W, H-(v/MAX)*H] as [number,number]);
+  let d = `M ${p[0][0]},${p[0][1]}`;
+  for (let i=1;i<p.length;i++){const cx=(p[i-1][0]+p[i][0])/2;d+=` C ${cx},${p[i-1][1]} ${cx},${p[i][1]} ${p[i][0]},${p[i][1]}`;}
+  return close ? d+` L ${W},${H} L 0,${H} Z`:d;
 }
 
-const ACTIVITY = [
-  { date: '18 Jan', ref: 'INV-1042', desc: 'Payment — Khumalo Ltd',    amount: '+R 8,500',  debit: false },
-  { date: '18 Jan', ref: 'EXP-0215', desc: 'Office supplies',           amount: '−R 420',    debit: true  },
-  { date: '17 Jan', ref: 'INV-1043', desc: 'Invoice sent — Nkosi CC',   amount: 'R 12,000',  debit: false },
-  { date: '16 Jan', ref: 'CLT-0082', desc: 'New client — Sizwe Eng.',   amount: '',          debit: false },
+const TXN = [
+  { date:'18 Jan', ref:'INV-1042', desc:'Payment — Khumalo Ltd',    amt:'+R 8,500', dr:false },
+  { date:'18 Jan', ref:'EXP-0215', desc:'Expense — Office supplies', amt:'−R 420',   dr:true  },
+  { date:'17 Jan', ref:'INV-1043', desc:'Invoice — Nkosi Construct', amt:'R 12,000', dr:false },
+  { date:'16 Jan', ref:'CLT-0082', desc:'New client — Sizwe Eng.',   amt:'',         dr:false },
 ];
 
-const C = {
-  bg: '#0D1117', sbBorder: 'rgba(255,255,255,0.07)', mainBg: '#ffffff',
-  hdrBorder: '#E1E4E8', textPrimary: '#0D1117', textSec: '#656D76',
-  cardBorder: '#E1E4E8', accent: '#059669', accentDim: 'rgba(5,150,105,0.09)',
-  navText: '#8B949E', navActive: '#E6EDF3', sbText: '#E6EDF3',
-};
+const INVOICES = [
+  { client:'Khumalo Ltd',     ref:'INV-1043', amt:'R 12,000', due:'23 Jan', late:false },
+  { client:'Nkosi Construct', ref:'INV-1038', amt:'R 28,500', due:'10 Jan', late:true  },
+  { client:'Sithole Trading', ref:'INV-1041', amt:'R 8,200',  due:'25 Jan', late:false },
+  { client:'Ubuntu Freight',  ref:'INV-1039', amt:'R 15,750', due:'12 Jan', late:true  },
+];
 
 export function DarkGlass() {
   return (
-    <div style={{ display:'flex', height:'100vh', fontFamily:"Inter,'Segoe UI',system-ui,sans-serif", overflow:'hidden', fontSize:13 }}>
+    <div data-theme="night" className="flex h-screen overflow-hidden" style={{ fontFamily:"Inter,'Segoe UI',system-ui,sans-serif", fontSize:13 }}>
 
-      {/* Sidebar */}
-      <aside style={{ width:216, flexShrink:0, background:C.bg, display:'flex', flexDirection:'column', borderRight:`1px solid ${C.sbBorder}`, animation:'dv-slideLeft 0.4s ease-out' }}>
-        <div style={{ padding:'20px 16px 18px', borderBottom:`1px solid ${C.sbBorder}` }}>
-          <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-            <div style={{ width:32, height:32, borderRadius:8, background:C.accent, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:15, letterSpacing:'-0.5px' }}>M</div>
+      {/* ── Sidebar ── */}
+      <aside className="w-[216px] shrink-0 flex flex-col bg-base-200 border-r border-base-300" style={{ animation:'dv-slideLeft 0.4s ease-out' }}>
+        <div className="px-4 py-4 border-b border-base-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-extrabold text-sm" style={{ background:A }}>M</div>
             <div>
-              <div style={{ color:C.sbText, fontWeight:600, fontSize:13, letterSpacing:'-0.2px' }}>Masakhe</div>
-              <div style={{ color:C.navText, fontSize:10.5, marginTop:1 }}>Growth Hub</div>
+              <div className="text-base-content font-semibold text-[13px] tracking-tight">Masakhe</div>
+              <div className="text-base-content/40 text-[10px] mt-0.5">Growth Hub</div>
             </div>
           </div>
         </div>
 
-        <nav style={{ flex:1, padding:'10px 8px', display:'flex', flexDirection:'column', gap:2 }}>
-          {NAV.map((n, i) => (
-            <div key={i} style={{
-              display:'flex', alignItems:'center', gap:9, padding:'8px 10px', borderRadius:7, cursor:'pointer',
-              background: n.active ? C.accentDim : 'transparent',
-              color: n.active ? C.accent : C.navText,
-              fontWeight: n.active ? 600 : 400, fontSize:12.5,
-              borderLeft: n.active ? `2px solid ${C.accent}` : '2px solid transparent',
-              animation:`dv-fadeUp 0.35s ease-out ${i*0.05}s both`,
-            }}>
-              {n.icon}{n.label}
-            </div>
+        <ul className="menu menu-sm p-2 flex-1 gap-0.5 mt-1">
+          {NAV.map((n,i) => (
+            <li key={i} style={{ animation:`dv-fadeUp 0.35s ease-out ${i*0.05}s both` }}>
+              <a className={n.active ? '' : 'text-base-content/40 hover:text-base-content/70 hover:bg-base-300/50'}
+                style={n.active ? { background:`${A}14`, color:A, fontWeight:600, borderLeft:`2px solid ${A}`, borderRadius:'0 6px 6px 0' } : { borderLeft:'2px solid transparent' }}>
+                <span className="opacity-70">{n.icon}</span>{n.label}
+              </a>
+            </li>
           ))}
-        </nav>
+        </ul>
 
-        <div style={{ padding:'12px 16px', borderTop:`1px solid ${C.sbBorder}`, display:'flex', alignItems:'center', gap:9 }}>
-          <div style={{ width:28, height:28, borderRadius:'50%', background:'#21262D', display:'flex', alignItems:'center', justifyContent:'center', color:C.navText, fontSize:11, fontWeight:600 }}>TM</div>
+        <div className="px-4 py-3 border-t border-base-300 flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-base-300 flex items-center justify-center text-base-content/50 text-[11px] font-semibold">TM</div>
           <div>
-            <div style={{ color:C.sbText, fontSize:12, fontWeight:500 }}>Thabo Mokoena</div>
-            <div style={{ color:C.navText, fontSize:10.5 }}>Pro</div>
+            <div className="text-base-content text-xs font-medium">Thabo Mokoena</div>
+            <div className="text-base-content/40 text-[10px]">Pro Plan</div>
           </div>
         </div>
       </aside>
 
-      {/* Main */}
-      <main style={{ flex:1, background:C.mainBg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-
-        {/* Header */}
-        <div style={{ padding:'14px 28px', borderBottom:`1px solid ${C.hdrBorder}`, display:'flex', alignItems:'center', justifyContent:'space-between', animation:'dv-fadeIn 0.4s ease-out' }}>
+      {/* ── Main ── */}
+      <main className="flex-1 flex flex-col overflow-hidden bg-base-100">
+        <div className="flex items-center justify-between px-7 py-3 border-b border-base-300" style={{ animation:'dv-fadeIn 0.4s ease-out' }}>
           <div>
-            <div style={{ color:C.textPrimary, fontSize:16, fontWeight:600, letterSpacing:'-0.4px' }}>Overview</div>
-            <div style={{ color:C.textSec, fontSize:11.5, marginTop:2 }}>January 2026 · Financial year to date</div>
+            <div className="text-base-content font-semibold tracking-tight">Overview</div>
+            <div className="text-base-content/40 text-[11px] mt-0.5">January 2026 · Financial year to date</div>
           </div>
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <button style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:7, background:C.accent, border:'none', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', letterSpacing:'-0.1px' }}>{Ic.plus} New Invoice</button>
-            <div style={{ width:32, height:32, borderRadius:7, border:`1px solid ${C.hdrBorder}`, display:'flex', alignItems:'center', justifyContent:'center', color:C.textSec, cursor:'pointer' }}>{Ic.bell}</div>
+          <div className="flex gap-2 items-center">
+            <button className="btn btn-sm gap-1.5 text-white border-0 text-xs" style={{ background:A }}>{Ic.plus} New Invoice</button>
+            <button className="btn btn-sm btn-ghost btn-square text-base-content/50">{Ic.bell}</button>
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ flex:1, overflowY:'auto', padding:'22px 28px', display:'flex', flexDirection:'column', gap:18 }}>
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
 
-          {/* Stat cards */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
-            {STATS.map((s, i) => (
-              <div key={i} style={{ background:'#fff', border:`1px solid ${C.cardBorder}`, borderRadius:10, padding:'16px 18px', animation:`dv-fadeUp 0.4s ease-out ${0.15+i*0.08}s both` }}>
-                <div style={{ color:C.textSec, fontSize:10.5, textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:500 }}>{s.label}</div>
-                <div style={{ color:C.textPrimary, fontSize:22, fontWeight:700, margin:'8px 0 6px', letterSpacing:'-0.5px', fontVariantNumeric:'tabular-nums' }}>{s.value}</div>
-                <div style={{ display:'flex', alignItems:'center', gap:4, color: s.up ? C.accent : '#CF222E', fontSize:11.5, fontWeight:500 }}>
-                  {s.up ? Ic.up : Ic.down}<span>{s.trend}</span>
+          {/* Stats row */}
+          <div className="stats stats-horizontal bg-base-200 border border-base-300 rounded-xl shadow-none w-full">
+            {STATS.map((s,i) => (
+              <div key={i} className="stat" style={{ animation:`dv-fadeUp 0.4s ease-out ${0.1+i*0.08}s both` }}>
+                <div className="stat-title text-[10px] tracking-widest uppercase font-medium">{s.label}</div>
+                <div className="stat-value text-xl font-bold tracking-tight">{s.value}</div>
+                <div className="stat-desc flex items-center gap-1 font-medium" style={{ color: s.up ? A : 'oklch(var(--er))' }}>
+                  {s.up ? Ic.up : Ic.down} {s.trend}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Chart + table row */}
-          <div style={{ display:'grid', gridTemplateColumns:'1.55fr 1fr', gap:12 }}>
-
-            {/* Area chart */}
-            <div style={{ background:'#fff', border:`1px solid ${C.cardBorder}`, borderRadius:10, padding:'18px 22px', animation:'dv-fadeUp 0.4s ease-out 0.5s both' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
-                <div>
-                  <div style={{ color:C.textPrimary, fontWeight:600, fontSize:13, letterSpacing:'-0.2px' }}>Revenue & Expenses</div>
-                  <div style={{ color:C.textSec, fontSize:11, marginTop:2 }}>Last 7 months</div>
+          {/* Chart + invoices */}
+          <div className="grid grid-cols-5 gap-4">
+            <div className="col-span-3 card bg-base-200 border border-base-300 shadow-none" style={{ animation:'dv-fadeUp 0.4s ease-out 0.44s both' }}>
+              <div className="card-body p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-semibold text-[13px] tracking-tight text-base-content">Revenue & Expenses</h3>
+                    <p className="text-base-content/40 text-[11px] mt-0.5">Last 7 months</p>
+                  </div>
+                  <div className="flex gap-4 text-[11px] text-base-content/40">
+                    <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-0.5 rounded" style={{ background:A }}/> Revenue</span>
+                    <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-0.5 rounded bg-error"/> Expenses</span>
+                  </div>
                 </div>
-                <div style={{ display:'flex', gap:14, fontSize:11, color:C.textSec }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><span style={{ width:20, height:2, background:C.accent, display:'inline-block', borderRadius:2 }}/> Revenue</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><span style={{ width:20, height:2, background:'#CF222E', display:'inline-block', borderRadius:2 }}/> Expenses</span>
+                <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height:H }}>
+                  <defs>
+                    <linearGradient id="ng-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={A} stopOpacity="0.18"/><stop offset="100%" stopColor={A} stopOpacity="0"/></linearGradient>
+                    <linearGradient id="ng-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity="0.1"/><stop offset="100%" stopColor="#ef4444" stopOpacity="0"/></linearGradient>
+                  </defs>
+                  <path d={sp(EXP,true)} fill="url(#ng-e)"/>
+                  <path d={sp(EXP)} fill="none" stroke="#ef4444" strokeWidth="1.5"/>
+                  <path d={sp(REV,true)} fill="url(#ng-r)"/>
+                  <path d={sp(REV)} fill="none" stroke={A} strokeWidth="1.8"/>
+                </svg>
+                <div className="flex justify-between mt-2">
+                  {MONTHS.map(m=><span key={m} className="text-base-content/30 text-[10px]">{m}</span>)}
                 </div>
-              </div>
-              <svg width="100%" viewBox={`0 0 ${CW} ${CH}`} preserveAspectRatio="none" style={{ height:100, display:'block' }}>
-                <defs>
-                  <linearGradient id="s-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.accent} stopOpacity="0.15"/><stop offset="100%" stopColor={C.accent} stopOpacity="0"/></linearGradient>
-                  <linearGradient id="s-exp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#CF222E" stopOpacity="0.09"/><stop offset="100%" stopColor="#CF222E" stopOpacity="0"/></linearGradient>
-                </defs>
-                <path d={smooth(EXP, true)} fill="url(#s-exp)"/>
-                <path d={smooth(EXP)} fill="none" stroke="#CF222E" strokeWidth="1.5"/>
-                <path d={smooth(REV, true)} fill="url(#s-rev)"/>
-                <path d={smooth(REV)} fill="none" stroke={C.accent} strokeWidth="1.8"/>
-              </svg>
-              <div style={{ display:'flex', justifyContent:'space-between', marginTop:6 }}>
-                {MONTHS.map(m => <span key={m} style={{ color:C.textSec, fontSize:10, opacity:0.7 }}>{m}</span>)}
               </div>
             </div>
 
-            {/* Pending invoices */}
-            <div style={{ background:'#fff', border:`1px solid ${C.cardBorder}`, borderRadius:10, padding:'18px 22px', animation:'dv-fadeUp 0.4s ease-out 0.6s both' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-                <div style={{ color:C.textPrimary, fontWeight:600, fontSize:13, letterSpacing:'-0.2px' }}>Pending Invoices</div>
-                <span style={{ fontSize:10.5, color:C.accent, fontWeight:600, cursor:'pointer' }}>View all →</span>
-              </div>
-              {[
-                { client:'Khumalo Ltd',      ref:'INV-1043', amt:'R 12,000', due:'23 Jan', overdue:false },
-                { client:'Nkosi Construct',  ref:'INV-1038', amt:'R 28,500', due:'10 Jan', overdue:true  },
-                { client:'Sithole Trading',  ref:'INV-1041', amt:'R 8,200',  due:'25 Jan', overdue:false },
-                { client:'Ubuntu Freight',   ref:'INV-1039', amt:'R 15,750', due:'12 Jan', overdue:true  },
-              ].map((inv, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 0', borderBottom:`1px solid ${C.cardBorder}` }}>
-                  <div>
-                    <div style={{ color:C.textPrimary, fontSize:12, fontWeight:500 }}>{inv.client}</div>
-                    <div style={{ color:C.textSec, fontSize:10.5, marginTop:2 }}>{inv.ref} · Due {inv.due}</div>
-                  </div>
-                  <div style={{ textAlign:'right' }}>
-                    <div style={{ color:C.textPrimary, fontSize:12, fontWeight:600 }}>{inv.amt}</div>
-                    <div style={{ fontSize:10, marginTop:2, color: inv.overdue ? '#CF222E' : C.textSec, fontWeight: inv.overdue ? 600 : 400 }}>{inv.overdue ? 'Overdue' : 'Pending'}</div>
-                  </div>
+            <div className="col-span-2 card bg-base-200 border border-base-300 shadow-none" style={{ animation:'dv-fadeUp 0.4s ease-out 0.54s both' }}>
+              <div className="card-body p-5">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-[13px] tracking-tight text-base-content">Pending Invoices</h3>
+                  <a className="text-[11px] font-medium cursor-pointer" style={{ color:A }}>View all →</a>
                 </div>
-              ))}
+                <div className="flex flex-col divide-y divide-base-300">
+                  {INVOICES.map((inv,i) => (
+                    <div key={i} className="flex justify-between items-center py-2.5">
+                      <div>
+                        <div className="text-base-content text-[12px] font-medium">{inv.client}</div>
+                        <div className="text-base-content/40 text-[10.5px] mt-0.5">{inv.ref} · Due {inv.due}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base-content text-[12px] font-semibold">{inv.amt}</div>
+                        <div className="text-[10px] mt-0.5 font-medium" style={{ color: inv.late ? 'oklch(var(--er))' : 'oklch(var(--bc)/0.4)' }}>{inv.late ? 'Overdue' : 'Pending'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Activity table */}
-          <div style={{ background:'#fff', border:`1px solid ${C.cardBorder}`, borderRadius:10, overflow:'hidden', animation:'dv-fadeUp 0.4s ease-out 0.7s both' }}>
-            <div style={{ padding:'14px 22px', borderBottom:`1px solid ${C.cardBorder}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ color:C.textPrimary, fontWeight:600, fontSize:13, letterSpacing:'-0.2px' }}>Recent Transactions</div>
-              <span style={{ fontSize:10.5, color:C.accent, fontWeight:600, cursor:'pointer' }}>View ledger →</span>
+          {/* Transactions */}
+          <div className="card bg-base-200 border border-base-300 shadow-none overflow-hidden" style={{ animation:'dv-fadeUp 0.4s ease-out 0.64s both' }}>
+            <div className="flex justify-between items-center px-5 py-3.5 border-b border-base-300">
+              <h3 className="font-semibold text-[13px] tracking-tight text-base-content">Recent Transactions</h3>
+              <a className="text-[11px] font-medium cursor-pointer" style={{ color:A }}>View ledger →</a>
             </div>
-            <table style={{ width:'100%', borderCollapse:'collapse' }}>
-              <thead>
-                <tr style={{ background:'#F6F8FA' }}>
-                  {['Date','Reference','Description','Amount'].map(h => (
-                    <th key={h} style={{ padding:'8px 22px', textAlign:'left', color:C.textSec, fontSize:10.5, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ACTIVITY.map((a, i) => (
-                  <tr key={i} style={{ borderTop:`1px solid ${C.cardBorder}` }}>
-                    <td style={{ padding:'11px 22px', color:C.textSec, fontSize:12 }}>{a.date}</td>
-                    <td style={{ padding:'11px 22px', color:C.textSec, fontSize:11.5, fontFamily:'monospace' }}>{a.ref}</td>
-                    <td style={{ padding:'11px 22px', color:C.textPrimary, fontSize:12 }}>{a.desc}</td>
-                    <td style={{ padding:'11px 22px', color: a.debit ? '#CF222E' : C.accent, fontSize:12, fontWeight:600 }}>{a.amount}</td>
+            <div className="overflow-x-auto">
+              <table className="table table-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-widest text-base-content/40 border-base-300">
+                    <th>Date</th><th>Reference</th><th>Description</th><th>Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {TXN.map((t,i) => (
+                    <tr key={i} className="border-base-300 hover:bg-base-300/50">
+                      <td className="text-base-content/50 text-xs">{t.date}</td>
+                      <td className="font-mono text-[11px] text-base-content/40">{t.ref}</td>
+                      <td className="text-[12px] text-base-content">{t.desc}</td>
+                      <td className="text-xs font-semibold" style={{ color: t.amt ? (t.dr ? 'oklch(var(--er))' : A) : 'transparent' }}>{t.amt || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
         </div>

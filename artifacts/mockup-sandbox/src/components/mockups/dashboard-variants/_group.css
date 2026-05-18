@@ -10,7 +10,3 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-@keyframes dv-barGrow {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
-}
