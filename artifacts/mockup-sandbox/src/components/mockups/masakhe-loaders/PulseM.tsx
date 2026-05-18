@@ -1,10 +1,16 @@
 import './_group.css';
 
+const SA_RINGS = [
+  { color: '#007A40', delay: '0s' },
+  { color: '#FFAA00', delay: '0.8s' },
+  { color: '#00008B', delay: '1.6s' },
+];
+
 export function PulseM() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #04111f 0%, #081c34 60%, #050d1a 100%)',
+      background: '#ffffff',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -14,25 +20,24 @@ export function PulseM() {
     }}>
       <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-        {/* Expanding glow rings */}
-        {[0, 0.6, 1.2].map((delay, i) => (
+        {/* Expanding glow rings — each in its own SA flag colour */}
+        {SA_RINGS.map((ring, i) => (
           <div key={i} style={{
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            border: '2px solid rgba(0, 170, 80, 0.5)',
+            border: `2.5px solid ${ring.color}`,
             animation: `ringExpand 2.4s ease-out infinite`,
-            animationDelay: `${delay}s`,
+            animationDelay: ring.delay,
           }} />
         ))}
 
-        {/* Background circle */}
+        {/* Subtle inner circle */}
         <div style={{
           position: 'absolute',
-          inset: 24,
+          inset: 28,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,122,64,0.18) 0%, rgba(0,21,148,0.12) 100%)',
-          boxShadow: '0 0 40px rgba(0, 122, 64, 0.25), inset 0 0 30px rgba(0, 21, 148, 0.15)',
+          background: 'radial-gradient(circle, rgba(0,122,64,0.07) 0%, rgba(0,0,139,0.05) 100%)',
         }} />
 
         {/* Animated M */}
@@ -41,13 +46,13 @@ export function PulseM() {
           height="72"
           viewBox="0 0 80 72"
           fill="none"
-          style={{ position: 'relative', zIndex: 1, filter: 'drop-shadow(0 0 12px rgba(0,200,100,0.6))' }}
+          style={{ position: 'relative', zIndex: 1 }}
         >
           <defs>
             <linearGradient id="mGrad" x1="0" y1="0" x2="80" y2="72" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#00CC66" />
-              <stop offset="50%" stopColor="#00AAFF" />
-              <stop offset="100%" stopColor="#0055DD" />
+              <stop offset="0%" stopColor="#007A40" />
+              <stop offset="50%" stopColor="#FFAA00" />
+              <stop offset="100%" stopColor="#00008B" />
             </linearGradient>
           </defs>
           <path
@@ -64,19 +69,19 @@ export function PulseM() {
         </svg>
       </div>
 
-      <div style={{ textAlign: 'center', animation: 'fadeUp 0.8s ease-out forwards' }}>
+      <div style={{ textAlign: 'center' }}>
         <div style={{
-          color: '#ffffff',
+          color: '#1a2340',
           fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: '0.35em',
+          fontWeight: 700,
+          letterSpacing: '0.4em',
           animation: 'textPulse 2.8s ease-in-out infinite',
           textTransform: 'uppercase',
         }}>
           MASAKHE
         </div>
         <div style={{
-          color: 'rgba(255,255,255,0.35)',
+          color: '#9aa0b4',
           fontSize: 10,
           letterSpacing: '0.2em',
           marginTop: 6,
