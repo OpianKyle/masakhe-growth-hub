@@ -50,9 +50,9 @@ export function PulseM() {
         >
           <defs>
             <linearGradient id="mGrad" x1="0" y1="0" x2="80" y2="72" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#007A40" />
-              <stop offset="50%" stopColor="#FFAA00" />
-              <stop offset="100%" stopColor="#00008B" />
+              <stop offset="0%" stopColor="#00CC66" />
+              <stop offset="50%" stopColor="#00AAFF" />
+              <stop offset="100%" stopColor="#0055DD" />
             </linearGradient>
           </defs>
           <path
@@ -69,27 +69,6 @@ export function PulseM() {
         </svg>
       </div>
 
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          color: '#1a2340',
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: '0.4em',
-          animation: 'textPulse 2.8s ease-in-out infinite',
-          textTransform: 'uppercase',
-        }}>
-          MASAKHE
-        </div>
-        <div style={{
-          color: '#9aa0b4',
-          fontSize: 10,
-          letterSpacing: '0.2em',
-          marginTop: 6,
-          textTransform: 'uppercase',
-        }}>
-          Loading...
-        </div>
-      </div>
     </div>
   );
 }
