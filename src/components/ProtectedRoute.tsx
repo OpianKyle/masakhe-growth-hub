@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCallback, useEffect, useState } from "react";
+import { MasakheLoader } from "@/components/MasakheLoader";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -54,11 +55,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [checkAccess]);
 
   if (loading || !billingChecked) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <MasakheLoader />;
   }
 
   if (!user) {
@@ -87,11 +84,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <MasakheLoader />;
   }
 
   if (!user) {
@@ -110,11 +103,7 @@ export function FranchiseRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <MasakheLoader />;
   }
 
   if (!user) {

@@ -26,6 +26,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MetaDeletionStatusPage from "./pages/MetaDeletionStatusPage";
 import { useEffect, useState } from "react";
+import { MasakheLoader } from "@/components/MasakheLoader";
 
 const queryClient = new QueryClient();
 
@@ -54,11 +55,7 @@ function CustomDomainGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (domainSlug === undefined) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-500 border-t-transparent" />
-      </div>
-    );
+    return <MasakheLoader />;
   }
 
   if (domainSlug) {
