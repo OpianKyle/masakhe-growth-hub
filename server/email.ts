@@ -760,6 +760,7 @@ export async function sendAdminSignupNotification(
 ): Promise<void> {
   if (!transporter) return;
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || "admin@masakhegroup.co.za";
+  const adminRecipients = [adminEmail, "lance.heynes@gmail.com"].join(", ");
   const appUrl = baseUrl || getBaseUrl();
   const signupTime = new Date().toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" });
 
@@ -828,7 +829,7 @@ export async function sendAdminSignupNotification(
   try {
     await transporter.sendMail({
       from: `"Masakhe System" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
-      to: adminEmail,
+      to: adminRecipients,
       subject: `🎉 New Signup: ${clientName} — Call to onboard`,
       html,
     });
