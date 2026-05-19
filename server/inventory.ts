@@ -6,7 +6,7 @@ import { requireAuth, getDataOwnerId } from "./auth";
 export const inventoryRouter = Router();
 
 // ───────────────────────── Migrations ─────────────────────────
-async function runInventoryMigrations() {
+export async function runInventoryMigrations() {
   const conn = await pool.getConnection();
   try {
     await conn.query(`
@@ -87,7 +87,6 @@ async function runInventoryMigrations() {
     conn.release();
   }
 }
-runInventoryMigrations();
 
 // ───────────────────────── Products ─────────────────────────
 inventoryRouter.get("/products", requireAuth, async (req: any, res) => {

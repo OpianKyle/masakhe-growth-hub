@@ -17,7 +17,7 @@ const transporter = process.env.SMTP_PASSWORD
     })
   : null;
 
-const runMigration = async () => {
+export async function runContactMigration() {
   await execute(`
     CREATE TABLE IF NOT EXISTS contact_submissions (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,8 +28,7 @@ const runMigration = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-};
-runMigration().catch(console.error);
+}
 
 contactRouter.post("/contact", async (req, res) => {
   const { name, email, subject, message } = req.body;

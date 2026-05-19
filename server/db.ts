@@ -1,16 +1,4 @@
 import mysql from "mysql2/promise";
-import fs from "fs";
-import path from "path";
-
-let sslConfig: any = false;
-if (process.env.XNEELO_DB_SSL !== "false") {
-  const caPath = process.env.XNEELO_DB_SSL_CA_PATH;
-  if (caPath && fs.existsSync(caPath)) {
-    sslConfig = { ca: fs.readFileSync(caPath), rejectUnauthorized: true };
-  } else {
-    sslConfig = { rejectUnauthorized: false };
-  }
-}
 
 export const pool = mysql.createPool({
   host: process.env.XNEELO_DB_HOST || "sql16.cpt3.host-h.net",
@@ -18,12 +6,13 @@ export const pool = mysql.createPool({
   database: process.env.XNEELO_DB_NAME || "opiandigital",
   user: process.env.XNEELO_DB_USER || "admin",
   password: process.env.XNEELO_DB_PASSWORD || "",
-  ssl: sslConfig,
+  ssl: false,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 25,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
+  connectTimeout: 30000,
 });
 
 export async function queryOne(sql: string, params: any[] = []): Promise<any> {

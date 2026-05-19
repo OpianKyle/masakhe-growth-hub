@@ -9,7 +9,7 @@ import { sendFranchiseOwnerInviteEmail } from "./email";
 export const adminRouter = Router();
 
 // ───────────────────────── Migrations: notes/tags + audit log ─────────────────────────
-async function runAdminMigrations() {
+export async function runAdminMigrations() {
   const conn = await pool.getConnection();
   try {
     try {
@@ -42,7 +42,6 @@ async function runAdminMigrations() {
     conn.release();
   }
 }
-runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));
 
 // ───────────────────────── Audit-log helper ─────────────────────────
 async function logAudit(req: any, action: string, opts: {

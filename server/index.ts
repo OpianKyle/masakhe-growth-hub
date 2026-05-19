@@ -7,7 +7,7 @@ import { pool, runMigrations } from "./db";
 import { seedIfEmpty } from "./seed";
 import { router } from "./routes";
 import { authRouter } from "./auth";
-import { adminRouter } from "./admin";
+import { adminRouter, runAdminMigrations } from "./admin";
 import { financeRouter } from "./finance";
 import { invoiceRouter } from "./invoices";
 import { complianceRouter } from "./compliance";
@@ -29,12 +29,12 @@ import { documentsRouter } from "./documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
-import { inventoryRouter } from "./inventory";
+import { inventoryRouter, runInventoryMigrations } from "./inventory";
 import { payrollRouter } from "./payroll";
 import { clientsRouter } from "./clients";
 import { campaignsRouter } from "./campaigns";
 import { emailSettingsRouter } from "./email-settings";
-import { contactRouter } from "./contact";
+import { contactRouter, runContactMigration } from "./contact";
 import { automationsRouter } from "./automations";
 import { startAutomationsScheduler } from "./automations-scheduler";
 import { startDripScheduler } from "./drip-scheduler";
@@ -43,6 +43,9 @@ import { queryOne } from "./db";
 
 async function main() {
   await runMigrations();
+  await runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));
+  await runInventoryMigrations().catch(e => console.error("[Inventory] Migration error:", e.message));
+  await runContactMigration().catch(e => console.error("[Contact] Migration error:", e.message));
   await seedIfEmpty();
 
   const MySQLStore = MySQLStoreFactory(session as any);
