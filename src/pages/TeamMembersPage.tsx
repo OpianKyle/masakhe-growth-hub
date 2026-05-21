@@ -67,7 +67,7 @@ const ALL_PERM_KEYS = PERMISSION_GROUPS.flatMap(g => g.perms.map(p => p.key));
 const DEFAULT_PERMS = ["overview"];
 
 function getMaxSeats(plan: string | null): number {
-  if (plan === "premium") return 9;
+  if (plan === "premium") return 4;
   if (plan === "pro") return 2;
   if (plan === "starter") return 1;
   return 0;
@@ -104,7 +104,7 @@ export default function TeamMembersPage() {
   const seatsUsed = members.filter(m => m.role !== "owner").length;
   const seatsRemaining = Math.max(0, MAX_SEATS - seatsUsed);
   const isPremium = planCode === "premium";
-  const hasTeamAccess = planCode === "starter" || planCode === "pro" || planCode === "premium";
+  const hasTeamAccess = !!(planCode === "starter" || planCode === "pro" || planCode === "premium");
 
   useEffect(() => {
     fetch("/api/billing/status", { credentials: "include" })
@@ -263,14 +263,14 @@ export default function TeamMembersPage() {
             <Lock className="h-8 w-8 text-amber-600" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground">
-            Team Members requires an active subscription
+            User Accounts requires an active subscription
           </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-            Subscribe to any Masakhe plan to start adding team members.
+            Subscribe to any Masakhe plan to start adding user accounts.
             <br />
-            <span className="font-semibold text-foreground">Enterprize</span> — 2 users &nbsp;·&nbsp;
-            <span className="font-semibold text-foreground">Enterprize Plus</span> — 3 users &nbsp;·&nbsp;
-            <span className="font-semibold text-foreground">Enterprize Premium</span> — 10 users
+            <span className="font-semibold text-foreground">Enterprize</span> — 2 users (incl. owner) &nbsp;·&nbsp;
+            <span className="font-semibold text-foreground">Enterprize Plus</span> — 3 users (incl. owner) &nbsp;·&nbsp;
+            <span className="font-semibold text-foreground">Enterprize Premium</span> — 5 users (incl. owner)
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <Link to="/dashboard/billing">
@@ -292,7 +292,7 @@ export default function TeamMembersPage() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Tick the dashboard sections this team member can use. Billing, Settings and Team Members stay owner-only.
+          Tick the dashboard sections this user can access. Billing, Settings and User Accounts stay owner-only.
         </p>
         <div className="flex gap-1">
           <Button type="button" size="sm" variant="ghost" className="text-xs h-7" onClick={() => setPermsAll(setPerms, true)}>Select all</Button>
@@ -335,27 +335,27 @@ export default function TeamMembersPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
-            Team Members
+            User Accounts
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Invite up to {MAX_SEATS} team member{MAX_SEATS !== 1 ? "s" : ""} on your {getPlanLabel(planCode)} plan and choose exactly which sections they can access.
+            Add up to {MAX_SEATS} additional user account{MAX_SEATS !== 1 ? "s" : ""} on your {getPlanLabel(planCode)} plan and choose exactly which sections they can access.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-xs text-muted-foreground">Team members</div>
+            <div className="text-xs text-muted-foreground">User accounts</div>
             <div className="text-lg font-bold font-heading text-foreground">{seatsUsed} / {MAX_SEATS}</div>
           </div>
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
               <Button disabled={seatsRemaining <= 0}>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Add Team Member
+                Add User Account
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Add a Team Member</DialogTitle>
+                <DialogTitle>Add a User Account</DialogTitle>
                 <DialogDescription>
                   We'll create their account and email them a link to set their own password. They'll only see the dashboard sections you tick below.
                 </DialogDescription>
@@ -400,7 +400,7 @@ export default function TeamMembersPage() {
       {seatsRemaining === 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          You've reached the {MAX_SEATS}-team-member limit on {getPlanLabel(planCode)}. Remove a member to free up a seat.
+          You've reached the {MAX_SEATS}-user-account limit on {getPlanLabel(planCode)}. Remove a user to free up a slot.
         </div>
       )}
 

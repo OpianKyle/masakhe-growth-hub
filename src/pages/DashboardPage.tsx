@@ -118,10 +118,10 @@ const baseNavItems: NavItem[] = [
     children: [
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresPlan: "premium", perm: "payroll" },
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium", perm: "leave" },
-      { icon: Users, label: "Team Members", path: "/dashboard/team", requiresPlan: "premium", ownerOnly: true },
     ],
   },
   { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
+  { icon: Users, label: "User Accounts", path: "/dashboard/team", ownerOnly: true },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
   { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings", ownerOnly: true },
