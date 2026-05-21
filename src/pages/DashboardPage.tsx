@@ -100,13 +100,13 @@ const baseNavItems: NavItem[] = [
     icon: Briefcase,
     label: "Operations",
     groupId: "operations",
-    requiresPlan: "pro",
+    requiresPlan: "premium",
     perms: ["clients", "inventory", "campaigns", "automations"],
     children: [
-      { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "pro", perm: "clients" },
-      { icon: Package, label: "Inventory", path: "/dashboard/inventory", requiresPlan: "pro", perm: "inventory" },
-      { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "pro", perm: "campaigns" },
-      { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "pro", perm: "automations" },
+      { icon: UserCheck, label: "Clients", path: "/dashboard/clients", requiresPlan: "premium", perm: "clients" },
+      { icon: Package, label: "Inventory", path: "/dashboard/inventory", requiresPlan: "premium", perm: "inventory" },
+      { icon: Megaphone, label: "Campaigns", path: "/dashboard/campaigns", requiresPlan: "premium", perm: "campaigns" },
+      { icon: Sparkles, label: "Automations", path: "/dashboard/automations", requiresPlan: "premium", perm: "automations" },
     ],
   },
   {
@@ -130,8 +130,8 @@ const baseNavItems: NavItem[] = [
 function UpgradeGate({ requiredPlan, planName, onUpgrade }: { requiredPlan: PlanCode; planName: string; onUpgrade: () => void }) {
   const features: Record<PlanCode, string[]> = {
     starter: ["Social Media Hub", "Biz Connect Network", "Website Builder"],
-    pro: ["Invoicing & Quotes", "Income/Expense Tracking", "Clients & Leads CRM", "Inventory Management", "Campaigns & Automations"],
-    premium: ["Payroll Management", "Leave & HR Tools", "Team Members (up to 10)"],
+    pro: ["Invoicing & Quotes", "Income/Expense Tracking"],
+    premium: ["Clients & Leads CRM", "Inventory Management", "Campaigns & Automations", "Payroll Management", "Leave & HR Tools", "Team Members (up to 10)"],
   };
   return (
     <div className="flex items-center justify-center h-full min-h-[400px] p-8">
