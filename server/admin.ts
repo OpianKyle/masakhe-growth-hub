@@ -5,10 +5,35 @@ import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { getTransporterForUser } from "./email-settings";
 import { sendFranchiseOwnerInviteEmail } from "./email";
+import nodemailer from "nodemailer";
 
 export const adminRouter = Router();
 
-// ───────────────────────── Migrations: notes/tags + audit log ─────────────────────────
+// ───────────────────────── Drip email seed data ─────────────────────────
+const DRIP_EMAIL_SEED = [
+  { seq: 1,  subject: "One platform. Everything your SMME needs.", body: `Running a small business means juggling a dozen tools. Masakhe brings them all together – website, invoices, payroll, CRM, social media, and finances. No more jumping between tabs.\n\nClaim your 14-day free trial and see the difference.\n👉 Start now at www.masakheportal.co.za/register` },
+  { seq: 2,  subject: "Your website, live in minutes (no developer needed)", body: `With Masakhe's AI website builder, you have a free "drag & drop" website builder. Edit with WYSIWYG What You See is What You Get Editor and post live! Professional, fast, and mobile-friendly – perfect for South African SMMEs.\n\nBuild yours free for 14 days.\n👉 Register at www.masakheportal.co.za/register` },
+  { seq: 3,  subject: "Stop chasing payments. Start sending professional invoices.", body: `Choose from multiple templates, or create your own customised version, add your logo in settings, and send quotes and invoices in minutes from your dashboard!\nTrack what's paid and what's overdue – all from one dashboard.\n\nTry it free for two weeks.\n👉 Sign up at www.masakheportal.co.za/register` },
+  { seq: 4,  subject: "Payroll headaches? Not anymore.", body: `Generate payslips, auto-calculate deductions, and manage employee records without spreadsheets. Masakhe handles the numbers so you can focus on your team.\n\nTest payroll with your free trial.\n👉 Start at www.masakheportal.co.za/register` },
+  { seq: 5,  subject: "Never lose a lead again.", body: `Keep all client conversations, documents, and history in one place. Masakhe's CRM helps you nurture relationships and close deals faster – custom built for you at no extra cost.\n\nExperience the CRM free for 14 days.\n👉 Register now: www.masakheportal.co.za/register` },
+  { seq: 6,  subject: "Plan a week of posts in minutes.", body: `Create, download and post to all your social channels from Masakhe in minutes!\nNo more last-minute rushes or forgotten posts – just consistent engagement.\n\nStart scheduling free today.\n👉 Claim your trial at www.masakheportal.co.za/register` },
+  { seq: 7,  subject: "Know exactly where every rand goes.", body: `Link your transactions, track expenses, and see your cash flow at a glance. Masakhe gives you the financial clarity every SMME needs to grow.\n\nSee it in action with a free trial.\n👉 Sign up at www.masakheportal.co.za/register` },
+  { seq: 8,  subject: "Reclaim your time. Let Masakhe do the busy work.", body: `Imagine not switching between six different apps. Masakhe automates invoicing, payroll, social media, and more – so you can focus on serving customers.\n\nTry the time-saver free for 14 days.\n👉 Register at www.masakheportal.co.za/register` },
+  { seq: 9,  subject: "Stop paying for 5 separate tools.", body: `Website builder + invoicing + payroll + CRM + social scheduler = thousands of rands. Masakhe combines them all from R899/month after trial.\n\nFirst 14 days are on us.\n👉 Start free at www.masakheportal.co.za/register` },
+  { seq: 10, subject: "Small business, big brand impression.", body: `A sleek website, branded invoices, and organised client management make you look like a market leader. Masakhe gives you that polished image without the high cost.\n\nBuild your professional presence free.\n👉 Register now: www.masakheportal.co.za/register` },
+  { seq: 11, subject: "Designed for South African SMMEs – easy for everyone.", body: `Drag, drop, click, done. Masakhe's interface is intuitive, with guided steps for every feature. You don't need an IT degree to run your business like a pro.\n\nProve it to yourself – free trial.\n👉 Sign up at www.masakheportal.co.za/register` },
+  { seq: 12, subject: "A free trial that's actually free.", body: `No credit card required. No hidden fees. Just 14 full days of access to everything Masakhe offers. If you love it, upgrade later. If not, walk away.\n\nStart your risk-free trial today.\n👉 www.masakheportal.co.za/register` },
+  { seq: 13, subject: "Your 14-day roadmap to a smoother business.", body: `Day 1: Build your AI website. Day 2: Send an invoice. Day 3: Schedule social posts. By day 14, you'll wonder how you managed without Masakhe.\n\nGet the full roadmap – start free.\n👉 Register at www.masakheportal.co.za/register` },
+  { seq: 14, subject: "Stop juggling. Start managing.", body: `When your clients, finances, and team are all in one place, running your business becomes calm and clear. Masakhe brings order to the chaos.\n\nExperience control free for 14 days.\n👉 Claim your trial at www.masakheportal.co.za/register` },
+  { seq: 15, subject: "Your business is ready to scale. Is your software?", body: `Masakhe grows with you. Add more clients, more employees, more social accounts – the platform handles it all. No need to switch tools when you level up.\n\nTest the scalability free.\n👉 Start at www.masakheportal.co.za/register` },
+  { seq: 16, subject: "Local taxes. Local rules. Local support.", body: `Masakhe understands SARS payroll requirements, local invoice regulations, and the way you do business. Not a generic international tool – made for you.\n\nTry the local advantage free.\n👉 Register now: www.masakheportal.co.za/register` },
+  { seq: 17, subject: "Sleep better knowing your business data is protected.", body: `We take security seriously. Your client info, payroll records, and financial data are encrypted and backed up. So you can focus on growing, not worrying.\n\nSee our security features free.\n👉 Sign up at www.masakheportal.co.za/register` },
+  { seq: 18, subject: "The dashboard that does it all.", body: `Log in once. From one dashboard, manage your website, send invoices, run payroll, talk to clients, schedule posts, and track money. That's the Masakhe power.\n\nExperience total control free.\n👉 Claim your 14-day trial at www.masakheportal.co.za/register` },
+  { seq: 19, subject: "Join hundreds of South African businesses already saving time.", body: `"Masakhe cut my admin by 70%." "I built my site in 10 minutes." "Finally, one tool for everything." Don't just take our word for it.\n\nJoin them – start your free trial.\n👉 Register at www.masakheportal.co.za/register` },
+  { seq: 20, subject: "Don't let another week slip away.", body: `Every day you wait is another day of juggling spreadsheets, missed social posts, and late invoices. Your 14-day free trial is ready – click below to claim it.\n\n👉 Start your free trial now at www.masakheportal.co.za/register` },
+];
+
+// ───────────────────────── Migrations: notes/tags + audit log + drip emails ─────────────────────────
 export async function runAdminMigrations() {
   const conn = await pool.getConnection();
   try {
@@ -38,6 +63,44 @@ export async function runAdminMigrations() {
         INDEX idx_audit_created (created_at)
       ) ENGINE=InnoDB
     `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS admin_drip_emails (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sequence_number INT NOT NULL,
+        subject VARCHAR(500) NOT NULL,
+        body_text LONGTEXT NOT NULL,
+        enabled TINYINT(1) NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_drip_seq (sequence_number),
+        INDEX idx_drip_enabled (enabled)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS admin_drip_sends (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        drip_email_id INT NOT NULL,
+        sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_drip_user_email (user_id, drip_email_id),
+        INDEX idx_drip_sends_user (user_id)
+      ) ENGINE=InnoDB
+    `);
+
+    // Seed the 20 drip emails if not yet seeded
+    const existing = await conn.query(`SELECT COUNT(*) as c FROM admin_drip_emails`);
+    const count = Number((existing[0] as any[])[0]?.c || 0);
+    if (count === 0) {
+      for (const e of DRIP_EMAIL_SEED) {
+        await conn.query(
+          `INSERT IGNORE INTO admin_drip_emails (sequence_number, subject, body_text, enabled) VALUES (?, ?, ?, 0)`,
+          [e.seq, e.subject, e.body]
+        );
+      }
+      console.log("[Admin] Seeded 20 drip emails");
+    }
   } finally {
     conn.release();
   }
@@ -953,5 +1016,139 @@ adminRouter.get("/audit-log/actions", async (req, res) => {
     res.json(rows.map((r: any) => ({ action: r.action, count: Number(r.c) })));
   } catch {
     res.status(500).json({ error: "Failed to fetch actions" });
+  }
+});
+
+// ───────────────────────── Drip Email Campaign Routes ─────────────────────────
+
+// GET /api/admin/drip-emails — list all drip emails with send stats
+adminRouter.get("/drip-emails", async (req, res) => {
+  try {
+    const rows = await queryAll(`
+      SELECT de.*,
+        (SELECT COUNT(*) FROM admin_drip_sends ads WHERE ads.drip_email_id = de.id) as sends_count
+      FROM admin_drip_emails de
+      ORDER BY de.sequence_number ASC
+    `);
+    const totalUsers = (await queryOne("SELECT COUNT(*) as c FROM users WHERE role = 'user'"))?.c || 0;
+    res.json({ emails: rows, totalUsers: Number(totalUsers) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/admin/drip-emails/:id — update subject, body_text, and/or enabled
+adminRouter.patch("/drip-emails/:id", async (req, res) => {
+  try {
+    const { subject, body_text, enabled } = req.body;
+    const id = req.params.id;
+    const existing = await queryOne("SELECT id FROM admin_drip_emails WHERE id = ?", [id]);
+    if (!existing) return res.status(404).json({ error: "Email not found" });
+
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (subject !== undefined) { updates.push("subject = ?"); params.push(subject); }
+    if (body_text !== undefined) { updates.push("body_text = ?"); params.push(body_text); }
+    if (enabled !== undefined) { updates.push("enabled = ?"); params.push(enabled ? 1 : 0); }
+
+    if (updates.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+    params.push(id);
+    await execute(`UPDATE admin_drip_emails SET ${updates.join(", ")} WHERE id = ?`, params);
+
+    await logAudit(req, "drip_email_update", {
+      targetType: "drip_email",
+      targetId: String(id),
+      details: { enabled, hasContentChange: subject !== undefined || body_text !== undefined },
+    });
+
+    const updated = await queryOne("SELECT * FROM admin_drip_emails WHERE id = ?", [id]);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/drip-emails/:id/send-test — send test to logged-in admin
+adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const email = await queryOne("SELECT * FROM admin_drip_emails WHERE id = ?", [id]);
+    if (!email) return res.status(404).json({ error: "Email not found" });
+
+    const admin = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [req.session?.userId]);
+    if (!admin) return res.status(401).json({ error: "Not authenticated" });
+
+    const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+    const transporter = process.env.SMTP_PASSWORD
+      ? nodemailer.createTransport({
+          host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+        })
+      : null;
+
+    if (!transporter) return res.status(503).json({ error: "SMTP not configured" });
+
+    const bodyHtml = email.body_text
+      .split("\n")
+      .map((line: string) => line.trim() === "" ? "<br>" : `<p style="margin:0 0 12px;color:#4a4a5a;font-size:15px;line-height:1.6;">${line.replace(/👉/g, "👉")}</p>`)
+      .join("\n");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#007749 0%,#005C3A 100%);padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">Masakhe</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Digital Platform for South African SMMEs</p>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <p style="font-size:11px;color:#999;margin:0 0 16px;border-bottom:1px dashed #eee;padding-bottom:8px;">TEST EMAIL — Email #${email.sequence_number} of the drip campaign</p>
+          ${bodyHtml}
+        </td></tr>
+        <tr><td style="padding:20px 40px;background:#f9f9fb;text-align:center;font-size:12px;color:#999;">
+          Masakhe SMME Platform · <a href="https://www.masakheportal.co.za" style="color:#007749;">masakheportal.co.za</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    await transporter.sendMail({
+      from: `"Masakhe" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+      to: admin.email,
+      subject: `[TEST] ${email.subject}`,
+      html,
+      text: email.body_text,
+    });
+
+    res.json({ ok: true, sentTo: admin.email });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/drip-emails/stats — overall drip campaign stats
+adminRouter.get("/drip-emails/stats", async (req, res) => {
+  try {
+    const enabledCount = (await queryOne("SELECT COUNT(*) as c FROM admin_drip_emails WHERE enabled = 1"))?.c || 0;
+    const totalEmails = (await queryOne("SELECT COUNT(*) as c FROM admin_drip_emails"))?.c || 0;
+    const totalSends = (await queryOne("SELECT COUNT(*) as c FROM admin_drip_sends"))?.c || 0;
+    const uniqueRecipients = (await queryOne("SELECT COUNT(DISTINCT user_id) as c FROM admin_drip_sends"))?.c || 0;
+    res.json({
+      enabledCount: Number(enabledCount),
+      totalEmails: Number(totalEmails),
+      totalSends: Number(totalSends),
+      uniqueRecipients: Number(uniqueRecipients),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });

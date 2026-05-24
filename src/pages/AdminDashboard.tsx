@@ -6,7 +6,7 @@ import {
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
   Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter,
-  Store, RefreshCw, UserPlus, Link2, Unlink
+  Store, RefreshCw, UserPlus, Link2, Unlink, Send, ToggleLeft, ToggleRight, FlaskConical, Save
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -92,14 +92,15 @@ interface AuditEntry {
 }
 
 const adminNavItems = [
-  { icon: LayoutDashboard, label: "Overview",   path: "/admin" },
-  { icon: Users,           label: "Clients",    path: "/admin/clients" },
-  { icon: Handshake,       label: "Partners",   path: "/admin/partners" },
-  { icon: Store,           label: "Franchises", path: "/admin/franchises" },
-  { icon: FileText,        label: "Tenders",    path: "/admin/tenders" },
-  { icon: Globe,           label: "Websites",   path: "/admin/websites" },
-  { icon: History,         label: "Audit Log",  path: "/admin/audit" },
-  { icon: Settings,        label: "Settings",   path: "/admin/settings" },
+  { icon: LayoutDashboard, label: "Overview",        path: "/admin" },
+  { icon: Users,           label: "Clients",         path: "/admin/clients" },
+  { icon: Handshake,       label: "Partners",        path: "/admin/partners" },
+  { icon: Store,           label: "Franchises",      path: "/admin/franchises" },
+  { icon: FileText,        label: "Tenders",         path: "/admin/tenders" },
+  { icon: Globe,           label: "Websites",        path: "/admin/websites" },
+  { icon: Send,            label: "Email Campaigns", path: "/admin/drip-campaigns" },
+  { icon: History,         label: "Audit Log",       path: "/admin/audit" },
+  { icon: Settings,        label: "Settings",        path: "/admin/settings" },
 ];
 
 const TAG_PALETTE: Record<string, string> = {
@@ -2493,6 +2494,279 @@ function AdminFranchises() {
   );
 }
 
+// ───────────────────────── Admin Drip Campaigns ─────────────────────────
+interface DripEmail {
+  id: number;
+  sequence_number: number;
+  subject: string;
+  body_text: string;
+  enabled: number;
+  sends_count: number;
+  updated_at: string;
+}
+
+function AdminDripCampaigns() {
+  const [emails, setEmails] = useState<DripEmail[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<DripEmail | null>(null);
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testingId, setTestingId] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    fetch("/api/admin/drip-emails", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        setEmails(data.emails || []);
+        setTotalUsers(data.totalUsers || 0);
+      })
+      .catch(() => toast.error("Failed to load drip emails"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openEdit = (email: DripEmail) => {
+    setEditing(email);
+    setEditSubject(email.subject);
+    setEditBody(email.body_text);
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/drip-emails/${editing.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: editSubject, body_text: editBody }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const updated = await res.json();
+      setEmails(prev => prev.map(e => e.id === updated.id ? { ...e, subject: updated.subject, body_text: updated.body_text, updated_at: updated.updated_at } : e));
+      toast.success("Email updated");
+      setEditing(null);
+    } catch (err: any) {
+      toast.error(err.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleEnabled = async (email: DripEmail) => {
+    setTogglingId(email.id);
+    try {
+      const res = await fetch(`/api/admin/drip-emails/${email.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !email.enabled }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const updated = await res.json();
+      setEmails(prev => prev.map(e => e.id === updated.id ? { ...e, enabled: updated.enabled } : e));
+      toast.success(updated.enabled ? "Email enabled" : "Email disabled");
+    } catch (err: any) {
+      toast.error(err.message || "Toggle failed");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const sendTest = async (email: DripEmail) => {
+    setTestingId(email.id);
+    try {
+      const res = await fetch(`/api/admin/drip-emails/${email.id}/send-test`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`Test sent to ${data.sentTo}`);
+    } catch (err: any) {
+      toast.error(err.message || "Test send failed");
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const enabledCount = emails.filter(e => e.enabled).length;
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold font-heading">Email Drip Campaigns</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            20 pre-written marketing emails sent every 2 days to users. Enable individual emails when ready to launch.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Emails</p>
+          <p className="text-3xl font-bold mt-1">{emails.length}</p>
+        </div>
+        <div className="rounded-xl border bg-emerald-50 p-4 shadow-sm">
+          <p className="text-xs text-emerald-700 uppercase tracking-wide font-semibold">Active</p>
+          <p className="text-3xl font-bold mt-1 text-emerald-700">{enabledCount}</p>
+        </div>
+        <div className="rounded-xl border bg-slate-50 p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Disabled</p>
+          <p className="text-3xl font-bold mt-1 text-slate-500">{emails.length - enabledCount}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Users</p>
+          <p className="text-3xl font-bold mt-1">{totalUsers}</p>
+        </div>
+      </div>
+
+      {enabledCount === 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <ToggleLeft className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">All emails are currently disabled</p>
+            <p className="text-xs text-amber-700 mt-0.5">Use the toggle on each email to enable it when you're ready to start sending to users.</p>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading campaign emails…
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {emails.map((email) => (
+            <div key={email.id} className={`rounded-xl border bg-card shadow-sm transition-all ${email.enabled ? "border-emerald-200 bg-emerald-50/30" : "opacity-90"}`}>
+              <div className="flex items-start gap-4 p-4">
+                {/* Sequence badge */}
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${email.enabled ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                  {email.sequence_number}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground font-medium">Day {(email.sequence_number - 1) * 2 + 1} of drip</span>
+                    {email.enabled ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 font-semibold">
+                        <CheckCircle2 className="h-3 w-3" /> Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-500 text-xs px-2 py-0.5 font-semibold">
+                        <XCircle className="h-3 w-3" /> Disabled
+                      </span>
+                    )}
+                    {email.sends_count > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 text-blue-700 text-xs px-2 py-0.5">
+                        <Mail className="h-3 w-3" /> {email.sends_count} sent
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-semibold text-sm mt-1 truncate">{email.subject}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-wrap">{email.body_text.substring(0, 140)}…</p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => sendTest(email)}
+                    disabled={testingId === email.id}
+                    title="Send test email to yourself"
+                  >
+                    {testingId === email.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                    <span className="hidden sm:inline ml-1">Test</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEdit(email)}
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Edit</span>
+                  </Button>
+                  <button
+                    onClick={() => toggleEnabled(email)}
+                    disabled={togglingId === email.id}
+                    title={email.enabled ? "Disable this email" : "Enable this email"}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                      email.enabled
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                        : "bg-muted text-muted-foreground hover:bg-muted/70"
+                    }`}
+                  >
+                    {togglingId === email.id
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : email.enabled
+                        ? <ToggleRight className="h-4 w-4" />
+                        : <ToggleLeft className="h-4 w-4" />
+                    }
+                    <span className="hidden sm:inline">{email.enabled ? "On" : "Off"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Email #{editing?.sequence_number}</DialogTitle>
+            <DialogDescription>
+              Update the subject and body for this drip email. Changes take effect immediately for future sends.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">Subject Line</Label>
+              <Input
+                className="mt-1.5"
+                value={editSubject}
+                onChange={e => setEditSubject(e.target.value)}
+                placeholder="Email subject..."
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">Email Body</Label>
+              <Textarea
+                className="mt-1.5 min-h-[280px] font-mono text-sm leading-relaxed"
+                value={editBody}
+                onChange={e => setEditBody(e.target.value)}
+                placeholder="Email body text..."
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">Plain text. Each line break becomes a paragraph in the sent email.</p>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving || !editSubject.trim() || !editBody.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -2568,6 +2842,7 @@ export default function AdminDashboard() {
           <Route path="franchises" element={<AdminFranchises />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
+          <Route path="drip-campaigns" element={<AdminDripCampaigns />} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
