@@ -41,13 +41,9 @@ import { startDripScheduler } from "./drip-scheduler";
 import path from "path";
 import { queryOne } from "./db";
 
-async function main() {
-  await runMigrations();
-  await runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));
-  await runInventoryMigrations().catch(e => console.error("[Inventory] Migration error:", e.message));
-  await runContactMigration().catch(e => console.error("[Contact] Migration error:", e.message));
-  await seedIfEmpty();
+let migrationsDone = false;
 
+async function main() {
   const MySQLStore = MySQLStoreFactory(session as any);
   const sessionStore = new MySQLStore({
     clearExpired: true,
@@ -133,6 +129,18 @@ async function main() {
     startInvoiceScheduler();
     startAutomationsScheduler();
     startDripScheduler();
+
+    runMigrations()
+      .then(() => runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message)))
+      .then(() => runInventoryMigrations().catch(e => console.error("[Inventory] Migration error:", e.message)))
+      .then(() => runContactMigration().catch(e => console.error("[Contact] Migration error:", e.message)))
+      .then(() => seedIfEmpty())
+      .then(() => {
+        migrationsDone = true;
+        console.log("[Startup] All migrations and seed complete");
+      })
+      .catch(e => console.error("[Startup] Migration error:", e.message));
+
     runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
     runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));
