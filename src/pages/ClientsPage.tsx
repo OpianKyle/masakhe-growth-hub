@@ -619,6 +619,7 @@ export default function ClientsPage() {
               {activeTab === "details" && (
                 <div className="space-y-4">
                   {/* Personal */}
+                  {(selectedClient.id_number || selectedClient.date_of_birth || selectedClient.gender || selectedClient.marital_status || selectedClient.dependants) && (
                   <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">
                     <SectionHeader icon={User} label="Personal Information" iconBg="bg-gradient-to-br from-violet-500 to-purple-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -630,8 +631,10 @@ export default function ClientsPage() {
                       <Field label="Dependants" value={selectedClient.dependants} />
                     </div>
                   </section>
+                  )}
 
                   {/* Contact */}
+                  {(selectedClient.email || selectedClient.phone || selectedClient.whatsapp || selectedClient.physical_address || selectedClient.postal_address) && (
                   <section className="rounded-xl bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4">
                     <SectionHeader icon={Phone} label="Contact Details" iconBg="bg-gradient-to-br from-blue-500 to-indigo-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -652,8 +655,10 @@ export default function ClientsPage() {
                       </div>
                     )}
                   </section>
+                  )}
 
                   {/* Employment & Finance */}
+                  {(selectedClient.employment_status || selectedClient.employer_name || selectedClient.occupation || selectedClient.monthly_income_cents) && (
                   <section className="rounded-xl bg-teal-50/60 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/20 p-4">
                     <SectionHeader icon={Building2} label="Employment & Finances" iconBg="bg-gradient-to-br from-teal-500 to-cyan-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -663,13 +668,14 @@ export default function ClientsPage() {
                       <Field label="Monthly Income" value={selectedClient.monthly_income_cents ? fmtMoney(selectedClient.monthly_income_cents) : undefined} />
                     </div>
                   </section>
+                  )}
 
                   {/* Client Profile */}
+                  {(selectedClient.policy_number || selectedClient.property_interest || selectedClient.notes) && (
                   <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
                     <SectionHeader icon={Shield} label="Client Profile" iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <Field label="Policy Number" value={selectedClient.policy_number} />
-                      <Field label="Status" value={selectedClient.status.charAt(0).toUpperCase() + selectedClient.status.slice(1)} />
                     </div>
                     {selectedClient.property_interest && (
                       <div className="mt-3">
@@ -684,6 +690,7 @@ export default function ClientsPage() {
                       </div>
                     )}
                   </section>
+                  )}
 
                   {/* Business Details */}
                   {(selectedClient.business_name || selectedClient.business_registration || selectedClient.vat_number || selectedClient.business_address) && (
