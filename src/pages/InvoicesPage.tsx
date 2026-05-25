@@ -527,6 +527,7 @@ export default function InvoicesPage() {
         customer_email: customerEmail || undefined,
         customer_address: customerAddress || undefined,
         customer_phone: customerPhone || undefined,
+        customer_vat: customerVat || undefined,
         payment_terms: docType === "quote" ? (paymentTerms || undefined) : undefined,
         due_date: docType === "invoice" ? (dueDate || undefined) : undefined,
         notes: notes || undefined,
