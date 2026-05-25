@@ -139,6 +139,10 @@ function truncate(str: string, maxLen: number) {
   return str.length > maxLen ? str.slice(0, maxLen - 1) + "…" : str;
 }
 
+function sanitize(str: string): string {
+  return (str || "").replace(/\r\n/g, ", ").replace(/[\r\n]/g, ", ").trim();
+}
+
 function fmtDate(d: any): string {
   if (!d) return "";
   const s = d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
@@ -154,7 +158,7 @@ function drawCustomerInfo(ctx: TemplateCtx, x: number, y: number, labelColor: RG
   y -= 14;
   if (invoice.customer_email) { page.drawText(invoice.customer_email, { x, y, size: 8.5, font, color: grey }); y -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x, y, size: 8.5, font, color: grey }); y -= 12; }
-  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 70), { x, y, size: 8.5, font, color: grey }); y -= 12; }
+  if (invoice.customer_address) { page.drawText(truncate(sanitize(invoice.customer_address), 70), { x, y, size: 8.5, font, color: grey }); y -= 12; }
   if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x, y, size: 8.5, font, color: grey }); y -= 12; }
   return y;
 }
@@ -410,8 +414,13 @@ function renderTemplate2(ctx: TemplateCtx) {
   page.drawRectangle({ x: 50, y: divY, width: 495, height: 2.5, color: navy });
   y = divY - 18;
 
-  // Customer box (light navy background)
-  const custBoxH = 72;
+  // Customer box (light navy background) — height grows with content
+  let custLines = 0;
+  if (invoice.customer_email) custLines++;
+  if (invoice.customer_phone) custLines++;
+  if (invoice.customer_address) custLines++;
+  if (invoice.customer_vat) custLines++;
+  const custBoxH = Math.max(60, 42 + custLines * 12);
   page.drawRectangle({ x: 50, y: y - custBoxH, width: 230, height: custBoxH, color: navyLight });
   const billLabel = isQuote ? "QUOTE FOR" : "BILL TO";
   page.drawText(billLabel, { x: 58, y: y - 10, size: 8, font: fontBold, color: navy });
@@ -419,7 +428,7 @@ function renderTemplate2(ctx: TemplateCtx) {
   let cy = y - 38;
   if (invoice.customer_email) { page.drawText(invoice.customer_email, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_address) { page.drawText(truncate(sanitize(invoice.customer_address), 38), { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 58, y: cy, size: 8, font, color: grey }); }
   y -= custBoxH + 16;
 
@@ -494,8 +503,13 @@ function renderTemplate4(ctx: TemplateCtx) {
 
   let y = 842 - headerH - 15;
 
-  // Two side-by-side info boxes — taller to fit more customer detail
-  const boxH = 88;
+  // Two side-by-side info boxes — height grows with content
+  let custLines3 = 0;
+  if (invoice.customer_email) custLines3++;
+  if (invoice.customer_phone) custLines3++;
+  if (invoice.customer_address) custLines3++;
+  if (invoice.customer_vat) custLines3++;
+  const boxH = Math.max(88, 48 + custLines3 * 12);
   const boxY = y - boxH;
 
   // Bill To box
@@ -507,7 +521,7 @@ function renderTemplate4(ctx: TemplateCtx) {
   let cy = boxY + boxH - 44;
   if (invoice.customer_email) { page.drawText(truncate(invoice.customer_email, 34), { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_address) { page.drawText(truncate(sanitize(invoice.customer_address), 34), { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 56, y: cy, size: 8, font, color: grey }); }
 
   // Invoice Details box
@@ -733,7 +747,12 @@ function renderTemplate7(ctx: TemplateCtx) {
   y -= 16;
 
   // ── Two info boxes: Bill To (left) | Invoice Details (right) ────────────
-  const boxH = 88;
+  let custLines4 = 0;
+  if (invoice.customer_email) custLines4++;
+  if (invoice.customer_phone) custLines4++;
+  if (invoice.customer_address) custLines4++;
+  if (invoice.customer_vat) custLines4++;
+  const boxH = Math.max(88, 50 + custLines4 * 12);
   const boxY = y - boxH;
 
   // Bill To — simple border, no fill
@@ -745,7 +764,7 @@ function renderTemplate7(ctx: TemplateCtx) {
   let cy = boxY + boxH - 46;
   if (invoice.customer_email) { page.drawText(truncate(invoice.customer_email, 34), { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
+  if (invoice.customer_address) { page.drawText(truncate(sanitize(invoice.customer_address), 34), { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
   if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 56, y: cy, size: 8, font, color: midGrey }); }
 
   // Invoice Details — simple border, no fill
@@ -1092,6 +1111,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   if (showAddress && invoice.customer_address) btLines++;
   if (showPhone && invoice.customer_phone) btLines++;
   if (invoice.customer_email) btLines++;
+  if (invoice.customer_vat) btLines++;
   let dtLines = 1; // always show invoice number
   if (showRef && invoice.reference) dtLines++;
   if (invoice.due_date || isQuote) dtLines++;
@@ -1109,7 +1129,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   drawText(btLabel, billToX + 8, y - 12, 7, fontBold, cBillToLbl);
   drawText(invoice.customer_name || "", billToX + 8, y - 24, 9.5, fontBold, cHeading, colW - 16);
   let btY = y - 36;
-  if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
+  if (showAddress && invoice.customer_address) { drawText(sanitize(invoice.customer_address), billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
   if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, cMuted); btY -= 11; }
   if (invoice.customer_email) { drawText(invoice.customer_email, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
   if (invoice.customer_vat) drawText(`VAT No: ${invoice.customer_vat}`, billToX + 8, btY, 8, font, cMuted, colW - 16);
