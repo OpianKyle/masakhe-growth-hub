@@ -554,9 +554,6 @@ export default function ClientsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">{client.full_name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[client.status] || statusColors.prospect}`}>
-                          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                        </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                         {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{client.email}</span>}
