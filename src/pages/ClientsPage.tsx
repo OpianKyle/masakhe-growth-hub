@@ -62,7 +62,7 @@ const EMPTY_CLIENT: Omit<Client, "id" | "created_at"> = {
   employment_status: "", employer_name: "", occupation: "",
   monthly_income_cents: 0, dependants: 0, risk_profile: "medium",
   credit_score: undefined, policy_number: "", property_interest: "", status: "prospect", notes: "",
-  client_type: "personal",
+  client_type: "business",
   business_name: "", business_registration: "", vat_number: "", business_type: "",
   business_website: "", business_email: "", business_phone: "", business_whatsapp: "", business_address: "",
 };
@@ -557,11 +557,6 @@ export default function ClientsPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[client.status] || statusColors.prospect}`}>
                           {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
                         </span>
-                        {client.risk_profile && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${riskColors[client.risk_profile] || ""}`}>
-                            {client.risk_profile.charAt(0).toUpperCase() + client.risk_profile.slice(1)} Risk
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                         {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{client.email}</span>}
@@ -673,8 +668,6 @@ export default function ClientsPage() {
                   <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
                     <SectionHeader icon={Shield} label="Client Profile" iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                      <Field label="Risk Profile" value={selectedClient.risk_profile ? selectedClient.risk_profile.charAt(0).toUpperCase() + selectedClient.risk_profile.slice(1) : undefined} />
-                      <Field label="Credit Score" value={selectedClient.credit_score} />
                       <Field label="Policy Number" value={selectedClient.policy_number} />
                       <Field label="Status" value={selectedClient.status.charAt(0).toUpperCase() + selectedClient.status.slice(1)} />
                     </div>
@@ -887,22 +880,6 @@ export default function ClientsPage() {
               </div>
 
               <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
-                {/* Client Type Toggle */}
-                <div className="rounded-xl bg-muted/40 border border-border p-4">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 block">Client Type</label>
-                  <div className="flex rounded-lg overflow-hidden border border-border">
-                    <button type="button"
-                      onClick={() => setFormData((p: any) => ({ ...p, client_type: "personal" }))}
-                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${formData.client_type !== "business" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}>
-                      Individual Client
-                    </button>
-                    <button type="button"
-                      onClick={() => setFormData((p: any) => ({ ...p, client_type: "business" }))}
-                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${formData.client_type === "business" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted text-foreground"}`}>
-                      Business Client
-                    </button>
-                  </div>
-                </div>
 
                 {/* Personal */}
                 <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">
@@ -1027,52 +1004,6 @@ export default function ClientsPage() {
                 </section>
                 )}
 
-                {/* Financial Profile */}
-                {formData.client_type !== "business" && (
-                <section className="rounded-xl bg-amber-50/60 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
-                      <Shield className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Financial Profile</h4>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Risk Profile</label>
-                      <select value={formData.risk_profile || "medium"} onChange={(e) => setFormData((p: any) => ({ ...p, risk_profile: e.target.value }))}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                        <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Credit Score</label>
-                      <Input type="number" min="0" max="999" value={formData.credit_score || ""} onChange={(e) => setFormData((p: any) => ({ ...p, credit_score: e.target.value }))} placeholder="300–850" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Policy / Reference Number</label>
-                      <Input value={formData.policy_number || ""} onChange={(e) => setFormData((p: any) => ({ ...p, policy_number: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-                      <select value={formData.status || "prospect"} onChange={(e) => setFormData((p: any) => ({ ...p, status: e.target.value }))}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                        <option value="prospect">Prospect</option><option value="active">Active</option><option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-xs text-muted-foreground mb-1 block">Property / Product Interest</label>
-                      <Input value={formData.property_interest || ""} onChange={(e) => setFormData((p: any) => ({ ...p, property_interest: e.target.value }))}
-                        placeholder="e.g. Home loan, Life cover, Short-term insurance" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-xs text-muted-foreground mb-1 block">Notes</label>
-                      <textarea value={formData.notes || ""} onChange={(e) => setFormData((p: any) => ({ ...p, notes: e.target.value }))}
-                        rows={3} placeholder="Additional notes..."
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none" />
-                    </div>
-                  </div>
-                </section>
-                )}
 
                 {/* Business Details */}
                 {formData.client_type === "business" && (
