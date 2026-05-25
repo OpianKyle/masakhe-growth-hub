@@ -438,7 +438,7 @@ adminRouter.post("/clients/:id/trial", async (req, res) => {
     if (!premiumPlan) return res.status(404).json({ error: "Premium plan not found" });
 
     const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
+    trialEnd.setDate(trialEnd.getDate() + 14);
     const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
     const now = new Date().toISOString().slice(0, 19).replace("T", " ");
 
