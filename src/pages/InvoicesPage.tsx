@@ -44,6 +44,7 @@ interface Invoice {
   customer_email: string | null;
   customer_address: string | null;
   customer_phone: string | null;
+  customer_vat: string | null;
   reference: string | null;
   payment_terms: string | null;
   due_date: string | null;
@@ -247,6 +248,7 @@ export default function InvoicesPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerVat, setCustomerVat] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("30 days");
   const [dueDate, setDueDate] = useState("");
   const [startingInvoiceNum, setStartingInvoiceNum] = useState("");
@@ -334,6 +336,7 @@ export default function InvoicesPage() {
     setCustomerEmail(c.business_email || c.email || "");
     setCustomerPhone(c.business_phone || c.phone || "");
     setCustomerAddress(c.business_address || c.physical_address || "");
+    setCustomerVat(c.vat_number || "");
   };
 
   const toggleClientSelection = (id: string) => {
@@ -392,11 +395,12 @@ export default function InvoicesPage() {
     if (items.some((i) => !i.name.trim())) { toast.error("All items need a name"); return; }
     if (items.some((i) => i.unitPrice <= 0)) { toast.error("All items need a price"); return; }
 
-    const buildPayload = (name: string, email: string, phone: string, address: string, isFirst: boolean, cId?: string) => ({
+    const buildPayload = (name: string, email: string, phone: string, address: string, isFirst: boolean, cId?: string, vat?: string) => ({
       customerName: name,
       customerEmail: email || undefined,
       customerAddress: address || undefined,
       customerPhone: phone || undefined,
+      customerVat: vat || undefined,
       paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
       dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
       notes: notes || undefined,
@@ -419,11 +423,12 @@ export default function InvoicesPage() {
         const email = c.business_email || c.email || "";
         const phone = c.business_phone || c.phone || "";
         const address = c.business_address || c.physical_address || "";
+        const vat = c.vat_number || "";
         await fetch("/api/invoices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0, clientId)),
+          body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0, clientId, vat)),
         });
         created++;
       }
@@ -441,7 +446,7 @@ export default function InvoicesPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(buildPayload(customerName, customerEmail, customerPhone, customerAddress, isFirstInvoice, singleClientId)),
+      body: JSON.stringify(buildPayload(customerName, customerEmail, customerPhone, customerAddress, isFirstInvoice, singleClientId, customerVat)),
     });
 
     if (res.ok) {
@@ -483,6 +488,7 @@ export default function InvoicesPage() {
     setCustomerEmail(inv.customer_email || "");
     setCustomerAddress(inv.customer_address || "");
     setCustomerPhone(inv.customer_phone || "");
+    setCustomerVat(inv.customer_vat || "");
     setPaymentTerms(inv.payment_terms || "30 days");
     setDueDate(inv.due_date ? inv.due_date.slice(0, 10) : (inv.type === "invoice" ? defaultDueDate() : ""));
     setNotes(inv.notes || "");
@@ -496,7 +502,7 @@ export default function InvoicesPage() {
     setEditingId(null);
     setShowCreate(false);
     setCustomerName(""); setCustomerEmail(""); setCustomerAddress("");
-    setCustomerPhone(""); setNotes("");
+    setCustomerPhone(""); setCustomerVat(""); setNotes("");
     setPaymentTerms("30 days");
     setDueDate("");
     setStartingInvoiceNum("");
@@ -838,6 +844,10 @@ export default function InvoicesPage() {
               <div>
                 <Label className="text-xs">Customer Address</Label>
                 <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
+              </div>
+              <div>
+                <Label className="text-xs">Customer VAT Number</Label>
+                <Input value={customerVat} onChange={(e) => setCustomerVat(e.target.value)} className="mt-1" placeholder="Optional" />
               </div>
 
               {/* Due Date / Valid For + Invoice Number */}

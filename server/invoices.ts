@@ -155,6 +155,7 @@ function drawCustomerInfo(ctx: TemplateCtx, x: number, y: number, labelColor: RG
   if (invoice.customer_email) { page.drawText(invoice.customer_email, { x, y, size: 8.5, font, color: grey }); y -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x, y, size: 8.5, font, color: grey }); y -= 12; }
   if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 70), { x, y, size: 8.5, font, color: grey }); y -= 12; }
+  if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x, y, size: 8.5, font, color: grey }); y -= 12; }
   return y;
 }
 
@@ -418,7 +419,8 @@ function renderTemplate2(ctx: TemplateCtx) {
   let cy = y - 38;
   if (invoice.customer_email) { page.drawText(invoice.customer_email, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 58, y: cy, size: 8, font, color: grey }); }
+  if (invoice.customer_address) { page.drawText(invoice.customer_address, { x: 58, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 58, y: cy, size: 8, font, color: grey }); }
   y -= custBoxH + 16;
 
   y = drawStandardTable(ctx, y, navy, white, navyLight);
@@ -505,7 +507,8 @@ function renderTemplate4(ctx: TemplateCtx) {
   let cy = boxY + boxH - 44;
   if (invoice.customer_email) { page.drawText(truncate(invoice.customer_email, 34), { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: grey }); }
+  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: grey }); cy -= 12; }
+  if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 56, y: cy, size: 8, font, color: grey }); }
 
   // Invoice Details box
   page.drawRectangle({ x: 313, y: boxY, width: 232, height: boxH, color: skyBlue });
@@ -742,7 +745,8 @@ function renderTemplate7(ctx: TemplateCtx) {
   let cy = boxY + boxH - 46;
   if (invoice.customer_email) { page.drawText(truncate(invoice.customer_email, 34), { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
   if (invoice.customer_phone) { page.drawText(`Tel: ${invoice.customer_phone}`, { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
-  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: midGrey }); }
+  if (invoice.customer_address) { page.drawText(truncate(invoice.customer_address, 34), { x: 56, y: cy, size: 8, font, color: midGrey }); cy -= 12; }
+  if (invoice.customer_vat) { page.drawText(`VAT No: ${invoice.customer_vat}`, { x: 56, y: cy, size: 8, font, color: midGrey }); }
 
   // Invoice Details — simple border, no fill
   page.drawRectangle({ x: 313, y: boxY, width: 232, height: boxH, color: veryLight });
@@ -1107,7 +1111,8 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
   let btY = y - 36;
   if (showAddress && invoice.customer_address) { drawText(invoice.customer_address, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
   if (showPhone && invoice.customer_phone) { drawText(invoice.customer_phone, billToX + 8, btY, 8, font, cMuted); btY -= 11; }
-  if (invoice.customer_email) drawText(invoice.customer_email, billToX + 8, btY, 8, font, cMuted, colW - 16);
+  if (invoice.customer_email) { drawText(invoice.customer_email, billToX + 8, btY, 8, font, cMuted, colW - 16); btY -= 11; }
+  if (invoice.customer_vat) drawText(`VAT No: ${invoice.customer_vat}`, billToX + 8, btY, 8, font, cMuted, colW - 16);
 
   // Details — PO/Reference, Invoice Number, Due Date, then Terms
   page.drawRectangle({ x: detailsX, y: y - boxH, width: colW, height: boxH, color: boxBg });
@@ -1492,7 +1497,7 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const { customerName, customerEmail, customerAddress, customerPhone, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, customerVat, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId } = req.body;
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
     const docType = type === "quote" ? "quote" : "invoice";
@@ -1527,9 +1532,9 @@ invoiceRouter.post("/", async (req, res) => {
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     const dueDateVal = (docType === "invoice" && dueDate) ? dueDate : null;
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, client_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?, ?)`,
-      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, clientId || null, now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, customer_vat, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, client_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?, ?)`,
+      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, customerVat || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, clientId || null, now]
     );
 
     // Stop-credit check (invoices only, not quotes; non-blocking)
@@ -1802,7 +1807,7 @@ invoiceRouter.put("/:id", async (req, res) => {
     const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    const { customer_name, customer_email, customer_address, customer_phone, items, vat_enabled, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
+    const { customer_name, customer_email, customer_address, customer_phone, customer_vat, items, vat_enabled, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
     if (!customer_name || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customer_name and items are required" });
     const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
@@ -1812,8 +1817,8 @@ invoiceRouter.put("/:id", async (req, res) => {
     const vatCents = vatOn ? Math.round(subtotalCents * 0.15) : 0;
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     await execute(
-      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=?, due_date=? WHERE id=?`,
-      [customer_name, customer_email || null, customer_address || null, customer_phone || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, due_date || null, req.params.id]
+      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, customer_vat=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=?, due_date=? WHERE id=?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, customer_vat || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, due_date || null, req.params.id]
     );
     res.json({ ok: true });
   } catch (err: any) {
