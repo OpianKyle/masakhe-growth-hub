@@ -324,7 +324,7 @@ function renderTemplate1(ctx: TemplateCtx) {
     let lw = (logo.w / logo.h) * 60; let lh = 60;
     if (lw > 150) { lw = 150; lh = (logo.h / logo.w) * 150; }
     page.drawImage(logo.image, { x: 25, y: y - lh, width: lw, height: lh });
-    y -= lh + 10;
+    y -= lh + 22;
   }
 
   // Business name — left side only, never goes past where the title starts
@@ -375,7 +375,7 @@ function renderTemplate2(ctx: TemplateCtx) {
   const navyLight = lighten(navy, 0.80);
 
   let y = 800;
-  if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 18; }
+  if (logo) { page.drawImage(logo.image, { x: 50, y: y - logo.h, width: logo.w, height: logo.h }); y -= logo.h + 24; }
 
   // Navy invoice info box — top right, overlapping biz info area
   const boxY = 800;
@@ -570,7 +570,7 @@ function renderTemplate5(ctx: TemplateCtx) {
   if (logo) {
     const lx = (W - logo.w) / 2;
     page.drawImage(logo.image, { x: lx, y: y - logo.h, width: logo.w, height: logo.h });
-    y -= logo.h + 18;
+    y -= logo.h + 25;
   }
 
   // Centered business name
@@ -731,7 +731,7 @@ function renderTemplate7(ctx: TemplateCtx) {
     let lw = (logo.w / logo.h) * 60; let lh = 60;
     if (lw > 150) { lw = 150; lh = (logo.h / logo.w) * 150; }
     page.drawImage(logo.image, { x: 50, y: y - lh, width: lw, height: lh });
-    y -= lh + 10;
+    y -= lh + 21;
   }
   const biz = user?.business_name || user?.full_name || "Business";
   page.drawText(truncate(biz, 40), { x: 50, y, size: 16, font: fontBold, color: darkGrey }); y -= 14;
