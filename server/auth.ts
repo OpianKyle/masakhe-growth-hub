@@ -15,7 +15,7 @@ import {
 import { sendWelcomeSMS, sendCallScheduledSMS } from "./sms";
 import { linkResellerClient, autoRegisterReseller } from "./reseller";
 import { OAuth2Client } from "google-auth-library";
-import { fireSignupWebhook } from "./webhooks";
+import { fireSignupWebhook, buildSignupPayload } from "./webhooks";
 
 /**
  * For team-member accounts, returns the workspace owner's user_id (so all
@@ -214,17 +214,16 @@ authRouter.post("/register", async (req, res) => {
       sendAdminSignupNotification(email.toLowerCase(), fullName, phone, baseUrl).catch(() => {});
 
       // 4a. Fire outbound webhook to external leads system
-      fireSignupWebhook({
-        event: "user.signup",
-        user_id: userId,
+      buildSignupPayload({
+        userId,
         email: email.toLowerCase(),
-        full_name: fullName,
+        fullName,
         phone: phone || null,
-        referral_code: referralCode || null,
-        business_name: businessData?.businessName || null,
-        industry_sector: businessData?.industrySector || null,
-        signed_up_at: now,
-      }).catch(() => {});
+        referralCode: referralCode || null,
+        businessName: businessData?.businessName || null,
+        industrySector: businessData?.industrySector || null,
+        now,
+      }).then(fireSignupWebhook).catch(() => {});
 
       // 4. Send onboarding call scheduled email to client
       sendOnboardingCallEmail(email.toLowerCase(), fullName, baseUrl).catch(() => {});
