@@ -221,13 +221,15 @@ export default function RegisterPage() {
             )}
 
             {/* Referral banner */}
-            {referrerName && (
+            {referralCode && (
               <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
                 <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                   <Check className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-green-800">Referred by {referrerName}</p>
+                  <p className="text-sm font-semibold text-green-800">
+                    {referrerName ? `Referred by ${referrerName}` : "You're signing up via a referral link"}
+                  </p>
                   <p className="text-xs text-green-600">You're signing up via a partner referral link.</p>
                 </div>
               </div>
