@@ -462,6 +462,7 @@ export default function SettingsPage() {
                   <option value="Nedbank">Nedbank</option>
                   <option value="Standard Bank">Standard Bank</option>
                   <option value="Capitec">Capitec</option>
+                  <option value="Capitec Business">Capitec Business</option>
                   <option value="TymeBank">TymeBank</option>
                   <option value="African Bank">African Bank</option>
                   <option value="Discovery Bank">Discovery Bank</option>
