@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import React, { useState } from "react";
-import { Check, Loader2, Eye, EyeOff, Building2 } from "lucide-react";
+import { Check, Loader2, Eye, EyeOff, Building2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,8 @@ export default function RegisterPage() {
   const referralCode = searchParams.get("ref") || undefined;
   const promoCode = searchParams.get("promo") || undefined;
   const franchiseCode = searchParams.get("franchise") || undefined;
+  const source = searchParams.get("source") || undefined;
+  const fromEmail = source === "email" || source === "masakhemail";
 
   // Stash a promo code from the URL (e.g. coming from a marketing-site popup)
   // so we can re-apply it on the billing page after sign-up.
@@ -191,6 +193,19 @@ export default function RegisterPage() {
 
         <div className="flex-1 flex items-center justify-center px-6 py-10">
           <div className="w-full max-w-md">
+
+            {/* Email campaign banner */}
+            {fromEmail && (
+              <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Mail className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800">You're signing up via the Masakhe newsletter</p>
+                  <p className="text-xs text-blue-600">Welcome! Create your account below to get started.</p>
+                </div>
+              </div>
+            )}
 
             {/* Franchise banner */}
             {franchiseName && (
