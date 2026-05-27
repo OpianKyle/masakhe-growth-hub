@@ -1,5 +1,3 @@
-import { queryOne } from "./db";
-
 export interface SignupWebhookPayload {
   event: "user.signup";
   userId: string;
@@ -12,14 +10,14 @@ export interface SignupWebhookPayload {
   now: string;
 }
 
-export async function buildSignupPayload(opts: SignupWebhookPayload): Promise<SignupWebhookPayload> {
-  return opts;
-}
-
 export async function fireSignupWebhook(payload: SignupWebhookPayload): Promise<void> {
   const url = process.env.WEBHOOK_SIGNUP_URL;
   const secret = process.env.WEBHOOK_SECRET;
-  if (!url) return;
+
+  if (!url) {
+    console.warn("[Webhook] WEBHOOK_SIGNUP_URL is not set — skipping signup webhook");
+    return;
+  }
 
   const body = JSON.stringify({
     name: payload.fullName,
@@ -28,6 +26,10 @@ export async function fireSignupWebhook(payload: SignupWebhookPayload): Promise<
     business: payload.businessName || undefined,
     agentId: payload.referralCode || undefined,
   });
+
+  console.log(`[Webhook] Sending signup to: ${url}`);
+  console.log(`[Webhook] x-webhook-secret header: ${secret ? `set (${secret.length} chars)` : "NOT SET — this will cause a 401"}`);
+  console.log(`[Webhook] Body: ${body}`);
 
   try {
     const res = await fetch(url, {
@@ -40,15 +42,13 @@ export async function fireSignupWebhook(payload: SignupWebhookPayload): Promise<
       signal: AbortSignal.timeout(8000),
     });
 
+    const responseText = await res.text().catch(() => "");
     if (!res.ok) {
-      console.warn(`[Webhook] Signup webhook responded with ${res.status} for user ${payload.userId}`);
+      console.warn(`[Webhook] CRM responded ${res.status}: ${responseText}`);
     } else {
-      console.log(
-        `[Webhook] Signup sent for ${payload.email}` +
-        (payload.referralCode ? ` (agentId: ${payload.referralCode})` : " (no referral)")
-      );
+      console.log(`[Webhook] Success (${res.status}) for ${payload.email} — agentId: ${payload.referralCode ?? "none"}`);
     }
   } catch (err: any) {
-    console.error(`[Webhook] Failed to send signup event:`, err.message);
+    console.error(`[Webhook] Request failed:`, err.message);
   }
 }
