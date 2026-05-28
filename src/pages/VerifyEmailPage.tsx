@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "confirming" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // On mount: only CHECK the token is valid — don't consume it yet.
+  // Email security scanners follow links automatically; consuming on GET
+  // would burn the token before the real user ever sees the page.
   useEffect(() => {
     if (!token) {
       setStatus("error");
@@ -16,6 +19,29 @@ export default function VerifyEmailPage() {
       return;
     }
     fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.valid) setStatus("ready");
+        else {
+          setStatus("error");
+          setErrorMsg(data.error || "Verification failed.");
+        }
+      })
+      .catch(() => {
+        setStatus("error");
+        setErrorMsg("Network error. Please try again.");
+      });
+  }, [token]);
+
+  // Called when the user clicks the confirm button — this actually consumes the token.
+  function handleConfirm() {
+    if (!token) return;
+    setStatus("confirming");
+    fetch("/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
       .then(r => r.json())
       .then(data => {
         if (data.ok) setStatus("success");
@@ -28,7 +54,7 @@ export default function VerifyEmailPage() {
         setStatus("error");
         setErrorMsg("Network error. Please try again.");
       });
-  }, [token]);
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
@@ -39,6 +65,31 @@ export default function VerifyEmailPage() {
         </div>
 
         {status === "loading" && (
+          <div className="flex flex-col items-center gap-4 py-6">
+            <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+            <p className="text-slate-500 text-sm">Checking your verification link…</p>
+          </div>
+        )}
+
+        {status === "ready" && (
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-2">
+              <MailCheck className="h-9 w-9 text-green-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900">Confirm Your Email</h2>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Click the button below to verify your email address and activate your Masakhe account.
+            </p>
+            <Button
+              onClick={handleConfirm}
+              className="mt-2 bg-green-700 hover:bg-green-800 text-white px-8"
+            >
+              Verify My Email
+            </Button>
+          </div>
+        )}
+
+        {status === "confirming" && (
           <div className="flex flex-col items-center gap-4 py-6">
             <Loader2 className="h-10 w-10 animate-spin text-green-600" />
             <p className="text-slate-500 text-sm">Verifying your email address…</p>

@@ -249,8 +249,27 @@ authRouter.post("/register", async (req, res) => {
   }
 });
 
+// GET: only checks token validity — does NOT consume it.
+// This prevents email security scanners from burning the token before the user clicks.
 authRouter.get("/verify-email", async (req, res) => {
   const { token } = req.query as { token?: string };
+  if (!token) return res.status(400).json({ error: "Token required" });
+  try {
+    const record = await queryOne(
+      "SELECT id FROM email_verifications WHERE token = ? AND used = 0 AND expires_at > NOW()",
+      [token]
+    );
+    if (!record) return res.status(400).json({ error: "Invalid or expired verification link" });
+    res.json({ valid: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST: actually consumes the token and marks the email as verified.
+// Only called when the real user clicks the confirm button on the page.
+authRouter.post("/verify-email", async (req, res) => {
+  const { token } = req.body as { token?: string };
   if (!token) return res.status(400).json({ error: "Token required" });
   try {
     const record = await queryOne(
