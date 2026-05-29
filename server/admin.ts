@@ -774,20 +774,34 @@ adminRouter.delete("/clients/:id", async (req, res) => {
     await execute(`DELETE wm FROM workspace_members wm INNER JOIN workspaces w ON w.id = wm.workspace_id WHERE w.owner_id = ?`, [userId]);
     await execute("DELETE FROM workspace_members WHERE user_id = ?", [userId]);
 
-    // 7. workspaces
+    // 7. billing tables that FK to workspaces (must come before workspaces)
+    await execute(`
+      DELETE bi FROM billing_invoices bi
+      INNER JOIN workspaces w ON w.id = bi.workspace_id
+      WHERE w.owner_id = ?`, [userId]);
+    await execute(`
+      DELETE bs FROM billing_subscriptions bs
+      INNER JOIN workspaces w ON w.id = bs.workspace_id
+      WHERE w.owner_id = ?`, [userId]);
+    await execute(`
+      DELETE bpm FROM billing_payment_methods bpm
+      INNER JOIN workspaces w ON w.id = bpm.workspace_id
+      WHERE w.owner_id = ?`, [userId]);
+
+    // 8. workspaces
     await execute("DELETE FROM workspaces WHERE owner_id = ?", [userId]);
 
-    // 8. payroll_runs (must come before employees)
+    // 9. payroll_runs (must come before employees)
     await execute("DELETE FROM payroll_runs WHERE user_id = ?", [userId]);
 
-    // 9. broker_client_documents then broker_clients
+    // 10. broker_client_documents then broker_clients
     await execute("DELETE FROM broker_client_documents WHERE user_id = ?", [userId]);
     await execute("DELETE FROM broker_clients WHERE user_id = ?", [userId]);
 
-    // 10. employees (after payroll_runs)
+    // 11. employees (after payroll_runs)
     await execute("DELETE FROM employees WHERE user_id = ?", [userId]);
 
-    // 11. Remaining tables with non-cascading FK to users
+    // 12. Remaining tables with non-cascading FK to users
     await execute("DELETE FROM ledger_entries WHERE user_id = ?", [userId]);
     await execute("DELETE FROM invoices WHERE user_id = ?", [userId]);
     await execute("DELETE FROM grant_readiness WHERE user_id = ?", [userId]);
