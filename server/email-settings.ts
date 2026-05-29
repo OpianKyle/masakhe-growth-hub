@@ -19,6 +19,7 @@ function buildTransporter(settings: any) {
       user: settings.smtp_user,
       pass: decrypt(settings.smtp_pass_enc),
     },
+    tls: { rejectUnauthorized: false },
   });
 }
 
@@ -128,6 +129,7 @@ export async function getTransporterForUser(userId: string) {
       user: process.env.SMTP_USER || "admin@masakheportal.co.za",
       pass: smtpPass,
     },
+    tls: { rejectUnauthorized: false },
   });
   return {
     transporter,

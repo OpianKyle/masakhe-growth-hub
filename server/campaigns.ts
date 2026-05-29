@@ -19,6 +19,7 @@ function getGlobalTransporter() {
       user: process.env.SMTP_USER || "admin@masakheportal.co.za",
       pass: process.env.SMTP_PASSWORD,
     },
+    tls: { rejectUnauthorized: false },
   });
 }
 

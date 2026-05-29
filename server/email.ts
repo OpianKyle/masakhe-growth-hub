@@ -11,6 +11,7 @@ const transporter = process.env.SMTP_PASSWORD
         user: process.env.SMTP_USER || "admin@masakheportal.co.za",
         pass: process.env.SMTP_PASSWORD,
       },
+      tls: { rejectUnauthorized: false },
     })
   : null;
 
