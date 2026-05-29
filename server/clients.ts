@@ -38,16 +38,18 @@ clientsRouter.get("/platform-users", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Admin only" });
     }
     const users = await queryAll(
-      `SELECT u.id, u.full_name, u.email, u.phone, u.created_at,
+      `SELECT u.id, u.full_name, u.email, u.created_at,
               bp.business_name, bp.trading_name, bp.business_type,
               bp.phone AS business_phone, bp.email AS business_email,
-              bp.physical_address AS business_address
+              bp.physical_address AS business_address,
+              bp.phone AS phone
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
        WHERE u.role = 'user'
        ORDER BY u.full_name ASC`,
       []
     );
+    console.log(`[Platform Users] Returning ${users.length} users`);
     res.json(users);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -199,19 +199,25 @@ export default function ClientsPage() {
 
   const fetchClients = () => {
     setLoading(true);
-    const fetches: Promise<any>[] = [
+    Promise.all([
       fetch("/api/clients", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/clients/stats", { credentials: "include" }).then((r) => r.json()),
-    ];
-    if (isAdmin) {
-      fetches.push(fetch("/api/clients/platform-users", { credentials: "include" }).then((r) => r.json()));
-    }
-    Promise.all(fetches)
-      .then(([clientsData, statsData, platformData]) => {
+    ])
+      .then(([clientsData, statsData]) => {
         setClients(Array.isArray(clientsData) ? clientsData.map((c: Client) => ({ ...c, source: "crm" as const })) : []);
         setStats(statsData);
-        if (isAdmin && Array.isArray(platformData)) {
-          setPlatformUsers(platformData.map((u: any) => ({
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  const fetchPlatformUsers = () => {
+    if (!isAdmin) return;
+    fetch("/api/clients/platform-users", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPlatformUsers(data.map((u: any) => ({
             id: u.id,
             full_name: u.full_name,
             email: u.email,
@@ -226,13 +232,17 @@ export default function ClientsPage() {
             created_at: u.created_at,
             source: "platform" as const,
           })));
+        } else {
+          console.error("[Platform Users] API error:", data?.error);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch((err) => console.error("[Platform Users] Fetch error:", err));
   };
 
-  useEffect(() => { fetchClients(); }, [isAdmin]);
+  useEffect(() => {
+    fetchClients();
+    fetchPlatformUsers();
+  }, [isAdmin]);
 
   const fetchDocs = (clientId: string) => {
     setLoadingDocs(true);

@@ -8,7 +8,7 @@ export const pool = mysql.createPool({
   password: process.env.XNEELO_DB_PASSWORD || "",
   ssl: false,
   waitForConnections: true,
-  connectionLimit: 25,
+  connectionLimit: 5,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
