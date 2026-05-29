@@ -681,6 +681,7 @@ export default function ClientsPage() {
                       prefill_name: selectedClient.full_name,
                       prefill_email: selectedClient.email || "",
                       prefill_business: selectedClient.business_name || "",
+                      platform_user_id: selectedClient.id,
                     });
                     window.location.href = `/dashboard/invoices?${params.toString()}`;
                   }}>

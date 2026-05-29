@@ -257,6 +257,7 @@ export default function InvoicesPage() {
   const [vatEnabled, setVatEnabled] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [platformUserId, setPlatformUserId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [invoiceClients, setInvoiceClients] = useState<ClientForInvoice[]>([]);
@@ -310,6 +311,30 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => { loadInvoices(); }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefillName = params.get("prefill_name");
+    const prefillEmail = params.get("prefill_email");
+    const prefillBusiness = params.get("prefill_business");
+    const pUserId = params.get("platform_user_id");
+    if (prefillName || prefillBusiness) {
+      setCustomerName(prefillBusiness || prefillName || "");
+      setCustomerEmail(prefillEmail || "");
+      if (pUserId) setPlatformUserId(pUserId);
+      setDocType("invoice");
+      setActiveTab("invoice");
+      setSelectedTemplate(1);
+      setPaymentTerms("30 days");
+      setDueDate(defaultDueDate());
+      setStartingInvoiceNum("");
+      setShowCreate(true);
+      setEditingId(null);
+      setSelectedClientIds([]);
+      setClientSearch("");
+      window.history.replaceState({}, "", "/dashboard/invoices");
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/clients/for-invoice", { credentials: "include" })
@@ -410,6 +435,7 @@ export default function InvoicesPage() {
       templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
       customStartSeq: (docType === "invoice" && isFirst && startingInvoiceNum) ? parseInt(startingInvoiceNum) : undefined,
       clientId: cId || undefined,
+      platformUserId: platformUserId || undefined,
     });
 
     if (selectedClientIds.length > 1) {
@@ -511,6 +537,7 @@ export default function InvoicesPage() {
     setSelectedTemplate(1);
     setSelectedClientIds([]);
     setClientSearch("");
+    setPlatformUserId("");
   };
 
   const handleUpdate = async () => {

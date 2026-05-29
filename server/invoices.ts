@@ -1516,8 +1516,18 @@ function parseCSVLine(line: string): string[] {
 
 invoiceRouter.post("/", async (req, res) => {
   try {
-    const userId = getDataOwnerId(req);
-    const { customerName, customerEmail, customerAddress, customerPhone, customerVat, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId } = req.body;
+    const callerId = getDataOwnerId(req);
+    const { customerName, customerEmail, customerAddress, customerPhone, customerVat, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId, platformUserId } = req.body;
+
+    // If a super admin is creating an invoice on behalf of a platform user, save it under that user's account
+    let userId = callerId;
+    if (platformUserId && platformUserId !== callerId) {
+      const caller = await queryOne("SELECT role FROM users WHERE id = ?", [callerId]);
+      if (caller?.role === "admin") {
+        const targetUser = await queryOne("SELECT id FROM users WHERE id = ? AND role = 'user'", [platformUserId]);
+        if (targetUser) userId = platformUserId;
+      }
+    }
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
     const docType = type === "quote" ? "quote" : "invoice";
