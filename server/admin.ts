@@ -734,16 +734,73 @@ adminRouter.delete("/clients/:id", async (req, res) => {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
     const target = await queryOne("SELECT full_name, email FROM users WHERE id = ?", [userId]);
+    if (!target) return res.status(404).json({ error: "User not found" });
+
+    // Log the audit BEFORE deleting (audit_logs references users via actor_user_id)
+    await logAudit(req, "client.deleted", {
+      targetType: "user", targetId: userId, targetLabel: target.full_name,
+      details: { email: target.email },
+    });
+
+    // Delete in FK-safe order — children before parents.
+    // 1. social_post_targets (child of social_posts, which is child of workspaces)
+    await execute(`
+      DELETE spt FROM social_post_targets spt
+      INNER JOIN social_posts sp ON sp.id = spt.social_post_id
+      INNER JOIN workspaces w ON w.id = sp.workspace_id
+      WHERE w.owner_id = ?`, [userId]);
+    await execute(`
+      DELETE spt FROM social_post_targets spt
+      INNER JOIN social_posts sp ON sp.id = spt.social_post_id
+      WHERE sp.created_by_user_id = ?`, [userId]);
+
+    // 2. social_posts
+    await execute(`DELETE sp FROM social_posts sp INNER JOIN workspaces w ON w.id = sp.workspace_id WHERE w.owner_id = ?`, [userId]);
+    await execute("DELETE FROM social_posts WHERE created_by_user_id = ?", [userId]);
+
+    // 3. media_assets
+    await execute(`DELETE ma FROM media_assets ma INNER JOIN workspaces w ON w.id = ma.workspace_id WHERE w.owner_id = ?`, [userId]);
+    await execute("DELETE FROM media_assets WHERE uploaded_by_user_id = ?", [userId]);
+
+    // 4. social_accounts (FK to workspaces + connected_by_user_id)
+    await execute(`DELETE sa FROM social_accounts sa INNER JOIN workspaces w ON w.id = sa.workspace_id WHERE w.owner_id = ?`, [userId]);
+    await execute("DELETE FROM social_accounts WHERE connected_by_user_id = ?", [userId]);
+
+    // 5. audit_logs (FK to workspaces + actor_user_id)
+    await execute(`DELETE al FROM audit_logs al INNER JOIN workspaces w ON w.id = al.workspace_id WHERE w.owner_id = ?`, [userId]);
+    await execute("DELETE FROM audit_logs WHERE actor_user_id = ?", [userId]);
+
+    // 6. workspace_members
+    await execute(`DELETE wm FROM workspace_members wm INNER JOIN workspaces w ON w.id = wm.workspace_id WHERE w.owner_id = ?`, [userId]);
+    await execute("DELETE FROM workspace_members WHERE user_id = ?", [userId]);
+
+    // 7. workspaces
+    await execute("DELETE FROM workspaces WHERE owner_id = ?", [userId]);
+
+    // 8. payroll_runs (must come before employees)
+    await execute("DELETE FROM payroll_runs WHERE user_id = ?", [userId]);
+
+    // 9. broker_client_documents then broker_clients
+    await execute("DELETE FROM broker_client_documents WHERE user_id = ?", [userId]);
+    await execute("DELETE FROM broker_clients WHERE user_id = ?", [userId]);
+
+    // 10. employees (after payroll_runs)
+    await execute("DELETE FROM employees WHERE user_id = ?", [userId]);
+
+    // 11. Remaining tables with non-cascading FK to users
+    await execute("DELETE FROM ledger_entries WHERE user_id = ?", [userId]);
+    await execute("DELETE FROM invoices WHERE user_id = ?", [userId]);
+    await execute("DELETE FROM grant_readiness WHERE user_id = ?", [userId]);
     await execute("DELETE FROM websites WHERE owner_id = ?", [userId]);
     await execute("DELETE FROM business_profiles WHERE user_id = ?", [userId]);
+
+    // 12. Finally, delete the user
     await execute("DELETE FROM users WHERE id = ?", [userId]);
-    await logAudit(req, "client.deleted", {
-      targetType: "user", targetId: userId, targetLabel: target?.full_name,
-      details: { email: target?.email },
-    });
+
     res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete client" });
+  } catch (err: any) {
+    console.error("[Admin] Delete client error:", err.message);
+    res.status(500).json({ error: "Failed to delete client: " + err.message });
   }
 });
 
