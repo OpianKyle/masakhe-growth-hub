@@ -4,12 +4,13 @@ import {
   Users, Search, Plus, Download, Upload, Loader2, Trash2, ChevronDown,
   ChevronUp, Mail, Phone, Briefcase, Shield, FileText, X, Eye, Edit2,
   CheckCircle, AlertCircle, User, Building2, CreditCard, Home, FolderOpen,
-  MoreVertical, Save
+  MoreVertical, Save, UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Client {
   id: string;
@@ -45,6 +46,7 @@ interface Client {
   business_address?: string;
   client_type?: string;
   created_at: string;
+  source?: "platform" | "crm";
 }
 
 interface ClientDoc {
@@ -168,7 +170,11 @@ const statusColors: Record<string, string> = {
 
 export default function ClientsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [clients, setClients] = useState<Client[]>([]);
+  const [platformUsers, setPlatformUsers] = useState<Client[]>([]);
+  const [showPlatformUsers, setShowPlatformUsers] = useState(true);
   const [stats, setStats] = useState({ total: 0, active: 0, prospects: 0, inactive: 0 });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -193,13 +199,34 @@ export default function ClientsPage() {
 
   const fetchClients = () => {
     setLoading(true);
-    Promise.all([
+    const fetches: Promise<any>[] = [
       fetch("/api/clients", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/clients/stats", { credentials: "include" }).then((r) => r.json()),
-    ])
-      .then(([clientsData, statsData]) => {
-        setClients(Array.isArray(clientsData) ? clientsData : []);
+    ];
+    if (isAdmin) {
+      fetches.push(fetch("/api/clients/platform-users", { credentials: "include" }).then((r) => r.json()));
+    }
+    Promise.all(fetches)
+      .then(([clientsData, statsData, platformData]) => {
+        setClients(Array.isArray(clientsData) ? clientsData.map((c: Client) => ({ ...c, source: "crm" as const })) : []);
         setStats(statsData);
+        if (isAdmin && Array.isArray(platformData)) {
+          setPlatformUsers(platformData.map((u: any) => ({
+            id: u.id,
+            full_name: u.full_name,
+            email: u.email,
+            phone: u.phone,
+            business_name: u.business_name || u.trading_name,
+            business_type: u.business_type,
+            business_email: u.business_email,
+            business_phone: u.business_phone,
+            business_address: u.business_address,
+            status: "active",
+            client_type: "business",
+            created_at: u.created_at,
+            source: "platform" as const,
+          })));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -400,11 +427,16 @@ export default function ClientsPage() {
     }
   };
 
-  const filtered = clients.filter((c) => {
+  const allClients = [
+    ...clients,
+    ...(isAdmin && showPlatformUsers ? platformUsers : []),
+  ];
+
+  const filtered = allClients.filter((c) => {
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return `${c.full_name} ${c.email || ""} ${c.phone || ""} ${c.id_number || ""}`.toLowerCase().includes(q);
+    return `${c.full_name} ${c.email || ""} ${c.phone || ""} ${c.id_number || ""} ${c.business_name || ""}`.toLowerCase().includes(q);
   });
 
   const Field = ({ label, value }: { label: string; value?: string | number | null }) =>
@@ -434,12 +466,19 @@ export default function ClientsPage() {
 
   const statCards = [
     {
-      label: "Total Clients",
+      label: "CRM Clients",
       value: stats.total,
       icon: Users,
       iconBg: "bg-gradient-to-br from-violet-500 to-purple-600",
       cardAccent: "border-l-4 border-l-violet-500",
     },
+    ...(isAdmin ? [{
+      label: "Platform Users",
+      value: platformUsers.length,
+      icon: UserCheck,
+      iconBg: "bg-gradient-to-br from-emerald-500 to-teal-600",
+      cardAccent: "border-l-4 border-l-emerald-500",
+    }] : []),
     {
       label: "Active",
       value: stats.active,
@@ -454,13 +493,13 @@ export default function ClientsPage() {
       iconBg: "bg-gradient-to-br from-blue-500 to-indigo-600",
       cardAccent: "border-l-4 border-l-blue-500",
     },
-    {
+    ...(!isAdmin ? [{
       label: "Inactive",
       value: stats.inactive,
       icon: X,
       iconBg: "bg-gradient-to-br from-gray-400 to-gray-500",
       cardAccent: "border-l-4 border-l-gray-400",
-    },
+    }] : []),
   ];
 
   return (
@@ -523,6 +562,18 @@ export default function ClientsPage() {
           <option value="prospect">Prospect</option>
           <option value="inactive">Inactive</option>
         </select>
+        {isAdmin && (
+          <button
+            onClick={() => setShowPlatformUsers((v) => !v)}
+            className={`flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-medium transition-colors ${showPlatformUsers ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-400" : "bg-background border-input text-muted-foreground"}`}
+          >
+            <UserCheck className="h-4 w-4" />
+            Platform Users
+            <span className={`text-xs rounded-full px-1.5 py-0.5 font-bold ${showPlatformUsers ? "bg-emerald-200 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-200" : "bg-muted text-muted-foreground"}`}>
+              {platformUsers.length}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Main content */}
@@ -554,21 +605,31 @@ export default function ClientsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">{client.full_name}</span>
+                        {client.source === "platform" && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <UserCheck className="h-3 w-3" />Platform
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                         {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{client.email}</span>}
                         {client.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{client.phone}</span>}
+                        {client.business_name && <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{client.business_name}</span>}
                         {client.monthly_income_cents ? <span>{fmtMoney(client.monthly_income_cents)}/mo</span> : null}
                       </div>
                       {client.occupation && <p className="text-xs text-muted-foreground mt-0.5">{client.occupation}{client.employer_name ? ` @ ${client.employer_name}` : ""}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(client); }}>
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(client); }}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {client.source !== "platform" && (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(client); }}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(client); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -588,14 +649,38 @@ export default function ClientsPage() {
                   <span className="text-sm font-bold text-white">{getInitials(selectedClient.full_name)}</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-foreground">{selectedClient.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedClient.policy_number ? `Policy: ${selectedClient.policy_number}` : "No policy number"}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-foreground">{selectedClient.full_name}</h3>
+                    {selectedClient.source === "platform" && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <UserCheck className="h-3 w-3" />Platform User
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedClient.source === "platform"
+                      ? (selectedClient.business_name || selectedClient.email || "Registered user")
+                      : (selectedClient.policy_number ? `Policy: ${selectedClient.policy_number}` : "No policy number")}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => openEdit(selectedClient)}>
-                  <Edit2 className="h-3.5 w-3.5 mr-1" />Edit
-                </Button>
+                {selectedClient.source === "platform" ? (
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const params = new URLSearchParams({
+                      prefill_name: selectedClient.full_name,
+                      prefill_email: selectedClient.email || "",
+                      prefill_business: selectedClient.business_name || "",
+                    });
+                    window.location.href = `/invoices?${params.toString()}`;
+                  }}>
+                    <FileText className="h-3.5 w-3.5 mr-1" />Create Invoice
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => openEdit(selectedClient)}>
+                    <Edit2 className="h-3.5 w-3.5 mr-1" />Edit
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" onClick={() => setSelectedClient(null)}>
                   <X className="h-4 w-4" />
                 </Button>
