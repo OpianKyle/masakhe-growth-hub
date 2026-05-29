@@ -682,7 +682,7 @@ export default function ClientsPage() {
                       prefill_email: selectedClient.email || "",
                       prefill_business: selectedClient.business_name || "",
                     });
-                    window.location.href = `/invoices?${params.toString()}`;
+                    window.location.href = `/dashboard/invoices?${params.toString()}`;
                   }}>
                     <FileText className="h-3.5 w-3.5 mr-1" />Create Invoice
                   </Button>
