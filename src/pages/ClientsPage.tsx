@@ -232,7 +232,7 @@ export default function ClientsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchClients(); }, []);
+  useEffect(() => { fetchClients(); }, [isAdmin]);
 
   const fetchDocs = (clientId: string) => {
     setLoadingDocs(true);
