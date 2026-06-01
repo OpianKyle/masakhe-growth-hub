@@ -653,7 +653,15 @@ export default function InvoicesPage() {
     setCopyingPayLinkId(inv.id);
     try {
       const res = await fetch(`/api/invoices/${inv.id}/pay-link`, { credentials: "include" });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Pay-link non-JSON response", res.status, text.slice(0, 300));
+        toast.error(`Server error (${res.status}) — could not get pay link`);
+        return;
+      }
       if (!res.ok) { toast.error(data.error || "Failed to get pay link"); return; }
       try {
         await navigator.clipboard.writeText(data.url);
@@ -661,7 +669,8 @@ export default function InvoicesPage() {
       } catch {
         setPayLinkModal({ url: data.url, invoiceNumber: inv.invoice_number });
       }
-    } catch {
+    } catch (err) {
+      console.error("Pay-link fetch error:", err);
       toast.error("Network error — could not get pay link");
     } finally {
       setCopyingPayLinkId(null);

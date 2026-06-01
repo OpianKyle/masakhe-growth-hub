@@ -1885,9 +1885,11 @@ invoiceRouter.get("/:id/pay-link", async (req, res) => {
     const baseUrl = process.env.ADUMO_ENV === "production"
       ? (process.env.APP_URL || "https://masakheportal.co.za")
       : `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:5000"}`;
-    res.json({ url: `${baseUrl.replace(/\/+$/, "")}/pay/${token}` });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.json({ url: `${baseUrl.replace(/\/+$/, "")}/pay/${token}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err ?? "Unknown error");
+    console.error("[InvPayLink] Error:", msg);
+    if (!res.headersSent) res.status(500).json({ error: msg });
   }
 });
 
