@@ -32,7 +32,7 @@ type PageState =
   | { type: "error"; message: string }
   | { type: "ready"; invoice: InvoiceData; business: BusinessData }
   | { type: "already_paid"; invoice: InvoiceData; business: BusinessData }
-  | { type: "paying" }
+  | { type: "paying"; invoice: InvoiceData; business: BusinessData }
   | { type: "success" }
   | { type: "failed" };
 
@@ -101,7 +101,9 @@ export default function PayInvoice() {
 
   async function handlePay() {
     if (!token) return;
-    setState({ type: "paying" });
+    if (state.type !== "ready") return;
+    const { invoice, business } = state;
+    setState({ type: "paying", invoice, business });
     try {
       const r = await fetch(`/api/invoices/pay/${token}/session`, { method: "POST" });
       const data = await r.json();
