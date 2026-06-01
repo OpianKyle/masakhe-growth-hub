@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx server/index.ts & npx vite",
-    "dev:server": "npx tsx server/index.ts",
+    "dev": "node_modules/.bin/tsx server/index.ts & node_modules/.bin/vite",
+    "dev:server": "node_modules/.bin/tsx server/index.ts",
     "build": "npx vite build",
     "build:dev": "npx vite build --mode development",
     "lint": "eslint .",
