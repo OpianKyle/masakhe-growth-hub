@@ -1864,6 +1864,33 @@ invoiceRouter.post("/:id/email", async (req, res) => {
   }
 });
 
+invoiceRouter.get("/:id/pay-link", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ? AND type = 'invoice'", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    if (invoice.status === "paid") return res.status(400).json({ error: "Invoice is already paid." });
+
+    let token = invoice.payment_token;
+    const expired = token && invoice.payment_token_expires_at && new Date(invoice.payment_token_expires_at) < new Date();
+    if (!token || expired) {
+      token = generateInvoicePaymentToken();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await execute(
+        "UPDATE invoices SET payment_token = ?, payment_token_expires_at = ? WHERE id = ?",
+        [token, expiresAt, invoice.id]
+      );
+    }
+
+    const baseUrl = process.env.ADUMO_ENV === "production"
+      ? (process.env.APP_URL || "https://masakheportal.co.za")
+      : `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:5000"}`;
+    res.json({ url: `${baseUrl.replace(/\/+$/, "")}/pay/${token}` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 invoiceRouter.put("/:id", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2 } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
@@ -59,6 +59,7 @@ interface Invoice {
   created_at: string;
   paid_at?: string | null;
   late_fee_cents?: number;
+  payment_token?: string | null;
 }
 
 const TEMPLATES = [
@@ -645,6 +646,22 @@ export default function InvoicesPage() {
     }
   };
 
+  const [copyingPayLinkId, setCopyingPayLinkId] = useState<string | null>(null);
+  const copyPayLink = async (inv: Invoice) => {
+    setCopyingPayLinkId(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}/pay-link`, { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Failed to get pay link"); return; }
+      await navigator.clipboard.writeText(data.url);
+      toast.success("Payment link copied! Open it in a new tab to test.");
+    } catch {
+      toast.error("Failed to copy link");
+    } finally {
+      setCopyingPayLinkId(null);
+    }
+  };
+
   const filtered = invoices.filter(inv => (inv.type || "invoice") === (activeTab === "designer" ? "invoice" : activeTab));
 
   return (
@@ -1125,6 +1142,20 @@ export default function InvoicesPage() {
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                             : <Mail className="h-3.5 w-3.5 mr-1" />}
                           Email
+                        </Button>
+                      )}
+                      {inv.type !== "quote" && !inv.paid_at && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={copyingPayLinkId === inv.id}
+                          onClick={() => copyPayLink(inv)}
+                          title="Copy payment link to share with client"
+                        >
+                          {copyingPayLinkId === inv.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            : <Link2 className="h-3.5 w-3.5 mr-1" />}
+                          Pay Link
                         </Button>
                       )}
                       <Button
