@@ -2,7 +2,6 @@ import { Router } from "express";
 import { randomBytes } from "crypto";
 import { queryOne, execute } from "./db";
 import { generatePaymentToken, verifyResponseToken } from "./adumo";
-import { randomUUID } from "crypto";
 import { sendThankYouReceipt } from "./automations";
 
 export const invoicePaymentsRouter = Router();
@@ -108,7 +107,6 @@ invoicePaymentsRouter.post("/:token/session", async (req, res) => {
     const amount = (invoice.total_cents / 100).toFixed(2);
     const refSuffix = randomBytes(4).toString("hex");
     const merchantRef = `CUSTINV_${refSuffix}`;
-    const puid = randomUUID();
 
     await execute(
       "UPDATE invoices SET payment_merchant_ref = ? WHERE id = ?",
@@ -125,12 +123,12 @@ invoicePaymentsRouter.post("/:token/session", async (req, res) => {
     const returnBase = `${APP_URL}/api/invoices/pay/${token}/return`;
 
     const fields: Record<string, string> = {
-      puid,
       MerchantID: (process.env.ADUMO_MERCHANT_ID || "").toLowerCase(),
       ApplicationID: (process.env.ADUMO_APPLICATION_ID || "").toLowerCase(),
       MerchantReference: merchantRef,
       Amount: amount,
       Token: jwtToken,
+      PaymentType: "1",
       txtCurrencyCode: "ZAR",
       RedirectSuccessfulURL: `${returnBase}?status=success&merchantRef=${merchantRef}`,
       RedirectFailedURL: `${returnBase}?status=failed&merchantRef=${merchantRef}`,
