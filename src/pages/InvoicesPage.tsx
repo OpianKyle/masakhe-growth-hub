@@ -647,16 +647,22 @@ export default function InvoicesPage() {
   };
 
   const [copyingPayLinkId, setCopyingPayLinkId] = useState<string | null>(null);
+  const [payLinkModal, setPayLinkModal] = useState<{ url: string; invoiceNumber: string } | null>(null);
+
   const copyPayLink = async (inv: Invoice) => {
     setCopyingPayLinkId(inv.id);
     try {
       const res = await fetch(`/api/invoices/${inv.id}/pay-link`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Failed to get pay link"); return; }
-      await navigator.clipboard.writeText(data.url);
-      toast.success("Payment link copied! Open it in a new tab to test.");
+      try {
+        await navigator.clipboard.writeText(data.url);
+        toast.success("Payment link copied to clipboard!");
+      } catch {
+        setPayLinkModal({ url: data.url, invoiceNumber: inv.invoice_number });
+      }
     } catch {
-      toast.error("Failed to copy link");
+      toast.error("Network error — could not get pay link");
     } finally {
       setCopyingPayLinkId(null);
     }
@@ -1188,6 +1194,48 @@ export default function InvoicesPage() {
           </tbody>
         </table>
       </Card>}
+
+      {payLinkModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPayLinkModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg text-gray-900 mb-1">Payment Link</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Invoice #{payLinkModal.invoiceNumber} — share this link with your client so they can pay online.
+            </p>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={payLinkModal.url}
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 font-mono truncate"
+                onFocus={e => e.target.select()}
+              />
+              <Button
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(payLinkModal.url).catch(() => {});
+                  toast.success("Copied!");
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <a
+              href={payLinkModal.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 block text-center text-sm text-green-700 underline underline-offset-2 hover:text-green-800"
+            >
+              Open in new tab →
+            </a>
+            <button
+              onClick={() => setPayLinkModal(null)}
+              className="mt-4 w-full text-sm text-gray-400 hover:text-gray-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
