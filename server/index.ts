@@ -39,6 +39,7 @@ import { contactRouter, runContactMigration } from "./contact";
 import { automationsRouter } from "./automations";
 import { startAutomationsScheduler } from "./automations-scheduler";
 import { startDripScheduler } from "./drip-scheduler";
+import { subscriptionApiRouter } from "./subscription-api";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -110,6 +111,7 @@ async function main() {
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);
   app.use("/api/automations", automationsRouter);
+  app.use("/api/external", subscriptionApiRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
 
