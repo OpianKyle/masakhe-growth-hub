@@ -26,6 +26,7 @@ import { leaveRouter, runLeaveMigrations } from "./leave";
 import { resellerRouter, runResellerMigrations } from "./reseller";
 import { franchiseRouter, runFranchiseMigrations } from "./franchise";
 import { documentsRouter } from "./documents";
+import { invoicePaymentsRouter } from "./invoice-payments";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
@@ -85,6 +86,7 @@ async function main() {
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/finance", financeRouter);
+  app.use("/api/invoices/pay", invoicePaymentsRouter);
   app.use("/api/invoices", invoiceRouter);
   app.use("/api/compliance", complianceRouter);
   app.use("/api/funding", grantsRouter);

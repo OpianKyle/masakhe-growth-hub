@@ -1071,6 +1071,14 @@ export async function runMigrations() {
 
     await addColumnIfMissing("invoices", "due_date", "DATE NULL");
     await addColumnIfMissing("users", "invoice_next_seq", "INT NULL");
+    await addColumnIfMissing("invoices", "payment_token", "VARCHAR(64) NULL");
+    await addColumnIfMissing("invoices", "payment_token_expires_at", "DATETIME NULL");
+    await addColumnIfMissing("invoices", "payment_merchant_ref", "VARCHAR(100) NULL");
+    try {
+      await conn.query("CREATE UNIQUE INDEX idx_inv_payment_token ON invoices(payment_token)");
+    } catch (e: any) {
+      if (!e.message.includes("Duplicate key name")) throw e;
+    }
 
     // Seed admin@masakhe.co.za starting invoice sequence at 1315 (only if not yet set)
     await conn.query(

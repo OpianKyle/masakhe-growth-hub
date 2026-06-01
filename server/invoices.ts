@@ -9,6 +9,7 @@ import path from "path";
 import multer from "multer";
 import { getTransporterForUser } from "./email-settings";
 import { sendThankYouReceipt, checkStopCreditAndAlert } from "./automations";
+import { generateInvoicePaymentToken } from "./invoice-payments";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1708,6 +1709,20 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
     if (!invoice.customer_email) return res.status(400).json({ error: "This invoice has no customer email address." });
 
+    // Generate or refresh the payment token (only for invoices, not quotes)
+    const isInvoice = (invoice.type || "invoice") === "invoice";
+    let paymentToken = invoice.payment_token;
+    if (isInvoice && process.env.ADUMO_MERCHANT_ID) {
+      paymentToken = generateInvoicePaymentToken();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+      await execute(
+        "UPDATE invoices SET payment_token = ?, payment_token_expires_at = ?, status = 'sent' WHERE id = ?",
+        [paymentToken, expiresAt, invoice.id]
+      );
+    } else if (invoice.status === "final") {
+      await execute("UPDATE invoices SET status = 'sent' WHERE id = ?", [invoice.id]);
+    }
+
     const mailer = await getTransporterForUser(userId);
     if (!mailer) return res.status(400).json({ error: "No email account configured. Go to Settings → Email Sending to set up your SMTP." });
 
@@ -1780,7 +1795,22 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     const label = isQuote ? "Quote" : "Invoice";
     const totalFormatted = `R${(invoice.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
     const dateStr = new Date(invoice.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
-    const appUrl = process.env.APP_URL || "https://masakheportal.co.za";
+    const baseUrl = process.env.ADUMO_ENV === "production"
+      ? (process.env.APP_URL || "https://masakheportal.co.za")
+      : `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:5000"}`;
+    const paymentLink = (isInvoice && paymentToken)
+      ? `${baseUrl.replace(/\/+$/, "")}/pay/${paymentToken}`
+      : null;
+
+    const payButtonHtml = paymentLink ? `
+  <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:28px;">
+    <tr><td align="center">
+      <a href="${paymentLink}" style="display:inline-block;background:#007749;color:#fff;font-size:16px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.3px;">
+        Pay Now — ${totalFormatted}
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#9a9aaa;">Secure online payment · Click the button above to pay instantly</p>
+    </td></tr>
+  </table>` : "";
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
@@ -1803,6 +1833,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     ${invoice.payment_terms ? `<tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Payment Terms</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.payment_terms}</td></tr>` : ""}
     <tr style="background:#f9fafb;"><td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a1a2e;">Total</td><td style="padding:14px 16px;font-size:18px;font-weight:700;color:#007749;text-align:right;">${totalFormatted}</td></tr>
   </table>
+  ${payButtonHtml}
   ${invoice.notes ? `<p style="margin:0 0 20px;color:#6b7280;font-size:13px;font-style:italic;">${invoice.notes}</p>` : ""}
   <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have any questions, please reply to this email or contact us at ${mailer.fromEmail}.</p>
   <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Thank you for your business!<br><strong style="color:#1a1a2e;">${businessName}</strong></p>

@@ -21,6 +21,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SetPasswordPage from "./pages/SetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import PayInvoice from "./pages/PayInvoice";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -112,6 +113,7 @@ const App = () => (
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/meta-deletion-status" element={<MetaDeletionStatusPage />} />
+              <Route path="/pay/:token" element={<PayInvoice />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
