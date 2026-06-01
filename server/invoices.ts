@@ -1843,7 +1843,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    await mailer.transporter.sendMail({
+    const info = await mailer.transporter.sendMail({
       from: `"${mailer.fromName}" <${mailer.fromEmail}>`,
       to: invoice.customer_email,
       ...(mailer.replyTo ? { replyTo: mailer.replyTo } : {}),
@@ -1855,6 +1855,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
         contentType: "application/pdf",
       }],
     });
+    console.log(`[Invoice Email] Sent ${label} #${invoice.invoice_number} → ${invoice.customer_email} | from: ${mailer.fromEmail} | messageId: ${info.messageId}`);
 
     res.json({ ok: true, sentTo: invoice.customer_email });
   } catch (err: any) {
