@@ -60,12 +60,26 @@ clientsRouter.get("/platform-users", requireAuth, async (req, res) => {
 clientsRouter.get("/for-invoice", requireAuth, async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const clients = await queryAll(
-      `SELECT id, full_name, business_name, email, business_email, phone, business_phone,
-              physical_address, business_address, vat_number, client_type
-       FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
-      [userId]
-    );
+    const requestingUser = await queryOne("SELECT role FROM users WHERE id = ?", [req.session.userId]);
+    const isAdminNotImpersonating = requestingUser?.role === "admin" && !(req.session as any).actingAsOwnerId;
+
+    const clients = isAdminNotImpersonating
+      ? await queryAll(
+          `SELECT bc.id, bc.full_name, bc.business_name, bc.email, bc.business_email,
+                  bc.phone, bc.business_phone, bc.physical_address, bc.business_address,
+                  bc.vat_number, bc.client_type, u.full_name AS owner_name
+           FROM broker_clients bc
+           JOIN users u ON u.id = bc.user_id
+           ORDER BY bc.full_name ASC`,
+          []
+        )
+      : await queryAll(
+          `SELECT id, full_name, business_name, email, business_email, phone, business_phone,
+                  physical_address, business_address, vat_number, client_type
+           FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
+          [userId]
+        );
+
     res.json(clients);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

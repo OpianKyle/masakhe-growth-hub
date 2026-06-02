@@ -34,6 +34,7 @@ interface ClientForInvoice {
   business_phone?: string;
   physical_address?: string;
   business_address?: string;
+  owner_name?: string;
   vat_number?: string;
 }
 
@@ -873,6 +874,9 @@ export default function InvoicesPage() {
                             )}
                             {(c.business_email || c.email) && (
                               <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
+                            )}
+                            {c.owner_name && (
+                              <div className="text-xs text-blue-500 truncate">Owner: {c.owner_name}</div>
                             )}
                           </div>
                           {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
