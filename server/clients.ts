@@ -65,12 +65,22 @@ clientsRouter.get("/for-invoice", requireAuth, async (req, res) => {
 
     const clients = isAdminNotImpersonating
       ? await queryAll(
-          `SELECT bc.id, bc.full_name, bc.business_name, bc.email, bc.business_email,
-                  bc.phone, bc.business_phone, bc.physical_address, bc.business_address,
-                  bc.vat_number, bc.client_type, u.full_name AS owner_name
-           FROM broker_clients bc
-           JOIN users u ON u.id = bc.user_id
-           ORDER BY bc.full_name ASC`,
+          `SELECT u.id,
+                  u.full_name,
+                  COALESCE(bp.business_name, '') AS business_name,
+                  u.email,
+                  COALESCE(bp.email, u.email) AS business_email,
+                  u.phone,
+                  bp.phone AS business_phone,
+                  bp.physical_address,
+                  bp.physical_address AS business_address,
+                  bp.vat_number,
+                  CASE WHEN bp.business_name IS NOT NULL THEN 'business' ELSE 'individual' END AS client_type,
+                  NULL AS owner_name
+           FROM users u
+           LEFT JOIN business_profiles bp ON bp.user_id = u.id
+           WHERE u.role = 'user'
+           ORDER BY u.full_name ASC`,
           []
         )
       : await queryAll(
