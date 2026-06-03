@@ -1070,7 +1070,7 @@ adminRouter.delete("/franchises/:id", async (req, res) => {
   try {
     const f = await queryOne("SELECT owner_user_id FROM franchises WHERE id = ?", [req.params.id]);
     if (!f) return res.status(404).json({ error: "Franchise not found" });
-    await execute("UPDATE franchise_clients SET status = 'inactive' WHERE franchise_id = ?", [req.params.id]);
+    await execute("DELETE FROM franchise_clients WHERE franchise_id = ?", [req.params.id]);
     await execute("UPDATE users SET role = 'user' WHERE id = ?", [f.owner_user_id]);
     await execute("DELETE FROM franchises WHERE id = ?", [req.params.id]);
     res.json({ ok: true });

@@ -2239,7 +2239,12 @@ function AdminFranchises() {
 
   const deleteFranchise = async (f: any) => {
     if (!confirm(`Delete franchise "${f.name}"? The owner will be demoted to a regular user.`)) return;
-    await fetch(`/api/admin/franchises/${f.id}`, { method: "DELETE", credentials: "include" });
+    const res = await fetch(`/api/admin/franchises/${f.id}`, { method: "DELETE", credentials: "include" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || "Failed to delete franchise");
+      return;
+    }
     toast.success("Franchise deleted");
     if (selectedFranchise?.id === f.id) setSelectedFranchise(null);
     loadFranchises();
