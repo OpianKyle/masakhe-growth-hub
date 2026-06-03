@@ -608,24 +608,16 @@ authRouter.get("/google/callback", async (req, res) => {
         "INSERT INTO workspace_members (id, workspace_id, user_id, role, created_at) VALUES (?,?,?,?,?)",
         [randomUUID(), wsId, userId, "owner", now]
       );
-      const starterPlan = await queryOne("SELECT id FROM billing_plans WHERE code = 'starter' LIMIT 1");
-      if (starterPlan) {
-        const trialEnd = new Date(); trialEnd.setDate(trialEnd.getDate() + 14);
-        await execute(
-          `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
-           VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
-          [wsId, starterPlan.id, now, trialEnd.toISOString(), now, now]
-        );
-      }
       sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
       if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
-      user = { id: userId };
+      user = { id: userId, _isNew: true };
     }
 
     req.session.userId = user.id;
     const ctx = await loadActingContext(user.id);
     req.session.actingAsOwnerId = ctx.actingAsOwnerId;
-    req.session.save(() => res.redirect("/dashboard"));
+    const redirectTo = (user as any)._isNew ? "/dashboard/billing?welcome=1" : "/dashboard";
+    req.session.save(() => res.redirect(redirectTo));
   } catch (err: any) {
     console.error("Google OAuth error:", err.message);
     res.redirect(`/login?error=google_failed`);

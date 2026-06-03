@@ -98,8 +98,11 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      toast.success("Welcome to Masakhe! Pick a plan to start your free trial.");
-      navigate(promoCode ? `/dashboard/billing?promo=${encodeURIComponent(promoCode)}` : "/dashboard/billing");
+      navigate(
+        promoCode
+          ? `/dashboard/billing?welcome=1&promo=${encodeURIComponent(promoCode)}`
+          : "/dashboard/billing?welcome=1"
+      );
     } else {
       toast.error(result.error || "Registration failed");
     }

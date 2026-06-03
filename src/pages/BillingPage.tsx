@@ -1660,6 +1660,7 @@ export default function BillingPage() {
   }
 
   const { subscription, plan, invoices } = data || {};
+  const isNewSignup = searchParams.get("welcome") === "1";
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -1667,6 +1668,27 @@ export default function BillingPage() {
         <h2 className="text-2xl font-bold font-heading text-foreground">Billing</h2>
         <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
       </motion.div>
+
+      {isNewSignup && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-6 text-white shadow-lg"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+              <Sparkles className="h-7 w-7 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold font-heading">Welcome to Masakhe! 🎉</h3>
+              <p className="text-white/85 text-sm mt-1">
+                Your account is ready. Start your <strong>14-day free trial</strong> below — pick the plan that suits your business and get full access instantly. No credit card needed.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {invoiceInfo && (
         <InvoicePayForm invoice={invoiceInfo} onSuccess={fetchBilling} />
