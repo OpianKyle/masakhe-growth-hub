@@ -1062,15 +1062,16 @@ export default function InvoicesPage() {
 
       {/* List — hidden in designer tab */}
       {activeTab !== "designer" && <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-semibold">{activeTab === "quote" ? "Quote #" : "Invoice #"}</th>
               <th className="text-left p-3 font-semibold">Customer</th>
-              <th className="text-left p-3 font-semibold">Template</th>
-              <th className="text-left p-3 font-semibold">Items</th>
+              <th className="text-left p-3 font-semibold hidden sm:table-cell">Template</th>
+              <th className="text-left p-3 font-semibold hidden sm:table-cell">Items</th>
               <th className="text-right p-3 font-semibold">Total</th>
-              <th className="text-left p-3 font-semibold">Date</th>
+              <th className="text-left p-3 font-semibold hidden md:table-cell">Date</th>
               <th className="text-right p-3 font-semibold">Actions</th>
             </tr>
           </thead>
@@ -1089,13 +1090,13 @@ export default function InvoicesPage() {
                     <div className="font-medium">{inv.customer_name}</div>
                     {inv.customer_email && <div className="text-xs text-muted-foreground">{inv.customer_email}</div>}
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hidden sm:table-cell">
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-sm ${tpl.badgeBg}`} />
                       <span className="text-xs text-muted-foreground">{tpl.name}</span>
                     </div>
                   </td>
-                  <td className="p-3 text-muted-foreground">
+                  <td className="p-3 text-muted-foreground hidden sm:table-cell">
                     {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
                     {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
                   </td>
@@ -1107,7 +1108,7 @@ export default function InvoicesPage() {
                       </div>
                     ) : null}
                   </td>
-                  <td className="p-3 text-muted-foreground">
+                  <td className="p-3 text-muted-foreground hidden md:table-cell">
                     <div>{new Date(inv.created_at).toLocaleDateString("en-ZA")}</div>
                     {inv.type === "invoice" && (
                       inv.paid_at ? (
@@ -1206,6 +1207,7 @@ export default function InvoicesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>}
 
       {payLinkModal && (

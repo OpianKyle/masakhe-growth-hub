@@ -585,13 +585,14 @@ export default function PayrollPage() {
             </div>
           </div>
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-4 font-semibold">Employee</th>
-                  <th className="text-left p-4 font-semibold">Position</th>
+                  <th className="text-left p-4 font-semibold hidden sm:table-cell">Position</th>
                   <th className="text-left p-4 font-semibold">Basic Salary</th>
-                  <th className="text-left p-4 font-semibold">Employment</th>
+                  <th className="text-left p-4 font-semibold hidden md:table-cell">Employment</th>
                   <th className="text-left p-4 font-semibold">Status</th>
                   <th className="text-right p-4 font-semibold">Actions</th>
                 </tr>
@@ -610,12 +611,12 @@ export default function PayrollPage() {
                       <div className="font-medium">{emp.first_name} {emp.last_name}</div>
                       {emp.email && <div className="text-xs text-muted-foreground">{emp.email}</div>}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 hidden sm:table-cell">
                       <div>{emp.position || <span className="text-muted-foreground italic">—</span>}</div>
                       {emp.department && <div className="text-xs text-muted-foreground">{emp.department}</div>}
                     </td>
                     <td className="p-4 font-medium">{R(emp.basic_salary)}/mo</td>
-                    <td className="p-4">
+                    <td className="p-4 hidden md:table-cell">
                       <span className="text-xs bg-muted px-2 py-1 rounded capitalize">{emp.employment_type.replace("_", " ")}</span>
                     </td>
                     <td className="p-4">
@@ -637,13 +638,14 @@ export default function PayrollPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
 
       {tab === "run" && (
-        <div className="grid grid-cols-5 gap-6">
-          <div className="col-span-3 space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 space-y-5">
             <div className="rounded-xl border bg-card p-5 space-y-4">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Payroll Details</h3>
               <div>
@@ -727,7 +729,7 @@ export default function PayrollPage() {
             </div>
           </div>
 
-          <div className="col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             <div className="rounded-xl border bg-card p-5 sticky top-4">
               <h3 className="font-semibold mb-4 flex items-center gap-2"><Calculator className="h-4 w-4" />Calculation Preview</h3>
               {!runEmployeeId ? (

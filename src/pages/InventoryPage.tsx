@@ -318,7 +318,7 @@ function ProductsTab({ onChange }: { onChange: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -345,16 +345,17 @@ function ProductsTab({ onChange }: { onChange: () => void }) {
       </div>
 
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-semibold">Product</th>
-              <th className="text-left p-3 font-semibold">Category</th>
-              <th className="text-left p-3 font-semibold">Barcode / SKU</th>
+              <th className="text-left p-3 font-semibold hidden sm:table-cell">Category</th>
+              <th className="text-left p-3 font-semibold hidden md:table-cell">Barcode / SKU</th>
               <th className="text-right p-3 font-semibold">On hand</th>
-              <th className="text-right p-3 font-semibold">Cost</th>
+              <th className="text-right p-3 font-semibold hidden sm:table-cell">Cost</th>
               <th className="text-right p-3 font-semibold">Price</th>
-              <th className="text-right p-3 font-semibold">Value</th>
+              <th className="text-right p-3 font-semibold hidden sm:table-cell">Value</th>
               <th className="text-right p-3 font-semibold">Actions</th>
             </tr>
           </thead>
@@ -391,10 +392,10 @@ function ProductsTab({ onChange }: { onChange: () => void }) {
                       </div>
                     </div>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hidden sm:table-cell">
                     {p.category ? <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{p.category}</span> : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="p-3 text-xs">
+                  <td className="p-3 text-xs hidden md:table-cell">
                     {p.barcode && <div className="font-mono flex items-center gap-1"><Barcode className="h-3 w-3" />{p.barcode}</div>}
                     {p.sku && <div className="text-muted-foreground">SKU: {p.sku}</div>}
                     {!p.barcode && !p.sku && <span className="text-muted-foreground">—</span>}
@@ -431,6 +432,7 @@ function ProductsTab({ onChange }: { onChange: () => void }) {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {(creating || editing) && (
@@ -732,15 +734,16 @@ function StocktakeTab({ onChange }: { onChange: () => void }) {
       </div>
 
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[540px]">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-semibold">Session</th>
-              <th className="text-left p-3 font-semibold">Started</th>
+              <th className="text-left p-3 font-semibold hidden sm:table-cell">Started</th>
               <th className="text-left p-3 font-semibold">Status</th>
-              <th className="text-right p-3 font-semibold">Products</th>
-              <th className="text-right p-3 font-semibold">Units counted</th>
-              <th className="text-right p-3 font-semibold">Net variance</th>
+              <th className="text-right p-3 font-semibold hidden sm:table-cell">Products</th>
+              <th className="text-right p-3 font-semibold hidden md:table-cell">Units counted</th>
+              <th className="text-right p-3 font-semibold hidden md:table-cell">Net variance</th>
               <th className="text-right p-3 font-semibold"></th>
             </tr>
           </thead>
@@ -784,6 +787,7 @@ function StocktakeTab({ onChange }: { onChange: () => void }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Dialog open={creating} onOpenChange={(o) => { if (!o) setCreating(false); }}>
