@@ -342,18 +342,23 @@ function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail
   const TotalsBlock = ({ accent, boxBg }: { accent: string; boxBg: string | null }) => (
     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
       <div style={{ minWidth: 160, fontSize: 8.5 }}>
-        {vatEnabled && <>
-          <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 2 }}><span>Subtotal</span><span>R{subtotal.toFixed(2)}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 4 }}><span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span></div>
-          <div style={{ height: 0.5, background: "#ccc", marginBottom: 4 }} />
-        </>}
+        {vatEnabled && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 2 }}>
+              <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 0 }}>
+              <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
+            </div>
+          </>
+        )}
         {boxBg ? (
-          <div style={{ background: boxBg, padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ background: boxBg, padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: vatEnabled ? 6 : 0 }}>
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 8 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
             <span style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>R{total.toFixed(2)}</span>
           </div>
         ) : (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: vatEnabled ? "1px solid #ddd" : "none", paddingTop: vatEnabled ? 5 : 0, marginTop: vatEnabled ? 4 : 0 }}>
             <span style={{ color: "#333", fontWeight: 700, fontSize: 8.5 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
             <span style={{ color: accent, fontWeight: 800, fontSize: 14 }}>R{total.toFixed(2)}</span>
           </div>
@@ -362,9 +367,35 @@ function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail
     </div>
   );
 
+  const bankName = (user as any)?.bank_name || "";
+  const bankAccountName = (user as any)?.account_name || "";
+  const bankAccountType = (user as any)?.account_type || "";
+  const bankAccountNumber = (user as any)?.account_number || "";
+  const bankBranchCode = (user as any)?.branch_code || "";
+  const hasBankDetails = !!(bankName || bankAccountNumber);
+
   const FooterBlock = ({ accent }: { accent: string }) => (
-    <div style={{ marginTop: 10, paddingTop: 8, borderTop: "0.5px solid #e5e7eb", fontSize: 8 }}>
-      {notes && <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: "#888" }}>Notes: </span><span style={{ color: "#555" }}>{notes}</span></div>}
+    <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid #e5e7eb", fontSize: 8 }}>
+      {hasBankDetails && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ background: accent, padding: "4px 8px", display: "inline-block", marginBottom: 0 }}>
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: 7.5, letterSpacing: 0.5 }}>BANKING DETAILS</span>
+          </div>
+          <div style={{ background: "#f6f6f8", padding: "5px 8px" }}>
+            {bankName && <div style={{ display: "flex", gap: 8 }}><span style={{ color: "#888", fontWeight: 700, minWidth: 90 }}>Bank:</span><span style={{ color: "#222" }}>{bankName}</span></div>}
+            {bankAccountName && <div style={{ display: "flex", gap: 8 }}><span style={{ color: "#888", fontWeight: 700, minWidth: 90 }}>Account Name:</span><span style={{ color: "#222" }}>{bankAccountName}</span></div>}
+            {bankAccountType && <div style={{ display: "flex", gap: 8 }}><span style={{ color: "#888", fontWeight: 700, minWidth: 90 }}>Account Type:</span><span style={{ color: "#222" }}>{bankAccountType}</span></div>}
+            {bankAccountNumber && <div style={{ display: "flex", gap: 8 }}><span style={{ color: "#888", fontWeight: 700, minWidth: 90 }}>Acc Number:</span><span style={{ color: "#222" }}>{bankAccountNumber}</span></div>}
+            {bankBranchCode && <div style={{ display: "flex", gap: 8 }}><span style={{ color: "#888", fontWeight: 700, minWidth: 90 }}>Branch Code:</span><span style={{ color: "#222" }}>{bankBranchCode}</span></div>}
+          </div>
+        </div>
+      )}
+      {notes && (
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ fontWeight: 700, color: "#888" }}>Notes: </span>
+          <span style={{ color: "#555" }}>{notes}</span>
+        </div>
+      )}
       <div style={{ color: "#bbb", fontSize: 7, marginTop: 4 }}>
         {docType === "quote" ? "Thank you for the opportunity!" : "Thank you for your business!"}{" · "}
         <span>Generated by Masakhe SMME Growth Hub</span>
