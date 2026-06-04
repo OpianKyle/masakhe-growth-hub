@@ -205,7 +205,12 @@ function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | 
     rText(page, `R${(subtotalCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 20;
     page.drawText("VAT (15%):", { x: labelX, y, size: 9, font, color: grey });
     rText(page, `R${(vatCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 14;
-    page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: grey }); y -= 8;
+    // Only draw the separator for the plain (no-box) total style; skip it when a
+    // coloured box is used — it lands inside the box and cuts through the text.
+    if (!boxBg) {
+      page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: grey });
+    }
+    y -= 14; // increased gap so separator sits clearly above the total text
   }
 
   const totalStr = `R${(invoice.total_cents / 100).toFixed(2)}`;
@@ -252,13 +257,7 @@ function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
     }
   }
 
-  if (invoice.notes) {
-    page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
-    page.drawText(truncate(invoice.notes, 90), { x: 98, y, size: 9, font, color: black });
-    y -= 13;
-  }
-
-  // Banking details — styled card
+  // Banking details — styled card (before notes)
   if (!isQuote && (user?.bank_name || user?.account_number)) {
     y -= 8;
     const bankRows: Array<[string, string]> = [];
@@ -288,6 +287,14 @@ function drawFooter(ctx: TemplateCtx, y: number, accentColor: RGB) {
     });
 
     y -= headerH + bodyH + 4;
+  }
+
+  // Notes — shown after banking details
+  if (invoice.notes) {
+    y -= 4;
+    page.drawText("Notes:", { x: 50, y, size: 9, font: fontBold, color: grey });
+    page.drawText(truncate(invoice.notes, 90), { x: 98, y, size: 9, font, color: black });
+    y -= 13;
   }
 
   // Bottom thank-you + legal note pinned near page bottom
