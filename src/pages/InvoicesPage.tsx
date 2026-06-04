@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2 } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2, Eye } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 
 interface InvoiceItem {
@@ -230,6 +229,141 @@ const TEMPLATES = [
   },
 ];
 
+const TEMPLATE_STYLES: Record<number, { primary: string; headerBg: string; headerText: string; rowAlt: string }> = {
+  1: { primary: "#156C41", headerBg: "#156C41", headerText: "#fff", rowAlt: "#f0fdf4" },
+  2: { primary: "#173872", headerBg: "#173872", headerText: "#fff", rowAlt: "#eff6ff" },
+  3: { primary: "#D96508", headerBg: "#1e1e1e", headerText: "#fff", rowAlt: "#fff7ed" },
+  4: { primary: "#1E59B8", headerBg: "#1E59B8", headerText: "#fff", rowAlt: "#eff6ff" },
+  5: { primary: "#841212", headerBg: "#841212", headerText: "#fff", rowAlt: "#fff1f2" },
+  6: { primary: "#6B21B0", headerBg: "#6B21B0", headerText: "#fff", rowAlt: "#faf5ff" },
+  7: { primary: "#262626", headerBg: "#262626", headerText: "#fff", rowAlt: "#f9fafb" },
+  8: { primary: "#156C41", headerBg: "#156C41", headerText: "#fff", rowAlt: "#f0fdf4" },
+};
+
+interface InvoicePreviewProps {
+  docType: "invoice" | "quote";
+  selectedTemplate: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerVat: string;
+  paymentTerms: string;
+  dueDate: string;
+  notes: string;
+  items: InvoiceItem[];
+  vatEnabled: boolean;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+}
+
+function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail, customerPhone, customerAddress, customerVat, paymentTerms, dueDate, notes, items, vatEnabled, subtotal, vatAmount, total }: InvoicePreviewProps) {
+  const s = TEMPLATE_STYLES[selectedTemplate] || TEMPLATE_STYLES[1];
+  const today = new Date().toLocaleDateString("en-ZA");
+  const dueDateFormatted = dueDate ? new Date(dueDate + "T00:00:00").toLocaleDateString("en-ZA") : "";
+  const hasItems = items.some(i => i.name.trim());
+
+  return (
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden text-[10.5px] font-sans border border-gray-200 select-none">
+      {/* Header */}
+      <div style={{ background: s.headerBg, color: s.headerText, padding: "18px 22px" }}>
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <div className="text-[15px] font-bold tracking-tight opacity-95">Your Business</div>
+            <div className="opacity-60 mt-0.5 text-[10px]">your@email.com · +27 00 000 0000</div>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <div className="text-[18px] font-black tracking-widest opacity-90">{docType === "quote" ? "QUOTE" : "INVOICE"}</div>
+            <div className="opacity-70 text-[10px] mt-0.5">Auto-assigned on save</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bill To + Dates */}
+      <div className="flex justify-between gap-4 px-5 pt-4 pb-3">
+        <div className="flex-1 min-w-0">
+          <div style={{ color: s.primary }} className="text-[9px] font-bold uppercase tracking-widest mb-1">Bill To</div>
+          <div className="font-semibold text-gray-800 truncate">{customerName || <span className="text-gray-400 italic">Customer Name</span>}</div>
+          {customerEmail && <div className="text-gray-500 truncate">{customerEmail}</div>}
+          {customerPhone && <div className="text-gray-500">{customerPhone}</div>}
+          {customerAddress && <div className="text-gray-500">{customerAddress}</div>}
+          {customerVat && <div className="text-gray-400">VAT: {customerVat}</div>}
+        </div>
+        <div className="text-right flex-shrink-0 space-y-0.5">
+          <div className="text-gray-500">Date: <span className="text-gray-700 font-medium">{today}</span></div>
+          {docType === "invoice" && dueDateFormatted && (
+            <div className="text-gray-500">Due: <span className="text-gray-700 font-medium">{dueDateFormatted}</span></div>
+          )}
+          {docType === "quote" && paymentTerms && (
+            <div className="text-gray-500">Valid: <span className="text-gray-700 font-medium">{paymentTerms}</span></div>
+          )}
+        </div>
+      </div>
+
+      {/* Items Table */}
+      <div className="px-5 pb-3">
+        <table className="w-full">
+          <thead>
+            <tr style={{ background: s.primary, color: "#fff" }}>
+              <th className="text-left py-1.5 px-2.5 rounded-tl font-semibold">Description</th>
+              <th className="text-center py-1.5 px-2 font-semibold w-10">Qty</th>
+              <th className="text-right py-1.5 px-2 font-semibold w-20">Unit Price</th>
+              <th className="text-right py-1.5 px-2.5 rounded-tr font-semibold w-20">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {hasItems ? items.filter(i => i.name.trim()).map((item, idx) => (
+              <tr key={idx} style={{ background: idx % 2 === 0 ? s.rowAlt : "#fff" }}>
+                <td className="py-1.5 px-2.5 text-gray-700">{item.name}</td>
+                <td className="py-1.5 px-2 text-center text-gray-600">{item.qty}</td>
+                <td className="py-1.5 px-2 text-right text-gray-600">R{item.unitPrice.toFixed(2)}</td>
+                <td className="py-1.5 px-2.5 text-right font-medium text-gray-800">R{(item.qty * item.unitPrice).toFixed(2)}</td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={4} className="py-4 text-center text-gray-300 italic">Add line items to see them here…</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Totals */}
+      <div className="flex justify-end px-5 pb-3">
+        <div className="w-44 space-y-0.5">
+          <div className="flex justify-between text-gray-500">
+            <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
+          </div>
+          {vatEnabled && (
+            <div className="flex justify-between text-gray-500">
+              <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold border-t pt-1" style={{ color: s.primary }}>
+            <span>{vatEnabled ? "Total incl. VAT" : "Total"}</span>
+            <span>R{total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {notes && (
+        <div className="px-5 pb-4 border-t pt-2.5 mx-5 border-gray-100">
+          <div style={{ color: s.primary }} className="text-[9px] font-bold uppercase tracking-widest mb-1">Notes</div>
+          <div className="text-gray-600 whitespace-pre-wrap">{notes}</div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ background: s.headerBg, opacity: 0.08, height: 4 }} />
+      <div className="px-5 py-2.5 text-[9px] text-gray-400 text-center">
+        Generated by Masakhe SMME Growth Hub · masakheportal.co.za
+      </div>
+    </div>
+  );
+}
+
 export default function InvoicesPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "admin";
@@ -267,6 +401,7 @@ export default function InvoicesPage() {
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
   const [openItemDropdownIndex, setOpenItemDropdownIndex] = useState<number | null>(null);
+  const [showClientPicker, setShowClientPicker] = useState(false);
 
   const defaultDueDate = () => {
     const d = new Date();
@@ -750,23 +885,38 @@ export default function InvoicesPage() {
         </Card>
       )}
 
-      {/* Create / Edit Form */}
+      {/* Invoice Form Slide-out Drawer */}
       {(showCreate || editingId !== null) && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-          <Card className="p-6 border-primary/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">
-                {editingId
-                  ? `Edit ${docType === "quote" ? "Quote" : "Invoice"}`
-                  : `Create ${docType === "quote" ? "Quote" : "Invoice"}`}
-              </h3>
-              <Button variant="ghost" size="icon" onClick={resetForm}><X className="h-4 w-4" /></Button>
-            </div>
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={resetForm} />
 
-            {/* Template Selector */}
-            <div className="mb-6">
-              <Label className="text-xs mb-2 block">Choose Template</Label>
-              <div className="flex gap-3 flex-wrap">
+          {/* Drawer panel */}
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl shadow-2xl">
+
+            {/* ── LEFT: Form ── */}
+            <div className="flex flex-col w-full md:w-[55%] bg-background border-l overflow-hidden">
+
+              {/* Sticky header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b bg-background/95 backdrop-blur shrink-0">
+                <div>
+                  <h3 className="text-base font-bold leading-tight">
+                    {editingId
+                      ? `Edit ${docType === "quote" ? "Quote" : "Invoice"}`
+                      : `New ${docType === "quote" ? "Quote" : "Invoice"}`}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Preview updates live →</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={resetForm}><X className="h-4 w-4" /></Button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+                {/* Template Selector */}
+                <div>
+                  <Label className="text-xs mb-2 block font-semibold">Choose Template</Label>
+                  <div className="flex gap-2 flex-wrap">
                 {TEMPLATES.map((tpl) => {
                   const isCustom = tpl.id === 8;
                   const displayName = isCustom ? customTemplateName : tpl.name;
@@ -800,265 +950,302 @@ export default function InvoicesPage() {
                     </button>
                   );
                 })}
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            {/* Client Picker */}
-            {invoiceClients.length > 0 && (
-              <div className="mb-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
-                <Label className="text-sm font-semibold flex items-center gap-1.5 mb-3">
-                  <Users className="h-4 w-4 text-primary" />
-                  Select Client
-                </Label>
-
-                {selectedClientIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {selectedClientIds.map(id => {
-                      const c = invoiceClients.find(cl => cl.id === id);
-                      if (!c) return null;
-                      return (
-                        <span key={id} className="inline-flex items-center gap-1 bg-primary/15 text-primary text-xs font-medium px-2.5 py-1 rounded-full">
-                          <Building2 className="h-3 w-3" />
-                          {c.business_name || c.full_name}
-                          <button type="button" onClick={() => toggleClientSelection(id)} className="ml-0.5 hover:text-red-500 transition-colors">
-                            <X className="h-3 w-3" />
+                {/* Client Picker */}
+                {invoiceClients.length > 0 && (
+                  <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+                    <Label className="text-sm font-semibold flex items-center gap-1.5 mb-3">
+                      <Users className="h-4 w-4 text-primary" />
+                      Select Client
+                    </Label>
+                    {selectedClientIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {selectedClientIds.map(id => {
+                          const c = invoiceClients.find(cl => cl.id === id);
+                          if (!c) return null;
+                          return (
+                            <span key={id} className="inline-flex items-center gap-1 bg-primary/15 text-primary text-xs font-medium px-2.5 py-1 rounded-full">
+                              <Building2 className="h-3 w-3" />
+                              {c.business_name || c.full_name}
+                              <button type="button" onClick={() => toggleClientSelection(id)} className="ml-0.5 hover:text-red-500 transition-colors">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                        {selectedClientIds.length > 1 && (
+                          <p className="w-full text-xs text-amber-600 font-medium mt-1">
+                            {selectedClientIds.length} clients selected — a separate {docType} will be created for each.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="relative mb-2">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name, business or email..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-8 h-8 text-sm"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-0.5 rounded-md border border-border bg-background p-1">
+                      {filteredInvoiceClients.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-4">No clients found</p>
+                      ) : filteredInvoiceClients.map(c => {
+                        const selected = selectedClientIds.includes(c.id);
+                        const displayName = c.business_name || c.full_name;
+                        const initial = displayName.charAt(0).toUpperCase();
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => toggleClientSelection(c.id)}
+                            className={`w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-colors ${
+                              selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60"
+                            }`}
+                          >
+                            <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                              selected ? "bg-primary" : "bg-gradient-to-br from-gray-400 to-gray-500"
+                            }`}>
+                              {initial}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{c.full_name}</div>
+                              {c.business_name && c.business_name !== c.full_name && (
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                  <Building2 className="h-2.5 w-2.5" />{c.business_name}
+                                </div>
+                              )}
+                              {(c.business_email || c.email) && (
+                                <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
+                              )}
+                            </div>
+                            {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
                           </button>
-                        </span>
-                      );
-                    })}
-                    {selectedClientIds.length > 1 && (
-                      <p className="w-full text-xs text-amber-600 font-medium mt-1">
-                        {selectedClientIds.length} clients selected — a separate {docType} will be created for each.
-                      </p>
+                        );
+                      })}
+                    </div>
+                    {selectedClientIds.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-2">Or fill in customer details manually below.</p>
                     )}
                   </div>
                 )}
 
+                {/* Customer Fields */}
                 <div>
-                  <div className="relative mb-2">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name, business or email..."
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      className="pl-8 h-8 text-sm"
-                    />
+                  <Label className="text-xs mb-2 block font-semibold">Customer Details</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Name *{selectedClientIds.length > 1 ? " (auto-filled per client)" : ""}</Label>
+                      <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name" disabled={selectedClientIds.length > 1} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Email</Label>
+                        <Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="mt-1" placeholder="Optional" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Phone</Label>
+                        <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1" placeholder="Optional" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Address</Label>
+                        <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">VAT Number</Label>
+                        <Input value={customerVat} onChange={(e) => setCustomerVat(e.target.value)} className="mt-1" placeholder="Optional" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-0.5 rounded-md border border-border bg-background p-1">
-                    {filteredInvoiceClients.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">No clients found</p>
-                    ) : filteredInvoiceClients.map(c => {
-                      const selected = selectedClientIds.includes(c.id);
-                      const displayName = c.business_name || c.full_name;
-                      const initial = displayName.charAt(0).toUpperCase();
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => toggleClientSelection(c.id)}
-                          className={`w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-colors ${
-                            selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60"
-                          }`}
-                        >
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                            selected ? "bg-primary" : "bg-gradient-to-br from-gray-400 to-gray-500"
-                          }`}>
-                            {initial}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{c.full_name}</div>
-                            {c.business_name && c.business_name !== c.full_name && (
-                              <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                <Building2 className="h-2.5 w-2.5" />{c.business_name}
-                              </div>
-                            )}
-                            {(c.business_email || c.email) && (
-                              <div className="text-xs text-muted-foreground truncate">{c.business_email || c.email}</div>
-                            )}
-                            {c.owner_name && (
-                              <div className="text-xs text-blue-500 truncate">Owner: {c.owner_name}</div>
-                            )}
-                          </div>
-                          {selected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedClientIds.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-2">Select a client above or fill in customer details manually below.</p>
+                </div>
+
+                {/* Date / Terms */}
+                <div className="grid grid-cols-2 gap-3">
+                  {docType === "quote" ? (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Quote Valid For</Label>
+                      <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1" placeholder="e.g. 30 days" />
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Due Date</Label>
+                        <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Invoice Number</Label>
+                        {!editingId && invoices.filter((i) => i.type === "invoice").length === 0 ? (
+                          <>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={startingInvoiceNum}
+                              onChange={(e) => setStartingInvoiceNum(e.target.value)}
+                              className="mt-1"
+                              placeholder="e.g. 1001"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">First invoice — set your starting number.</p>
+                          </>
+                        ) : (
+                          <Input
+                            value={editingId ? (invoices.find(i => i.id === editingId)?.invoice_number ?? "Auto-assigned") : "Auto-assigned on save"}
+                            readOnly
+                            className="mt-1 bg-muted/50 text-muted-foreground cursor-default"
+                          />
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
-              </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <Label className="text-xs">Customer Name *{selectedClientIds.length > 1 ? " (auto-filled per client)" : ""}</Label>
-                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1" placeholder="Company or person name"
-                  disabled={selectedClientIds.length > 1} />
-              </div>
-              <div>
-                <Label className="text-xs">Customer Email</Label>
-                <Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="mt-1" placeholder="Optional" />
-              </div>
-              <div>
-                <Label className="text-xs">Customer Phone</Label>
-                <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1" placeholder="Optional" />
-              </div>
-              <div>
-                <Label className="text-xs">Customer Address</Label>
-                <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1" placeholder="Optional" />
-              </div>
-              <div>
-                <Label className="text-xs">Customer VAT Number</Label>
-                <Input value={customerVat} onChange={(e) => setCustomerVat(e.target.value)} className="mt-1" placeholder="Optional" />
-              </div>
-
-              {/* Due Date / Valid For + Invoice Number */}
-              {docType === "quote" ? (
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Quote Valid For</Label>
-                  <Input value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1 max-w-xs" placeholder="e.g. 30 days" />
+                {/* Line Items */}
+                <div>
+                  <Label className="text-xs mb-2 block font-semibold">Line Items</Label>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
+                      <div className="col-span-5">Item</div>
+                      <div className="col-span-2">Qty</div>
+                      <div className="col-span-2">Unit Price</div>
+                      <div className="col-span-2 text-right">Amount</div>
+                      <div className="col-span-1" />
+                    </div>
+                    {items.map((item, i) => (
+                      <div key={i} className="grid grid-cols-12 gap-2 items-center py-1.5 border-b border-dashed border-muted last:border-0">
+                        <div className="col-span-5 relative">
+                          <div className="flex gap-1">
+                            <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-8 text-sm flex-1" placeholder="Description" />
+                            {inventoryProducts.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                title="Pick from inventory"
+                                onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
+                              >
+                                <Package className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                          {openItemDropdownIndex === i && (
+                            <div className="absolute top-full left-0 right-0 z-[60] mt-1 bg-background border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                              {inventoryProducts.map(prod => (
+                                <button
+                                  key={prod.id}
+                                  type="button"
+                                  className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
+                                  onClick={() => selectInventoryProduct(i, prod)}
+                                >
+                                  <span className="truncate">{prod.name}{prod.sku ? <span className="text-muted-foreground ml-1 text-xs">({prod.sku})</span> : null}</span>
+                                  <span className="text-primary font-medium flex-shrink-0">R{(prod.price_cents / 100).toFixed(2)}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          <Input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 1)} className="h-8 text-sm" />
+                        </div>
+                        <div className="col-span-2">
+                          <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0.00" />
+                        </div>
+                        <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
+                        <div className="col-span-1 text-right">
+                          {items.length > 1 && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => removeItem(i)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={addItem} className="mt-3">
+                    <Plus className="h-3 w-3 mr-1" /> Add Item
+                  </Button>
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <Label className="text-xs">Due Date</Label>
-                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Invoice Number</Label>
-                    {!editingId && invoices.filter((i) => i.type === "invoice").length === 0 ? (
-                      <>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={startingInvoiceNum}
-                          onChange={(e) => setStartingInvoiceNum(e.target.value)}
-                          className="mt-1"
-                          placeholder="Starting number e.g. 1001"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">First invoice — set your starting number or leave blank for default.</p>
-                      </>
-                    ) : (
-                      <Input
-                        value={editingId ? (invoices.find(i => i.id === editingId)?.invoice_number ?? "Auto-assigned") : "Auto-assigned on save"}
-                        readOnly
-                        className="mt-1 bg-muted/50 text-muted-foreground cursor-default"
-                      />
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
-                <div className="col-span-5">Item</div>
-                <div className="col-span-2">Qty</div>
-                <div className="col-span-2">Unit Price (R)</div>
-                <div className="col-span-2 text-right">Amount</div>
-                <div className="col-span-1"></div>
-              </div>
-              {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-dashed border-muted last:border-0">
-                  <div className="col-span-5 relative">
-                    <div className="flex gap-1">
-                      <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-9 text-sm flex-1" placeholder="Item description" />
-                      {inventoryProducts.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 flex-shrink-0"
-                          title="Select from inventory"
-                          onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
-                        >
-                          <Package className="h-3.5 w-3.5" />
+                {/* Notes */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes / Additional Information</Label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[70px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Delivery instructions, payment reference, thank-you message…"
+                  />
+                </div>
+
+              </div>{/* end scrollable body */}
+
+              {/* Sticky footer — VAT toggle + totals + actions */}
+              <div className="border-t px-5 py-3 bg-background shrink-0">
+                <div className="flex items-center justify-between gap-4">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} className="rounded" />
+                    <span>Include VAT (15%)</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right text-sm leading-tight">
+                      {vatEnabled && (
+                        <div className="text-muted-foreground text-xs">Subtotal R{subtotal.toFixed(2)} + VAT R{vatAmount.toFixed(2)}</div>
+                      )}
+                      <div className="font-bold text-primary">Total R{total.toFixed(2)}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
+                      {editingId ? (
+                        <Button size="sm" onClick={handleUpdate} className="gradient-hero text-white">Save Changes</Button>
+                      ) : (
+                        <Button size="sm" onClick={handleCreate} className="gradient-hero text-white">
+                          Create {docType === "quote" ? "Quote" : "Invoice"}
                         </Button>
                       )}
                     </div>
-                    {openItemDropdownIndex === i && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-52 overflow-y-auto">
-                        {inventoryProducts.map(prod => (
-                          <button
-                            key={prod.id}
-                            type="button"
-                            className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
-                            onClick={() => selectInventoryProduct(i, prod)}
-                          >
-                            <span className="truncate">{prod.name}{prod.sku ? <span className="text-muted-foreground ml-1 text-xs">({prod.sku})</span> : null}</span>
-                            <span className="text-primary font-medium flex-shrink-0">R{(prod.price_cents / 100).toFixed(2)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                  <div className="col-span-2">
-                    <Input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 1)} className="h-9 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-9 text-sm" placeholder="0.00" />
-                  </div>
-                  <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
-                  <div className="col-span-1 text-right">
-                    {items.length > 1 && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => removeItem(i)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Button variant="outline" size="sm" onClick={addItem} className="mb-4">
-              <Plus className="h-3 w-3 mr-1" /> Add Item
-            </Button>
-
-            <div className="mb-4">
-              <Label className="text-xs">Notes / Additional Information</Label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="e.g. delivery instructions, payment reference, thank-you message..."
-              />
-            </div>
-
-            <div className="border-t pt-4 flex flex-col items-end gap-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer mb-2 self-start">
-                <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} className="rounded" />
-                <span>Include VAT (15%)</span>
-              </label>
-              <div className="w-full max-w-xs space-y-1 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
-                </div>
-                {vatEnabled && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-base border-t pt-1">
-                  <span>{vatEnabled ? "Total (incl. VAT)" : "Total"}</span>
-                  <span className="text-primary">R{total.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                <Button variant="ghost" onClick={resetForm}>Cancel</Button>
-                {editingId ? (
-                  <Button onClick={handleUpdate} className="gradient-hero text-white">Save Changes</Button>
-                ) : (
-                  <Button onClick={handleCreate} className="gradient-hero text-white">
-                    Create {docType === "quote" ? "Quote" : "Invoice"}
-                  </Button>
-                )}
+            </div>{/* end left form panel */}
+
+            {/* ── RIGHT: Live Preview ── */}
+            <div className="hidden md:flex flex-col w-[45%] bg-muted/10 border-l overflow-hidden">
+              <div className="px-5 py-3.5 border-b bg-background/80 backdrop-blur shrink-0 flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold leading-tight">Live Preview</p>
+                  <p className="text-xs text-muted-foreground">Updates as you type</p>
+                </div>
               </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
+              <div className="flex-1 overflow-y-auto p-5">
+                <InvoicePreview
+                  docType={docType}
+                  selectedTemplate={selectedTemplate}
+                  customerName={customerName}
+                  customerEmail={customerEmail}
+                  customerPhone={customerPhone}
+                  customerAddress={customerAddress}
+                  customerVat={customerVat}
+                  paymentTerms={paymentTerms}
+                  dueDate={dueDate}
+                  notes={notes}
+                  items={items}
+                  vatEnabled={vatEnabled}
+                  subtotal={subtotal}
+                  vatAmount={vatAmount}
+                  total={total}
+                />
+              </div>
+            </div>{/* end right preview panel */}
+
+          </div>{/* end drawer panel */}
+        </>
+      )}{/* end slide-out drawer */}
 
       {/* List — hidden in designer tab */}
       {activeTab !== "designer" && <Card className="overflow-hidden">
