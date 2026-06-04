@@ -1162,7 +1162,7 @@ export default function InvoicesPage() {
           <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={resetForm} />
 
           {/* Drawer panel */}
-          <div className="fixed top-4 bottom-0 right-0 z-50 flex w-full max-w-[96vw] shadow-2xl rounded-tl-2xl overflow-hidden">
+          <div className="fixed top-4 bottom-4 right-4 z-50 flex w-full max-w-[96vw] shadow-2xl rounded-2xl overflow-hidden">
 
             {/* ── LEFT: Form ── */}
             <div className="flex flex-col w-full md:w-[55%] bg-background border-l overflow-hidden">
@@ -1181,7 +1181,7 @@ export default function InvoicesPage() {
               </div>
 
               {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
                 {/* Template Selector */}
                 <div>
@@ -1455,8 +1455,8 @@ export default function InvoicesPage() {
               </div>{/* end scrollable body */}
 
               {/* Sticky footer — VAT toggle + totals + actions */}
-              <div className="border-t px-5 py-3 bg-background shrink-0">
-                <div className="flex items-center justify-between gap-4">
+              <div className="border-t px-6 py-4 pb-5 bg-background shrink-0">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                     <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} className="rounded" />
                     <span>Include VAT (15%)</span>
@@ -1485,14 +1485,14 @@ export default function InvoicesPage() {
 
             {/* ── RIGHT: Live Preview ── */}
             <div className="hidden md:flex flex-col w-[45%] bg-muted/10 border-l overflow-hidden">
-              <div className="px-5 py-3.5 border-b bg-background/80 backdrop-blur shrink-0 flex items-center gap-2">
+              <div className="px-6 py-4 border-b bg-background/80 backdrop-blur shrink-0 flex items-center gap-2">
                 <Eye className="h-4 w-4 text-primary" />
                 <div>
                   <p className="text-sm font-semibold leading-tight">Live Preview</p>
                   <p className="text-xs text-muted-foreground">Updates as you type</p>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex-1 overflow-y-auto p-6 pb-8">
                 <InvoicePreview
                   docType={docType}
                   selectedTemplate={selectedTemplate}
