@@ -892,7 +892,7 @@ export default function InvoicesPage() {
           <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={resetForm} />
 
           {/* Drawer panel */}
-          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl shadow-2xl">
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-7xl shadow-2xl">
 
             {/* ── LEFT: Form ── */}
             <div className="flex flex-col w-full md:w-[55%] bg-background border-l overflow-hidden">
