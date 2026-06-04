@@ -1162,13 +1162,13 @@ export default function InvoicesPage() {
           <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={resetForm} />
 
           {/* Drawer panel */}
-          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-7xl shadow-2xl">
+          <div className="fixed top-4 bottom-0 right-0 z-50 flex w-full max-w-[96vw] shadow-2xl rounded-tl-2xl overflow-hidden">
 
             {/* ── LEFT: Form ── */}
             <div className="flex flex-col w-full md:w-[55%] bg-background border-l overflow-hidden">
 
               {/* Sticky header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b bg-background/95 backdrop-blur shrink-0">
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b bg-background/95 backdrop-blur shrink-0">
                 <div>
                   <h3 className="text-base font-bold leading-tight">
                     {editingId
