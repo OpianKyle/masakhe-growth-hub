@@ -259,106 +259,345 @@ interface InvoicePreviewProps {
 }
 
 function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail, customerPhone, customerAddress, customerVat, paymentTerms, dueDate, notes, items, vatEnabled, subtotal, vatAmount, total }: InvoicePreviewProps) {
+  const { user } = useAuth();
   const s = TEMPLATE_STYLES[selectedTemplate] || TEMPLATE_STYLES[1];
   const today = new Date().toLocaleDateString("en-ZA");
   const dueDateFormatted = dueDate ? new Date(dueDate + "T00:00:00").toLocaleDateString("en-ZA") : "";
-  const hasItems = items.some(i => i.name.trim());
+  const validItems = items.filter(i => i.name.trim());
+  const t = selectedTemplate;
 
+  const bizName = user?.business_name || user?.full_name || "Your Business";
+  const bizEmail = user?.email || "";
+  const bizPhone = (user as any)?.phone || "";
+  const bizAddress = (user as any)?.physical_address || "";
+  const bizVat = (user as any)?.vat_number || "";
+  const bizReg = (user as any)?.registration_number || "";
+
+  const docTitle = docType === "quote" ? "QUOTE" : "TAX INVOICE";
+
+  const P = s.primary; // accent hex
+
+  // ─── Shared sub-renderers ─────────────────────────────────────────────────
+
+  const BizBlock = ({ nameColor, subColor }: { nameColor: string; subColor: string }) => (
+    <div>
+      <div style={{ color: nameColor, fontWeight: 800, fontSize: 13, lineHeight: 1.2 }}>{bizName}</div>
+      {bizAddress && <div style={{ color: subColor, fontSize: 8, marginTop: 1 }}>{bizAddress}</div>}
+      {bizPhone && <div style={{ color: subColor, fontSize: 8 }}>Tel: {bizPhone}</div>}
+      {bizEmail && <div style={{ color: subColor, fontSize: 8 }}>{bizEmail}</div>}
+      {bizVat && <div style={{ color: subColor, fontSize: 8 }}>VAT: {bizVat}</div>}
+      {bizReg && <div style={{ color: subColor, fontSize: 8 }}>Reg: {bizReg}</div>}
+    </div>
+  );
+
+  const CustBlock = ({ accentColor }: { accentColor: string }) => (
+    <div>
+      <div style={{ color: accentColor, fontSize: 7.5, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 2 }}>
+        {docType === "quote" ? "Quote For:" : "Bill To:"}
+      </div>
+      <div style={{ fontWeight: 700, fontSize: 10, color: "#111" }}>
+        {customerName || <span style={{ color: "#bbb", fontStyle: "italic" }}>Customer Name</span>}
+      </div>
+      {customerEmail && <div style={{ color: "#666", fontSize: 8 }}>{customerEmail}</div>}
+      {customerPhone && <div style={{ color: "#666", fontSize: 8 }}>Tel: {customerPhone}</div>}
+      {customerAddress && <div style={{ color: "#666", fontSize: 8 }}>{customerAddress}</div>}
+      {customerVat && <div style={{ color: "#888", fontSize: 8 }}>VAT: {customerVat}</div>}
+    </div>
+  );
+
+  const MetaRow = ({ accent }: { accent: string }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8.5, color: "#444", flexWrap: "wrap" as const, gap: 4 }}>
+      <div><span style={{ color: "#999" }}>{docType === "quote" ? "Quote No:" : "Invoice No:"}</span>{" "}<span style={{ fontWeight: 700 }}>Auto-assigned</span></div>
+      {docType === "invoice" && dueDateFormatted && <div><span style={{ color: "#999" }}>Due Date:</span>{" "}<span style={{ fontWeight: 700 }}>{dueDateFormatted}</span></div>}
+      {docType === "quote" && paymentTerms && <div><span style={{ color: "#999" }}>Valid For:</span>{" "}<span style={{ fontWeight: 700 }}>{paymentTerms}</span></div>}
+      <div><span style={{ color: "#999" }}>Date:</span>{" "}<span style={{ fontWeight: 600 }}>{today}</span></div>
+    </div>
+  );
+
+  const ItemsTable = ({ headerBg, headerText, altBg, noBgHeader }: { headerBg: string; headerText: string; altBg: string | null; noBgHeader?: boolean }) => (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
+      <thead>
+        <tr style={noBgHeader ? { borderBottom: `1.5px solid ${headerBg}` } : { background: headerBg }}>
+          <th style={{ textAlign: "left", padding: noBgHeader ? "4px 0" : "5px 6px", color: headerText, fontWeight: 700 }}>Description</th>
+          <th style={{ textAlign: "center", padding: noBgHeader ? "4px 0" : "5px 4px", color: headerText, fontWeight: 700, width: 30 }}>Qty</th>
+          <th style={{ textAlign: "right", padding: noBgHeader ? "4px 0" : "5px 4px", color: headerText, fontWeight: 700, width: 64 }}>Unit Price</th>
+          <th style={{ textAlign: "right", padding: noBgHeader ? "4px 0" : "5px 6px", color: headerText, fontWeight: 700, width: 64 }}>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {validItems.length > 0 ? validItems.map((item, idx) => (
+          <tr key={idx} style={{ background: altBg && idx % 2 === 1 ? altBg : "#fff", borderBottom: "0.5px solid #eee" }}>
+            <td style={{ padding: noBgHeader ? "4px 0" : "4px 6px", color: "#222" }}>{item.name}</td>
+            <td style={{ padding: noBgHeader ? "4px 0" : "4px 4px", textAlign: "center", color: "#555" }}>{item.qty}</td>
+            <td style={{ padding: noBgHeader ? "4px 0" : "4px 4px", textAlign: "right", color: "#555" }}>R{item.unitPrice.toFixed(2)}</td>
+            <td style={{ padding: noBgHeader ? "4px 0" : "4px 6px", textAlign: "right", fontWeight: 600, color: "#111" }}>R{(item.qty * item.unitPrice).toFixed(2)}</td>
+          </tr>
+        )) : (
+          <tr><td colSpan={4} style={{ padding: "12px 6px", textAlign: "center", color: "#ccc", fontStyle: "italic", fontSize: 8 }}>Add line items to see them here…</td></tr>
+        )}
+      </tbody>
+    </table>
+  );
+
+  const TotalsBlock = ({ accent, boxBg }: { accent: string; boxBg: string | null }) => (
+    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+      <div style={{ minWidth: 160, fontSize: 8.5 }}>
+        {vatEnabled && <>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 2 }}><span>Subtotal</span><span>R{subtotal.toFixed(2)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 4 }}><span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span></div>
+          <div style={{ height: 0.5, background: "#ccc", marginBottom: 4 }} />
+        </>}
+        {boxBg ? (
+          <div style={{ background: boxBg, padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: 8 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
+            <span style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>R{total.toFixed(2)}</span>
+          </div>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span style={{ color: "#333", fontWeight: 700, fontSize: 8.5 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
+            <span style={{ color: accent, fontWeight: 800, fontSize: 14 }}>R{total.toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const FooterBlock = ({ accent }: { accent: string }) => (
+    <div style={{ marginTop: 10, paddingTop: 8, borderTop: "0.5px solid #e5e7eb", fontSize: 8 }}>
+      {notes && <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: "#888" }}>Notes: </span><span style={{ color: "#555" }}>{notes}</span></div>}
+      <div style={{ color: "#bbb", fontSize: 7, marginTop: 4 }}>
+        {docType === "quote" ? "Thank you for the opportunity!" : "Thank you for your business!"}{" · "}
+        <span>Generated by Masakhe SMME Growth Hub</span>
+      </div>
+    </div>
+  );
+
+  const base: React.CSSProperties = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden", fontFamily: "Arial, Helvetica, sans-serif", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", userSelect: "none" };
+
+  // ─── Template 1 — Classic (Green left stripe) ────────────────────────────
+  if (t === 1 || t === 8) {
+    return (
+      <div style={{ ...base, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 5, background: P }} />
+        <div style={{ paddingLeft: 14, paddingRight: 12, paddingTop: 12, paddingBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+            <BizBlock nameColor={P} subColor="#888" />
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ color: P, fontWeight: 900, fontSize: 18, letterSpacing: 1 }}>{docTitle}</div>
+              <div style={{ color: "#aaa", fontSize: 7.5 }}>{today}</div>
+            </div>
+          </div>
+          <div style={{ height: 1.5, background: P, marginBottom: 8 }} />
+          <div style={{ marginBottom: 8 }}><MetaRow accent={P} /></div>
+          <div style={{ marginBottom: 8 }}><CustBlock accentColor={P} /></div>
+          <ItemsTable headerBg={P} headerText="#fff" altBg={s.rowAlt} />
+          <TotalsBlock accent={P} boxBg={P} />
+          <FooterBlock accent={P} />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 2 — Modern (Navy box top-right) ────────────────────────────
+  if (t === 2) {
+    return (
+      <div style={base}>
+        <div style={{ padding: "12px 14px", position: "relative", minHeight: 88 }}>
+          <div style={{ position: "absolute", top: 0, right: 0, background: P, padding: "10px 12px", minWidth: 130, minHeight: 80 }}>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 12, marginBottom: 3 }}>{docTitle}</div>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8 }}>Auto-assigned</div>
+            {docType === "invoice" && dueDateFormatted && <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, marginTop: 2 }}>Due: <span style={{ color: "#fff", fontWeight: 600 }}>{dueDateFormatted}</span></div>}
+            {docType === "quote" && paymentTerms && <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, marginTop: 2 }}>Valid: <span style={{ color: "#fff", fontWeight: 600 }}>{paymentTerms}</span></div>}
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 7.5, marginTop: 3 }}>{today}</div>
+          </div>
+          <div style={{ maxWidth: "57%", paddingRight: 8 }}>
+            <div style={{ color: P, fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>{bizName}</div>
+            {bizAddress && <div style={{ color: "#888", fontSize: 8 }}>{bizAddress}</div>}
+            {bizPhone && <div style={{ color: "#888", fontSize: 8 }}>Tel: {bizPhone}</div>}
+            {bizEmail && <div style={{ color: "#888", fontSize: 8 }}>{bizEmail}</div>}
+            {bizVat && <div style={{ color: "#999", fontSize: 8 }}>VAT: {bizVat}</div>}
+          </div>
+        </div>
+        <div style={{ height: 2.5, background: P, margin: "0 14px" }} />
+        <div style={{ padding: "10px 14px 12px" }}>
+          <div style={{ background: s.rowAlt, padding: "8px 10px", maxWidth: "55%", marginBottom: 10, borderRadius: 2 }}>
+            <div style={{ color: P, fontWeight: 700, fontSize: 7.5, textTransform: "uppercase" as const, marginBottom: 3 }}>{docType === "quote" ? "Quote For" : "Bill To"}</div>
+            <div style={{ fontWeight: 700, fontSize: 10, color: "#111" }}>{customerName || <span style={{ color: "#bbb", fontStyle: "italic" }}>Customer Name</span>}</div>
+            {customerEmail && <div style={{ color: "#666", fontSize: 8 }}>{customerEmail}</div>}
+            {customerPhone && <div style={{ color: "#666", fontSize: 8 }}>Tel: {customerPhone}</div>}
+            {customerAddress && <div style={{ color: "#666", fontSize: 8 }}>{customerAddress}</div>}
+          </div>
+          <ItemsTable headerBg={P} headerText="#fff" altBg={s.rowAlt} />
+          <TotalsBlock accent={P} boxBg={null} />
+          <FooterBlock accent={P} />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 3 — Bold (Dark header + orange stripe) ─────────────────────
+  if (t === 3) {
+    const dark = "#1e1e1e";
+    return (
+      <div style={base}>
+        <div style={{ background: dark, padding: "12px 14px", position: "relative" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <BizBlock nameColor="#fff" subColor="rgba(255,255,255,0.5)" />
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ color: P, fontWeight: 900, fontSize: 22, letterSpacing: 1, lineHeight: 1 }}>{docType === "quote" ? "QUOTE" : "INVOICE"}</div>
+              <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 7.5, marginTop: 3 }}>Auto-assigned</div>
+              {docType === "invoice" && dueDateFormatted && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 7.5 }}>Due: {dueDateFormatted}</div>}
+              {docType === "quote" && paymentTerms && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 7.5 }}>Valid: {paymentTerms}</div>}
+            </div>
+          </div>
+        </div>
+        <div style={{ height: 5, background: P }} />
+        <div style={{ padding: "10px 14px 12px" }}>
+          <div style={{ marginBottom: 8 }}><CustBlock accentColor={P} /></div>
+          <ItemsTable headerBg={dark} headerText="#fff" altBg="#fff7ed" />
+          <TotalsBlock accent={P} boxBg={P} />
+          <FooterBlock accent={P} />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 4 — Corporate (Blue header, two side-by-side boxes) ─────────
+  if (t === 4) {
+    return (
+      <div style={base}>
+        <div style={{ background: P, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <BizBlock nameColor="#fff" subColor="rgba(255,255,255,0.6)" />
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{docTitle}</div>
+        </div>
+        <div style={{ display: "flex", gap: 5, padding: "10px 14px 6px" }}>
+          <div style={{ flex: 1, background: s.rowAlt, borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ background: P, padding: "4px 8px" }}><span style={{ color: "#fff", fontWeight: 700, fontSize: 7.5 }}>{docType === "quote" ? "QUOTE FOR" : "BILL TO"}</span></div>
+            <div style={{ padding: "6px 8px" }}>
+              <div style={{ fontWeight: 700, fontSize: 10, color: "#111" }}>{customerName || <span style={{ color: "#bbb", fontStyle: "italic" }}>Customer Name</span>}</div>
+              {customerEmail && <div style={{ color: "#666", fontSize: 8 }}>{customerEmail}</div>}
+              {customerPhone && <div style={{ color: "#666", fontSize: 8 }}>Tel: {customerPhone}</div>}
+              {customerAddress && <div style={{ color: "#666", fontSize: 8 }}>{customerAddress}</div>}
+            </div>
+          </div>
+          <div style={{ flex: 1, background: s.rowAlt, borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ background: P, padding: "4px 8px" }}><span style={{ color: "#fff", fontWeight: 700, fontSize: 7.5 }}>{docType === "quote" ? "QUOTE DETAILS" : "INVOICE DETAILS"}</span></div>
+            <div style={{ padding: "6px 8px", fontSize: 8 }}>
+              <div><span style={{ color: "#666" }}>{docType === "quote" ? "Quote No:" : "Invoice No:"}</span>{" "}<span style={{ fontWeight: 700 }}>Auto-assigned</span></div>
+              <div style={{ marginTop: 2 }}><span style={{ color: "#666" }}>Date:</span>{" "}<span style={{ fontWeight: 600 }}>{today}</span></div>
+              {docType === "invoice" && dueDateFormatted && <div style={{ marginTop: 2 }}><span style={{ color: "#666" }}>Due Date:</span>{" "}<span style={{ fontWeight: 600 }}>{dueDateFormatted}</span></div>}
+              {docType === "quote" && paymentTerms && <div style={{ marginTop: 2 }}><span style={{ color: "#666" }}>Valid For:</span>{" "}<span style={{ fontWeight: 600 }}>{paymentTerms}</span></div>}
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: "4px 14px 12px" }}>
+          <ItemsTable headerBg={P} headerText="#fff" altBg={s.rowAlt} />
+          <TotalsBlock accent={P} boxBg={P} />
+          <FooterBlock accent={P} />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 5 — Elegant (Burgundy, centered header, no-fill table) ──────
+  if (t === 5) {
+    return (
+      <div style={base}>
+        <div style={{ height: 4, background: P }} />
+        <div style={{ height: 1.5, background: P, marginBottom: 10 }} />
+        <div style={{ padding: "6px 14px 12px" }}>
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <div style={{ color: P, fontWeight: 800, fontSize: 16 }}>{bizName}</div>
+            {(bizPhone || bizEmail || bizAddress) && (
+              <div style={{ color: "#888", fontSize: 8, marginTop: 3 }}>
+                {[bizPhone && `Tel: ${bizPhone}`, bizEmail, bizAddress].filter(Boolean).join("  |  ")}
+              </div>
+            )}
+            {bizVat && <div style={{ color: "#999", fontSize: 8 }}>VAT No: {bizVat}</div>}
+          </div>
+          <div style={{ height: 1, background: P, marginBottom: 1.5 }} />
+          <div style={{ height: 1, background: P, marginBottom: 8 }} />
+          <div style={{ textAlign: "center", color: P, fontWeight: 800, fontSize: 11, letterSpacing: 4, marginBottom: 8 }}>
+            {docType === "quote" ? "Q U O T E" : "T A X   I N V O I C E"}
+          </div>
+          <div style={{ marginBottom: 8 }}><MetaRow accent={P} /></div>
+          <div style={{ borderTop: "1px dashed #ddd", marginBottom: 8 }} />
+          <div style={{ marginBottom: 8 }}><CustBlock accentColor={P} /></div>
+          <ItemsTable headerBg={P} headerText={P} altBg={s.rowAlt} noBgHeader />
+          <TotalsBlock accent={P} boxBg={null} />
+          <FooterBlock accent={P} />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 6 — Vibrant (Purple layered header, left sidebar) ───────────
+  if (t === 6) {
+    return (
+      <div style={{ ...base, position: "relative" }}>
+        <div style={{ background: P, padding: "12px 14px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "55%", background: "rgba(255,255,255,0.07)" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
+            <BizBlock nameColor="#fff" subColor="rgba(255,255,255,0.55)" />
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ color: "#fff", fontWeight: 900, fontSize: 20, letterSpacing: 1 }}>{docType === "quote" ? "QUOTE" : "INVOICE"}</div>
+              <div style={{ display: "inline-block", background: "rgba(0,0,0,0.3)", padding: "2px 8px", marginTop: 2 }}>
+                <span style={{ color: "#fff", fontWeight: 700, fontSize: 8 }}>Auto-assigned</span>
+              </div>
+              {docType === "invoice" && dueDateFormatted && <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 7.5, marginTop: 2 }}>Due: {dueDateFormatted}</div>}
+              {docType === "quote" && paymentTerms && <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 7.5, marginTop: 2 }}>Valid: {paymentTerms}</div>}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex" }}>
+          <div style={{ width: 5, background: P, flexShrink: 0 }} />
+          <div style={{ flex: 1, padding: "10px 12px 12px" }}>
+            <div style={{ marginBottom: 8 }}><CustBlock accentColor={P} /></div>
+            <ItemsTable headerBg={P} headerText="#fff" altBg={s.rowAlt} />
+            <TotalsBlock accent={P} boxBg={P} />
+            <FooterBlock accent={P} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Template 7 — Plain (Black & white, professional) ────────────────────
+  const darkGrey = "#1a1a1a";
   return (
-    <div className="bg-white rounded-lg shadow-xl overflow-hidden text-[10.5px] font-sans border border-gray-200 select-none">
-      {/* Header */}
-      <div style={{ background: s.headerBg, color: s.headerText, padding: "18px 22px" }}>
-        <div className="flex justify-between items-start gap-4">
-          <div>
-            <div className="text-[15px] font-bold tracking-tight opacity-95">Your Business</div>
-            <div className="opacity-60 mt-0.5 text-[10px]">your@email.com · +27 00 000 0000</div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-[18px] font-black tracking-widest opacity-90">{docType === "quote" ? "QUOTE" : "INVOICE"}</div>
-            <div className="opacity-70 text-[10px] mt-0.5">Auto-assigned on save</div>
-          </div>
+    <div style={base}>
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+          <BizBlock nameColor={darkGrey} subColor="#888" />
+          <div style={{ color: darkGrey, fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{docTitle}</div>
         </div>
-      </div>
-
-      {/* Bill To + Dates */}
-      <div className="flex justify-between gap-4 px-5 pt-4 pb-3">
-        <div className="flex-1 min-w-0">
-          <div style={{ color: s.primary }} className="text-[9px] font-bold uppercase tracking-widest mb-1">Bill To</div>
-          <div className="font-semibold text-gray-800 truncate">{customerName || <span className="text-gray-400 italic">Customer Name</span>}</div>
-          {customerEmail && <div className="text-gray-500 truncate">{customerEmail}</div>}
-          {customerPhone && <div className="text-gray-500">{customerPhone}</div>}
-          {customerAddress && <div className="text-gray-500">{customerAddress}</div>}
-          {customerVat && <div className="text-gray-400">VAT: {customerVat}</div>}
-        </div>
-        <div className="text-right flex-shrink-0 space-y-0.5">
-          <div className="text-gray-500">Date: <span className="text-gray-700 font-medium">{today}</span></div>
-          {docType === "invoice" && dueDateFormatted && (
-            <div className="text-gray-500">Due: <span className="text-gray-700 font-medium">{dueDateFormatted}</span></div>
-          )}
-          {docType === "quote" && paymentTerms && (
-            <div className="text-gray-500">Valid: <span className="text-gray-700 font-medium">{paymentTerms}</span></div>
-          )}
-        </div>
-      </div>
-
-      {/* Items Table */}
-      <div className="px-5 pb-3">
-        <table className="w-full">
+        <div style={{ height: 2, background: darkGrey, marginBottom: 8 }} />
+        <div style={{ marginBottom: 8 }}><MetaRow accent={darkGrey} /></div>
+        <div style={{ marginBottom: 8 }}><CustBlock accentColor={darkGrey} /></div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
           <thead>
-            <tr style={{ background: s.primary, color: "#fff" }}>
-              <th className="text-left py-1.5 px-2.5 rounded-tl font-semibold">Description</th>
-              <th className="text-center py-1.5 px-2 font-semibold w-10">Qty</th>
-              <th className="text-right py-1.5 px-2 font-semibold w-20">Unit Price</th>
-              <th className="text-right py-1.5 px-2.5 rounded-tr font-semibold w-20">Amount</th>
+            <tr style={{ borderBottom: `2px solid ${darkGrey}` }}>
+              <th style={{ textAlign: "left", padding: "4px 4px", color: darkGrey, fontWeight: 700 }}>Description</th>
+              <th style={{ textAlign: "center", padding: "4px 4px", color: darkGrey, fontWeight: 700, width: 30 }}>Qty</th>
+              <th style={{ textAlign: "right", padding: "4px 4px", color: darkGrey, fontWeight: 700, width: 64 }}>Unit Price</th>
+              <th style={{ textAlign: "right", padding: "4px 4px", color: darkGrey, fontWeight: 700, width: 64 }}>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {hasItems ? items.filter(i => i.name.trim()).map((item, idx) => (
-              <tr key={idx} style={{ background: idx % 2 === 0 ? s.rowAlt : "#fff" }}>
-                <td className="py-1.5 px-2.5 text-gray-700">{item.name}</td>
-                <td className="py-1.5 px-2 text-center text-gray-600">{item.qty}</td>
-                <td className="py-1.5 px-2 text-right text-gray-600">R{item.unitPrice.toFixed(2)}</td>
-                <td className="py-1.5 px-2.5 text-right font-medium text-gray-800">R{(item.qty * item.unitPrice).toFixed(2)}</td>
+            {validItems.length > 0 ? validItems.map((item, idx) => (
+              <tr key={idx} style={{ background: idx % 2 === 1 ? "#f4f4f5" : "#fff", borderBottom: "0.5px solid #e5e7eb" }}>
+                <td style={{ padding: "4px", color: "#222" }}>{item.name}</td>
+                <td style={{ padding: "4px", textAlign: "center", color: "#555" }}>{item.qty}</td>
+                <td style={{ padding: "4px", textAlign: "right", color: "#555" }}>R{item.unitPrice.toFixed(2)}</td>
+                <td style={{ padding: "4px", textAlign: "right", fontWeight: 600, color: "#111" }}>R{(item.qty * item.unitPrice).toFixed(2)}</td>
               </tr>
             )) : (
-              <tr>
-                <td colSpan={4} className="py-4 text-center text-gray-300 italic">Add line items to see them here…</td>
-              </tr>
+              <tr><td colSpan={4} style={{ padding: "12px 4px", textAlign: "center", color: "#ccc", fontStyle: "italic", fontSize: 8 }}>Add line items to see them here…</td></tr>
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Totals */}
-      <div className="flex justify-end px-5 pb-3">
-        <div className="w-44 space-y-0.5">
-          <div className="flex justify-between text-gray-500">
-            <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
-          </div>
-          {vatEnabled && (
-            <div className="flex justify-between text-gray-500">
-              <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-bold border-t pt-1" style={{ color: s.primary }}>
-            <span>{vatEnabled ? "Total incl. VAT" : "Total"}</span>
-            <span>R{total.toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Notes */}
-      {notes && (
-        <div className="px-5 pb-4 border-t pt-2.5 mx-5 border-gray-100">
-          <div style={{ color: s.primary }} className="text-[9px] font-bold uppercase tracking-widest mb-1">Notes</div>
-          <div className="text-gray-600 whitespace-pre-wrap">{notes}</div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div style={{ background: s.headerBg, opacity: 0.08, height: 4 }} />
-      <div className="px-5 py-2.5 text-[9px] text-gray-400 text-center">
-        Generated by Masakhe SMME Growth Hub · masakheportal.co.za
+        <TotalsBlock accent={darkGrey} boxBg={null} />
+        <FooterBlock accent={darkGrey} />
       </div>
     </div>
   );
