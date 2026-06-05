@@ -21,6 +21,7 @@ import {
   Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
   Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search, Globe, ChevronRight
 } from "lucide-react";
+import { WebsiteBuilderTour, TourRestartButton } from "@/components/website/WebsiteBuilderTour";
 
 const templateIcons: Record<string, React.ElementType> = {
   professional: Briefcase,
@@ -207,7 +208,7 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
         </div>
 
         {/* Search + Sort controls */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div id="tour-template-search" className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -258,7 +259,7 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
         ) : (
           <>
             <p className="text-xs text-slate-400 mb-3">{displayed.length} template{displayed.length !== 1 ? "s" : ""}</p>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div id="tour-template-grid" className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {displayed.map((tmpl) => {
                 const isPremiumLocked = tmpl.premium && !isProPlan;
                 const category = CATEGORY_MAP[tmpl.id];
@@ -623,6 +624,7 @@ export default function WebsiteBuilder() {
           </DialogContent>
         </Dialog>
         <TemplatePicker onSelect={handleTemplateSelect} onPreview={handlePreview} isProPlan={isProPlan} />
+        <WebsiteBuilderTour phase="picker" />
       </>
     );
   }
@@ -731,13 +733,16 @@ export default function WebsiteBuilder() {
               {lastSaved && <p className="text-[10px] text-slate-400">Saved {lastSaved}</p>}
             </div>
           </div>
-          <div className="flex gap-1.5">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onSave}>
-              <Save className="mr-1 h-3.5 w-3.5" />Save
-            </Button>
-            <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={onPublish}>
-              <Rocket className="mr-1 h-3.5 w-3.5" />Publish
-            </Button>
+          <div className="flex gap-1.5 items-center">
+            <TourRestartButton phase="editor" />
+            <div id="tour-save-publish" className="flex gap-1.5">
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onSave}>
+                <Save className="mr-1 h-3.5 w-3.5" />Save
+              </Button>
+              <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={onPublish}>
+                <Rocket className="mr-1 h-3.5 w-3.5" />Publish
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -769,7 +774,7 @@ export default function WebsiteBuilder() {
 
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="rounded-lg border bg-slate-50 p-3 space-y-3">
+          <div id="tour-site-settings" className="rounded-lg border bg-slate-50 p-3 space-y-3">
             <div>
               <Label className="text-xs font-semibold">Business Name</Label>
               <Input value={site.businessName} onChange={(e) => updateSite((p) => ({ ...p, businessName: e.target.value }))} className="mt-1 h-8 text-sm" />
@@ -799,11 +804,13 @@ export default function WebsiteBuilder() {
                 </div>
               </div>
             </div>
-            <ImageUploadField value={site.logoUrl} onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))} label="Business Logo" />
-            <ImageUploadField value={site.photoUrl} onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))} label="Hero Photo" />
+            <div id="tour-logo-upload">
+              <ImageUploadField value={site.logoUrl} onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))} label="Business Logo" />
+              <ImageUploadField value={site.photoUrl} onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))} label="Hero Photo" />
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div id="tour-sections-list" className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Sections ({site.sections.length})</h3>
             </div>
@@ -822,7 +829,7 @@ export default function WebsiteBuilder() {
               />
             ))}
 
-            <div className="relative">
+            <div id="tour-add-section" className="relative">
               <Button variant="outline" className="w-full text-xs border-dashed" onClick={() => setShowAddSection(!showAddSection)}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Section <ChevronDown className={`h-3.5 w-3.5 ml-1 transition-transform ${showAddSection ? "rotate-180" : ""}`} />
               </Button>
@@ -859,7 +866,7 @@ export default function WebsiteBuilder() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
-          <div className="flex items-center gap-2">
+          <div id="tour-preview-toggle" className="flex items-center gap-2">
             <Button variant={isPreviewMobile ? "ghost" : "default"} size="sm" className="h-7 text-xs" onClick={() => setIsPreviewMobile(false)}>
               <Monitor className="h-3.5 w-3.5 mr-1" /> Desktop
             </Button>
@@ -878,6 +885,7 @@ export default function WebsiteBuilder() {
         </div>
       </div>
     </div>
+    <WebsiteBuilderTour phase="editor" />
     </>
   );
 }
