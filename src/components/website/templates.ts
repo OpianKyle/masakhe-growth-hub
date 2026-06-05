@@ -332,6 +332,54 @@ export const templateList: TemplateInfo[] = [
     preview: "Professional layout with cover types, claim support, credentials, and quote form",
   },
   {
+    id: "food_truck",
+    name: "Food Truck & Street Food",
+    description: "For food trucks, street food vendors, pop-up kitchens, and market stalls",
+    icon: "truck",
+    color: "bg-yellow-500",
+    preview: "Bold vibrant layout with menu highlights, event bookings, gallery, and contact form",
+  },
+  {
+    id: "yoga_studio",
+    name: "Yoga & Pilates Studio",
+    description: "For yoga studios, pilates centres, meditation retreats, and wellness teachers",
+    icon: "sparkles",
+    color: "bg-teal-500",
+    preview: "Calm, earthy layout with class types, timetable, instructor profiles, and booking form",
+  },
+  {
+    id: "landscaping",
+    name: "Landscaping & Garden Services",
+    description: "For landscapers, garden maintenance, irrigation installers, and tree fellers",
+    icon: "leaf",
+    color: "bg-green-600",
+    preview: "Natural earthy layout with services, project gallery, testimonials, and free quote form",
+  },
+  {
+    id: "tattoo_studio",
+    name: "Tattoo & Body Art Studio",
+    description: "For tattoo artists, piercing studios, body artists, and permanent make-up specialists",
+    icon: "pen-tool",
+    color: "bg-zinc-900",
+    preview: "Dark edgy layout with artist portfolios, style showcase, gallery, and consultation form",
+  },
+  {
+    id: "digital_agency",
+    name: "Digital Marketing Agency",
+    description: "For digital agencies, SEO companies, social media managers, and ad specialists",
+    icon: "trending-up",
+    color: "bg-violet-600",
+    preview: "Sleek modern layout with services, case study stats, client logos, and free audit form",
+  },
+  {
+    id: "personal_chef",
+    name: "Personal Chef & Private Dining",
+    description: "For personal chefs, private dining hosts, meal prep services, and culinary entertainers",
+    icon: "chef-hat",
+    color: "bg-amber-900",
+    preview: "Elegant dark-gold layout with menu experiences, packages, gallery, and booking form",
+  },
+  {
     id: "homeimprovement",
     name: "Home Improvement",
     description: "For renovation companies, tilers, painters, waterproofers, and handyman services",
@@ -6100,5 +6148,681 @@ export function buildTemplate(templateId: string, businessName?: string): SiteCo
           },
         ],
       };
+
+    case "food_truck":
+      return {
+        businessName: name,
+        slug,
+        templateId: "food_truck",
+        theme: { primary: "#d97706", accent: "#dc2626" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "bold",
+              title: "Street Food That Hits Different",
+              subtitle: "Fresh, bold flavours cooked with love and served straight from our truck — find us at markets, events, and festivals.",
+              badgeText: "Open for Events & Private Hire",
+              ctaPrimaryText: "See Our Menu",
+              ctaSecondaryText: "Book Us for Your Event",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "3+", label: "Years Rolling" },
+                { value: "50+", label: "Events Catered" },
+                { value: "200+", label: "Daily Portions" },
+                { value: "4.9★", label: "Google Rating" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Today's Menu",
+              subtitle: "Made fresh daily",
+              items: [
+                { title: "Loaded Bunny Chow", desc: "Durban-style mutton curry in a quarter loaf, topped with sambals", price: "R85" },
+                { title: "Smash Burger", desc: "Double smash patty with pickled onions, special sauce & toasted brioche", price: "R95" },
+                { title: "Boerewors Slap Chips", desc: "Crispy golden chips topped with grilled wors and chakalaka relish", price: "R65" },
+                { title: "Gatsby Roll", desc: "Cape Town-style loaded roll with your choice of filling", price: "R75" },
+                { title: "Loaded Vetkoek", desc: "Freshly fried vetkoek stuffed with curry mince and atchar", price: "R55" },
+                { title: "Frozen Boeber", desc: "Chilled traditional Cape Malay dessert drink — refreshing and sweet", price: "R30" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Find Us at the Best Spots",
+              subtitle: "Markets, festivals, and private events",
+              images: [
+                { url: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=80&w=600", caption: "Street Festival" },
+                { url: "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&q=80&w=600", caption: "Fresh Plates" },
+                { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=600", caption: "Hot Off the Grill" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "What People Are Saying",
+              subtitle: "Real reviews from real food lovers",
+              items: [
+                { name: "Zanele M.", role: "Market Regular", text: "I drive 30 minutes just for their smash burger. Absolutely unreal — best street food in the city by miles." },
+                { name: "Dylan R.", role: "Corporate Event Planner", text: "Booked them for our year-end function and the team was professional, punctual, and the food was a massive hit." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Book Us for Your Event",
+              subtitle: "Corporate functions, markets, birthday parties, weddings — we bring the vibes and the food. Fill in the form and we'll get back to you within 24 hours.",
+              buttonText: "Send Booking Request",
+              successMessage: "Got it! We'll be in touch within 24 hours to confirm your date.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Find Us & Follow the Truck",
+              subtitle: "Check our socials for daily location updates.",
+              phone: "+27 72 345 6789",
+              email: "bookings@foodtruck.co.za",
+              address: "Based in Johannesburg — we travel to you!",
+              whatsapp: "+27 72 345 6789",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "yoga_studio":
+      return {
+        businessName: name,
+        slug,
+        templateId: "yoga_studio",
+        theme: { primary: "#0d9488", accent: "#b45309" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "centered",
+              title: "Move. Breathe. Transform.",
+              subtitle: "A sanctuary of mindful movement — yoga and pilates classes for all levels in a warm, welcoming studio.",
+              badgeText: "First Class Free",
+              ctaPrimaryText: "View Timetable",
+              ctaSecondaryText: "Book a Trial Class",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              items: [
+                { value: "8+", label: "Years Open" },
+                { value: "20+", label: "Classes per Week" },
+                { value: "400+", label: "Active Members" },
+                { value: "6", label: "Certified Instructors" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Classes",
+              subtitle: "Something for every body and every level",
+              items: [
+                { title: "Hatha Yoga", desc: "Foundational postures and breathing — ideal for beginners and those seeking gentle movement", price: "R120/class" },
+                { title: "Vinyasa Flow", desc: "Dynamic, breath-linked sequences that build strength, flexibility and focus", price: "R140/class" },
+                { title: "Pilates Mat", desc: "Core-centred slow burn to strengthen, lengthen and restore posture", price: "R150/class" },
+                { title: "Yin & Restorative", desc: "Deep passive stretching and meditative stillness — perfect for stress relief", price: "R120/class" },
+                { title: "Prenatal Yoga", desc: "Safe, nurturing classes designed specifically for expectant mothers at all stages", price: "R130/class" },
+                { title: "Kids Yoga", desc: "Fun, play-based yoga for children aged 5–12 to build body awareness and calm", price: "R100/class" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Our Members Love Us",
+              subtitle: "A Studio Built for Wellbeing",
+              imagePosition: "left",
+              imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80",
+              items: [
+                { title: "All Levels Welcome", desc: "Whether you're a complete beginner or seasoned practitioner, our classes meet you where you are." },
+                { title: "Small Class Sizes", desc: "Maximum 12 students per class ensures your instructor can give you personalised attention." },
+                { title: "Beautiful, Calm Space", desc: "Our studio is designed to be a sanctuary — natural light, wooden floors, and serene energy." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Stories from Our Community",
+              subtitle: "Real transformations from real members",
+              items: [
+                { name: "Priya N.", role: "Member for 3 years", text: "This studio changed my life. I came for the yoga and stayed for the community. I sleep better, stress less, and feel genuinely at home here." },
+                { name: "Kevin S.", role: "Pilates Student", text: "I was sceptical at first but my physiotherapist recommended it for my back. Six months in and I'm virtually pain-free. The instructors are brilliant." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Book Your Free Trial Class",
+              subtitle: "Try any class on us, no commitment required. Just fill in your details and we'll reserve your spot and send you all the info you need.",
+              buttonText: "Reserve My Free Class",
+              successMessage: "Wonderful! Check your inbox — we'll confirm your class and send directions to the studio.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Come Find Your Peace",
+              subtitle: "We're open 7 days a week for classes, private sessions, and studio hire.",
+              phone: "+27 21 456 7890",
+              email: "namaste@yogastudio.co.za",
+              address: "12 Garden Lane, Gardens, Cape Town, 8001",
+              whatsapp: "+27 21 456 7890",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "landscaping":
+      return {
+        businessName: name,
+        slug,
+        templateId: "landscaping",
+        theme: { primary: "#16a34a", accent: "#78350f" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "corporate",
+              title: "Beautiful Gardens, Expertly Crafted",
+              subtitle: "Professional landscaping, garden maintenance, and outdoor design services for residential and commercial properties across South Africa.",
+              badgeText: "Free On-Site Quote",
+              ctaPrimaryText: "Our Services",
+              ctaSecondaryText: "Get a Free Quote",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "12+", label: "Years Experience" },
+                { value: "800+", label: "Gardens Created" },
+                { value: "98%", label: "Client Retention" },
+                { value: "50km", label: "Service Radius" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Everything your outdoor space needs",
+              variant: "bordered",
+              items: [
+                { title: "Garden Design & Installation", desc: "Full landscape design, plant selection, layout planning and professional installation" },
+                { title: "Lawn Care & Maintenance", desc: "Regular mowing, edging, fertilising, aeration, and seasonal treatments" },
+                { title: "Irrigation Systems", desc: "Design, installation, and maintenance of automated drip and spray irrigation systems" },
+                { title: "Tree Felling & Pruning", desc: "Safe removal, pruning, and stump grinding by certified arborists" },
+                { title: "Paving & Hard Landscaping", desc: "Driveways, pathways, patios, retaining walls, and outdoor entertainment areas" },
+                { title: "Water Features & Ponds", desc: "Custom water features, koi ponds, fountains, and natural swimming pools" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Our Work",
+              subtitle: "Before & after transformations",
+              images: [
+                { url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80&w=600", caption: "Formal Garden Design" },
+                { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=600", caption: "Lawn Transformation" },
+                { url: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=600", caption: "Patio Installation" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Happy Clients",
+              subtitle: "What our clients say about us",
+              items: [
+                { name: "Mark & Sue T.", role: "Homeowners, Sandton", text: "They transformed our overgrown garden into a showpiece. Professional team, on time, on budget. We get compliments from the neighbours constantly!" },
+                { name: "Carrie L.", role: "Property Manager, Cape Town", text: "We use them for maintenance across 6 residential complexes. Reliable, thorough, and they always go the extra mile. Highly recommended." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Get Your Free On-Site Quote",
+              subtitle: "Tell us about your garden and we'll send an expert to assess your property and provide a detailed, no-obligation quote within 48 hours.",
+              buttonText: "Request Free Quote",
+              successMessage: "Thanks! One of our team will contact you within 24 hours to schedule your free site visit.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Get in Touch",
+              subtitle: "Serving residential and commercial properties across Gauteng and the Western Cape.",
+              phone: "+27 11 789 0123",
+              email: "hello@landscaping.co.za",
+              address: "15 Protea Road, Randburg, Johannesburg, 2194",
+              whatsapp: "+27 11 789 0123",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "tattoo_studio":
+      return {
+        businessName: name,
+        slug,
+        templateId: "tattoo_studio",
+        theme: { primary: "#18181b", accent: "#f59e0b" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "cinematic",
+              title: "Art You Wear for Life",
+              subtitle: "Custom tattoos, fine line, blackwork, realism, and piercing by award-winning artists in a clean, welcoming studio.",
+              badgeText: "Consultations Available",
+              ctaPrimaryText: "View Portfolio",
+              ctaSecondaryText: "Book a Consultation",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "dark",
+              items: [
+                { value: "10+", label: "Years in Business" },
+                { value: "5000+", label: "Tattoos Done" },
+                { value: "6", label: "Artists on Staff" },
+                { value: "100%", label: "Custom Designs" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Specialisations",
+              subtitle: "Every style mastered",
+              variant: "bordered",
+              items: [
+                { title: "Fine Line & Micro", desc: "Delicate, precise line work — perfect for minimalist designs, botanical art, and portraits" },
+                { title: "Blackwork & Tribal", desc: "Bold black-ink statements, geometric patterns, and traditional tribal motifs" },
+                { title: "Realism & Portraits", desc: "Photorealistic portraits, animals, and landscapes brought to life on skin" },
+                { title: "Neo-Traditional", desc: "Modern take on classic flash — rich colours, bold outlines, and illustrative style" },
+                { title: "Cover-Ups & Reworks", desc: "Expert cover-up design and restoration of old or faded tattoos" },
+                { title: "Piercing", desc: "Professional ear, nose, septum, and body piercing with implant-grade jewellery" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "Portfolio",
+              subtitle: "A glimpse of our artists' work",
+              variant: "masonry",
+              images: [
+                { url: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&q=80&w=600", caption: "Fine Line Botanical" },
+                { url: "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&q=80&w=600", caption: "Blackwork Sleeve" },
+                { url: "https://images.unsplash.com/photo-1575377427642-087cf684f29d?auto=format&fit=crop&q=80&w=600", caption: "Realism Portrait" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Your Safety is Our Priority",
+              subtitle: "A Studio You Can Trust",
+              imagePosition: "right",
+              items: [
+                { title: "Hospital-Grade Sterilisation", desc: "All equipment is autoclaved and single-use needles are opened in front of you — every time." },
+                { title: "Licensed & Certified Artists", desc: "Every artist holds current bloodborne pathogen certification and health board registration." },
+                { title: "Free Consultations", desc: "We offer no-obligation consultations so you can meet your artist and discuss your design before committing." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Book a Consultation",
+              subtitle: "Ready to get inked? Fill in the form with your idea, preferred artist, and any reference images, and we'll be in touch to schedule your free consultation.",
+              buttonText: "Request Consultation",
+              successMessage: "We've received your request! An artist will reach out within 48 hours to set up your consultation.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Visit the Studio",
+              subtitle: "Walk-ins welcome for small pieces. Bookings recommended for custom work.",
+              phone: "+27 83 456 7890",
+              email: "ink@tattoostudio.co.za",
+              address: "8 Bree Street, Cape Town City Bowl, 8001",
+              whatsapp: "+27 83 456 7890",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "digital_agency":
+      return {
+        businessName: name,
+        slug,
+        templateId: "digital_agency",
+        theme: { primary: "#7c3aed", accent: "#0ea5e9" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "gradient",
+              title: "Grow Your Business Online",
+              subtitle: "Data-driven digital marketing that gets results — SEO, paid ads, social media, and web design for South African businesses.",
+              badgeText: "Free Digital Audit",
+              ctaPrimaryText: "Our Services",
+              ctaSecondaryText: "Get a Free Audit",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "cards",
+              items: [
+                { value: "150+", label: "Clients Served" },
+                { value: "R42M+", label: "Ad Spend Managed" },
+                { value: "3.8×", label: "Average ROAS" },
+                { value: "94%", label: "Client Retention" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Our Services",
+              subtitle: "Full-funnel digital growth",
+              variant: "bordered",
+              items: [
+                { title: "Search Engine Optimisation", desc: "Rank higher on Google with technical SEO, content strategy, and authority link building" },
+                { title: "Google & Meta Ads", desc: "Performance paid advertising on Search, Display, YouTube, Facebook and Instagram" },
+                { title: "Social Media Management", desc: "Content creation, community management, and growth across all major platforms" },
+                { title: "Web Design & Development", desc: "Fast, conversion-optimised websites built for South African businesses" },
+                { title: "Email Marketing", desc: "Automated campaigns, newsletters, and lead nurturing sequences that convert" },
+                { title: "Analytics & Reporting", desc: "Clear monthly reporting on what's working, what's not, and what we're doing about it" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "features",
+            enabled: true,
+            data: {
+              title: "Why Choose Us",
+              subtitle: "Results, Not Excuses",
+              imagePosition: "right",
+              imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80",
+              variant: "icon-grid",
+              items: [
+                { title: "SA-Focused Strategy", desc: "We understand the South African market, consumer behaviour, and digital landscape — not just global theory." },
+                { title: "No Lock-in Contracts", desc: "We earn your business every month. Our clients stay because of results, not because they're trapped." },
+                { title: "Dedicated Account Manager", desc: "You'll have a single point of contact who knows your business and is accountable for your growth." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Client Success Stories",
+              subtitle: "Real results for real businesses",
+              variant: "large-quote",
+              items: [
+                { name: "Ayesha P.", role: "E-Commerce Owner", text: "They took our Google Ads from a cost centre to a profit engine. Revenue up 340% in 6 months. I only wish I'd found them sooner." },
+                { name: "Brendan K.", role: "CEO, Law Firm", text: "Our organic traffic tripled in 8 months and we're now ranking #1 for our key terms. The SEO team really knows their stuff." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Get Your Free Digital Audit",
+              subtitle: "We'll analyse your current digital presence — website, SEO, ads, and social — and show you exactly where the growth opportunities are. No cost, no obligation.",
+              buttonText: "Get My Free Audit",
+              successMessage: "Excellent! Our team will review your digital presence and reach out within 1 business day with your free audit.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Let's Talk Growth",
+              subtitle: "Office based in Sandton, serving clients across South Africa and beyond.",
+              phone: "+27 11 234 5678",
+              email: "hello@digitalagency.co.za",
+              address: "The Marc, Sandton Drive, Sandton, 2196",
+              whatsapp: "+27 11 234 5678",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
+    case "personal_chef":
+      return {
+        businessName: name,
+        slug,
+        templateId: "personal_chef",
+        theme: { primary: "#1c1917", accent: "#d97706" },
+        social: {},
+        sections: [
+          {
+            id: makeSectionId(),
+            type: "hero",
+            enabled: true,
+            data: {
+              heroStyle: "cinematic",
+              title: "Restaurant Quality, in Your Home",
+              subtitle: "Bespoke private dining experiences, meal preparation, and exclusive event catering by a classically trained personal chef.",
+              badgeText: "Fully Insured & Vetted",
+              ctaPrimaryText: "Explore Menus",
+              ctaSecondaryText: "Book an Experience",
+              backgroundImageUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "stats",
+            enabled: true,
+            data: {
+              variant: "dark",
+              items: [
+                { value: "8+", label: "Years Experience" },
+                { value: "500+", label: "Dinners Hosted" },
+                { value: "12", label: "Cuisine Styles" },
+                { value: "100%", label: "Bespoke Menus" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "services",
+            enabled: true,
+            data: {
+              title: "Dining Experiences",
+              subtitle: "Crafted around you",
+              items: [
+                { title: "Private Dinner Parties", desc: "Intimate multi-course dining experiences for 2 to 20 guests in the comfort of your home", price: "From R650 p.p." },
+                { title: "Weekly Meal Prep", desc: "Nutritionally balanced, restaurant-quality meals prepared weekly in your kitchen and stored", price: "From R3,500/week" },
+                { title: "Corporate Lunches", desc: "Elegant working lunches and boardroom dining for your team or clients", price: "From R380 p.p." },
+                { title: "Special Occasion Dining", desc: "Birthdays, anniversaries, proposals — let us create an unforgettable culinary moment", price: "From R850 p.p." },
+                { title: "Cooking Masterclasses", desc: "Private hands-on cooking lessons for individuals or small groups", price: "From R1,200 p.p." },
+                { title: "Dietary-Specific Menus", desc: "Bespoke menus for vegan, keto, halaal, kosher, allergy-conscious, or medical dietary needs", price: "On request" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "about",
+            enabled: true,
+            data: {
+              title: "The Chef's Story",
+              quote: "Food is love made visible.",
+              imageUrl: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&q=80",
+              imagePosition: "right",
+              items: [
+                { title: "Classically Trained", desc: "Trained at the Institute of Culinary Arts in Stellenbosch, with stages in London and Cape Town's finest restaurants." },
+                { title: "Seasonal & Local First", desc: "Every menu is built around the best seasonal, local produce — supporting South African farmers and suppliers." },
+                { title: "The Details Matter", desc: "From the plating to the music to the table setting — every detail of your experience is thoughtfully considered." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "gallery",
+            enabled: true,
+            data: {
+              title: "A Taste of the Work",
+              subtitle: "Beautifully plated, lovingly crafted",
+              images: [
+                { url: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80&w=600", caption: "Fine Dining Setup" },
+                { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=600", caption: "Plated Entrée" },
+                { url: "https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&q=80&w=600", caption: "Dessert Course" },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "testimonials",
+            enabled: true,
+            data: {
+              title: "Dining Experiences Remembered",
+              subtitle: "What our guests say",
+              variant: "large-quote",
+              items: [
+                { name: "Claire & James H.", role: "Anniversary Dinner", text: "We had a private 7-course tasting menu for our 10th anniversary. It was genuinely better than any restaurant we've ever been to. A night we'll never forget." },
+                { name: "Sipho M.", role: "Corporate Client", text: "Used this service for a client entertainment evening. The food was exceptional and the service was seamless. My clients were thoroughly impressed." },
+              ],
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact_form",
+            enabled: true,
+            data: {
+              title: "Plan Your Dining Experience",
+              subtitle: "Every experience is unique. Tell us about your occasion, guest count, dietary requirements, and preferred date, and we'll design something extraordinary just for you.",
+              buttonText: "Start Planning",
+              successMessage: "Wonderful! I'll be in touch within 24 hours to discuss your experience and begin crafting your bespoke menu.",
+            },
+          },
+          {
+            id: makeSectionId(),
+            type: "contact",
+            enabled: true,
+            data: {
+              title: "Let's Create Something Special",
+              subtitle: "Available for bookings across Gauteng and the Western Cape. Travel fees apply outside major centres.",
+              phone: "+27 82 345 6789",
+              email: "chef@privatechef.co.za",
+              address: "Johannesburg & Cape Town — we come to you",
+              whatsapp: "+27 82 345 6789",
+              enableWhatsApp: true,
+            },
+          },
+        ],
+      };
+
   }
 }

@@ -403,7 +403,7 @@ function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail
     </div>
   );
 
-  const base: React.CSSProperties = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden", fontFamily: "Arial, Helvetica, sans-serif", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", userSelect: "none" };
+  const base: React.CSSProperties = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden", fontFamily: "Arial, Helvetica, sans-serif", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", userSelect: "none", minHeight: 842 };
 
   // ─── Template 1 — Classic (Green left stripe) ────────────────────────────
   if (t === 1 || t === 8) {
