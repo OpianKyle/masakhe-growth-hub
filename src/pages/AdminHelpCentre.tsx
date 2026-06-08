@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Plus, Edit, Trash2, X, Loader2, BookOpen, Video, HelpCircle, FileText,
-  Pin, Eye, Search, ChevronDown, CheckCircle, Save
+  Pin, Eye, Search, Save
 } from "lucide-react";
 
 interface HelpCategory {
