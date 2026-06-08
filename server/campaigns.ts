@@ -286,6 +286,48 @@ campaignsRouter.post("/:id/test", async (req, res) => {
   }
 });
 
+// ── AI Content Generation ────────────────────────────────────────────────────
+
+campaignsRouter.post("/ai-generate", async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: "AI not configured. Please add OPENROUTER_API_KEY to your environment." });
+  }
+  const { campaignType, businessDesc, topic, cta } = req.body;
+  if (!topic) return res.status(400).json({ error: "Campaign topic is required" });
+  try {
+    const { default: OpenAI } = await import("openai");
+    const client = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+    const model = process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
+    const ctaText = cta || "Find Out More";
+    const prompt = `You are an expert email marketing copywriter for South African small businesses. Write a professional, engaging ${campaignType || "newsletter"} email.
+
+Business: ${businessDesc || "A South African SMME"}
+Campaign topic/goal: ${topic}
+Call to action: ${ctaText}
+
+Respond with valid JSON ONLY (no markdown fences) in this exact format:
+{
+  "subject": "Compelling subject line under 60 characters",
+  "body_html": "Full HTML email body with inline styles. Start with <p>Hi {{first_name}},</p>. Use <h2 style='color:#1a56db;'> for headings, <p> for paragraphs, <ul style='padding-left:20px;line-height:1.8;'><li> for bullet lists. Include a CTA button: <table cellspacing='0' cellpadding='0' style='margin:24px 0;'><tr><td style='background:#1a56db;border-radius:8px;'><a href='#' style='display:inline-block;padding:12px 28px;color:#fff;text-decoration:none;font-weight:600;font-size:14px;'>${ctaText} →</a></td></tr></table>. End with a warm sign-off. 200-350 words total. South African SMME context."
+}`;
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = completion.choices[0]?.message?.content || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: "AI returned an invalid response. Please try again." });
+    const parsed = JSON.parse(jsonMatch[0]);
+    res.json({ subject: parsed.subject || "", body_html: parsed.body_html || "" });
+  } catch (err: any) {
+    console.error("[AI Generate Campaign]", err.message);
+    res.status(500).json({ error: "AI generation failed. Please try again." });
+  }
+});
+
 // ── Audience counts ─────────────────────────────────────────────────────────
 
 campaignsRouter.get("/audience/counts", async (req, res) => {
