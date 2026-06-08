@@ -38,6 +38,7 @@ import { emailSettingsRouter } from "./email-settings";
 import { contactRouter, runContactMigration } from "./contact";
 import { automationsRouter } from "./automations";
 import { startAutomationsScheduler } from "./automations-scheduler";
+import { helpRouter } from "./helpcentre";
 import { startDripScheduler } from "./drip-scheduler";
 import { subscriptionApiRouter } from "./subscription-api";
 import path from "path";
@@ -111,6 +112,7 @@ async function main() {
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);
   app.use("/api/automations", automationsRouter);
+  app.use("/api/help", helpRouter);
   app.use("/api/external", subscriptionApiRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);

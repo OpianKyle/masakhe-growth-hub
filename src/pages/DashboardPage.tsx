@@ -34,6 +34,7 @@ import CampaignsPage from "./CampaignsPage";
 import AutomationsPage from "./AutomationsPage";
 import WhatsAppSupportPage from "./WhatsAppSupportPage";
 import TeamMembersPage from "./TeamMembersPage";
+import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
 import AIChatBot from "@/components/AIChatBot";
 
@@ -120,6 +121,7 @@ const baseNavItems: NavItem[] = [
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresPlan: "premium", perm: "leave" },
     ],
   },
+  { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
   { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
   { icon: Users, label: "User Accounts", path: "/dashboard/team", ownerOnly: true },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
@@ -741,6 +743,7 @@ export default function DashboardPage() {
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="reseller" element={<ResellerDashboard />} />
+            <Route path="help" element={<HelpCentrePage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="settings" element={<SettingsPage />} />

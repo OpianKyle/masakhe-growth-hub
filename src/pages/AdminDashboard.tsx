@@ -6,8 +6,9 @@ import {
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
   Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter,
-  Store, RefreshCw, UserPlus, Link2, Unlink, Send, ToggleLeft, ToggleRight, FlaskConical, Save
+  Store, RefreshCw, UserPlus, Link2, Unlink, Send, ToggleLeft, ToggleRight, FlaskConical, Save, BookOpen
 } from "lucide-react";
+import AdminHelpCentre from "./AdminHelpCentre";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
@@ -100,6 +101,7 @@ const adminNavItems = [
   { icon: Globe,           label: "Websites",        path: "/admin/websites" },
   { icon: Send,            label: "Email Campaigns", path: "/admin/drip-campaigns" },
   { icon: History,         label: "Audit Log",       path: "/admin/audit" },
+  { icon: BookOpen,        label: "Help Centre",     path: "/admin/help-centre" },
   { icon: Settings,        label: "Settings",        path: "/admin/settings" },
 ];
 
@@ -2849,6 +2851,7 @@ export default function AdminDashboard() {
           <Route path="websites" element={<WebsiteList />} />
           <Route path="drip-campaigns" element={<AdminDripCampaigns />} />
           <Route path="audit" element={<AuditLog />} />
+          <Route path="help-centre" element={<AdminHelpCentre />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </main>

@@ -1123,6 +1123,40 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS help_categories (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        icon VARCHAR(50) DEFAULT '💡',
+        color VARCHAR(50) DEFAULT 'blue',
+        order_index INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS help_articles (
+        id VARCHAR(36) PRIMARY KEY,
+        category_id VARCHAR(36),
+        title VARCHAR(500) NOT NULL,
+        slug VARCHAR(500) NOT NULL,
+        summary TEXT,
+        body LONGTEXT,
+        content_type ENUM('article','video','faq') DEFAULT 'article',
+        video_url VARCHAR(1000),
+        thumbnail_url VARCHAR(1000),
+        tags VARCHAR(500),
+        status ENUM('draft','published') DEFAULT 'draft',
+        pinned TINYINT(1) DEFAULT 0,
+        view_count INT DEFAULT 0,
+        order_index INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES help_categories(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();
