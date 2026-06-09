@@ -26,7 +26,6 @@ export function getBaseUrl(reqOrigin?: string): string {
 export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUrl?: string) {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];
-  const appUrl = baseUrl || getBaseUrl();
 
   const html = `
 <!DOCTYPE html>
@@ -40,77 +39,62 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          
+
           <tr>
             <td style="background:linear-gradient(135deg,#007749 0%,#005C3A 100%);padding:32px 40px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Masakhe</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Masakhe Portal</h1>
               <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Digital Platform for South African SMMEs</p>
             </td>
           </tr>
 
           <tr>
             <td style="padding:40px;">
-              <h2 style="margin:0 0 16px;color:#1a1a2e;font-size:22px;font-weight:600;">Welcome aboard, ${firstName}!</h2>
+              <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">Dear ${firstName},</p>
+
               <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                Thank you for joining Masakhe. Your account has been created and you're ready to get started.
-              </p>
-              <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                With Masakhe, you can:
+                <strong style="color:#1a1a2e;">Welcome to Masakhe Portal!!</strong>
               </p>
 
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Register & manage your business</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Build a professional website</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Track finances & create invoices</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Stay tax compliant</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Manage social media</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 0;">
-                    <span style="color:#007749;font-weight:bold;margin-right:8px;">&#10003;</span>
-                    <span style="color:#4a4a5a;font-size:14px;">Find & apply for tenders</span>
-                  </td>
-                </tr>
-              </table>
+              <p style="margin:0 0 20px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                It's great news that you joined our platform! — I noticed you have been a while on our system. I would like to connect with you on a call to determine your progress and how we can further assist in making it better for you.
+              </p>
 
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
+              <p style="margin:0 0 24px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                Please select the link below to schedule a personal onboarding call with myself, Lance Heynes, CEO of Masakhe Technologies:
+              </p>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 32px;">
                 <tr>
                   <td style="background-color:#007749;border-radius:8px;">
-                    <a href="${appUrl}/dashboard" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Go to Dashboard</a>
+                    <a href="https://calendly.com/masakhesystems" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Schedule My Onboarding Call</a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:0 0 8px;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                Subscribe from your Billing page to unlock all Masakhe features and grow your business.
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f9fafb;border-radius:8px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 10px;color:#4a4a5a;font-size:14px;line-height:1.8;">
+                      📍 <strong>Format:</strong> Google Meet (link sent upon confirmation)
+                    </p>
+                    <p style="margin:0 0 10px;color:#4a4a5a;font-size:14px;line-height:1.8;">
+                      🕐 <strong>Duration:</strong> 30 minutes
+                    </p>
+                    <p style="margin:0;color:#4a4a5a;font-size:14px;line-height:1.8;">
+                      👤 <strong>With:</strong> Lance Heynes, CEO of Masakhe Technologies
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 24px;color:#4a4a5a;font-size:15px;line-height:1.6;">
+                Looking forward to meeting you!
               </p>
-              <p style="margin:24px 0 0;color:#4a4a5a;font-size:15px;line-height:1.6;">
-                Welcome to the Masakhe community!<br>
-                <strong style="color:#1a1a2e;">The Masakhe Team</strong>
+
+              <p style="margin:0;color:#4a4a5a;font-size:15px;line-height:1.8;">
+                With Regards,<br><br>
+                <strong style="color:#1a1a2e;">Lance Heynes</strong><br>
+                <span style="color:#6b7280;font-size:13px;">CEO, Masakhe Technologies</span>
               </p>
             </td>
           </tr>
@@ -118,8 +102,8 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
           <tr>
             <td style="background-color:#f8f8fa;padding:24px 40px;text-align:center;border-top:1px solid #e8e8ec;">
               <p style="margin:0;color:#9a9aaa;font-size:12px;line-height:1.5;">
-                &copy; ${new Date().getFullYear()} Masakhe. A digital platform for South African SMMEs.<br>
-                You received this email because you registered at Masakhe.
+                &copy; ${new Date().getFullYear()} Masakhe Technologies. A digital platform for South African SMMEs.<br>
+                You received this email because you registered at Masakhe Portal.
               </p>
             </td>
           </tr>
@@ -133,9 +117,9 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
 
   try {
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      from: `"Lance Heynes — Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
-      subject: `Welcome to Masakhe, ${firstName}!`,
+      subject: `Welcome to Masakhe Portal!!`,
       html,
     });
     console.log(`Welcome email sent to ${toEmail}`);
