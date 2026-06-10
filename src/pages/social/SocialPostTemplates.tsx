@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   Sparkles, Copy, ArrowRight, Globe, Building2, Star, Phone,
   Tag, Users, BarChart3, RefreshCw, ChevronRight, Megaphone,
   Gift, Lightbulb, TrendingUp, Heart, Clock, Handshake, HelpCircle, Rocket, Zap,
-  ShieldCheck, PiggyBank, Briefcase, DollarSign, PieChart, FileCheck, Award, Home, AlertTriangle, UserCheck, PenLine
+  ShieldCheck, PiggyBank, Briefcase, DollarSign, PieChart, FileCheck, Award, Home, AlertTriangle, UserCheck, PenLine,
+  Search, Plus, X, Send, Edit3
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { SiteConfig, ServicesData, AboutData, HeroData, TestimonialsData, StatsData, ContactData } from "@/types/site";
@@ -776,14 +776,47 @@ const CATEGORY_ORDER = [
   "Brokerage & Finance",
 ];
 
+const CHIP_CATEGORIES = ["All", "Advertising", "Promotions", "Services", "Engagement", "Tips & Value", "Introduction", "Testimonials", "Brokerage & Finance"];
+
+const CATEGORY_EXPLORE = [
+  { label: "Advertising",        sublabel: "Drive sales & awareness",   gradient: "from-orange-500 to-rose-500",    img: "https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&q=80&w=400" },
+  { label: "Promotions",         sublabel: "Special offers & deals",    gradient: "from-rose-500 to-pink-500",       img: "https://images.unsplash.com/photo-1556742111-a301076d9d18?auto=format&fit=crop&q=80&w=400" },
+  { label: "Services",           sublabel: "Showcase what you do",      gradient: "from-green-500 to-emerald-500",   img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=400" },
+  { label: "Engagement",         sublabel: "Grow your audience",        gradient: "from-pink-500 to-fuchsia-500",    img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=400" },
+  { label: "Introduction",       sublabel: "Tell your story",           gradient: "from-blue-500 to-violet-500",     img: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&q=80&w=400" },
+  { label: "Tips & Value",       sublabel: "Build authority",           gradient: "from-teal-500 to-cyan-500",       img: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=400" },
+  { label: "Testimonials",       sublabel: "Social proof",              gradient: "from-amber-500 to-orange-500",    img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400" },
+  { label: "Brokerage & Finance",sublabel: "Financial services",        gradient: "from-indigo-600 to-blue-600",     img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=400" },
+  { label: "Milestones",         sublabel: "Celebrate wins",            gradient: "from-cyan-500 to-sky-500",        img: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&q=80&w=400" },
+  { label: "Our Story",          sublabel: "Brand history & values",    gradient: "from-violet-500 to-purple-600",   img: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=400" },
+];
+
 export default function SocialPostTemplates({ workspaceId, site, createPath }: Props) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    fetch(`/api/social/ws/${workspaceId}/analytics`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setRecentPosts(d.recentPosts || []))
+      .catch(() => {});
+  }, [workspaceId]);
 
   const templates = generateTemplates(site);
-  const categories = ["All", ...CATEGORY_ORDER.filter(c => templates.some(t => t.category === c))];
-  const filtered = selectedCategory === "All" ? templates : templates.filter(t => t.category === selectedCategory);
+  const isFiltering = !!search || selectedCategory !== "All";
+
+  const filtered = templates.filter(t => {
+    if (selectedCategory !== "All" && t.category !== selectedCategory) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const handleUseTemplate = (template: PostTemplate) => {
     const params = new URLSearchParams();
@@ -797,7 +830,6 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
   const handleCopy = async (template: PostTemplate) => {
     await navigator.clipboard.writeText(template.content);
     setCopiedId(template.id);
-
     try {
       const res = await fetch(template.templateImage);
       const blob = await res.blob();
@@ -809,158 +841,284 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Text copied! Image saved to Downloads — attach it when posting.");
+      toast.success("Text copied! Image saved to Downloads — attach when posting.");
     } catch {
       toast.success("Post copied to clipboard!");
     }
-
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="text-2xl font-bold font-heading flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" /> Post Templates
-          </h2>
-          <p className="text-muted-foreground mt-0.5">
-            {site
-              ? `Smart posts generated from your ${site.businessName} website + advertising templates`
-              : "Ready-to-use advertising templates — build your website to unlock personalised posts"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {!site && (
-            <Button variant="outline" onClick={() => navigate("/dashboard/website")}>
-              <Globe className="h-4 w-4 mr-2" /> Build Website
-            </Button>
-          )}
-          <Button onClick={() => navigate(createPath || "/dashboard/social/create")} className="gradient-hero text-white">
-            <PenLine className="h-4 w-4 mr-2" /> Create Post
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-full" style={{ background: "#fafafa" }}>
 
-      {!site && (
-        <Card className="p-4 border-dashed border-primary/30 bg-primary/5 flex items-start gap-3">
-          <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-primary">Unlock personalised templates</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Build your website in the Website Builder to generate posts tailored to your business name, services, and story.
-            </p>
-          </div>
-          <Button size="sm" onClick={() => navigate("/dashboard/website")} className="gradient-hero text-white ml-auto shrink-0">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </Card>
-      )}
-
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all border ${
-              selectedCategory === cat
-                ? "bg-primary text-white border-primary shadow-sm"
-                : "bg-white border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            }`}
+      {/* ── Hero / Search ─────────────────────────────────── */}
+      <div className="relative" style={{ background: "linear-gradient(135deg, #ede9fe 0%, #f3e8ff 40%, #fce7f3 80%, #ffe4e6 100%)" }}>
+        <div className="max-w-3xl mx-auto px-6 py-12 text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-extrabold tracking-tight mb-2"
+            style={{ color: "#3b0764" }}
           >
-            {cat} {cat === "All" ? `(${templates.length})` : `(${templates.filter(t => t.category === cat).length})`}
-          </button>
-        ))}
+            Templates
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.12 }}
+            className="text-purple-700/70 text-sm mb-6"
+          >
+            {site
+              ? `${templates.length} posts crafted for ${site.businessName} — pick one and publish in minutes`
+              : "Ready-to-post captions with images for every occasion"}
+          </motion.p>
+
+          {/* Search bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative"
+          >
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search templates…"
+              className="w-full pl-11 pr-10 py-3.5 rounded-2xl border border-white/80 bg-white/90 backdrop-blur-sm shadow-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 placeholder-purple-300 text-gray-700"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </motion.div>
+
+          {/* Category filter chips */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-2 mt-4 overflow-x-auto scrollbar-none pb-1 flex-wrap justify-center"
+          >
+            {CHIP_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => { setSelectedCategory(cat); setSearch(""); }}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all border ${
+                  selectedCategory === cat
+                    ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                    : "bg-white/80 border-white/60 text-purple-700 hover:bg-white hover:border-violet-200"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </motion.div>
+        </div>
       </div>
 
-      {/* Templates grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filtered.map((template, i) => {
-          const Icon = template.categoryIcon;
-          return (
-            <motion.div
-              key={template.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+
+        {/* ── Explore categories (only when not filtering) ── */}
+        {!isFiltering && (
+          <section>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">Explore templates</h2>
+              <button
+                onClick={() => navigate(createPath || "/dashboard/social/create")}
+                className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-800 transition-colors"
+              >
+                <Plus className="h-4 w-4" /> Create from scratch
+              </button>
+            </div>
+
+            <div className="overflow-x-auto scrollbar-none -mx-2">
+              <div className="flex gap-3 pb-2 px-2" style={{ minWidth: "max-content" }}>
+                {CATEGORY_EXPLORE.map((cat, i) => (
+                  <motion.button
+                    key={cat.label}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => setSelectedCategory(cat.label)}
+                    className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group text-left"
+                    style={{ width: 160, height: 110, flexShrink: 0 }}
+                  >
+                    <img
+                      src={cat.img}
+                      alt={cat.label}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-75`} />
+                    <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                      <p className="text-white font-bold text-[13px] leading-tight drop-shadow">{cat.label}</p>
+                      <p className="text-white/80 text-[10px] mt-0.5 drop-shadow">{cat.sublabel}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Recently published ── */}
+        {!isFiltering && recentPosts.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Recently published</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {recentPosts.slice(0, 6).map((post, i) => (
+                <motion.div
+                  key={post.id || i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-violet-100 transition-all cursor-pointer group"
+                  onClick={() => navigate(createPath || "/dashboard/social/create")}
+                >
+                  <div className="aspect-square bg-gradient-to-br from-violet-100 to-purple-50 flex items-center justify-center p-2">
+                    <p className="text-[9px] text-gray-500 text-center leading-relaxed line-clamp-4">{post.content_text}</p>
+                  </div>
+                  <div className="p-2">
+                    <p className="text-[10px] font-medium text-gray-600 truncate">{post.content_text?.slice(0, 30) || "Post"}</p>
+                    <p className="text-[9px] text-green-600 font-medium mt-0.5">✓ Published</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Website unlock banner ── */}
+        {!site && !isFiltering && (
+          <div className="rounded-2xl border border-dashed border-violet-300 bg-violet-50/60 p-5 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+              <Globe className="h-5 w-5 text-violet-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-violet-800">Unlock personalised templates</p>
+              <p className="text-xs text-violet-600/80 mt-0.5">Build your website to generate posts tailored to your exact business name, services, and story.</p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/dashboard/website")} className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white border-0 text-xs">
+              Build Website →
+            </Button>
+          </div>
+        )}
+
+        {/* ── Results header ── */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">
+            {isFiltering && selectedCategory !== "All" ? selectedCategory : "All Templates"}
+            <span className="text-gray-400 font-normal text-sm ml-2">({filtered.length})</span>
+          </h2>
+          {isFiltering && (
+            <button
+              onClick={() => { setSearch(""); setSelectedCategory("All"); }}
+              className="text-sm text-violet-600 hover:text-violet-800 font-medium transition-colors"
             >
-              <Card className="group transition-all border-2 overflow-hidden hover:shadow-lg hover:-translate-y-1 border-transparent hover:border-primary cursor-pointer">
-                {/* Mock image with gradient overlay */}
-                <div className="relative h-44 w-full overflow-hidden bg-slate-200">
-                  <img
-                    src={template.mockImage}
-                    alt={template.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: `linear-gradient(to bottom, rgba(${template.categoryBgRGB}, 0.35) 0%, rgba(0,0,0,0.65) 100%)` }}
-                  />
-                  {/* Category badge */}
-                  <div className="absolute top-3 left-3">
-                    <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm bg-white/20 text-white border border-white/30`}>
-                      <Icon className="h-3 w-3" />
-                      {template.category}
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* ── Template grid ── */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <Search className="h-12 w-12 mx-auto text-gray-200 mb-3" />
+            <p className="font-semibold text-gray-500">No templates found</p>
+            <p className="text-sm text-gray-400 mt-1">Try a different search term or category</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
+            {filtered.map((template, i) => {
+              const Icon = template.categoryIcon;
+              return (
+                <motion.div
+                  key={template.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.025, 0.4) }}
+                >
+                  <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 hover:border-violet-100 flex flex-col h-full">
+
+                    {/* Image area */}
+                    <div className="relative h-44 w-full overflow-hidden bg-gray-100 shrink-0">
+                      <img
+                        src={template.mockImage}
+                        alt={template.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      />
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: `linear-gradient(to bottom, rgba(${template.categoryBgRGB}, 0.3) 0%, rgba(0,0,0,0.65) 100%)` }}
+                      />
+                      {/* Category badge */}
+                      <div className="absolute top-3 left-3">
+                        <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-white/20 backdrop-blur-sm text-white border border-white/30">
+                          <Icon className="h-3 w-3" />
+                          {template.category}
+                        </div>
+                      </div>
+                      {/* Hover overlay button */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() => handleUseTemplate(template)}
+                          className="bg-white text-violet-700 font-bold text-sm px-5 py-2.5 rounded-xl shadow-xl hover:bg-violet-50 transition-colors"
+                        >
+                          Use Template
+                        </button>
+                      </div>
+                      {/* Title overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white font-bold text-sm leading-tight drop-shadow-md">{template.title}</p>
+                        <p className="text-white/80 text-xs drop-shadow mt-0.5 line-clamp-1">{template.description}</p>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-4 py-3 flex flex-col flex-1">
+                      <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-xs text-gray-500 leading-relaxed overflow-hidden max-h-[72px] relative">
+                        {template.content}
+                        <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-gray-50 to-transparent" />
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        {template.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="rounded-full bg-violet-50 text-violet-600 text-[10px] px-2 py-0.5 font-medium border border-violet-100">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          onClick={() => handleUseTemplate(template)}
+                          className="flex-1 bg-violet-600 hover:bg-violet-700 text-white text-xs h-8"
+                        >
+                          Use Template <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCopy(template)}
+                          className={`h-8 text-xs ${copiedId === template.id ? "border-green-300 text-green-600 bg-green-50" : "border-gray-200 text-gray-500 hover:border-violet-200 hover:text-violet-600"}`}
+                          title="Copy text + download image"
+                        >
+                          {copiedId === template.id ? "Copied!" : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  {/* Image indicator */}
-                  <div className="absolute top-3 right-3">
-                    <div className="flex items-center gap-1 rounded-full px-2 py-1 text-xs bg-black/40 text-white/90 backdrop-blur-sm border border-white/20">
-                      <Megaphone className="h-3 w-3" />
-                      + image
-                    </div>
-                  </div>
-                  {/* Text overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="text-white font-bold text-sm leading-tight drop-shadow-md">{template.title}</p>
-                    <p className="text-white/80 text-xs drop-shadow mt-0.5">{template.description}</p>
-                  </div>
-                </div>
-
-                {/* Content section */}
-                <div className="p-4 space-y-3">
-                  <div className="flex-1 rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed overflow-hidden max-h-24 relative">
-                    {template.content}
-                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-50 to-transparent" />
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 mb-1">
-                    {template.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="rounded-full bg-primary/8 text-primary text-[10px] px-2 py-0.5 font-medium border border-primary/15">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 gradient-hero text-white"
-                      onClick={() => handleUseTemplate(template)}
-                    >
-                      Use Template <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCopy(template)}
-                      className={copiedId === template.id ? "border-green-300 text-green-600" : ""}
-                      title="Copies text to clipboard and downloads the image — paste the text in Facebook, then attach the image"
-                    >
-                      {copiedId === template.id ? (
-                        <><RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" /> Copied!</>
-                      ) : (
-                        <><Copy className="h-3.5 w-3.5 mr-1" /> Copy</>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

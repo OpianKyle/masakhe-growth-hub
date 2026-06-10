@@ -3,7 +3,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion";
 import {
   PenSquare, FileText, Edit3, Search, Facebook, Instagram, Linkedin,
-  Youtube, ArrowLeft, Sparkles, Image, Calendar, BarChart3, Globe,
+  Youtube, ArrowLeft, Sparkles, Image, BarChart3, Globe,
   Zap, Plus, ChevronRight, Megaphone, Gift, Tag, Rocket, Star,
   TrendingUp, Users, Heart, Clock, Send, BookOpen, Palette,
   Video, LayoutTemplate, Hash, Camera, Film, Monitor, Smartphone
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import SocialPostEditor from "./SocialPostEditor";
 import SocialPostTemplates from "./SocialPostTemplates";
 import SocialCreate from "./SocialCreate";
+import SocialMediaLibrary from "./SocialMedia";
+import SocialAnalytics from "./SocialAnalytics";
 import type { SiteConfig } from "@/types/site";
 
 import canvaHome from "@assets/image_1781125346820.png";
@@ -136,9 +138,8 @@ const TEMPLATE_CATEGORIES = [
 /* ─── Quick action shortcuts ─────────────────────────────────────── */
 const QUICK_ACTIONS = [
   { label: "Post Editor",   icon: Palette,       path: "editor",    desc: "Design visual posts" },
-  { label: "Post Templates",icon: LayoutTemplate, path: "templates", desc: "Ready-made content" },
+  { label: "Templates",     icon: LayoutTemplate, path: "templates", desc: "Ready-made content" },
   { label: "Create Post",   icon: Edit3,         path: "create",    desc: "Write & schedule" },
-  { label: "Calendar",      icon: Calendar,      path: "calendar",  desc: "View schedule" },
   { label: "Analytics",     icon: BarChart3,     path: "analytics", desc: "Track performance" },
   { label: "Media Library", icon: Image,         path: "media",     desc: "Manage files" },
 ];
@@ -600,9 +601,7 @@ export default function SocialHub() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-6">
-                    <SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/dashboard/social/create" />
-                  </div>
+                  <SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/dashboard/social/create" />
                 )}
               </SubPageWrapper>
             }
@@ -618,7 +617,45 @@ export default function SocialHub() {
                     <div className="h-48 bg-gray-100 rounded-2xl" />
                   </div>
                 ) : (
-                  <SocialCreate workspaceId={workspaceId} calendarPath="/dashboard/social/calendar" />
+                  <SocialCreate workspaceId={workspaceId} calendarPath="/dashboard/social" />
+                )}
+              </SubPageWrapper>
+            }
+          />
+
+          <Route
+            path="analytics"
+            element={
+              <SubPageWrapper title="Analytics">
+                {workspaceId === null ? (
+                  <div className="p-8 space-y-4 animate-pulse">
+                    <div className="h-6 bg-gray-100 rounded w-1/3" />
+                    <div className="h-48 bg-gray-100 rounded-2xl" />
+                  </div>
+                ) : (
+                  <div className="p-6">
+                    <SocialAnalytics workspaceId={workspaceId} />
+                  </div>
+                )}
+              </SubPageWrapper>
+            }
+          />
+
+          <Route
+            path="media"
+            element={
+              <SubPageWrapper title="Media Library">
+                {workspaceId === null ? (
+                  <div className="p-8 space-y-4 animate-pulse">
+                    <div className="h-6 bg-gray-100 rounded w-1/3" />
+                    <div className="grid grid-cols-4 gap-4">
+                      {[...Array(8)].map((_, i) => <div key={i} className="h-32 bg-gray-100 rounded-2xl" />)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6">
+                    <SocialMediaLibrary workspaceId={workspaceId} />
+                  </div>
                 )}
               </SubPageWrapper>
             }
