@@ -309,7 +309,7 @@ function SocialHome({ workspaceId, site }: { workspaceId: string | null; site: S
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/dashboard/social/${action.path === "editor" ? "" : action.path}`)}
+              onClick={() => navigate(`/dashboard/social/${action.path}`)}
               className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-purple-50 transition-colors group min-w-[72px] shrink-0"
             >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center group-hover:from-violet-200 group-hover:to-purple-200 transition-all">
@@ -469,10 +469,10 @@ function SocialHome({ workspaceId, site }: { workspaceId: string | null; site: S
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900">Recent posts</h2>
               <button
-                onClick={() => navigate("/dashboard/social/calendar")}
+                onClick={() => navigate("/dashboard/social/analytics")}
                 className="text-sm text-violet-600 font-medium hover:text-violet-800 flex items-center gap-1"
               >
-                View calendar <ChevronRight className="h-4 w-4" />
+                View analytics <ChevronRight className="h-4 w-4" />
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
