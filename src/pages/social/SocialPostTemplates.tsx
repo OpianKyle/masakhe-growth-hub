@@ -770,6 +770,34 @@ function generateTemplates(site: SiteConfig | null): PostTemplate[] {
   return [...siteTemplates, ...adTemplates];
 }
 
+const DESIGN_TEMPLATES = [
+  { id: "mega-sale",        name: "Mega Sale 50% OFF",     thumb: "linear-gradient(135deg,#DC2626,#FBBF24)",   format: "Instagram Post",  tag: "Sale" },
+  { id: "new-arrival",      name: "New Arrival",           thumb: "linear-gradient(135deg,#0F172A,#10B981)",   format: "Instagram Post",  tag: "Launch" },
+  { id: "grand-opening",    name: "Grand Opening",         thumb: "linear-gradient(135deg,#7C2D12,#FBBF24)",   format: "Instagram Post",  tag: "Event" },
+  { id: "service-promo",    name: "Service Promo",         thumb: "linear-gradient(135deg,#1E40AF,#06B6D4)",   format: "Instagram Post",  tag: "Services" },
+  { id: "food-special",     name: "Food Special",          thumb: "linear-gradient(135deg,#92400E,#F59E0B)",   format: "Instagram Post",  tag: "Food" },
+  { id: "fitness",          name: "Fitness Promo",         thumb: "linear-gradient(135deg,#000000,#22C55E)",   format: "Instagram Post",  tag: "Fitness" },
+  { id: "quote",            name: "Inspiring Quote",       thumb: "linear-gradient(135deg,#1F2937,#0EA5E9)",   format: "Instagram Post",  tag: "Motivation" },
+  { id: "discount-coupon",  name: "Discount Coupon",       thumb: "linear-gradient(135deg,#FBBF24,#EF4444)",   format: "Facebook Post",   tag: "Sale" },
+  { id: "corp-quarterly",   name: "Quarterly Results",     thumb: "linear-gradient(135deg,#0F172A,#3B82F6)",   format: "Instagram Post",  tag: "Corporate" },
+  { id: "corp-hiring",      name: "We're Hiring",          thumb: "linear-gradient(135deg,#1E40AF,#E0E7FF)",   format: "Instagram Post",  tag: "Hiring" },
+  { id: "corp-webinar",     name: "Webinar Invite",        thumb: "linear-gradient(135deg,#312E81,#A78BFA)",   format: "Facebook Post",   tag: "Event" },
+  { id: "corp-stat",        name: "Statistic Highlight",   thumb: "linear-gradient(135deg,#E0F2FE,#0EA5E9)",   format: "Instagram Post",  tag: "Corporate" },
+  { id: "corp-testimonial", name: "Client Testimonial",    thumb: "linear-gradient(135deg,#F8FAFC,#1E293B)",   format: "Instagram Post",  tag: "Testimonials" },
+  { id: "corp-launch",      name: "Product Launch",        thumb: "linear-gradient(135deg,#0F172A,#22D3EE)",   format: "Instagram Post",  tag: "Launch" },
+  { id: "corp-conference",  name: "Conference Banner",     thumb: "linear-gradient(135deg,#7E22CE,#FBBF24)",   format: "Facebook Post",   tag: "Event" },
+  { id: "st-retail",        name: "Retail Sale",           thumb: "linear-gradient(135deg,#7F1D1D,#F87171)",   format: "Instagram Post",  tag: "Sale" },
+  { id: "st-realestate",    name: "Property Listing",      thumb: "linear-gradient(135deg,#0F172A,#1E40AF)",   format: "Instagram Post",  tag: "Real Estate" },
+  { id: "st-restaurant",    name: "Restaurant Special",    thumb: "linear-gradient(135deg,#7C2D12,#F59E0B)",   format: "Instagram Post",  tag: "Food" },
+  { id: "st-beauty",        name: "Beauty & Salon",        thumb: "linear-gradient(135deg,#831843,#F472B6)",   format: "Instagram Post",  tag: "Beauty" },
+  { id: "st-coaching",      name: "Business Coaching",     thumb: "linear-gradient(135deg,#4C1D95,#A855F7)",   format: "Instagram Post",  tag: "Services" },
+  { id: "st-charity",       name: "Charity Drive",         thumb: "linear-gradient(135deg,#14532D,#22C55E)",   format: "Instagram Post",  tag: "Charity" },
+  { id: "st-eco",           name: "Eco Initiative",        thumb: "linear-gradient(135deg,#064E3B,#10B981)",   format: "Instagram Post",  tag: "Green" },
+  { id: "st-pet",           name: "Pet Service",           thumb: "linear-gradient(135deg,#78350F,#F59E0B)",   format: "Instagram Post",  tag: "Services" },
+  { id: "st-florist",       name: "Florist Promo",         thumb: "linear-gradient(135deg,#831843,#EC4899)",   format: "Instagram Post",  tag: "Retail" },
+  { id: "st-gift",          name: "Gift Shop",             thumb: "linear-gradient(135deg,#4C1D95,#A855F7)",   format: "Instagram Post",  tag: "Retail" },
+];
+
 const CATEGORY_ORDER = [
   "Introduction", "Services", "Our Story", "Features", "Testimonials",
   "Milestones", "Contact", "Advertising", "Promotions", "Tips & Value", "Engagement",
@@ -921,11 +949,11 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
 
-        {/* ── Explore categories (only when not filtering) ── */}
+        {/* ── Explore section (Canva 2-row style) ── */}
         {!isFiltering && (
           <section>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">Explore templates</h2>
+              <h2 className="text-xl font-bold text-gray-900">Explore templates</h2>
               <button
                 onClick={() => navigate(createPath || "/dashboard/social/create")}
                 className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-800 transition-colors"
@@ -934,30 +962,79 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
               </button>
             </div>
 
-            <div className="overflow-x-auto scrollbar-none -mx-2">
-              <div className="flex gap-3 pb-2 px-2" style={{ minWidth: "max-content" }}>
-                {CATEGORY_EXPLORE.map((cat, i) => (
-                  <motion.button
-                    key={cat.label}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    onClick={() => setSelectedCategory(cat.label)}
-                    className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group text-left"
-                    style={{ width: 160, height: 110, flexShrink: 0 }}
-                  >
-                    <img
-                      src={cat.img}
-                      alt={cat.label}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-75`} />
-                    <div className="absolute inset-0 p-3 flex flex-col justify-end">
-                      <p className="text-white font-bold text-[13px] leading-tight drop-shadow">{cat.label}</p>
-                      <p className="text-white/80 text-[10px] mt-0.5 drop-shadow">{cat.sublabel}</p>
-                    </div>
-                  </motion.button>
-                ))}
+            {/* ── Row 1: Design / Canvas Templates ── */}
+            <div className="mb-2">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-gray-700">Design templates</p>
+                <button
+                  onClick={() => navigate("/dashboard/social/editor")}
+                  className="text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
+                >
+                  Open editor →
+                </button>
+              </div>
+              <div className="overflow-x-auto scrollbar-none -mx-2">
+                <div className="flex gap-3 pb-3 px-2" style={{ minWidth: "max-content" }}>
+                  {DESIGN_TEMPLATES.map((dt, i) => (
+                    <motion.button
+                      key={dt.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.025 }}
+                      onClick={() => navigate(`/dashboard/social/editor?template=${dt.id}`)}
+                      className="group flex flex-col rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 bg-white border border-gray-100 hover:border-violet-200 text-left"
+                      style={{ width: 148, flexShrink: 0 }}
+                    >
+                      <div
+                        className="w-full rounded-t-2xl group-hover:scale-[1.02] transition-transform duration-300 origin-bottom"
+                        style={{ height: 100, background: dt.thumb }}
+                      >
+                        <div className="w-full h-full flex items-end p-2">
+                          <span className="text-[10px] font-bold text-white/90 bg-black/25 rounded-full px-2 py-0.5 backdrop-blur-sm">
+                            {dt.tag}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="px-2.5 py-2 bg-white">
+                        <p className="text-[12px] font-semibold text-gray-800 leading-tight truncate">{dt.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{dt.format}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Row 2: Caption / Post Template Categories ── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-gray-700">Caption templates</p>
+              </div>
+              <div className="overflow-x-auto scrollbar-none -mx-2">
+                <div className="flex gap-3 pb-2 px-2" style={{ minWidth: "max-content" }}>
+                  {CATEGORY_EXPLORE.map((cat, i) => (
+                    <motion.button
+                      key={cat.label}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      onClick={() => setSelectedCategory(cat.label)}
+                      className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group text-left"
+                      style={{ width: 148, height: 100, flexShrink: 0 }}
+                    >
+                      <img
+                        src={cat.img}
+                        alt={cat.label}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-75`} />
+                      <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                        <p className="text-white font-bold text-[12px] leading-tight drop-shadow">{cat.label}</p>
+                        <p className="text-white/80 text-[10px] mt-0.5 drop-shadow">{cat.sublabel}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </div>
           </section>

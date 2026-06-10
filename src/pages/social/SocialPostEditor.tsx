@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Stage, Layer, Rect, Circle, Text as KText, Image as KImage, Transformer, Star, Line } from "react-konva";
 import useImage from "use-image";
 import Konva from "konva";
@@ -864,6 +865,7 @@ function ShapeStar({ el, common, onTE }: { el: StarEl; common: any; onTE: (e: an
 }
 
 export default function SocialPostEditor() {
+  const [searchParams] = useSearchParams();
   const [preset, setPreset] = useState(PRESETS[0]);
   const [bg, setBg] = useState("#FFFFFF");
   const [bgImage, setBgImage] = useState<string>("");
@@ -878,6 +880,7 @@ export default function SocialPostEditor() {
   const historyRef = useRef<{ elements: AnyEl[]; bg: string; bgImage: string }[]>([{ elements: [], bg: "#FFFFFF", bgImage: "" }]);
   const historyIdxRef = useRef<number>(0);
   const skipHistoryRef = useRef<boolean>(false);
+  const autoLoadedRef = useRef<boolean>(false);
   const [, forceHistoryUpdate] = useState(0);
 
   useEffect(() => {
@@ -893,6 +896,22 @@ export default function SocialPostEditor() {
     historyIdxRef.current = trimmed.length - 1;
     forceHistoryUpdate(n => n + 1);
   }, [elements, bg, bgImage]);
+
+  useEffect(() => {
+    if (autoLoadedRef.current) return;
+    const templateId = searchParams.get("template");
+    if (!templateId) return;
+    const found = TEMPLATES.find(t => t.id === templateId);
+    if (!found) return;
+    autoLoadedRef.current = true;
+    const matchingPreset = PRESETS.find(p => p.w === found.width && p.h === found.height);
+    if (matchingPreset) setPreset(matchingPreset);
+    setBg(found.background);
+    setBgImage(found.backgroundImage || "");
+    skipHistoryRef.current = true;
+    setElements(found.elements.map(e => ({ ...e, id: uid() } as AnyEl)));
+    setTab("text");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function undo() {
     if (historyIdxRef.current <= 0) return;
