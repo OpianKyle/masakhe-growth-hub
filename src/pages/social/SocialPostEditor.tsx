@@ -12,7 +12,7 @@ import {
   Type, Square, Circle as CircleIcon, Star as StarIcon, Image as ImageIcon,
   Upload, Download, Trash2, LayoutTemplate, Palette, Bold, Italic,
   AlignLeft, AlignCenter, AlignRight, Copy, Layers, Minus, ChevronUp, ChevronDown,
-  Undo2, Redo2, Link as LinkIcon
+  Undo2, Redo2, Link as LinkIcon, Plus
 } from "lucide-react";
 
 type ElementType = "text" | "rect" | "circle" | "star" | "image" | "line";
@@ -876,6 +876,10 @@ export default function SocialPostEditor() {
   const [uploads, setUploads] = useState<string[]>([]);
   const [leftWidth, setLeftWidth] = useState(240);
   const [rightWidth, setRightWidth] = useState(256);
+  const [activeMenu, setActiveMenu] = useState<"file"|"resize"|"editing"|"animate"|"position"|null>(null);
+  const [snapEnabled, setSnapEnabled] = useState(false);
+  const [animationType, setAnimationType] = useState("none");
+  const topBarRef = useRef<HTMLDivElement>(null);
 
   const historyRef = useRef<{ elements: AnyEl[]; bg: string; bgImage: string }[]>([{ elements: [], bg: "#FFFFFF", bgImage: "" }]);
   const historyIdxRef = useRef<number>(0);
@@ -950,6 +954,35 @@ export default function SocialPostEditor() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!activeMenu) return;
+    function onClickOutside(e: MouseEvent) {
+      if (topBarRef.current && !topBarRef.current.contains(e.target as Node)) {
+        setActiveMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [activeMenu]);
+
+  function alignEl(mode: string) {
+    if (!selectedId) { toast("Select an element first"); return; }
+    setElements(els => els.map(el => {
+      if (el.id !== selectedId) return el;
+      const elW = "width" in el ? (el as any).width : "radius" in el ? (el as any).radius * 2 : 0;
+      const elH = "height" in el ? (el as any).height : "radius" in el ? (el as any).radius * 2 : 0;
+      switch (mode) {
+        case "left":   return { ...el, x: 0 };
+        case "cH":     return { ...el, x: Math.round((preset.w - elW) / 2) };
+        case "right":  return { ...el, x: preset.w - elW };
+        case "top":    return { ...el, y: 0 };
+        case "cV":     return { ...el, y: Math.round((preset.h - elH) / 2) };
+        case "bottom": return { ...el, y: preset.h - elH };
+        default: return el;
+      }
+    }));
+  }
 
   function startResize(side: "left" | "right", e: React.MouseEvent) {
     e.preventDefault();
@@ -1216,27 +1249,93 @@ export default function SocialPostEditor() {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-white">
       {/* ── Canva-style top bar ────────────────────────────────── */}
-      <div className="flex items-center gap-0 border-b bg-white h-12 px-2 shrink-0">
-        {/* Left: logo + menu items */}
+      <div ref={topBarRef} className="flex items-center gap-0 border-b bg-white h-12 px-2 shrink-0 relative z-30">
+
+        {/* Left: logo + menu buttons */}
         <div className="flex items-center gap-0.5">
-          <div
-            className="w-7 h-7 rounded-lg mr-2 ml-1 flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}
-          >
+          <div className="w-7 h-7 rounded-lg mr-2 ml-1 flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
             <Palette className="h-4 w-4 text-white" />
           </div>
-          {["File", "Resize", "Editing"].map(label => (
-            <button
-              key={label}
-              className="px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors font-medium"
-            >
-              {label}
+
+          {/* File */}
+          <div className="relative">
+            <button onClick={() => setActiveMenu(activeMenu === "file" ? null : "file")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "file" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              File <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
-          ))}
+            {activeMenu === "file" && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-1 w-48">
+                <button
+                  onClick={() => {
+                    if (!elements.length || window.confirm("Clear the canvas and start a new design?")) {
+                      setElements([]); setBg("#FFFFFF"); setBgImage(""); setSelectedId(null);
+                      toast.success("New design created");
+                    }
+                    setActiveMenu(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  <Plus className="h-4 w-4 text-gray-400" /> New design
+                </button>
+                <div className="h-px bg-gray-100 my-1" />
+                <button onClick={() => { exportImage(); setActiveMenu(null); }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  <Download className="h-4 w-4 text-gray-400" /> Download PNG
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Resize */}
+          <div className="relative">
+            <button onClick={() => setActiveMenu(activeMenu === "resize" ? null : "resize")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "resize" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              Resize <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            {activeMenu === "resize" && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-1 w-64">
+                <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Canvas format</p>
+                {PRESETS.map(p => (
+                  <button key={p.id}
+                    onClick={() => { setPreset(p); setActiveMenu(null); toast.success(`Resized to ${p.label}`); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${p.id === preset.id ? "bg-violet-50 text-violet-700 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}>
+                    <span>{p.label}</span>
+                    <span className="text-xs text-gray-400 ml-2 shrink-0">{p.w}×{p.h}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Editing */}
+          <div className="relative">
+            <button onClick={() => setActiveMenu(activeMenu === "editing" ? null : "editing")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "editing" || snapEnabled ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              Editing {snapEnabled && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            {activeMenu === "editing" && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-3 w-52">
+                <p className="px-3 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Canvas options</p>
+                <div className="px-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Snap to grid</span>
+                    <div className="relative w-9 h-5 rounded-full cursor-pointer transition-colors"
+                      style={{ background: snapEnabled ? "#7c3aed" : "#D1D5DB" }}
+                      onClick={() => setSnapEnabled(v => !v)}>
+                      <div className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                        style={{ transform: snapEnabled ? "translateX(16px)" : "translateX(0)" }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-full">NEW</span>
         </div>
 
-        {/* Center: undo/redo + title */}
+        {/* Center: undo/redo + format selector */}
         <div className="flex items-center gap-1.5 mx-auto">
           <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)"
             className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 transition-colors">
@@ -1247,32 +1346,101 @@ export default function SocialPostEditor() {
             <Redo2 className="h-4 w-4" />
           </button>
           <div className="mx-1 h-5 w-px bg-gray-200" />
-          <select
-            value={preset.id}
-            onChange={(e) => {
-              const p = PRESETS.find(x => x.id === e.target.value);
-              if (p) setPreset(p);
-            }}
-            className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs bg-white text-gray-700 font-medium hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-200"
-          >
+          <select value={preset.id}
+            onChange={(e) => { const p = PRESETS.find(x => x.id === e.target.value); if (p) setPreset(p); }}
+            className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs bg-white text-gray-700 font-medium hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-200">
             {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </div>
 
-        {/* Right: actions */}
+        {/* Right: Animate + Position + Share */}
         <div className="flex items-center gap-1">
-          <button className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">
-            Animate
-          </button>
-          <button className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">
-            Position
-          </button>
+
+          {/* Animate */}
+          <div className="relative">
+            <button onClick={() => setActiveMenu(activeMenu === "animate" ? null : "animate")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "animate" || animationType !== "none" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              Animate {animationType !== "none" && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            {activeMenu === "animate" && (
+              <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 py-2 w-44">
+                <p className="px-3 pb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Animation</p>
+                {[
+                  { id: "none",      label: "None" },
+                  { id: "fade-in",   label: "Fade In" },
+                  { id: "slide-up",  label: "Slide Up" },
+                  { id: "zoom-in",   label: "Zoom In" },
+                  { id: "bounce",    label: "Bounce" },
+                  { id: "rotate-in", label: "Rotate In" },
+                ].map(anim => (
+                  <button key={anim.id}
+                    onClick={() => { setAnimationType(anim.id); setActiveMenu(null); if (anim.id !== "none") toast.success(`Animation: ${anim.label}`); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${animationType === anim.id ? "bg-violet-50 text-violet-700 font-semibold" : "text-gray-700 hover:bg-gray-50"}`}>
+                    {anim.label}
+                    {animationType === anim.id && <span className="w-2 h-2 rounded-full bg-violet-500" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Position */}
+          <div className="relative">
+            <button onClick={() => setActiveMenu(activeMenu === "position" ? null : "position")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "position" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              Position <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            {activeMenu === "position" && (
+              <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 p-3 w-60">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Align on canvas</p>
+                {!selected ? (
+                  <p className="text-xs text-gray-400 text-center py-2">Select an element to align it</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-1.5 mb-3">
+                      {[
+                        { label: "← Left",   mode: "left" },
+                        { label: "↔ Center", mode: "cH" },
+                        { label: "Right →",  mode: "right" },
+                        { label: "↑ Top",    mode: "top" },
+                        { label: "↕ Middle", mode: "cV" },
+                        { label: "↓ Bottom", mode: "bottom" },
+                      ].map(({ label, mode }) => (
+                        <button key={mode}
+                          onClick={() => { alignEl(mode); setActiveMenu(null); }}
+                          className="px-1.5 py-2 text-[10px] bg-gray-50 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors font-medium text-gray-600 leading-tight">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-gray-100 pt-2.5">
+                      <p className="text-[10px] text-gray-400 mb-1.5">Position (px)</p>
+                      <div className="flex gap-2">
+                        <label className="flex items-center gap-1 flex-1">
+                          <span className="text-[10px] text-gray-500 font-medium w-3">X</span>
+                          <input type="number" value={Math.round(selected.x)}
+                            onChange={e => setElements(els => els.map(el => el.id === selectedId ? { ...el, x: Number(e.target.value) } : el))}
+                            className="flex-1 w-0 text-xs border border-gray-200 rounded-md px-2 py-1 text-center focus:outline-none focus:ring-1 focus:ring-violet-300" />
+                        </label>
+                        <label className="flex items-center gap-1 flex-1">
+                          <span className="text-[10px] text-gray-500 font-medium w-3">Y</span>
+                          <input type="number" value={Math.round(selected.y)}
+                            onChange={e => setElements(els => els.map(el => el.id === selectedId ? { ...el, y: Number(e.target.value) } : el))}
+                            className="flex-1 w-0 text-xs border border-gray-200 rounded-md px-2 py-1 text-center focus:outline-none focus:ring-1 focus:ring-violet-300" />
+                        </label>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="w-px h-5 bg-gray-200 mx-0.5" />
-          <button
-            onClick={exportImage}
+          <button onClick={exportImage}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all"
-            style={{ background: "linear-gradient(90deg,#7c3aed,#9333ea)" }}
-          >
+            style={{ background: "linear-gradient(90deg,#7c3aed,#9333ea)" }}>
             <Download className="h-3.5 w-3.5" /> Share
           </button>
         </div>

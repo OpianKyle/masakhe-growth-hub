@@ -772,32 +772,351 @@ function generateTemplates(site: SiteConfig | null): PostTemplate[] {
 }
 
 const DESIGN_TEMPLATES = [
-  { id: "mega-sale",        name: "Mega Sale 50% OFF",     thumb: "linear-gradient(135deg,#DC2626,#FBBF24)",   format: "Instagram Post",  tag: "Sale" },
-  { id: "new-arrival",      name: "New Arrival",           thumb: "linear-gradient(135deg,#0F172A,#10B981)",   format: "Instagram Post",  tag: "Launch" },
-  { id: "grand-opening",    name: "Grand Opening",         thumb: "linear-gradient(135deg,#7C2D12,#FBBF24)",   format: "Instagram Post",  tag: "Event" },
-  { id: "service-promo",    name: "Service Promo",         thumb: "linear-gradient(135deg,#1E40AF,#06B6D4)",   format: "Instagram Post",  tag: "Services" },
-  { id: "food-special",     name: "Food Special",          thumb: "linear-gradient(135deg,#92400E,#F59E0B)",   format: "Instagram Post",  tag: "Food" },
-  { id: "fitness",          name: "Fitness Promo",         thumb: "linear-gradient(135deg,#000000,#22C55E)",   format: "Instagram Post",  tag: "Fitness" },
-  { id: "quote",            name: "Inspiring Quote",       thumb: "linear-gradient(135deg,#1F2937,#0EA5E9)",   format: "Instagram Post",  tag: "Motivation" },
-  { id: "discount-coupon",  name: "Discount Coupon",       thumb: "linear-gradient(135deg,#FBBF24,#EF4444)",   format: "Facebook Post",   tag: "Sale" },
-  { id: "corp-quarterly",   name: "Quarterly Results",     thumb: "linear-gradient(135deg,#0F172A,#3B82F6)",   format: "Instagram Post",  tag: "Corporate" },
-  { id: "corp-hiring",      name: "We're Hiring",          thumb: "linear-gradient(135deg,#1E40AF,#E0E7FF)",   format: "Instagram Post",  tag: "Hiring" },
-  { id: "corp-webinar",     name: "Webinar Invite",        thumb: "linear-gradient(135deg,#312E81,#A78BFA)",   format: "Facebook Post",   tag: "Event" },
-  { id: "corp-stat",        name: "Statistic Highlight",   thumb: "linear-gradient(135deg,#E0F2FE,#0EA5E9)",   format: "Instagram Post",  tag: "Corporate" },
-  { id: "corp-testimonial", name: "Client Testimonial",    thumb: "linear-gradient(135deg,#F8FAFC,#1E293B)",   format: "Instagram Post",  tag: "Testimonials" },
-  { id: "corp-launch",      name: "Product Launch",        thumb: "linear-gradient(135deg,#0F172A,#22D3EE)",   format: "Instagram Post",  tag: "Launch" },
-  { id: "corp-conference",  name: "Conference Banner",     thumb: "linear-gradient(135deg,#7E22CE,#FBBF24)",   format: "Facebook Post",   tag: "Event" },
-  { id: "st-retail",        name: "Retail Sale",           thumb: "linear-gradient(135deg,#7F1D1D,#F87171)",   format: "Instagram Post",  tag: "Sale" },
-  { id: "st-realestate",    name: "Property Listing",      thumb: "linear-gradient(135deg,#0F172A,#1E40AF)",   format: "Instagram Post",  tag: "Real Estate" },
-  { id: "st-restaurant",    name: "Restaurant Special",    thumb: "linear-gradient(135deg,#7C2D12,#F59E0B)",   format: "Instagram Post",  tag: "Food" },
-  { id: "st-beauty",        name: "Beauty & Salon",        thumb: "linear-gradient(135deg,#831843,#F472B6)",   format: "Instagram Post",  tag: "Beauty" },
-  { id: "st-coaching",      name: "Business Coaching",     thumb: "linear-gradient(135deg,#4C1D95,#A855F7)",   format: "Instagram Post",  tag: "Services" },
-  { id: "st-charity",       name: "Charity Drive",         thumb: "linear-gradient(135deg,#14532D,#22C55E)",   format: "Instagram Post",  tag: "Charity" },
-  { id: "st-eco",           name: "Eco Initiative",        thumb: "linear-gradient(135deg,#064E3B,#10B981)",   format: "Instagram Post",  tag: "Green" },
-  { id: "st-pet",           name: "Pet Service",           thumb: "linear-gradient(135deg,#78350F,#F59E0B)",   format: "Instagram Post",  tag: "Services" },
-  { id: "st-florist",       name: "Florist Promo",         thumb: "linear-gradient(135deg,#831843,#EC4899)",   format: "Instagram Post",  tag: "Retail" },
-  { id: "st-gift",          name: "Gift Shop",             thumb: "linear-gradient(135deg,#4C1D95,#A855F7)",   format: "Instagram Post",  tag: "Retail" },
+  // — SALES —
+  { id: "mega-sale",        name: "Mega Sale 50% OFF",    thumb: "linear-gradient(135deg,#DC2626,#FBBF24)", format: "Instagram Post", tag: "Sale",       designCat: "Sales",      thumbLayout: "sale",         c1: "#DC2626", c2: "#FBBF24", tc: "#FFFFFF" },
+  { id: "flash-sale",       name: "Flash Sale 24hrs",     thumb: "linear-gradient(135deg,#1a1a1a,#F97316)", format: "Instagram Post", tag: "Flash",      designCat: "Sales",      thumbLayout: "flash",        c1: "#1a1a1a", c2: "#F97316", tc: "#FFFFFF" },
+  { id: "clearance",        name: "Clearance Sale",       thumb: "linear-gradient(135deg,#F97316,#EF4444)", format: "Instagram Post", tag: "Sale",       designCat: "Sales",      thumbLayout: "sale",         c1: "#F97316", c2: "#FFFFFF", tc: "#FFFFFF" },
+  { id: "black-friday",     name: "Black Friday",         thumb: "linear-gradient(135deg,#000000,#EAB308)", format: "Instagram Post", tag: "BF Deal",    designCat: "Sales",      thumbLayout: "flash",        c1: "#000000", c2: "#EAB308", tc: "#FFFFFF" },
+  { id: "weekend-deal",     name: "Weekend Deal",         thumb: "linear-gradient(135deg,#7C3AED,#EC4899)", format: "Instagram Post", tag: "Deal",       designCat: "Sales",      thumbLayout: "sale",         c1: "#7C3AED", c2: "#F9A8D4", tc: "#FFFFFF" },
+  { id: "discount-coupon",  name: "Discount Coupon",      thumb: "linear-gradient(135deg,#FBBF24,#EF4444)", format: "Facebook Post",  tag: "Coupon",     designCat: "Sales",      thumbLayout: "coupon",       c1: "#FBBF24", c2: "#EF4444", tc: "#FFFFFF" },
+  { id: "bundle-deal",      name: "Bundle Deal",          thumb: "linear-gradient(135deg,#0F766E,#10B981)", format: "Instagram Post", tag: "Bundle",     designCat: "Sales",      thumbLayout: "sale",         c1: "#0F766E", c2: "#6EE7B7", tc: "#FFFFFF" },
+  // — EVENTS —
+  { id: "grand-opening",    name: "Grand Opening",        thumb: "linear-gradient(135deg,#7C2D12,#FBBF24)", format: "Instagram Post", tag: "Opening",    designCat: "Events",     thumbLayout: "event",        c1: "#7C2D12", c2: "#FBBF24", tc: "#FFFFFF" },
+  { id: "product-launch",   name: "Product Launch",       thumb: "linear-gradient(135deg,#0F172A,#22D3EE)", format: "Instagram Post", tag: "Launch",     designCat: "Events",     thumbLayout: "announcement", c1: "#0F172A", c2: "#22D3EE", tc: "#FFFFFF" },
+  { id: "anniversary",      name: "Business Anniversary", thumb: "linear-gradient(135deg,#6D28D9,#FBBF24)", format: "Instagram Post", tag: "Milestone",  designCat: "Events",     thumbLayout: "event",        c1: "#6D28D9", c2: "#FBBF24", tc: "#FFFFFF" },
+  { id: "year-end-function",name: "Year-End Function",    thumb: "linear-gradient(135deg,#1e1b4b,#A78BFA)", format: "Instagram Post", tag: "Event",      designCat: "Events",     thumbLayout: "event",        c1: "#1e1b4b", c2: "#A78BFA", tc: "#FFFFFF" },
+  { id: "workshop",         name: "Workshop Invite",      thumb: "linear-gradient(135deg,#1E40AF,#60A5FA)", format: "Instagram Post", tag: "Workshop",   designCat: "Events",     thumbLayout: "hiring",       c1: "#1E40AF", c2: "#60A5FA", tc: "#FFFFFF" },
+  { id: "webinar",          name: "Free Webinar",         thumb: "linear-gradient(135deg,#312E81,#A78BFA)", format: "Facebook Post",  tag: "Webinar",    designCat: "Events",     thumbLayout: "hiring",       c1: "#312E81", c2: "#A78BFA", tc: "#FFFFFF" },
+  { id: "store-event",      name: "In-Store Event",       thumb: "linear-gradient(135deg,#065F46,#34D399)", format: "Instagram Post", tag: "Event",      designCat: "Events",     thumbLayout: "announcement", c1: "#065F46", c2: "#34D399", tc: "#FFFFFF" },
+  // — HOLIDAYS —
+  { id: "christmas",        name: "Christmas Special",    thumb: "linear-gradient(135deg,#991B1B,#16A34A)", format: "Instagram Post", tag: "Christmas",  designCat: "Holidays",   thumbLayout: "holiday",      c1: "#991B1B", c2: "#FBBF24", tc: "#FFFFFF" },
+  { id: "new-year",         name: "New Year Special",     thumb: "linear-gradient(135deg,#1a1a1a,#EAB308)", format: "Instagram Post", tag: "New Year",   designCat: "Holidays",   thumbLayout: "holiday",      c1: "#111827", c2: "#EAB308", tc: "#FFFFFF" },
+  { id: "valentines",       name: "Valentine's Day",      thumb: "linear-gradient(135deg,#9F1239,#FDA4AF)", format: "Instagram Post", tag: "Valentine's",designCat: "Holidays",   thumbLayout: "holiday",      c1: "#9F1239", c2: "#FDA4AF", tc: "#FFFFFF" },
+  { id: "easter",           name: "Easter Special",       thumb: "linear-gradient(135deg,#6D28D9,#FDE68A)", format: "Instagram Post", tag: "Easter",     designCat: "Holidays",   thumbLayout: "holiday",      c1: "#6D28D9", c2: "#FDE68A", tc: "#FFFFFF" },
+  { id: "womens-day",       name: "Women's Day",          thumb: "linear-gradient(135deg,#831843,#FCA5A5)", format: "Instagram Post", tag: "Women's Day",designCat: "Holidays",   thumbLayout: "holiday",      c1: "#831843", c2: "#FCA5A5", tc: "#FFFFFF" },
+  { id: "youth-day",        name: "Youth Day",            thumb: "linear-gradient(135deg,#166534,#4ADE80)", format: "Instagram Post", tag: "Youth Day",  designCat: "Holidays",   thumbLayout: "holiday",      c1: "#166534", c2: "#FDE68A", tc: "#FFFFFF" },
+  { id: "heritage-day",     name: "Heritage Day",         thumb: "linear-gradient(135deg,#78350F,#FCD34D)", format: "Instagram Post", tag: "Heritage Day",designCat: "Holidays",  thumbLayout: "event",        c1: "#78350F", c2: "#FCD34D", tc: "#FFFFFF" },
+  { id: "ramadan",          name: "Ramadan Kareem",       thumb: "linear-gradient(135deg,#134E4A,#FCD34D)", format: "Instagram Post", tag: "Ramadan",    designCat: "Holidays",   thumbLayout: "holiday",      c1: "#134E4A", c2: "#FCD34D", tc: "#FFFFFF" },
+  // — FOOD & DINING —
+  { id: "daily-special",    name: "Daily Special",        thumb: "linear-gradient(135deg,#92400E,#F59E0B)", format: "Instagram Post", tag: "Food",       designCat: "Food",       thumbLayout: "food",         c1: "#92400E", c2: "#F59E0B", tc: "#FFFFFF" },
+  { id: "weekend-brunch",   name: "Weekend Brunch",       thumb: "linear-gradient(135deg,#7C2D12,#FCA5A5)", format: "Instagram Post", tag: "Brunch",     designCat: "Food",       thumbLayout: "food",         c1: "#7C2D12", c2: "#FEF3C7", tc: "#FFFFFF" },
+  { id: "happy-hour",       name: "Happy Hour",           thumb: "linear-gradient(135deg,#1a1a1a,#D97706)", format: "Instagram Post", tag: "Happy Hour", designCat: "Food",       thumbLayout: "food",         c1: "#1a1a1a", c2: "#D97706", tc: "#FFFFFF" },
+  { id: "menu-launch",      name: "New Menu Launch",      thumb: "linear-gradient(135deg,#064E3B,#6EE7B7)", format: "Instagram Post", tag: "Menu",       designCat: "Food",       thumbLayout: "announcement", c1: "#064E3B", c2: "#6EE7B7", tc: "#FFFFFF" },
+  { id: "restaurant-promo", name: "Restaurant Promo",     thumb: "linear-gradient(135deg,#7C2D12,#F59E0B)", format: "Facebook Post",  tag: "Promo",      designCat: "Food",       thumbLayout: "food",         c1: "#7C2D12", c2: "#F59E0B", tc: "#FFFFFF" },
+  // — SERVICES —
+  { id: "service-promo",    name: "Service Promo",        thumb: "linear-gradient(135deg,#1E40AF,#06B6D4)", format: "Instagram Post", tag: "Services",   designCat: "Services",   thumbLayout: "service",      c1: "#1E40AF", c2: "#06B6D4", tc: "#FFFFFF" },
+  { id: "home-cleaning",    name: "Cleaning Services",    thumb: "linear-gradient(135deg,#0369A1,#BAE6FD)", format: "Instagram Post", tag: "Cleaning",   designCat: "Services",   thumbLayout: "service",      c1: "#0369A1", c2: "#7DD3FC", tc: "#FFFFFF" },
+  { id: "transport",        name: "Transport & Delivery", thumb: "linear-gradient(135deg,#0F172A,#F97316)", format: "Instagram Post", tag: "Transport",  designCat: "Services",   thumbLayout: "service",      c1: "#0F172A", c2: "#F97316", tc: "#FFFFFF" },
+  { id: "coaching",         name: "Business Coaching",    thumb: "linear-gradient(135deg,#4C1D95,#A855F7)", format: "Instagram Post", tag: "Coaching",   designCat: "Services",   thumbLayout: "service",      c1: "#4C1D95", c2: "#C4B5FD", tc: "#FFFFFF" },
+  { id: "tech-support",     name: "Tech Support",         thumb: "linear-gradient(135deg,#0F172A,#22D3EE)", format: "Instagram Post", tag: "Tech",       designCat: "Services",   thumbLayout: "service",      c1: "#0F172A", c2: "#22D3EE", tc: "#FFFFFF" },
+  // — BEAUTY —
+  { id: "beauty-salon",     name: "Salon Promo",          thumb: "linear-gradient(135deg,#831843,#F472B6)", format: "Instagram Post", tag: "Beauty",     designCat: "Beauty",     thumbLayout: "beauty",       c1: "#831843", c2: "#FBB6CE", tc: "#FFFFFF" },
+  { id: "spa-day",          name: "Spa Day Special",      thumb: "linear-gradient(135deg,#9F1239,#FBCFE8)", format: "Instagram Post", tag: "Spa",        designCat: "Beauty",     thumbLayout: "beauty",       c1: "#9F1239", c2: "#FBCFE8", tc: "#FFFFFF" },
+  { id: "nail-special",     name: "Nail Special",         thumb: "linear-gradient(135deg,#6D28D9,#F9A8D4)", format: "Instagram Post", tag: "Nails",      designCat: "Beauty",     thumbLayout: "beauty",       c1: "#6D28D9", c2: "#F9A8D4", tc: "#FFFFFF" },
+  { id: "beauty-arrivals",  name: "New Beauty Arrivals",  thumb: "linear-gradient(135deg,#1a1a1a,#EC4899)", format: "Instagram Post", tag: "New In",     designCat: "Beauty",     thumbLayout: "announcement", c1: "#1a1a1a", c2: "#EC4899", tc: "#FFFFFF" },
+  // — FITNESS —
+  { id: "gym-promo",        name: "Gym Membership",       thumb: "linear-gradient(135deg,#000000,#22C55E)", format: "Instagram Post", tag: "Fitness",    designCat: "Fitness",    thumbLayout: "fitness",      c1: "#000000", c2: "#22C55E", tc: "#FFFFFF" },
+  { id: "personal-training",name: "Personal Training",    thumb: "linear-gradient(135deg,#1a1a1a,#F97316)", format: "Instagram Post", tag: "Training",   designCat: "Fitness",    thumbLayout: "fitness",      c1: "#111827", c2: "#F97316", tc: "#FFFFFF" },
+  { id: "fitness-challenge",name: "30-Day Challenge",     thumb: "linear-gradient(135deg,#1a1a1a,#06B6D4)", format: "Instagram Post", tag: "Challenge",  designCat: "Fitness",    thumbLayout: "fitness",      c1: "#0F172A", c2: "#06B6D4", tc: "#FFFFFF" },
+  // — PROPERTY —
+  { id: "for-sale",         name: "Property For Sale",    thumb: "linear-gradient(135deg,#0F172A,#1E40AF)", format: "Instagram Post", tag: "For Sale",   designCat: "Property",   thumbLayout: "property",     c1: "#0F172A", c2: "#60A5FA", tc: "#FFFFFF" },
+  { id: "for-rent",         name: "For Rent",             thumb: "linear-gradient(135deg,#1a1a1a,#0F766E)", format: "Instagram Post", tag: "For Rent",   designCat: "Property",   thumbLayout: "property",     c1: "#111827", c2: "#2DD4BF", tc: "#FFFFFF" },
+  { id: "open-house",       name: "Open House",           thumb: "linear-gradient(135deg,#7C2D12,#FCD34D)", format: "Instagram Post", tag: "Open House", designCat: "Property",   thumbLayout: "property",     c1: "#7C2D12", c2: "#FCD34D", tc: "#FFFFFF" },
+  // — MOTIVATION —
+  { id: "inspiring-quote",  name: "Inspiring Quote",      thumb: "linear-gradient(135deg,#1F2937,#0EA5E9)", format: "Instagram Post", tag: "Quote",      designCat: "Motivation", thumbLayout: "quote",        c1: "#1F2937", c2: "#0EA5E9", tc: "#FFFFFF" },
+  { id: "monday-motivation",name: "Monday Motivation",    thumb: "linear-gradient(135deg,#1e1b4b,#A78BFA)", format: "Instagram Post", tag: "Motivation", designCat: "Motivation", thumbLayout: "quote",        c1: "#1e1b4b", c2: "#A78BFA", tc: "#FFFFFF" },
+  { id: "business-tips",    name: "Business Tips",        thumb: "linear-gradient(135deg,#134E4A,#6EE7B7)", format: "Instagram Post", tag: "Tips",       designCat: "Motivation", thumbLayout: "quote",        c1: "#134E4A", c2: "#6EE7B7", tc: "#FFFFFF" },
+  { id: "thank-you",        name: "Thank You Post",       thumb: "linear-gradient(135deg,#7C2D12,#FBBF24)", format: "Instagram Post", tag: "Thank You",  designCat: "Motivation", thumbLayout: "event",        c1: "#7C2D12", c2: "#FBBF24", tc: "#FFFFFF" },
+  // — CORPORATE —
+  { id: "we-are-hiring",    name: "We're Hiring",         thumb: "linear-gradient(135deg,#1E40AF,#E0E7FF)", format: "Instagram Post", tag: "Hiring",     designCat: "Corporate",  thumbLayout: "hiring",       c1: "#1E40AF", c2: "#93C5FD", tc: "#FFFFFF" },
+  { id: "quarterly-results",name: "Quarterly Results",    thumb: "linear-gradient(135deg,#0F172A,#3B82F6)", format: "Instagram Post", tag: "Corporate",  designCat: "Corporate",  thumbLayout: "corporate",    c1: "#0F172A", c2: "#3B82F6", tc: "#FFFFFF" },
+  { id: "client-testimonial",name:"Client Testimonial",   thumb: "linear-gradient(135deg,#F8FAFC,#1E293B)", format: "Instagram Post", tag: "Review",     designCat: "Corporate",  thumbLayout: "testimonial",  c1: "#F8FAFC", c2: "#F59E0B", tc: "#111827" },
+  { id: "csr-initiative",   name: "CSR Initiative",       thumb: "linear-gradient(135deg,#14532D,#22C55E)", format: "Instagram Post", tag: "CSR",        designCat: "Corporate",  thumbLayout: "corporate",    c1: "#14532D", c2: "#4ADE80", tc: "#FFFFFF" },
+  { id: "award-won",        name: "Award Announcement",   thumb: "linear-gradient(135deg,#0F172A,#EAB308)", format: "Instagram Post", tag: "Award",      designCat: "Corporate",  thumbLayout: "announcement", c1: "#0F172A", c2: "#EAB308", tc: "#FFFFFF" },
 ];
+
+interface DesignTemplate {
+  id: string; name: string; thumb: string; format: string; tag: string;
+  designCat: string; thumbLayout: string; c1: string; c2: string; tc: string;
+}
+
+function DesignThumb({ dt }: { dt: DesignTemplate }) {
+  const { thumbLayout: layout, thumb, c1, c2, tc } = dt;
+  const light = tc === "#FFFFFF";
+  const txt   = light ? "text-white" : "text-gray-900";
+  const dim   = light ? "text-white/60" : "text-gray-500";
+  const base  = "absolute inset-0";
+
+  if (layout === "sale") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="px-2.5 pt-2.5 flex items-center justify-between">
+        <span className={`text-[8px] font-bold uppercase tracking-widest ${dim}`}>{dt.designCat}</span>
+        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: c2, color: c1 }}>{dt.tag}</span>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-[72px] h-[72px] rounded-full flex flex-col items-center justify-center border-4 border-white/40 bg-white/15">
+          <span className="text-2xl font-black leading-none text-white">50%</span>
+          <span className="text-[9px] font-bold text-white/80">OFF</span>
+        </div>
+      </div>
+      <div className="h-8 bg-black/25 flex items-center justify-center">
+        <span className="text-[9px] font-black text-white tracking-widest">SHOP NOW</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "flash") return (
+    <div className={`${base} overflow-hidden flex flex-col`} style={{ background: thumb }}>
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute w-full h-full opacity-15" style={{ background: c2, transform: "skewY(-18deg)", top: "10%" }} />
+      </div>
+      <div className="relative z-10 flex flex-col h-full px-3.5 py-3">
+        <span className={`text-[8px] font-bold uppercase tracking-wider ${dim} mb-0.5`}>Limited time only</span>
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="text-3xl font-black text-white leading-none">24HR</div>
+          <div className="text-xl font-black leading-tight" style={{ color: c2 }}>ONLY</div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 h-px" style={{ background: c2 }} />
+          <span className="text-[8px] font-bold tracking-wider" style={{ color: c2 }}>FLASH SALE</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (layout === "coupon") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="flex-1 flex flex-row">
+        <div className="flex-1 flex flex-col items-center justify-center border-r-2 border-dashed border-white/35">
+          <span className="text-5xl font-black leading-none text-white">30%</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/70 mt-0.5">Discount</span>
+        </div>
+        <div className="w-[88px] flex flex-col justify-center px-2.5 gap-1.5">
+          <span className="text-[9px] font-bold text-white uppercase">Special offer</span>
+          <div className="h-5 rounded border border-white/35 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white">SAVE30</span>
+          </div>
+          <span className="text-[7px] text-white/50">Use at checkout</span>
+        </div>
+      </div>
+      <div className="h-7 bg-black/25 flex items-center justify-center">
+        <span className="text-[9px] font-bold text-white tracking-wider">REDEEM NOW</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "event") return (
+    <div className={`${base} flex flex-col items-center justify-center`} style={{ background: thumb }}>
+      {([[8,8],[162,8],[8,144],[162,144]] as [number,number][]).map(([x,y], i) => (
+        <div key={i} className="absolute w-3.5 h-3.5" style={{ left: x, top: y, background: c2,
+          clipPath: "polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)" }} />
+      ))}
+      <div className="absolute inset-2 border rounded-xl" style={{ borderColor: `${c2}50` }} />
+      <div className="flex flex-col items-center gap-1 relative z-10">
+        <span className="text-[8px] font-bold px-2 py-0.5 rounded-full" style={{ background: c2, color: c1 }}>{dt.tag}</span>
+        <div className="text-base font-black uppercase text-white leading-tight text-center mt-0.5">EVENT<br/>NAME</div>
+        <div className="h-0.5 w-14 my-0.5" style={{ background: `${c2}80` }} />
+        <span className="text-[8px] text-white/60">Saturday · 10 AM</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "announcement") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="h-1" style={{ background: c2 }} />
+      <div className="flex-1 flex flex-col items-center justify-center px-3 gap-1.5">
+        <span className={`text-[8px] font-bold uppercase tracking-widest ${dim}`}>{dt.tag}</span>
+        <div className={`text-base font-black text-center uppercase leading-tight ${txt}`}>NEW<br/>ARRIVAL</div>
+        <div className="h-0.5 w-12" style={{ background: c2 }} />
+        <span className={`text-[8px] ${dim} text-center`}>Available now</span>
+      </div>
+      <div className="h-8 flex items-center justify-center" style={{ background: `${c2}25` }}>
+        <span className="text-[9px] font-black tracking-wider" style={{ color: c2 }}>DISCOVER MORE →</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "food") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="px-2.5 pt-2.5">
+        <span className="text-[8px] font-bold text-white/70 uppercase tracking-wider">Today's Special</span>
+      </div>
+      <div className="flex-1 flex items-center justify-center relative">
+        <div className="w-[66px] h-[66px] rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/10" />
+        </div>
+        <div className="absolute bottom-1.5 right-6 w-[44px] h-[44px] rounded-full flex flex-col items-center justify-center" style={{ background: c2 }}>
+          <span className="text-[8px] font-bold leading-none" style={{ color: c1 }}>ONLY</span>
+          <span className="text-[12px] font-black leading-tight" style={{ color: c1 }}>R149</span>
+        </div>
+      </div>
+      <div className="h-7 bg-black/20 flex items-center justify-center">
+        <span className="text-[9px] font-bold text-white tracking-wider">ORDER NOW</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "service") return (
+    <div className={`${base} flex flex-col px-3 py-2.5`} style={{ background: thumb }}>
+      <div className="mb-2">
+        <span className={`text-[9px] font-black uppercase tracking-wider ${txt}`}>Services</span>
+        <div className="h-0.5 w-8 mt-0.5" style={{ background: c2 }} />
+      </div>
+      <div className="flex-1 flex flex-col justify-center gap-2">
+        {[1,2,3].map(i => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: c2 }} />
+            <div className={`h-1.5 rounded-full ${light ? "bg-white/40" : "bg-black/20"}`} style={{ width: `${70 - i * 10}%` }} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 h-6 rounded-full flex items-center justify-center" style={{ background: c2 }}>
+        <span className="text-[9px] font-bold" style={{ color: c1 }}>GET A QUOTE</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "beauty") return (
+    <div className={`${base} flex flex-col items-center justify-center`} style={{ background: thumb }}>
+      {([[10,10],[172,10],[10,150],[172,150]] as [number,number][]).map(([x,y], i) => (
+        <div key={i} className="absolute w-5 h-5 rounded-full opacity-35" style={{ left: x, top: y, background: c2 }} />
+      ))}
+      <div className="absolute inset-3 border rounded-xl opacity-30" style={{ borderColor: c2 }} />
+      <div className="flex flex-col items-center gap-1.5 relative z-10">
+        <div className="w-9 h-9 rounded-full border-2" style={{ borderColor: `${c2}80`, background: `${c2}20` }} />
+        <span className={`text-[11px] font-black uppercase tracking-widest ${txt}`}>Beauty</span>
+        <span className={`text-[8px] uppercase tracking-widest ${dim}`}>& Salon</span>
+        <div className="h-px w-14" style={{ background: light ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.15)" }} />
+        <div className="px-3 py-1 rounded-full text-[8px] font-bold mt-0.5" style={{ background: c2, color: light ? c1 : "#FFFFFF" }}>BOOK NOW</div>
+      </div>
+    </div>
+  );
+
+  if (layout === "fitness") return (
+    <div className={`${base} overflow-hidden`} style={{ background: thumb }}>
+      <div className="absolute bottom-0 left-0 right-0 h-[38px]" style={{ background: c2 }} />
+      <div className="absolute inset-0 flex flex-col justify-center px-4" style={{ paddingBottom: "38px" }}>
+        <span className="text-[8px] font-bold text-white/50 uppercase tracking-wider mb-0.5">Get stronger</span>
+        <div className="text-3xl font-black text-white leading-none uppercase">TRAIN</div>
+        <div className="text-xl font-black leading-tight uppercase" style={{ color: c2 }}>HARDER</div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-[38px] flex items-center justify-center">
+        <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: c1 === "#000000" || c1 === "#111827" || c1 === "#0F172A" ? "#000" : "#fff" }}>JOIN TODAY</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "property") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="flex-1 flex flex-col items-center justify-center gap-1.5">
+        <div className="relative w-[54px] h-[48px]">
+          <div className="absolute top-0 left-0 right-0"
+            style={{ height: 0, borderLeft: "27px solid transparent", borderRight: "27px solid transparent", borderBottom: `22px solid ${c2}` }} />
+          <div className="absolute bottom-0 left-[5px] right-[5px] h-[26px] rounded-sm" style={{ background: `${c2}88` }} />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[10px] h-[16px] rounded-t-sm" style={{ background: `${c1}aa` }} />
+        </div>
+        <span className="text-[10px] font-black text-white uppercase tracking-wider">{dt.tag}</span>
+      </div>
+      <div className="h-9 flex items-center justify-center" style={{ background: c2 }}>
+        <span className="text-[11px] font-black" style={{ color: c1 }}>R 2 500 000</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "quote") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="absolute inset-2 border rounded-lg opacity-20" style={{ borderColor: c2 }} />
+      <div className="relative z-10 px-3 pt-1">
+        <span className="text-5xl font-serif leading-none" style={{ color: `${c2}70` }}>"</span>
+      </div>
+      <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-1.5 -mt-3">
+        <div className={`h-1.5 rounded-full ${light ? "bg-white/55" : "bg-black/25"}`} />
+        <div className={`h-1.5 w-5/6 rounded-full ${light ? "bg-white/45" : "bg-black/20"}`} />
+        <div className={`h-1.5 w-4/6 rounded-full ${light ? "bg-white/35" : "bg-black/10"}`} />
+      </div>
+      <div className="relative z-10 px-4 pb-3 flex items-center gap-2">
+        <div className="flex-1 h-px" style={{ background: light ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)" }} />
+        <span className="text-[8px] font-bold" style={{ color: c2 }}>YOUR BRAND</span>
+      </div>
+    </div>
+  );
+
+  if (layout === "hiring") return (
+    <div className={`${base} flex flex-col px-3 py-2.5`} style={{ background: thumb }}>
+      <span className="self-start inline-block px-2 py-0.5 rounded-full text-[8px] font-bold mb-2" style={{ background: c2, color: c1 }}>NOW HIRING</span>
+      <div className={`text-base font-black uppercase leading-tight ${txt}`}>Join<br/>Our Team</div>
+      <div className="flex-1 flex flex-col justify-center gap-1.5 mt-2">
+        {[1,2,3].map(i => (
+          <div key={i} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c2 }} />
+            <div className={`h-1 rounded-full flex-1 ${light ? "bg-white/35" : "bg-black/15"}`} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 h-5 rounded-full flex items-center justify-center text-[8px] font-black" style={{ background: `${c2}30`, color: c2 }}>APPLY NOW →</div>
+    </div>
+  );
+
+  if (layout === "corporate") return (
+    <div className={`${base} flex flex-col`} style={{ background: thumb }}>
+      <div className="h-1" style={{ background: c2 }} />
+      <div className="flex-1 flex flex-col items-center justify-center px-3 gap-1">
+        <span className={`text-[8px] font-semibold uppercase tracking-widest ${dim}`}>{dt.tag}</span>
+        <span className="text-3xl font-black" style={{ color: c2 }}>98%</span>
+        <span className={`text-[8px] ${dim} text-center`}>Client satisfaction</span>
+        <div className="h-px w-14 mt-0.5" style={{ background: light ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)" }} />
+        <span className={`text-[8px] font-bold ${txt}`}>YOUR BRAND</span>
+      </div>
+      <div className="h-1" style={{ background: `${c2}60` }} />
+    </div>
+  );
+
+  if (layout === "testimonial") return (
+    <div className={`${base} flex flex-col px-3 py-3`} style={{ background: thumb }}>
+      <div className="flex gap-0.5 mb-2">
+        {[1,2,3,4,5].map(i => (
+          <div key={i} className="w-2.5 h-2.5"
+            style={{ background: c2, clipPath: "polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)" }} />
+        ))}
+      </div>
+      <div className="flex-1 flex flex-col justify-center gap-1.5">
+        <div className={`h-1.5 rounded-full ${light ? "bg-white/55" : "bg-black/20"}`} />
+        <div className={`h-1.5 w-5/6 rounded-full ${light ? "bg-white/45" : "bg-black/15"}`} />
+        <div className={`h-1.5 w-4/6 rounded-full ${light ? "bg-white/35" : "bg-black/10"}`} />
+      </div>
+      <div className="flex items-center gap-1.5 mt-2">
+        <div className="w-6 h-6 rounded-full flex-shrink-0" style={{ background: c2 }} />
+        <div className="flex flex-col gap-0.5">
+          <div className={`h-1 w-14 rounded-full ${light ? "bg-white/50" : "bg-black/20"}`} />
+          <div className={`h-1 w-10 rounded-full ${light ? "bg-white/30" : "bg-black/10"}`} />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (layout === "holiday") return (
+    <div className={`${base} flex flex-col items-center justify-center`} style={{ background: thumb }}>
+      {([[6,6],[174,6],[6,150],[174,150],[90,4]] as [number,number][]).map(([x,y], i) => (
+        <div key={i} className="absolute w-[14px] h-[14px]"
+          style={{ left: x, top: y, background: c2, opacity: i > 3 ? 0.6 : 1,
+            clipPath: "polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)" }} />
+      ))}
+      <div className="absolute inset-2 border rounded-xl" style={{ borderColor: `${c2}50` }} />
+      <div className="flex flex-col items-center gap-1 relative z-10">
+        <span className="text-[8px] font-bold text-white/60 uppercase tracking-widest">Season's Greetings</span>
+        <div className="text-sm font-black uppercase text-center leading-tight text-white">Happy<br/>Holidays!</div>
+        <div className="h-0.5 w-14 my-0.5" style={{ background: c2 }} />
+        <div className="px-3 py-0.5 rounded-full text-[8px] font-bold" style={{ background: c2, color: c1 }}>SPECIAL OFFER</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`${base} flex flex-col items-center justify-center px-2`} style={{ background: thumb }}>
+      <div className={`text-[10px] font-bold text-center ${txt}`}>{dt.name}</div>
+    </div>
+  );
+}
 
 const CATEGORY_ORDER = [
   "Introduction", "Services", "Our Story", "Features", "Testimonials",
@@ -824,6 +1143,7 @@ export default function SocialPostTemplates({ workspaceId, site, createPath, edi
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
+  const [designFilter, setDesignFilter] = useState<string>("All");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
 
@@ -965,7 +1285,7 @@ export default function SocialPostTemplates({ workspaceId, site, createPath, edi
 
             {/* ── Row 1: Design / Canvas Templates ── */}
             <div className="mb-2">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold text-gray-700">Design templates</p>
                 <button
                   onClick={() => navigate(editorPath || "/dashboard/social/editor")}
@@ -974,63 +1294,54 @@ export default function SocialPostTemplates({ workspaceId, site, createPath, edi
                   Open editor →
                 </button>
               </div>
+              {/* Category filter chips */}
+              <div className="overflow-x-auto scrollbar-none -mx-2 mb-3">
+                <div className="flex gap-1.5 px-2 pb-1" style={{ minWidth: "max-content" }}>
+                  {["All","Sales","Events","Holidays","Food","Services","Beauty","Fitness","Property","Motivation","Corporate"].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setDesignFilter(cat)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all border ${
+                        designFilter === cat
+                          ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-violet-300 hover:text-violet-600"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Template cards with real CSS thumbnails */}
               <div className="overflow-x-auto scrollbar-none -mx-2">
                 <div className="flex gap-3 pb-3 px-2" style={{ minWidth: "max-content" }}>
-                  {DESIGN_TEMPLATES.map((dt, i) => (
-                    <motion.button
-                      key={dt.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.025 }}
-                      onClick={() => navigate(`${editorPath || "/dashboard/social/editor"}?template=${dt.id}`)}
-                      className="group flex flex-col rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-200 bg-white border border-gray-100 hover:border-violet-300 text-left"
-                      style={{ width: 192, flexShrink: 0 }}
-                    >
-                      <div
-                        className="w-full overflow-hidden relative"
-                        style={{ height: 168, background: dt.thumb }}
+                  {DESIGN_TEMPLATES
+                    .filter(dt => designFilter === "All" || dt.designCat === designFilter)
+                    .map((dt, i) => (
+                      <motion.button
+                        key={dt.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.025 }}
+                        onClick={() => navigate(`${editorPath || "/dashboard/social/editor"}?template=${dt.id}`)}
+                        className="group flex flex-col rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-200 bg-white border border-gray-100 hover:border-violet-300 text-left"
+                        style={{ width: 192, flexShrink: 0 }}
                       >
-                        {/* Fake social post layout inside thumbnail */}
-                        <div className="absolute inset-0 flex flex-col">
-                          {/* Post header */}
-                          <div className="flex items-center gap-1.5 px-3 pt-3">
-                            <div className="w-6 h-6 rounded-full bg-white/35 shrink-0" />
-                            <div className="flex-1 space-y-1">
-                              <div className="h-1.5 w-14 bg-white/45 rounded-full" />
-                              <div className="h-1 w-9 bg-white/25 rounded-full" />
-                            </div>
-                          </div>
-                          {/* Content area */}
-                          <div className="flex-1 flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
-                              <div className="w-7 h-7 rounded-full bg-white/50" />
-                            </div>
-                          </div>
-                          {/* Caption lines */}
-                          <div className="px-3 pb-2 space-y-1">
-                            <div className="h-1.5 bg-white/40 rounded-full" />
-                            <div className="h-1.5 w-3/4 bg-white/30 rounded-full" />
+                        <div className="w-full overflow-hidden relative" style={{ height: 168 }}>
+                          <DesignThumb dt={dt as DesignTemplate} />
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                            <span className="bg-white text-violet-700 text-xs font-bold px-4 py-2 rounded-xl shadow-lg">
+                              Customize →
+                            </span>
                           </div>
                         </div>
-                        {/* Tag badge */}
-                        <div className="absolute top-2 right-2">
-                          <span className="text-[10px] font-bold text-white/95 bg-black/30 rounded-full px-2 py-0.5 backdrop-blur-sm">
-                            {dt.tag}
-                          </span>
+                        <div className="px-3 py-2.5 bg-white group-hover:bg-violet-50/60 transition-colors">
+                          <p className="text-[12px] font-semibold text-gray-800 leading-tight truncate">{dt.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{dt.format}</p>
                         </div>
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="bg-white text-violet-700 text-xs font-bold px-4 py-2 rounded-xl shadow-lg">
-                            Customize →
-                          </span>
-                        </div>
-                      </div>
-                      <div className="px-3 py-2.5 bg-white group-hover:bg-violet-50/60 transition-colors">
-                        <p className="text-[12px] font-semibold text-gray-800 leading-tight truncate">{dt.name}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{dt.format}</p>
-                      </div>
-                    </motion.button>
-                  ))}
+                      </motion.button>
+                    ))}
                 </div>
               </div>
             </div>
