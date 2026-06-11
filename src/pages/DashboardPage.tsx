@@ -74,6 +74,7 @@ type NavSingle = {
   requiresPlan?: PlanCode;
   perm?: string;
   ownerOnly?: boolean;
+  openNewTab?: boolean;
 };
 
 type NavItem = NavSingle | NavGroup;
@@ -84,7 +85,7 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
   { icon: Globe, label: "Website Builder", path: "/dashboard/website", perm: "website" },
-  { icon: Smartphone, label: "Social Media", path: "/dashboard/social", requiresPlan: "pro" as PlanCode, perm: "social" },
+  { icon: Smartphone, label: "Social Media", path: "/social-hub", requiresPlan: "pro" as PlanCode, perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresPlan: "pro" as PlanCode, perm: "biz_connect" },
   {
     icon: Wallet,
@@ -508,6 +509,26 @@ export default function DashboardPage() {
                     </span>
                   )}
                 </button>
+              );
+            }
+
+            if ((item as any).openNewTab) {
+              return (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {sidebarWide && <span>{item.label}</span>}
+                  {!sidebarWide && (
+                    <span className="pointer-events-none absolute left-full ml-2 z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      {item.label}
+                    </span>
+                  )}
+                </a>
               );
             }
 

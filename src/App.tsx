@@ -22,6 +22,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SetPasswordPage from "./pages/SetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import PayInvoice from "./pages/PayInvoice";
+import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/set-password" element={<SetPasswordPage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/social-hub/*" element={<ProtectedRoute><SocialHubStandalone /></ProtectedRoute>} />
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />

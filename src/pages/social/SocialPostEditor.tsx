@@ -1214,33 +1214,67 @@ export default function SocialPostEditor() {
   const selected = elements.find(e => e.id === selectedId) || null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] w-full overflow-hidden bg-white">
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <h2 className="font-bold font-heading text-base">Post Designer</h2>
-          <span className="text-xs text-muted-foreground hidden sm:inline">Create stunning social media posts</span>
+    <div className="flex flex-col h-full w-full overflow-hidden bg-white">
+      {/* ── Canva-style top bar ────────────────────────────────── */}
+      <div className="flex items-center gap-0 border-b bg-white h-12 px-2 shrink-0">
+        {/* Left: logo + menu items */}
+        <div className="flex items-center gap-0.5">
+          <div
+            className="w-7 h-7 rounded-lg mr-2 ml-1 flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}
+          >
+            <Palette className="h-4 w-4 text-white" />
+          </div>
+          {["File", "Resize", "Editing"].map(label => (
+            <button
+              key={label}
+              className="px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors font-medium"
+            >
+              {label}
+            </button>
+          ))}
+          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-full">NEW</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={undo} disabled={!canUndo} variant="outline" size="sm" title="Undo (Ctrl+Z)">
+
+        {/* Center: undo/redo + title */}
+        <div className="flex items-center gap-1.5 mx-auto">
+          <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)"
+            className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 transition-colors">
             <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button onClick={redo} disabled={!canRedo} variant="outline" size="sm" title="Redo (Ctrl+Shift+Z)">
+          </button>
+          <button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)"
+            className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 transition-colors">
             <Redo2 className="h-4 w-4" />
-          </Button>
+          </button>
+          <div className="mx-1 h-5 w-px bg-gray-200" />
           <select
             value={preset.id}
             onChange={(e) => {
               const p = PRESETS.find(x => x.id === e.target.value);
               if (p) setPreset(p);
             }}
-            className="rounded-md border px-2 py-1.5 text-sm bg-white"
+            className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs bg-white text-gray-700 font-medium hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-200"
           >
             {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
-          <Button onClick={exportImage} className="gradient-hero text-white" size="sm">
-            <Download className="h-4 w-4 mr-1" /> Download
-          </Button>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-1">
+          <button className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">
+            Animate
+          </button>
+          <button className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">
+            Position
+          </button>
+          <div className="w-px h-5 bg-gray-200 mx-0.5" />
+          <button
+            onClick={exportImage}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all"
+            style={{ background: "linear-gradient(90deg,#7c3aed,#9333ea)" }}
+          >
+            <Download className="h-3.5 w-3.5" /> Share
+          </button>
         </div>
       </div>
 
@@ -1467,7 +1501,7 @@ export default function SocialPostEditor() {
         </div>
 
         {/* Canvas area */}
-        <div ref={containerRef} className="flex-1 bg-slate-100 flex items-center justify-center overflow-auto relative">
+        <div ref={containerRef} className="flex-1 bg-[#1e1e1e] flex items-center justify-center overflow-auto relative">
           <div style={{
             width: preset.w * stageScale,
             height: preset.h * stageScale,
@@ -1622,7 +1656,7 @@ export default function SocialPostEditor() {
               </Layer>
             </Stage>
           </div>
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur rounded-md border px-2 py-1 text-[11px] text-slate-600">
+          <div className="absolute bottom-3 right-3 bg-[#2d2d2d] backdrop-blur rounded-lg border border-white/10 px-2.5 py-1 text-[11px] text-white/70 font-medium">
             {Math.round(stageScale * 100)}%
           </div>
         </div>
