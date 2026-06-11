@@ -16,6 +16,7 @@ interface Props {
   workspaceId: string;
   site: SiteConfig | null;
   createPath?: string;
+  editorPath?: string;
 }
 
 interface PostTemplate {
@@ -819,7 +820,7 @@ const CATEGORY_EXPLORE = [
   { label: "Our Story",          sublabel: "Brand history & values",    gradient: "from-violet-500 to-purple-600",   img: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=400" },
 ];
 
-export default function SocialPostTemplates({ workspaceId, site, createPath }: Props) {
+export default function SocialPostTemplates({ workspaceId, site, createPath, editorPath }: Props) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
@@ -967,7 +968,7 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold text-gray-700">Design templates</p>
                 <button
-                  onClick={() => navigate("/dashboard/social/editor")}
+                  onClick={() => navigate(editorPath || "/dashboard/social/editor")}
                   className="text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
                 >
                   Open editor →
@@ -981,21 +982,50 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.025 }}
-                      onClick={() => navigate(`/dashboard/social/editor?template=${dt.id}`)}
-                      className="group flex flex-col rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 bg-white border border-gray-100 hover:border-violet-200 text-left"
-                      style={{ width: 148, flexShrink: 0 }}
+                      onClick={() => navigate(`${editorPath || "/dashboard/social/editor"}?template=${dt.id}`)}
+                      className="group flex flex-col rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-200 bg-white border border-gray-100 hover:border-violet-300 text-left"
+                      style={{ width: 192, flexShrink: 0 }}
                     >
                       <div
-                        className="w-full rounded-t-2xl group-hover:scale-[1.02] transition-transform duration-300 origin-bottom"
-                        style={{ height: 100, background: dt.thumb }}
+                        className="w-full overflow-hidden relative"
+                        style={{ height: 168, background: dt.thumb }}
                       >
-                        <div className="w-full h-full flex items-end p-2">
-                          <span className="text-[10px] font-bold text-white/90 bg-black/25 rounded-full px-2 py-0.5 backdrop-blur-sm">
+                        {/* Fake social post layout inside thumbnail */}
+                        <div className="absolute inset-0 flex flex-col">
+                          {/* Post header */}
+                          <div className="flex items-center gap-1.5 px-3 pt-3">
+                            <div className="w-6 h-6 rounded-full bg-white/35 shrink-0" />
+                            <div className="flex-1 space-y-1">
+                              <div className="h-1.5 w-14 bg-white/45 rounded-full" />
+                              <div className="h-1 w-9 bg-white/25 rounded-full" />
+                            </div>
+                          </div>
+                          {/* Content area */}
+                          <div className="flex-1 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
+                              <div className="w-7 h-7 rounded-full bg-white/50" />
+                            </div>
+                          </div>
+                          {/* Caption lines */}
+                          <div className="px-3 pb-2 space-y-1">
+                            <div className="h-1.5 bg-white/40 rounded-full" />
+                            <div className="h-1.5 w-3/4 bg-white/30 rounded-full" />
+                          </div>
+                        </div>
+                        {/* Tag badge */}
+                        <div className="absolute top-2 right-2">
+                          <span className="text-[10px] font-bold text-white/95 bg-black/30 rounded-full px-2 py-0.5 backdrop-blur-sm">
                             {dt.tag}
                           </span>
                         </div>
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="bg-white text-violet-700 text-xs font-bold px-4 py-2 rounded-xl shadow-lg">
+                            Customize →
+                          </span>
+                        </div>
                       </div>
-                      <div className="px-2.5 py-2 bg-white">
+                      <div className="px-3 py-2.5 bg-white group-hover:bg-violet-50/60 transition-colors">
                         <p className="text-[12px] font-semibold text-gray-800 leading-tight truncate">{dt.name}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">{dt.format}</p>
                       </div>
@@ -1119,76 +1149,75 @@ export default function SocialPostTemplates({ workspaceId, site, createPath }: P
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.025, 0.4) }}
                 >
-                  <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 hover:border-violet-100 flex flex-col h-full">
+                  <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-200 hover:border-violet-200">
 
-                    {/* Image area */}
-                    <div className="relative h-44 w-full overflow-hidden bg-gray-100 shrink-0">
+                    {/* Full-bleed image area */}
+                    <div className="relative overflow-hidden bg-gray-100" style={{ height: 230 }}>
                       <img
                         src={template.mockImage}
                         alt={template.title}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        onError={(e) => {
+                          const el = e.currentTarget as HTMLImageElement;
+                          el.style.display = "none";
+                          const parent = el.parentElement;
+                          if (parent) parent.style.background = `linear-gradient(135deg, rgba(${template.categoryBgRGB},0.8), rgba(${template.categoryBgRGB},0.4))`;
+                        }}
                       />
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: `linear-gradient(to bottom, rgba(${template.categoryBgRGB}, 0.3) 0%, rgba(0,0,0,0.65) 100%)` }}
-                      />
-                      {/* Category badge */}
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 40%, rgba(0,0,0,0.7) 100%)" }} />
+
+                      {/* Category badge — top left */}
                       <div className="absolute top-3 left-3">
-                        <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-white/20 backdrop-blur-sm text-white border border-white/30">
+                        <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/25 shadow-sm">
                           <Icon className="h-3 w-3" />
                           {template.category}
                         </div>
                       </div>
-                      {/* Hover overlay button */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+
+                      {/* Title + desc — bottom overlay (always visible) */}
+                      <div className="absolute bottom-0 inset-x-0 px-3.5 pb-3.5 group-hover:pb-16 transition-all duration-200">
+                        <p className="text-white font-bold text-sm leading-tight drop-shadow-lg">{template.title}</p>
+                        <p className="text-white/75 text-[11px] mt-0.5 line-clamp-1 drop-shadow">{template.description}</p>
+                      </div>
+
+                      {/* Hover overlay — action buttons */}
+                      <div className="absolute inset-0 flex items-center justify-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gradient-to-t from-black/50 to-transparent">
                         <button
                           onClick={() => handleUseTemplate(template)}
                           className="bg-white text-violet-700 font-bold text-sm px-5 py-2.5 rounded-xl shadow-xl hover:bg-violet-50 transition-colors"
                         >
                           Use Template
                         </button>
-                      </div>
-                      {/* Title overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white font-bold text-sm leading-tight drop-shadow-md">{template.title}</p>
-                        <p className="text-white/80 text-xs drop-shadow mt-0.5 line-clamp-1">{template.description}</p>
+                        <button
+                          onClick={() => handleCopy(template)}
+                          className={`backdrop-blur-sm font-semibold text-sm px-3 py-2.5 rounded-xl border transition-all ${
+                            copiedId === template.id
+                              ? "bg-green-500 text-white border-green-400"
+                              : "bg-white/20 text-white border-white/40 hover:bg-white/30"
+                          }`}
+                          title="Copy text + download image"
+                        >
+                          {copiedId === template.id ? "✓" : <Copy className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="px-4 py-3 flex flex-col flex-1">
-                      <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-xs text-gray-500 leading-relaxed overflow-hidden max-h-[72px] relative">
-                        {template.content}
-                        <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-gray-50 to-transparent" />
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {template.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="rounded-full bg-violet-50 text-violet-600 text-[10px] px-2 py-0.5 font-medium border border-violet-100">
+                    {/* Clean bottom strip */}
+                    <div className="px-3.5 py-3 flex items-center justify-between">
+                      <div className="flex flex-wrap gap-1.5 min-w-0">
+                        {template.tags.slice(0, 2).map(tag => (
+                          <span key={tag} className="rounded-full bg-violet-50 text-violet-600 text-[10px] px-2 py-0.5 font-medium border border-violet-100 whitespace-nowrap">
                             {tag}
                           </span>
                         ))}
                       </div>
-
-                      <div className="flex items-center gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          onClick={() => handleUseTemplate(template)}
-                          className="flex-1 bg-violet-600 hover:bg-violet-700 text-white text-xs h-8"
-                        >
-                          Use Template <ArrowRight className="h-3 w-3 ml-1" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCopy(template)}
-                          className={`h-8 text-xs ${copiedId === template.id ? "border-green-300 text-green-600 bg-green-50" : "border-gray-200 text-gray-500 hover:border-violet-200 hover:text-violet-600"}`}
-                          title="Copy text + download image"
-                        >
-                          {copiedId === template.id ? "Copied!" : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
+                      <button
+                        onClick={() => handleUseTemplate(template)}
+                        className="shrink-0 ml-2 text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1 transition-colors"
+                      >
+                        Use <ArrowRight className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
                 </motion.div>

@@ -723,7 +723,7 @@ export default function SocialHubStandalone() {
                       </div>
                     </div>
                   ) : (
-                    <SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/social-hub/create" />
+                    <SocialPostTemplates workspaceId={workspaceId} site={site} createPath="/social-hub/create" editorPath="/social-hub/editor" />
                   )}
                 </div>
               </div>
