@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute, FranchiseRoute } from "@/components/ProtectedRoute";
@@ -104,6 +104,8 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/set-password" element={<SetPasswordPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/dashboard/social" element={<Navigate to="/social-hub" replace />} />
+              <Route path="/dashboard/social/*" element={<Navigate to="/social-hub" replace />} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/social-hub/*" element={<ProtectedRoute><SocialHubStandalone /></ProtectedRoute>} />
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
