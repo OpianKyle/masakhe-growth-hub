@@ -21,7 +21,7 @@ import {
   MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
   Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
   Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search,
-  Settings2,
+  Settings2, Globe,
 } from "lucide-react";
 import { WebsiteBuilderTour, TourRestartButton } from "@/components/website/WebsiteBuilderTour";
 
