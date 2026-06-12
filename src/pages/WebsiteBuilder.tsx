@@ -564,7 +564,7 @@ export default function WebsiteBuilder() {
   if (previewSite) {
     const previewTemplateName = templateList.find(t => t.id === previewSite.templateId)?.name || previewSite.templateId;
     return (
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-slate-100">
+      <div className="flex h-full flex-col overflow-hidden bg-slate-100">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => setPreviewSite(null)}>
@@ -721,7 +721,7 @@ export default function WebsiteBuilder() {
       </DialogContent>
     </Dialog>
 
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
+    <div className="flex h-full overflow-hidden bg-slate-50">
       <div className="flex flex-col border-r bg-white shadow-xl shrink-0" style={{ width: editorWidth }}>
         <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-20">
           <div className="flex items-center gap-2">
