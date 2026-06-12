@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
-import WebsiteBuilder from "./WebsiteBuilder";
+import WebsiteHub from "./WebsiteHub";
 import FinancePage from "./FinancePage";
 import InvoicesPage from "./InvoicesPage";
 import GrantReadinessPage from "./GrantReadinessPage";
@@ -720,7 +720,7 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-auto min-h-0 relative">
           <Routes>
             <Route index element={<DashboardOverview />} />
-            <Route path="website" element={<WebsiteBuilder />} />
+            <Route path="website/*" element={<WebsiteHub />} />
             <Route path="social/*" element={
               meetsPlan("starter") ? <SocialHub /> : <UpgradeGate requiredPlan="starter" planName={PLAN_NAME["starter"]} onUpgrade={() => navigate("/dashboard/billing")} />
             } />
