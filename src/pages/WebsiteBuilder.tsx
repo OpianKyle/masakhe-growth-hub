@@ -355,7 +355,7 @@ export default function WebsiteBuilder() {
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "sections">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "design" | "media" | "sections">("settings");
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
@@ -627,43 +627,56 @@ export default function WebsiteBuilder() {
       </DialogContent>
     </Dialog>
 
-    {/* ── WordPress-style editor shell ── */}
-    <div className="flex flex-col h-full bg-[#f0f0f1]">
+    {/* ── Site Editor Shell ── */}
+    <div className="flex flex-col h-full" style={{ background: "linear-gradient(160deg,#f8faff 0%,#f1f5f9 100%)" }}>
 
-      {/* ── Top admin bar ── */}
-      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-5 shrink-0 shadow-sm z-20">
-        {/* Left: back + site name + saved */}
+      {/* ── Top bar ── */}
+      <div className="h-14 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 shrink-0 z-20"
+        style={{ boxShadow: "0 1px 8px 0 rgba(0,0,0,0.06)" }}>
+
+        {/* Left: back + site name */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => setSite(null)}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 transition-colors shrink-0 group"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Templates</span>
-          </button>
-          <div className="w-px h-5 bg-gray-200 shrink-0" />
-          <span className="text-sm font-semibold text-gray-800 truncate">{site.businessName || "My Website"}</span>
-          {lastSaved && (
-            <span className="text-xs text-gray-400 hidden md:flex items-center gap-1 shrink-0">
-              · Saved {lastSaved}
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 group-hover:bg-slate-200 transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
             </span>
-          )}
+            <span className="hidden sm:inline text-xs font-medium">Templates</span>
+          </button>
+
+          <div className="h-5 w-px bg-slate-200 shrink-0" />
+
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shrink-0">
+              <Globe className="h-3.5 w-3.5 text-white" />
+            </span>
+            <span className="text-sm font-bold text-slate-800 truncate max-w-[180px]">
+              {site.businessName || "My Website"}
+            </span>
+            {lastSaved && (
+              <span className="hidden lg:flex items-center gap-1.5 text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Saved {lastSaved}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Right: preview toggle + tour + save + publish */}
+        {/* Right: viewport + tour + actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Desktop / Mobile toggle */}
-          <div id="tour-preview-toggle" className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5">
+          <div id="tour-preview-toggle" className="flex items-center bg-slate-100 rounded-lg p-0.5 gap-0.5">
             <button
               onClick={() => setIsPreviewMobile(false)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!isPreviewMobile ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${!isPreviewMobile ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               <Monitor className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Desktop</span>
             </button>
             <button
               onClick={() => setIsPreviewMobile(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${isPreviewMobile ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${isPreviewMobile ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               <Smartphone className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Mobile</span>
@@ -672,149 +685,293 @@ export default function WebsiteBuilder() {
 
           <TourRestartButton phase="editor" />
 
-          <div id="tour-save-publish" className="flex items-center gap-2">
+          <div id="tour-save-publish" className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={onSave}
-              className="h-9 px-4 text-sm font-medium border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+              className="h-8 px-3 text-xs font-semibold border-slate-200 hover:border-slate-300 hover:bg-slate-50 gap-1.5 text-slate-700"
             >
-              <Save className="h-3.5 w-3.5 mr-1.5" /> Save
+              <Save className="h-3.5 w-3.5" /> Save
             </Button>
             <Button
               size="sm"
               onClick={onPublish}
               disabled={publishing}
-              className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm"
+              className="h-8 px-4 text-xs font-bold gap-1.5 text-white border-0 shadow-md"
+              style={{ background: publishing ? "#10b981" : "linear-gradient(135deg,#059669,#10b981)" }}
             >
-              <Rocket className="h-3.5 w-3.5 mr-1.5" />
+              <Rocket className="h-3.5 w-3.5" />
               {publishing ? "Publishing…" : "Publish"}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* ── Content: sidebar + preview ── */}
+      {/* ── Content ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left settings sidebar ── */}
+        {/* ── Icon rail ── */}
         <div
-          className="flex flex-col bg-white border-r border-gray-200 shrink-0 shadow-sm"
-          style={{ width: editorWidth }}
+          className="w-[54px] bg-slate-900 flex flex-col items-center pt-3 pb-4 gap-0.5 shrink-0 z-10"
+          style={{ boxShadow: "2px 0 12px 0 rgba(0,0,0,0.18)" }}
         >
-          {/* Tab bar */}
-          <div className="flex border-b border-gray-100 shrink-0 bg-gray-50/50">
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`flex-1 py-3.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
-                activeTab === "settings"
-                  ? "border-sky-500 text-sky-600 bg-white"
-                  : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/60"
-              }`}
-            >
-              <Settings2 className="h-3.5 w-3.5" /> Site Settings
-            </button>
-            <button
-              onClick={() => setActiveTab("sections")}
-              className={`flex-1 py-3.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
-                activeTab === "sections"
-                  ? "border-sky-500 text-sky-600 bg-white"
-                  : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/60"
-              }`}
-            >
-              <Layout className="h-3.5 w-3.5" /> Sections
-              <span className="ml-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{site.sections.length}</span>
-            </button>
+          {([
+            { id: "settings", icon: Settings2, label: "Settings", glow: "rgba(16,185,129,0.35)", activeClass: "bg-emerald-500/20 text-emerald-300 border-l-2 border-emerald-400" },
+            { id: "design",   icon: Palette,   label: "Design",   glow: "rgba(139,92,246,0.35)", activeClass: "bg-violet-500/20 text-violet-300 border-l-2 border-violet-400" },
+            { id: "media",    icon: ImageIcon,  label: "Media",    glow: "rgba(14,165,233,0.35)", activeClass: "bg-sky-500/20 text-sky-300 border-l-2 border-sky-400" },
+            { id: "sections", icon: Layout,     label: "Sections", glow: "rgba(251,146,60,0.35)", activeClass: "bg-orange-500/20 text-orange-300 border-l-2 border-orange-400" },
+          ] as const).map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                title={tab.label}
+                className={`relative flex flex-col items-center justify-center w-10 h-[52px] rounded-xl text-center transition-all duration-200 ${
+                  isActive ? tab.activeClass : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                }`}
+                style={isActive ? { boxShadow: `0 0 12px 0 ${tab.glow}` } : undefined}
+              >
+                <tab.icon className="h-[17px] w-[17px] mb-0.5" />
+                <span className="text-[9px] font-semibold leading-none tracking-wide">{tab.label}</span>
+              </button>
+            );
+          })}
+
+          <div className="flex-1" />
+
+          {/* Sections count bubble */}
+          <div className="flex flex-col items-center gap-0.5 mb-1">
+            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-orange-500/20 text-orange-300 text-[10px] font-bold border border-orange-500/30">
+              {site.sections.length}
+            </span>
+            <span className="text-[8px] text-slate-600 font-medium tracking-wide">sects</span>
+          </div>
+        </div>
+
+        {/* ── Side panel ── */}
+        <div
+          className="flex flex-col bg-white border-r border-slate-200/80 shrink-0 overflow-hidden"
+          style={{ width: Math.max(editorWidth - 54, 256), boxShadow: "2px 0 8px 0 rgba(0,0,0,0.04)" }}
+        >
+          {/* Panel header */}
+          <div className={`px-4 py-3 border-b shrink-0 ${
+            activeTab === "settings" ? "bg-gradient-to-r from-emerald-50 via-white to-white border-emerald-100/60" :
+            activeTab === "design"   ? "bg-gradient-to-r from-violet-50 via-white to-white border-violet-100/60" :
+            activeTab === "media"    ? "bg-gradient-to-r from-sky-50 via-white to-white border-sky-100/60" :
+                                       "bg-gradient-to-r from-orange-50 via-white to-white border-orange-100/60"
+          }`}>
+            <p className="text-sm font-bold text-slate-800 leading-tight">
+              {activeTab === "settings" ? "⚙️ Site Settings"
+               : activeTab === "design" ? "🎨 Design"
+               : activeTab === "media"  ? "📸 Media"
+               :                          "📐 Sections"}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {activeTab === "settings" ? "Business name and public URL"
+               : activeTab === "design" ? "Colours and visual style"
+               : activeTab === "media"  ? "Logo and hero image"
+               : `${site.sections.length} section${site.sections.length !== 1 ? "s" : ""} on your page`}
+            </p>
           </div>
 
-          {/* ── Settings tab ── */}
+          {/* ── SETTINGS panel ── */}
           {activeTab === "settings" && (
             <div id="tour-site-settings" className="flex-1 overflow-y-auto">
-              <div className="p-5 space-y-6">
+              <div className="p-4 space-y-4">
 
-                {/* Business name */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Business Name</Label>
-                  <Input
-                    value={site.businessName}
-                    onChange={(e) => updateSite((p) => ({ ...p, businessName: e.target.value }))}
-                    className="h-10 text-sm border-gray-200 focus:border-sky-400 focus:ring-sky-300"
-                    placeholder="My Business"
-                  />
-                </div>
-
-                {/* URL slug */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">URL Slug</Label>
-                    <button
-                      type="button"
-                      onClick={autoGenerateSlug}
-                      className="text-[11px] text-sky-600 hover:text-sky-800 hover:underline flex items-center gap-0.5 font-medium"
-                    >
-                      <Wand2 className="h-3 w-3" /> Auto-generate
-                    </button>
-                  </div>
-                  <div className="flex items-stretch">
-                    <span className="flex items-center px-3 text-xs text-gray-400 bg-gray-50 border border-r-0 border-gray-200 rounded-l-md font-mono whitespace-nowrap">
-                      /site/
+                {/* Business card */}
+                <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100">
+                      <Briefcase className="h-3.5 w-3.5 text-emerald-600" />
                     </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Your Business</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-500 font-medium">Business Name</Label>
                     <Input
-                      value={site.slug}
-                      onChange={(e) => updateSite((p) => ({ ...p, slug: e.target.value }))}
-                      className="h-10 text-sm rounded-l-none border-gray-200 focus:border-sky-400 focus:ring-sky-300 font-mono"
-                      placeholder="my-business"
+                      value={site.businessName}
+                      onChange={(e) => updateSite((p) => ({ ...p, businessName: e.target.value }))}
+                      className="h-9 text-sm border-slate-200 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200 bg-white rounded-xl"
+                      placeholder="e.g. Thabo's Consulting"
                     />
                   </div>
                 </div>
 
-                {/* Brand colours */}
-                <div className="space-y-3">
-                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Brand Colours</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <span className="text-xs text-gray-500 font-medium">Primary</span>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="color"
-                          value={site.theme.primary}
-                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))}
-                          className="h-9 w-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
-                        />
-                        <Input
-                          value={site.theme.primary}
-                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))}
-                          className="h-9 text-xs font-mono flex-1 border-gray-200 focus:border-sky-400"
-                        />
-                      </div>
+                {/* URL card */}
+                <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100">
+                      <Globe className="h-3.5 w-3.5 text-sky-600" />
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Public URL</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-slate-500 font-medium">Page Slug</Label>
+                      <button
+                        type="button"
+                        onClick={autoGenerateSlug}
+                        className="flex items-center gap-0.5 text-[11px] text-sky-600 hover:text-sky-800 font-semibold hover:underline transition-colors"
+                      >
+                        <Wand2 className="h-3 w-3" /> Auto-fill
+                      </button>
                     </div>
-                    <div className="space-y-1.5">
-                      <span className="text-xs text-gray-500 font-medium">Accent</span>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="color"
-                          value={site.theme.accent}
-                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))}
-                          className="h-9 w-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
-                        />
-                        <Input
-                          value={site.theme.accent}
-                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))}
-                          className="h-9 text-xs font-mono flex-1 border-gray-200 focus:border-sky-400"
-                        />
+                    <div className="flex items-stretch rounded-xl overflow-hidden border border-slate-200 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-200 transition-all bg-white">
+                      <span className="flex items-center px-3 text-[11px] text-slate-400 bg-slate-50 border-r border-slate-200 font-mono whitespace-nowrap">
+                        /site/
+                      </span>
+                      <input
+                        value={site.slug}
+                        onChange={(e) => updateSite((p) => ({ ...p, slug: e.target.value }))}
+                        className="flex-1 px-3 py-2 text-sm font-mono bg-transparent focus:outline-none text-slate-800"
+                        placeholder="my-business"
+                      />
+                    </div>
+                    {site.slug && (
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        Live at: <span className="text-sky-600 font-mono break-all">masakheportal.co.za/site/{site.slug}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick-switch shortcuts */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {([
+                    { tab: "design"   as const, icon: Palette,   label: "Colours",  color: "violet" },
+                    { tab: "media"    as const, icon: ImageIcon,  label: "Images",   color: "sky" },
+                    { tab: "sections" as const, icon: Layout,     label: "Sections", color: "orange" },
+                  ] as const).map((q) => (
+                    <button
+                      key={q.tab}
+                      onClick={() => setActiveTab(q.tab)}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-all hover:shadow-sm ${
+                        q.color === "violet" ? "border-violet-100 bg-violet-50/60 text-violet-700 hover:bg-violet-50" :
+                        q.color === "sky"    ? "border-sky-100 bg-sky-50/60 text-sky-700 hover:bg-sky-50" :
+                                               "border-orange-100 bg-orange-50/60 text-orange-700 hover:bg-orange-50"
+                      } ${q.tab === "sections" ? "col-span-2" : ""}`}
+                    >
+                      <q.icon className="h-3.5 w-3.5 shrink-0" />
+                      {q.label} →
+                    </button>
+                  ))}
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── DESIGN panel ── */}
+          {activeTab === "design" && (
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4">
+
+                <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100">
+                      <Palette className="h-3.5 w-3.5 text-violet-600" />
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Brand Colours</span>
+                  </div>
+
+                  {/* Live colour preview bar */}
+                  <div className="h-10 rounded-xl overflow-hidden flex shadow-inner border border-slate-100">
+                    <div className="flex-[2]" style={{ background: site.theme.primary }} />
+                    <div className="flex-1" style={{ background: site.theme.accent }} />
+                    <div className="flex-1 bg-white border-l border-slate-100 flex items-center justify-center">
+                      <span className="text-[10px] text-slate-300 font-medium">bg</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {(["primary", "accent"] as const).map((key) => (
+                      <div key={key} className="space-y-1.5">
+                        <span className="text-[11px] text-slate-500 font-semibold capitalize">{key}</span>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={site.theme[key]}
+                            onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, [key]: e.target.value } }))}
+                            className="h-9 w-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={site.theme[key]}
+                            onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, [key]: e.target.value } }))}
+                            className="flex-1 h-9 px-2.5 text-xs font-mono border border-slate-200 rounded-xl focus:outline-none focus:border-violet-400 bg-white text-slate-700"
+                          />
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Preset swatches */}
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest">Quick Presets</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { p: "#156C41", a: "#f59e0b", label: "Forest" },
+                        { p: "#1d4ed8", a: "#f97316", label: "Ocean" },
+                        { p: "#7c3aed", a: "#ec4899", label: "Grape" },
+                        { p: "#0f172a", a: "#22d3ee", label: "Midnight" },
+                        { p: "#dc2626", a: "#fbbf24", label: "Sunrise" },
+                        { p: "#0369a1", a: "#10b981", label: "Azure" },
+                        { p: "#be185d", a: "#fb923c", label: "Rose" },
+                        { p: "#065f46", a: "#a3e635", label: "Jungle" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          title={preset.label}
+                          onClick={() => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: preset.p, accent: preset.a } }))}
+                          className="flex gap-0.5 rounded-full overflow-hidden border-2 border-white shadow hover:border-slate-200 hover:shadow-md transition-all h-7 w-12"
+                        >
+                          <div className="flex-1" style={{ background: preset.p }} />
+                          <div className="flex-1" style={{ background: preset.a }} />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Media */}
-                <div id="tour-logo-upload" className="space-y-4">
-                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Media</Label>
+                {/* Switch template */}
+                <button
+                  onClick={() => setSite(null)}
+                  className="w-full flex items-center gap-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/50 p-4 text-left hover:bg-violet-50 hover:border-violet-300 transition-all group"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 group-hover:bg-violet-200 transition-colors shrink-0">
+                    <Layout className="h-[18px] w-[18px] text-violet-600" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-violet-700">Switch Template</p>
+                    <p className="text-[11px] text-violet-500/80 mt-0.5">Change the overall design layout</p>
+                  </div>
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── MEDIA panel ── */}
+          {activeTab === "media" && (
+            <div id="tour-logo-upload" className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4">
+
+                <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 space-y-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100">
+                      <ImageIcon className="h-3.5 w-3.5 text-sky-600" />
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Images & Logo</span>
+                  </div>
                   <ImageUploadField
                     value={site.logoUrl}
                     onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))}
                     label="Business Logo"
                   />
+                  <div className="border-t border-slate-100" />
                   <ImageUploadField
                     value={site.photoUrl}
                     onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))}
@@ -822,14 +979,25 @@ export default function WebsiteBuilder() {
                   />
                 </div>
 
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 space-y-2">
+                  <p className="text-xs font-bold text-sky-700 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> Pro tips
+                  </p>
+                  <ul className="space-y-1.5 text-[11px] text-sky-600/80">
+                    <li className="flex items-start gap-1.5"><span className="mt-0.5 shrink-0">→</span>Logo: use PNG with transparent background</li>
+                    <li className="flex items-start gap-1.5"><span className="mt-0.5 shrink-0">→</span>Hero photo: aim for 1200 × 630px or wider</li>
+                    <li className="flex items-start gap-1.5"><span className="mt-0.5 shrink-0">→</span>Keep files under 2MB for fast loading</li>
+                  </ul>
+                </div>
+
               </div>
             </div>
           )}
 
-          {/* ── Sections tab ── */}
+          {/* ── SECTIONS panel ── */}
           {activeTab === "sections" && (
             <div id="tour-sections-list" className="flex-1 overflow-y-auto">
-              <div className="p-4 space-y-2">
+              <div className="p-3 space-y-2">
                 {site.sections.map((section, index) => (
                   <SectionEditor
                     key={section.id}
@@ -844,28 +1012,40 @@ export default function WebsiteBuilder() {
                   />
                 ))}
 
-                <div id="tour-add-section" className="relative pt-1">
+                <div id="tour-add-section" className="relative pt-2">
                   <Button
                     variant="outline"
-                    className="w-full text-xs border-dashed border-sky-200 text-sky-600 hover:bg-sky-50 hover:border-sky-400 h-10 font-medium"
+                    className="w-full text-xs border-dashed border-orange-200 text-orange-600 hover:bg-orange-50/80 hover:border-orange-400 h-11 font-semibold rounded-xl gap-1.5"
                     onClick={() => setShowAddSection(!showAddSection)}
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    <Plus className="h-3.5 w-3.5" />
                     Add Section
-                    <ChevronDown className={`h-3.5 w-3.5 ml-1.5 transition-transform ${showAddSection ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform duration-200 ${showAddSection ? "rotate-180" : ""}`} />
                   </Button>
                   {showAddSection && (
-                    <div className="mt-1 rounded-xl border border-gray-200 bg-white shadow-lg z-30 p-2 grid grid-cols-2 gap-1">
+                    <div className="mt-2 rounded-2xl border border-slate-200 bg-white shadow-xl p-2 grid grid-cols-2 gap-1 z-30">
                       {availableSections.map((type) => {
                         const Icon = sectionTypeIcons[type];
+                        const hoverColors: Record<string, string> = {
+                          hero:             "hover:bg-indigo-50 hover:text-indigo-700",
+                          stats:            "hover:bg-amber-50 hover:text-amber-700",
+                          features:         "hover:bg-emerald-50 hover:text-emerald-700",
+                          about:            "hover:bg-blue-50 hover:text-blue-700",
+                          services:         "hover:bg-violet-50 hover:text-violet-700",
+                          gallery:          "hover:bg-pink-50 hover:text-pink-700",
+                          testimonials:     "hover:bg-orange-50 hover:text-orange-700",
+                          contact:          "hover:bg-teal-50 hover:text-teal-700",
+                          contact_form:     "hover:bg-cyan-50 hover:text-cyan-700",
+                          vehicle_listings: "hover:bg-slate-50 hover:text-slate-700",
+                        };
                         return (
                           <button
                             key={type}
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs hover:bg-sky-50 hover:text-sky-700 text-left transition-colors font-medium text-gray-700"
+                            className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs text-left transition-colors font-semibold text-slate-600 ${hoverColors[type] || "hover:bg-slate-50"}`}
                             onClick={() => addSection(type)}
                           >
-                            <Icon className="h-4 w-4 text-gray-400 shrink-0" />
-                            <span>{SECTION_LABELS[type]}</span>
+                            <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                            {SECTION_LABELS[type]}
                           </button>
                         );
                       })}
@@ -880,25 +1060,38 @@ export default function WebsiteBuilder() {
         {/* ── Drag splitter ── */}
         <div
           onMouseDown={onSplitterMouseDown}
-          className="w-1 shrink-0 bg-gray-200 hover:bg-sky-400 active:bg-sky-500 cursor-col-resize transition-colors z-10"
+          className="w-1 shrink-0 bg-slate-200/70 hover:bg-violet-400 active:bg-violet-500 cursor-col-resize transition-colors z-10"
           title="Drag to resize"
         />
 
         {/* ── Live preview ── */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#f0f0f1]">
-          {/* Preview label */}
-          <div className="flex items-center justify-center py-2 border-b border-gray-200 bg-white/50 shrink-0">
-            <span className="text-[11px] text-gray-400 font-medium tracking-wide uppercase">Live Preview</span>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ background: "linear-gradient(160deg,#f1f5f9 0%,#e2e8f0 100%)" }}>
+          <div className="flex items-center justify-center gap-2.5 py-2 border-b border-slate-200/60 bg-white/60 backdrop-blur-sm shrink-0">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-[11px] text-slate-500 font-bold tracking-widest uppercase">Live Preview</span>
+            <span className="text-[11px] text-slate-400">·</span>
+            <span className="text-[11px] text-slate-400">{isPreviewMobile ? "Mobile" : "Desktop"}</span>
           </div>
           <div className="flex-1 overflow-auto p-6 flex justify-center items-start">
-            <div className={`bg-white shadow-2xl rounded-xl overflow-hidden transition-all duration-300 ${isPreviewMobile ? "w-[390px]" : "w-full max-w-[1200px]"}`}>
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 130px)" }}>
+            <div className={`bg-white overflow-hidden transition-all duration-500 ${
+              isPreviewMobile
+                ? "w-[390px] rounded-[2rem] shadow-2xl border-4 border-slate-800"
+                : "w-full max-w-[1200px] rounded-2xl shadow-2xl"
+            }`}>
+              {isPreviewMobile && (
+                <div className="h-6 bg-slate-800 flex items-center justify-center">
+                  <div className="h-2 w-20 rounded-full bg-slate-600" />
+                </div>
+              )}
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 145px)" }}>
                 <SectionRenderer site={site} />
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
     <WebsiteBuilderTour phase="editor" />
