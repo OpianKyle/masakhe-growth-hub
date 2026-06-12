@@ -23,6 +23,7 @@ import SetPasswordPage from "./pages/SetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import PayInvoice from "./pages/PayInvoice";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
+import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -106,8 +107,11 @@ const App = () => (
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/dashboard/social" element={<Navigate to="/social-hub" replace />} />
               <Route path="/dashboard/social/*" element={<Navigate to="/social-hub" replace />} />
+              <Route path="/dashboard/website" element={<Navigate to="/website-builder" replace />} />
+              <Route path="/dashboard/website/*" element={<Navigate to="/website-builder" replace />} />
               <Route path="/dashboard/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/social-hub/*" element={<ProtectedRoute><SocialHubStandalone /></ProtectedRoute>} />
+              <Route path="/website-builder/*" element={<ProtectedRoute><WebsiteBuilderStandalone /></ProtectedRoute>} />
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />

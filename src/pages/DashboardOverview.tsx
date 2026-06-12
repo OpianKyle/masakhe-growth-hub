@@ -430,7 +430,7 @@ export default function DashboardOverview() {
             <h3 className="text-lg font-bold font-heading text-foreground mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Globe, label: "Website", color: "gradient-hero", path: "/dashboard/website" },
+                { icon: Globe, label: "Website", color: "gradient-hero", path: "/website-builder" },
                 { icon: Receipt, label: "Invoice", color: "gradient-gold", path: "/dashboard/invoices" },
                 { icon: Wallet, label: "Finance", color: "gradient-warm", path: "/dashboard/finance" },
                 { icon: BookOpen, label: "Biz Plan", color: "gradient-warm", path: "/dashboard/business-plan" },

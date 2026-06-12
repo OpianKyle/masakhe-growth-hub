@@ -84,7 +84,7 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
-  { icon: Globe, label: "Website Builder", path: "/dashboard/website", perm: "website" },
+  { icon: Globe, label: "Website Builder", path: "/website-builder", perm: "website", openNewTab: true },
   { icon: Smartphone, label: "Social Media", path: "/social-hub", requiresPlan: "pro" as PlanCode, perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresPlan: "pro" as PlanCode, perm: "biz_connect" },
   {
