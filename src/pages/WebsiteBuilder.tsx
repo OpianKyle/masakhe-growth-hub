@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,13 +14,14 @@ import { templateList, buildTemplate } from "@/components/website/templates";
 import { SiteConfig, SiteSection, SectionType, SECTION_LABELS, makeSectionId } from "@/types/site";
 import { toast } from "sonner";
 import {
-  Save, Rocket, Copy, Plus, Wand2, Smartphone, Monitor, ArrowLeft,
+  Save, Rocket, Plus, Wand2, Smartphone, Monitor, ArrowLeft,
   Briefcase, UtensilsCrossed, ShoppingBag, Sparkles, HardHat, Palette,
   Layout, BarChart3, Star, Image as ImageIcon, Phone, FileText, MessageSquare, ChevronDown,
   Scale, Calculator, Home, HeartPulse, GraduationCap, Dumbbell, Wrench,
   MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
   Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
-  Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search, Globe, ChevronRight
+  Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search,
+  Settings2,
 } from "lucide-react";
 import { WebsiteBuilderTour, TourRestartButton } from "@/components/website/WebsiteBuilderTour";
 
@@ -338,25 +340,23 @@ function TemplatePicker({ onSelect, onPreview, isProPlan }: { onSelect: (templat
 
 export default function WebsiteBuilder() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [site, setSite] = useState<SiteConfig | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
-  const [editorWidth, setEditorWidth] = useState(420);
+  const [editorWidth, setEditorWidth] = useState(340);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
-  const dragStartWidthRef = useRef(420);
+  const dragStartWidthRef = useRef(340);
   const [showAddSection, setShowAddSection] = useState(false);
   const [isProPlan, setIsProPlan] = useState(false);
   const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
-  const [customDomain, setCustomDomain] = useState("");
-  const [savedDomain, setSavedDomain] = useState<string | null>(null);
-  const [savingDomain, setSavingDomain] = useState(false);
-  const [showDomainDialog, setShowDomainDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<"settings" | "sections">("settings");
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -374,13 +374,6 @@ export default function WebsiteBuilder() {
         const existing = list[0];
         setSite({ ...(existing.content as SiteConfig), id: existing.id });
         setSiteId(existing.id);
-        if (existing.status === "published") {
-          setPublishedUrl(`${window.location.origin}/site/${existing.slug}`);
-        }
-        if (existing.custom_domain) {
-          setSavedDomain(existing.custom_domain);
-          setCustomDomain(existing.custom_domain);
-        }
         setLastSaved(new Date(existing.updated_at || existing.created_at).toLocaleTimeString());
       }
     }).finally(() => setLoadingExisting(false));
@@ -391,7 +384,6 @@ export default function WebsiteBuilder() {
     const existingId = siteId || site?.id || null;
     setSite({ ...newSite, id: existingId ?? undefined });
     if (existingId) setSiteId(existingId);
-    setPublishedUrl(null);
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -511,44 +503,25 @@ export default function WebsiteBuilder() {
     }
   };
 
-  const saveDomain = async () => {
-    if (!siteId) { toast.error("Save your site first before setting a custom domain"); return; }
-    setSavingDomain(true);
-    try {
-      const res = await fetch(`/api/websites/${siteId}/domain`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ customDomain: customDomain.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSavedDomain(data.customDomain || null);
-        toast.success(data.customDomain ? "Custom domain saved!" : "Custom domain removed");
-      } else {
-        toast.error(data.error || "Failed to save domain");
-      }
-    } catch {
-      toast.error("Network error saving domain");
-    } finally {
-      setSavingDomain(false);
-    }
-  };
-
   const onPublish = async () => {
+    setPublishing(true);
     await onSave();
-    if (!site?.id) return;
+    const id = siteId || site?.id;
+    if (!id) { setPublishing(false); return; }
     try {
-      const res = await fetch(`/api/websites/${site.id}/publish`, { method: "POST", credentials: "include" });
+      const res = await fetch(`/api/websites/${id}/publish`, { method: "POST", credentials: "include" });
       if (res.ok) {
-        setPublishedUrl(`${window.location.origin}/site/${site.slug}`);
-        toast.success("Website published!");
+        toast.success("Website published! 🎉 View it in Domain & Publish.", {
+          action: { label: "Open", onClick: () => navigate("/website-builder/domain") },
+        });
       } else {
         const data = await res.json();
         toast.error(data.error || "Failed to publish");
       }
     } catch {
       toast.error("Failed to publish");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -642,247 +615,290 @@ export default function WebsiteBuilder() {
         <DialogHeader>
           <DialogTitle>Switch Template?</DialogTitle>
           <DialogDescription>
-            Switching to a new template will replace your current website design. Your existing website record will be updated — nothing is permanently deleted, but your current layout and content will be overwritten with the new template's defaults. You can customise it again afterwards.
+            Switching will replace your current design with the new template's defaults. Your content will be overwritten — you can customise it again afterwards.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { setShowTemplateConfirm(false); setPendingTemplateId(null); }}>
-            Cancel
-          </Button>
-          <Button onClick={() => {
-            if (pendingTemplateId) applyTemplate(pendingTemplateId);
-            setShowTemplateConfirm(false);
-            setPendingTemplateId(null);
-          }}>
+          <Button variant="outline" onClick={() => { setShowTemplateConfirm(false); setPendingTemplateId(null); }}>Cancel</Button>
+          <Button onClick={() => { if (pendingTemplateId) applyTemplate(pendingTemplateId); setShowTemplateConfirm(false); setPendingTemplateId(null); }}>
             Switch Template
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
-    <Dialog open={showDomainDialog} onOpenChange={setShowDomainDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-blue-600" />
-            Custom Domain
-          </DialogTitle>
-          <DialogDescription>
-            Connect your own domain name to this website.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-1">
-          <div className="flex gap-2">
-            <Input
-              value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value.replace(/^https?:\/\//, "").replace(/\/$/, ""))}
-              className="text-sm"
-              placeholder="e.g. www.mybusiness.co.za"
-            />
-            <Button className="shrink-0" onClick={async () => { await saveDomain(); }} disabled={savingDomain}>
-              {savingDomain ? "Saving…" : "Save"}
-            </Button>
+    {/* ── WordPress-style editor shell ── */}
+    <div className="flex flex-col h-full bg-[#f0f0f1]">
+
+      {/* ── Top admin bar ── */}
+      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-5 shrink-0 shadow-sm z-20">
+        {/* Left: back + site name + saved */}
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={() => setSite(null)}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Templates</span>
+          </button>
+          <div className="w-px h-5 bg-gray-200 shrink-0" />
+          <span className="text-sm font-semibold text-gray-800 truncate">{site.businessName || "My Website"}</span>
+          {lastSaved && (
+            <span className="text-xs text-gray-400 hidden md:flex items-center gap-1 shrink-0">
+              · Saved {lastSaved}
+            </span>
+          )}
+        </div>
+
+        {/* Right: preview toggle + tour + save + publish */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Desktop / Mobile toggle */}
+          <div id="tour-preview-toggle" className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5">
+            <button
+              onClick={() => setIsPreviewMobile(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!isPreviewMobile ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <Monitor className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Desktop</span>
+            </button>
+            <button
+              onClick={() => setIsPreviewMobile(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${isPreviewMobile ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Mobile</span>
+            </button>
           </div>
 
-          {savedDomain && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 space-y-2">
-                <p className="text-xs font-semibold text-blue-800">DNS Records — add these in Xneelo / your registrar:</p>
-                <div className="rounded bg-white border border-blue-100 p-2 font-mono text-xs space-y-1.5 text-slate-700">
-                  <div className="grid grid-cols-3 gap-2 text-blue-500 font-semibold text-[11px]">
-                    <span>Type</span><span>Name</span><span>Value</span>
+          <TourRestartButton phase="editor" />
+
+          <div id="tour-save-publish" className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSave}
+              className="h-9 px-4 text-sm font-medium border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+            >
+              <Save className="h-3.5 w-3.5 mr-1.5" /> Save
+            </Button>
+            <Button
+              size="sm"
+              onClick={onPublish}
+              disabled={publishing}
+              className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm"
+            >
+              <Rocket className="h-3.5 w-3.5 mr-1.5" />
+              {publishing ? "Publishing…" : "Publish"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content: sidebar + preview ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── Left settings sidebar ── */}
+        <div
+          className="flex flex-col bg-white border-r border-gray-200 shrink-0 shadow-sm"
+          style={{ width: editorWidth }}
+        >
+          {/* Tab bar */}
+          <div className="flex border-b border-gray-100 shrink-0 bg-gray-50/50">
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`flex-1 py-3.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+                activeTab === "settings"
+                  ? "border-sky-500 text-sky-600 bg-white"
+                  : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/60"
+              }`}
+            >
+              <Settings2 className="h-3.5 w-3.5" /> Site Settings
+            </button>
+            <button
+              onClick={() => setActiveTab("sections")}
+              className={`flex-1 py-3.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+                activeTab === "sections"
+                  ? "border-sky-500 text-sky-600 bg-white"
+                  : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/60"
+              }`}
+            >
+              <Layout className="h-3.5 w-3.5" /> Sections
+              <span className="ml-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{site.sections.length}</span>
+            </button>
+          </div>
+
+          {/* ── Settings tab ── */}
+          {activeTab === "settings" && (
+            <div id="tour-site-settings" className="flex-1 overflow-y-auto">
+              <div className="p-5 space-y-6">
+
+                {/* Business name */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Business Name</Label>
+                  <Input
+                    value={site.businessName}
+                    onChange={(e) => updateSite((p) => ({ ...p, businessName: e.target.value }))}
+                    className="h-10 text-sm border-gray-200 focus:border-sky-400 focus:ring-sky-300"
+                    placeholder="My Business"
+                  />
+                </div>
+
+                {/* URL slug */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">URL Slug</Label>
+                    <button
+                      type="button"
+                      onClick={autoGenerateSlug}
+                      className="text-[11px] text-sky-600 hover:text-sky-800 hover:underline flex items-center gap-0.5 font-medium"
+                    >
+                      <Wand2 className="h-3 w-3" /> Auto-generate
+                    </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <span>CNAME</span>
-                    <span>{savedDomain.startsWith("www.") ? "www" : savedDomain.split(".")[0]}</span>
-                    <span className="break-all">masakheportal.co.za</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <span>A</span><span>@</span><span>154.65.110.84</span>
+                  <div className="flex items-stretch">
+                    <span className="flex items-center px-3 text-xs text-gray-400 bg-gray-50 border border-r-0 border-gray-200 rounded-l-md font-mono whitespace-nowrap">
+                      /site/
+                    </span>
+                    <Input
+                      value={site.slug}
+                      onChange={(e) => updateSite((p) => ({ ...p, slug: e.target.value }))}
+                      className="h-10 text-sm rounded-l-none border-gray-200 focus:border-sky-400 focus:ring-sky-300 font-mono"
+                      placeholder="my-business"
+                    />
                   </div>
                 </div>
-                <p className="text-[10px] text-blue-600">Allow up to 24 hours for DNS propagation after saving records.</p>
-              </div>
 
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-                <p className="text-xs font-semibold text-amber-800">🔒 Enable HTTPS (Free)</p>
-                <p className="text-[11px] text-amber-700">Your site will show "Not Secure" until SSL is set up. Use Cloudflare for free HTTPS:</p>
-                <ol className="text-[11px] text-amber-700 space-y-1 list-decimal list-inside">
-                  <li>Create a free account at <span className="font-mono font-semibold">cloudflare.com</span></li>
-                  <li>Add your domain and follow the setup wizard</li>
-                  <li>Update your registrar's nameservers to Cloudflare's</li>
-                  <li>In Cloudflare DNS, add the A record above with the <span className="font-semibold">Proxy (orange cloud) ON</span></li>
-                  <li>HTTPS activates automatically — no extra cost</li>
-                </ol>
+                {/* Brand colours */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Brand Colours</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <span className="text-xs text-gray-500 font-medium">Primary</span>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={site.theme.primary}
+                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))}
+                          className="h-9 w-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
+                        />
+                        <Input
+                          value={site.theme.primary}
+                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))}
+                          className="h-9 text-xs font-mono flex-1 border-gray-200 focus:border-sky-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-xs text-gray-500 font-medium">Accent</span>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={site.theme.accent}
+                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))}
+                          className="h-9 w-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
+                        />
+                        <Input
+                          value={site.theme.accent}
+                          onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))}
+                          className="h-9 text-xs font-mono flex-1 border-gray-200 focus:border-sky-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media */}
+                <div id="tour-logo-upload" className="space-y-4">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Media</Label>
+                  <ImageUploadField
+                    value={site.logoUrl}
+                    onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))}
+                    label="Business Logo"
+                  />
+                  <ImageUploadField
+                    value={site.photoUrl}
+                    onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))}
+                    label="Hero Photo"
+                  />
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── Sections tab ── */}
+          {activeTab === "sections" && (
+            <div id="tour-sections-list" className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-2">
+                {site.sections.map((section, index) => (
+                  <SectionEditor
+                    key={section.id}
+                    section={section}
+                    index={index}
+                    totalSections={site.sections.length}
+                    onChange={updateSection}
+                    onToggle={toggleSection}
+                    onRemove={removeSection}
+                    onMoveUp={() => moveSection(index, "up")}
+                    onMoveDown={() => moveSection(index, "down")}
+                  />
+                ))}
+
+                <div id="tour-add-section" className="relative pt-1">
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs border-dashed border-sky-200 text-sky-600 hover:bg-sky-50 hover:border-sky-400 h-10 font-medium"
+                    onClick={() => setShowAddSection(!showAddSection)}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Add Section
+                    <ChevronDown className={`h-3.5 w-3.5 ml-1.5 transition-transform ${showAddSection ? "rotate-180" : ""}`} />
+                  </Button>
+                  {showAddSection && (
+                    <div className="mt-1 rounded-xl border border-gray-200 bg-white shadow-lg z-30 p-2 grid grid-cols-2 gap-1">
+                      {availableSections.map((type) => {
+                        const Icon = sectionTypeIcons[type];
+                        return (
+                          <button
+                            key={type}
+                            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs hover:bg-sky-50 hover:text-sky-700 text-left transition-colors font-medium text-gray-700"
+                            onClick={() => addSection(type)}
+                          >
+                            <Icon className="h-4 w-4 text-gray-400 shrink-0" />
+                            <span>{SECTION_LABELS[type]}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
 
-    <div className="flex h-full overflow-hidden bg-slate-50">
-      <div className="flex flex-col border-r bg-white shadow-xl shrink-0" style={{ width: editorWidth }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSite(null)} title="Back to templates">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h2 className="text-sm font-bold leading-tight">Edit Site</h2>
-              {lastSaved && <p className="text-[10px] text-slate-400">Saved {lastSaved}</p>}
-            </div>
+        {/* ── Drag splitter ── */}
+        <div
+          onMouseDown={onSplitterMouseDown}
+          className="w-1 shrink-0 bg-gray-200 hover:bg-sky-400 active:bg-sky-500 cursor-col-resize transition-colors z-10"
+          title="Drag to resize"
+        />
+
+        {/* ── Live preview ── */}
+        <div className="flex-1 flex flex-col min-w-0 bg-[#f0f0f1]">
+          {/* Preview label */}
+          <div className="flex items-center justify-center py-2 border-b border-gray-200 bg-white/50 shrink-0">
+            <span className="text-[11px] text-gray-400 font-medium tracking-wide uppercase">Live Preview</span>
           </div>
-          <div className="flex gap-1.5 items-center">
-            <TourRestartButton phase="editor" />
-            <div id="tour-save-publish" className="flex gap-1.5">
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onSave}>
-                <Save className="mr-1 h-3.5 w-3.5" />Save
-              </Button>
-              <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={onPublish}>
-                <Rocket className="mr-1 h-3.5 w-3.5" />Publish
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {publishedUrl && (
-          <div className="mx-4 mt-3 rounded-lg border-green-200 bg-green-50 p-3 border">
-            <p className="text-[10px] font-bold text-green-800 uppercase mb-1">Published URL</p>
-            <div className="flex gap-1">
-              <Input value={publishedUrl} readOnly className="bg-white text-[11px] h-7" />
-              <Button size="icon" variant="outline" className="h-7 w-7 shrink-0" onClick={() => { navigator.clipboard.writeText(publishedUrl); toast.success("Copied!"); }}>
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={() => setShowDomainDialog(true)}
-          className="mx-4 mt-3 flex items-center justify-between w-[calc(100%-2rem)] rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors px-3 py-2"
-        >
-          <div className="flex items-center gap-2">
-            <Globe className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-            <div className="text-left">
-              <p className="text-[11px] font-semibold text-blue-800">Custom Domain</p>
-              <p className="text-[10px] text-blue-500">{savedDomain || "Not configured"}</p>
-            </div>
-          </div>
-          <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-        </button>
-
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div id="tour-site-settings" className="rounded-lg border bg-slate-50 p-3 space-y-3">
-            <div>
-              <Label className="text-xs font-semibold">Business Name</Label>
-              <Input value={site.businessName} onChange={(e) => updateSite((p) => ({ ...p, businessName: e.target.value }))} className="mt-1 h-8 text-sm" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold">URL Slug</Label>
-                <button type="button" className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5" onClick={autoGenerateSlug}>
-                  <Wand2 className="h-2.5 w-2.5" /> Auto
-                </button>
-              </div>
-              <Input value={site.slug} onChange={(e) => updateSite((p) => ({ ...p, slug: e.target.value }))} className="mt-1 h-8 text-sm" placeholder="my-business" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Primary Color</Label>
-                <div className="flex gap-1 mt-1">
-                  <Input type="color" value={site.theme.primary} onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))} className="h-8 w-8 p-0.5" />
-                  <Input value={site.theme.primary} onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, primary: e.target.value } }))} className="h-8 text-xs flex-1" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Accent Color</Label>
-                <div className="flex gap-1 mt-1">
-                  <Input type="color" value={site.theme.accent} onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))} className="h-8 w-8 p-0.5" />
-                  <Input value={site.theme.accent} onChange={(e) => updateSite((p) => ({ ...p, theme: { ...p.theme, accent: e.target.value } }))} className="h-8 text-xs flex-1" />
-                </div>
+          <div className="flex-1 overflow-auto p-6 flex justify-center items-start">
+            <div className={`bg-white shadow-2xl rounded-xl overflow-hidden transition-all duration-300 ${isPreviewMobile ? "w-[390px]" : "w-full max-w-[1200px]"}`}>
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 130px)" }}>
+                <SectionRenderer site={site} />
               </div>
             </div>
-            <div id="tour-logo-upload">
-              <ImageUploadField value={site.logoUrl} onChange={(url) => updateSite((p) => ({ ...p, logoUrl: url }))} label="Business Logo" />
-              <ImageUploadField value={site.photoUrl} onChange={(url) => updateSite((p) => ({ ...p, photoUrl: url }))} label="Hero Photo" />
-            </div>
-          </div>
-
-          <div id="tour-sections-list" className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Sections ({site.sections.length})</h3>
-            </div>
-
-            {site.sections.map((section, index) => (
-              <SectionEditor
-                key={section.id}
-                section={section}
-                index={index}
-                totalSections={site.sections.length}
-                onChange={updateSection}
-                onToggle={toggleSection}
-                onRemove={removeSection}
-                onMoveUp={() => moveSection(index, "up")}
-                onMoveDown={() => moveSection(index, "down")}
-              />
-            ))}
-
-            <div id="tour-add-section" className="relative">
-              <Button variant="outline" className="w-full text-xs border-dashed" onClick={() => setShowAddSection(!showAddSection)}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add Section <ChevronDown className={`h-3.5 w-3.5 ml-1 transition-transform ${showAddSection ? "rotate-180" : ""}`} />
-              </Button>
-              {showAddSection && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border bg-white shadow-lg z-30 p-2 grid grid-cols-2 gap-1">
-                  {availableSections.map((type) => {
-                    const Icon = sectionTypeIcons[type];
-                    return (
-                      <button key={type} className="flex items-center gap-2 rounded-md px-3 py-2 text-xs hover:bg-slate-100 text-left" onClick={() => addSection(type)}>
-                        <Icon className="h-4 w-4 text-slate-500" />
-                        <span>{SECTION_LABELS[type]}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
         </div>
-      </div>
 
-      {/* Drag splitter */}
-      <div
-        onMouseDown={onSplitterMouseDown}
-        className="w-1.5 shrink-0 bg-slate-200 hover:bg-blue-400 active:bg-blue-500 cursor-col-resize transition-colors z-10 relative group"
-        title="Drag to resize"
-      >
-        <div className="absolute inset-y-0 -left-1 -right-1" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <div className="w-0.5 h-4 bg-blue-500 rounded-full" />
-          <div className="w-0.5 h-4 bg-blue-500 rounded-full" />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
-          <div id="tour-preview-toggle" className="flex items-center gap-2">
-            <Button variant={isPreviewMobile ? "ghost" : "default"} size="sm" className="h-7 text-xs" onClick={() => setIsPreviewMobile(false)}>
-              <Monitor className="h-3.5 w-3.5 mr-1" /> Desktop
-            </Button>
-            <Button variant={isPreviewMobile ? "default" : "ghost"} size="sm" className="h-7 text-xs" onClick={() => setIsPreviewMobile(true)}>
-              <Smartphone className="h-3.5 w-3.5 mr-1" /> Mobile
-            </Button>
-          </div>
-          <p className="text-[10px] text-slate-400">Live Preview</p>
-        </div>
-        <div className="flex-1 overflow-auto bg-slate-100 p-4 flex justify-center">
-          <div className={`bg-white shadow-2xl rounded-xl overflow-hidden transition-all ${isPreviewMobile ? "w-[375px]" : "w-full max-w-[1200px]"}`}>
-            <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 10rem)" }}>
-              <SectionRenderer site={site} />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
     <WebsiteBuilderTour phase="editor" />
