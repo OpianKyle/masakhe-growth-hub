@@ -663,7 +663,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-hidden">
         {/* Top Bar */}
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-6">
           <div className="flex items-center gap-3">
@@ -717,7 +717,7 @@ export default function DashboardPage() {
           </div>
         )}
         <TrialBanner />
-        <div className="flex-1 overflow-auto min-h-0 relative">
+        <div className="flex-1 overflow-auto min-h-0 relative mobile-hscroll">
           <Routes>
             <Route index element={<DashboardOverview />} />
             <Route path="website/*" element={<WebsiteHub />} />

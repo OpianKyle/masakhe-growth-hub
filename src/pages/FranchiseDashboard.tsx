@@ -771,7 +771,7 @@ export default function FranchiseDashboard() {
         </div>
       </aside>
 
-      <main className={`flex-1 overflow-auto ${isImpersonating ? "mt-10" : ""}`}>
+      <main className={`flex-1 overflow-auto mobile-hscroll ${isImpersonating ? "mt-10" : ""}`}>
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-6">
           <h1 className="text-xl font-bold font-heading">{pageTitle}</h1>
           <div className="flex items-center gap-4">

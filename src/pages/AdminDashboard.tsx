@@ -2833,7 +2833,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto mobile-hscroll">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-6">
           <h1 className="text-xl font-bold font-heading">{getPageTitle()}</h1>
           <div className="flex items-center gap-4">

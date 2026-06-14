@@ -119,6 +119,50 @@
   }
 }
 
+/* ── Mobile floating horizontal scrollbar ── */
+@media (max-width: 768px) {
+  /* Make horizontal scrollbars always visible on mobile as a floating bar */
+  .mobile-hscroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+  }
+
+  .mobile-hscroll::-webkit-scrollbar {
+    height: 4px;
+    background: transparent;
+  }
+
+  .mobile-hscroll::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0 8px;
+  }
+
+  .mobile-hscroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 4px;
+  }
+
+  .mobile-hscroll::-webkit-scrollbar-thumb:active {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  /* Floating scroll hint — a persistent bar at the bottom of any scrollable area */
+  .mobile-hscroll::after {
+    content: "";
+    display: block;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.18), hsl(var(--primary) / 0.06));
+    border-radius: 2px;
+    pointer-events: none;
+  }
+}
+
 @layer utilities {
   .gradient-hero {
     background: var(--gradient-hero);
