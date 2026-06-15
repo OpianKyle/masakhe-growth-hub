@@ -10,6 +10,7 @@ import SocialPostTemplates from "./SocialPostTemplates";
 import SocialCreate from "./SocialCreate";
 import SocialMediaLibrary from "./SocialMedia";
 import SocialAnalytics from "./SocialAnalytics";
+import SocialDesignPicker from "./SocialDesignPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SiteConfig } from "@/types/site";
 
@@ -321,13 +322,13 @@ function CreateDesignModal({ open, onClose, onSelect }: {
 
 /* ─── Platform shortcut icons for home ─────────────────────── */
 const PLATFORM_SHORTCUTS = [
-  { id: "instagram", label: "Instagram", Logo: IgLogo, path: "/social-hub/create" },
-  { id: "facebook",  label: "Facebook",  Logo: FbLogo, path: "/social-hub/create" },
-  { id: "tiktok",    label: "TikTok",    Logo: TkLogo, path: "/social-hub/create" },
-  { id: "youtube",   label: "YouTube",   Logo: YtLogo, path: "/social-hub/create" },
-  { id: "linkedin",  label: "LinkedIn",  Logo: LiLogo, path: "/social-hub/create" },
-  { id: "twitter",   label: "Twitter",   Logo: TwLogo, path: "/social-hub/create" },
-  { id: "pinterest", label: "Pinterest", Logo: PiLogo, path: "/social-hub/create" },
+  { id: "instagram", label: "Instagram", Logo: IgLogo, path: "/social-hub/design?platform=instagram" },
+  { id: "facebook",  label: "Facebook",  Logo: FbLogo, path: "/social-hub/design?platform=facebook" },
+  { id: "tiktok",    label: "TikTok",    Logo: TkLogo, path: "/social-hub/design?platform=tiktok" },
+  { id: "youtube",   label: "YouTube",   Logo: YtLogo, path: "/social-hub/design?platform=youtube" },
+  { id: "linkedin",  label: "LinkedIn",  Logo: LiLogo, path: "/social-hub/design?platform=linkedin" },
+  { id: "twitter",   label: "Twitter",   Logo: TwLogo, path: "/social-hub/design?platform=twitter" },
+  { id: "pinterest", label: "Pinterest", Logo: PiLogo, path: "/social-hub/design?platform=pinterest" },
 ];
 
 /* ─── Standalone Home ───────────────────────────────────────── */
@@ -406,7 +407,7 @@ function StandaloneHome({
           transition={{ delay: 0.3 }}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          onClick={onCreateDesign}
+          onClick={() => navigate("/social-hub/design")}
           className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all"
           style={{ background: "linear-gradient(90deg, #7c3aed, #9333ea, #ec4899)" }}
         >
@@ -440,7 +441,7 @@ function StandaloneHome({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
-            onClick={onCreateDesign}
+            onClick={() => navigate("/social-hub/design")}
             className="flex flex-col items-center gap-2 shrink-0 group"
           >
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
@@ -461,8 +462,8 @@ function StandaloneHome({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Post Editor",   icon: Palette,        path: "/social-hub/editor",    desc: "Design visual posts",  color: "from-violet-500 to-purple-600" },
-              { label: "Templates",     icon: LayoutTemplate, path: "/social-hub/templates",  desc: "Ready-made designs",   color: "from-pink-500 to-rose-500" },
+              { label: "Create Design", icon: Plus,           path: "/social-hub/design",    desc: "Design & templates",   color: "from-violet-500 to-purple-600" },
+              { label: "Post Editor",   icon: Palette,        path: "/social-hub/editor",    desc: "Visual post editor",   color: "from-fuchsia-500 to-pink-500" },
               { label: "Create Post",   icon: Sparkles,       path: "/social-hub/create",     desc: "Write & schedule",     color: "from-emerald-500 to-teal-500" },
               { label: "Analytics",     icon: BarChart3,      path: "/social-hub/analytics",  desc: "Track performance",    color: "from-blue-500 to-cyan-500" },
             ].map((a, i) => (
@@ -548,7 +549,7 @@ function StandaloneHome({
 }
 
 /* ─── Left icon sidebar ─────────────────────────────────────── */
-function LeftNav({ onCreateDesign }: { onCreateDesign: () => void }) {
+function LeftNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -575,7 +576,7 @@ function LeftNav({ onCreateDesign }: { onCreateDesign: () => void }) {
     <div className="w-[72px] bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-1 shrink-0 h-full">
       {/* Create button */}
       <button
-        onClick={onCreateDesign}
+        onClick={() => navigate("/social-hub/design")}
         className="w-11 h-11 mb-4 flex items-center justify-center rounded-2xl shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
         style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
         title="Create a design"
@@ -647,7 +648,6 @@ function SubBar({ title }: { title: string }) {
 
 /* ─── Main export ────────────────────────────────────────────── */
 export default function SocialHubStandalone() {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [site, setSite] = useState<SiteConfig | null>(() => {
     try {
@@ -655,7 +655,6 @@ export default function SocialHubStandalone() {
       return cached ? JSON.parse(cached) : null;
     } catch { return null; }
   });
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("/api/social/workspaces/mine", { credentials: "include" })
@@ -675,14 +674,9 @@ export default function SocialHubStandalone() {
       .catch(() => {});
   }, []);
 
-  function handleFormatSelect(fmt: typeof FORMAT_OPTIONS[number]) {
-    setShowCreateModal(false);
-    navigate("/social-hub/editor");
-  }
-
   return (
     <div className="flex h-screen w-full overflow-hidden bg-white">
-      <LeftNav onCreateDesign={() => setShowCreateModal(true)} />
+      <LeftNav />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Routes>
@@ -692,8 +686,17 @@ export default function SocialHubStandalone() {
               <StandaloneHome
                 workspaceId={workspaceId}
                 site={site}
-                onCreateDesign={() => setShowCreateModal(true)}
+                onCreateDesign={() => {}}
               />
+            }
+          />
+
+          <Route
+            path="design"
+            element={
+              <div className="flex-1 overflow-auto">
+                <SocialDesignPicker />
+              </div>
             }
           />
 
@@ -787,11 +790,6 @@ export default function SocialHubStandalone() {
         </Routes>
       </div>
 
-      <CreateDesignModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSelect={handleFormatSelect}
-      />
     </div>
   );
 }
