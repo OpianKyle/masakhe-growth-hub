@@ -1,0 +1,46 @@
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
