@@ -19,6 +19,10 @@ if (!transporter) {
   console.warn("SMTP_PASSWORD not set — welcome emails disabled");
 }
 
+export function getSharedTransporter() {
+  return transporter;
+}
+
 export function getBaseUrl(reqOrigin?: string): string {
   return reqOrigin || process.env.APP_URL || "https://masakheportal.co.za";
 }

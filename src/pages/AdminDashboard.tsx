@@ -2524,6 +2524,9 @@ function AdminDripCampaigns() {
   const [saving, setSaving] = useState(false);
   const [testingId, setTestingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [testEmailTarget, setTestEmailTarget] = useState<DripEmail | null>(null);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [testSending, setTestSending] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -2588,20 +2591,29 @@ function AdminDripCampaigns() {
     }
   };
 
-  const sendTest = async (email: DripEmail) => {
-    setTestingId(email.id);
+  const openTestDialog = (email: DripEmail) => {
+    setTestEmailTarget(email);
+    setTestEmailAddress("");
+  };
+
+  const confirmAndSendTest = async () => {
+    if (!testEmailTarget) return;
+    setTestSending(true);
     try {
-      const res = await fetch(`/api/admin/drip-emails/${email.id}/send-test`, {
+      const res = await fetch(`/api/admin/drip-emails/${testEmailTarget.id}/send-test`, {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmailAddress.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success(`Test sent to ${data.sentTo}`);
+      toast.success(`Test email sent to ${data.sentTo}`);
+      setTestEmailTarget(null);
     } catch (err: any) {
       toast.error(err.message || "Test send failed");
     } finally {
-      setTestingId(null);
+      setTestSending(false);
     }
   };
 
@@ -2694,11 +2706,10 @@ function AdminDripCampaigns() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => sendTest(email)}
-                    disabled={testingId === email.id}
-                    title="Send test email to yourself"
+                    onClick={() => openTestDialog(email)}
+                    title="Send test email"
                   >
-                    {testingId === email.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                    <FlaskConical className="h-4 w-4" />
                     <span className="hidden sm:inline ml-1">Test</span>
                   </Button>
                   <Button
@@ -2781,6 +2792,36 @@ function AdminDripCampaigns() {
             <Button onClick={saveEdit} disabled={saving || !editSubject.trim() || !editBody.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test email dialog */}
+      <Dialog open={!!testEmailTarget} onOpenChange={(open) => { if (!open) setTestEmailTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Test Email</DialogTitle>
+            <DialogDescription>
+              Send a preview of <strong>"{testEmailTarget?.subject}"</strong> to any email address. Leave blank to send to your admin account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
+            <Label className="text-xs font-semibold uppercase tracking-wide">Send to email address</Label>
+            <Input
+              className="mt-1.5"
+              type="email"
+              placeholder="Leave blank to send to your account"
+              value={testEmailAddress}
+              onChange={e => setTestEmailAddress(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") confirmAndSendTest(); }}
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setTestEmailTarget(null)}>Cancel</Button>
+            <Button onClick={confirmAndSendTest} disabled={testSending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {testSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FlaskConical className="h-4 w-4 mr-2" />}
+              Send Test
             </Button>
           </DialogFooter>
         </DialogContent>

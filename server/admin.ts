@@ -4,7 +4,7 @@ import { requireAdmin } from "./auth";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { getTransporterForUser } from "./email-settings";
-import { sendFranchiseOwnerInviteEmail } from "./email";
+import { sendFranchiseOwnerInviteEmail, getSharedTransporter } from "./email";
 import nodemailer from "nodemailer";
 
 export const adminRouter = Router();
@@ -1149,7 +1149,7 @@ adminRouter.patch("/drip-emails/:id", async (req, res) => {
   }
 });
 
-// POST /api/admin/drip-emails/:id/send-test — send test to logged-in admin
+// POST /api/admin/drip-emails/:id/send-test — send test to logged-in admin (or custom address)
 adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
   try {
     const id = req.params.id;
@@ -1159,19 +1159,10 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
     const admin = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [req.session?.userId]);
     if (!admin) return res.status(401).json({ error: "Not authenticated" });
 
-    const smtpPort = parseInt(process.env.SMTP_PORT || "465");
-    const smtpUser = process.env.SMTP_USER || process.env.SMTP_FROM || "admin@masakheportal.co.za";
-    const transporter = process.env.SMTP_PASSWORD
-      ? nodemailer.createTransport({
-          host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: smtpUser, pass: process.env.SMTP_PASSWORD },
-          tls: { rejectUnauthorized: false },
-        })
-      : null;
-
+    const transporter = getSharedTransporter();
     if (!transporter) return res.status(503).json({ error: "SMTP not configured — SMTP_PASSWORD secret is missing" });
+
+    const toAddress: string = req.body?.to || admin.email;
 
     const bodyHtml = email.body_text
       .split("\n")
@@ -1203,14 +1194,14 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
 </html>`;
 
     await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-      to: admin.email,
+      from: `"Masakhe" <${process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za"}>`,
+      to: toAddress,
       subject: `[TEST] ${email.subject}`,
       html,
       text: email.body_text,
     });
 
-    res.json({ ok: true, sentTo: admin.email });
+    res.json({ ok: true, sentTo: toAddress });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
