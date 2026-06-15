@@ -33,11 +33,15 @@ async function resolveTransporter(userId: string, campaign: any) {
       replyTo: campaign.reply_to || userSettings.replyTo,
     };
   }
+  const globalTransporter = getGlobalTransporter();
+  if (!globalTransporter) {
+    throw new Error("No email account configured. Go to Settings → Email to set up your SMTP details before sending campaigns.");
+  }
   return {
-    transporter: getGlobalTransporter(),
-    fromEmail: campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za",
+    transporter: globalTransporter,
+    fromEmail: campaign.from_email || process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za",
     fromName: campaign.from_name || "Masakhe",
-    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za",
+    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za",
   };
 }
 
@@ -253,6 +257,13 @@ campaignsRouter.post("/:id/send", async (req, res) => {
     }
 
     const { transporter, fromEmail, fromName, replyTo } = await resolveTransporter(userId, campaign);
+
+    try {
+      await transporter.verify();
+    } catch (verifyErr: any) {
+      return res.status(400).json({ error: `Email account connection failed: ${verifyErr.message}. Please check your SMTP settings in Settings → Email.` });
+    }
+
     await execute("UPDATE campaigns SET status='sending', total_recipients=? WHERE id=?", [contacts.length, campaign.id]);
 
     let sentCount = 0;
@@ -260,15 +271,13 @@ campaignsRouter.post("/:id/send", async (req, res) => {
       const sendId = randomUUID();
       const html = buildEmail(campaign, contact.first_name);
       try {
-        if (transporter) {
-          await transporter.sendMail({
-            from: `"${fromName}" <${fromEmail}>`,
-            to: contact.email,
-            replyTo: replyTo || fromEmail,
-            subject: campaign.subject,
-            html,
-          });
-        }
+        await transporter.sendMail({
+          from: `"${fromName}" <${fromEmail}>`,
+          to: contact.email,
+          replyTo: replyTo || fromEmail,
+          subject: campaign.subject,
+          html,
+        });
         await execute(
           "INSERT INTO campaign_sends (id, campaign_id, contact_id, email, status, sent_at) VALUES (?, ?, ?, ?, 'sent', NOW())",
           [sendId, campaign.id, contact.id, contact.email]
@@ -538,6 +547,14 @@ async function processScheduledCampaigns(): Promise<void> {
           fromEmail = campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za";
           fromName = campaign.from_name || "Masakhe";
           replyTo = campaign.reply_to || fromEmail;
+        }
+
+        try {
+          await transporter.verify();
+        } catch (verifyErr: any) {
+          console.error(`[CampaignScheduler] SMTP verify failed for campaign ${campaign.id}: ${verifyErr.message}`);
+          await execute("UPDATE campaigns SET status = 'scheduled' WHERE id = ?", [campaign.id]);
+          continue;
         }
 
         await execute("UPDATE campaigns SET status='sending', total_recipients=? WHERE id=?", [contacts.length, campaign.id]);
