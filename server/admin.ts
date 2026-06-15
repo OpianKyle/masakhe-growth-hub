@@ -89,14 +89,21 @@ export async function runAdminMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Add send_on_day column if missing (migration)
+    try {
+      await conn.query(`ALTER TABLE admin_drip_emails ADD COLUMN send_on_day INT NOT NULL DEFAULT 1`);
+      // Backfill existing rows with the old formula: (seq - 1) * 2 + 1
+      await conn.query(`UPDATE admin_drip_emails SET send_on_day = (sequence_number - 1) * 2 + 1 WHERE send_on_day = 1 OR send_on_day IS NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) console.error("[Admin] send_on_day col:", e.message); }
+
     // Seed the 20 drip emails if not yet seeded
     const existing = await conn.query(`SELECT COUNT(*) as c FROM admin_drip_emails`);
     const count = Number((existing[0] as any[])[0]?.c || 0);
     if (count === 0) {
       for (const e of DRIP_EMAIL_SEED) {
         await conn.query(
-          `INSERT IGNORE INTO admin_drip_emails (sequence_number, subject, body_text, enabled) VALUES (?, ?, ?, 0)`,
-          [e.seq, e.subject, e.body]
+          `INSERT IGNORE INTO admin_drip_emails (sequence_number, send_on_day, subject, body_text, enabled) VALUES (?, ?, ?, ?, 0)`,
+          [e.seq, (e.seq - 1) * 2 + 1, e.subject, e.body]
         );
       }
       console.log("[Admin] Seeded 20 drip emails");
@@ -1108,10 +1115,10 @@ adminRouter.get("/drip-emails", async (req, res) => {
   }
 });
 
-// PATCH /api/admin/drip-emails/:id — update subject, body_text, and/or enabled
+// PATCH /api/admin/drip-emails/:id — update subject, body_text, send_on_day, and/or enabled
 adminRouter.patch("/drip-emails/:id", async (req, res) => {
   try {
-    const { subject, body_text, enabled } = req.body;
+    const { subject, body_text, enabled, send_on_day } = req.body;
     const id = req.params.id;
     const existing = await queryOne("SELECT id FROM admin_drip_emails WHERE id = ?", [id]);
     if (!existing) return res.status(404).json({ error: "Email not found" });
@@ -1122,6 +1129,7 @@ adminRouter.patch("/drip-emails/:id", async (req, res) => {
     if (subject !== undefined) { updates.push("subject = ?"); params.push(subject); }
     if (body_text !== undefined) { updates.push("body_text = ?"); params.push(body_text); }
     if (enabled !== undefined) { updates.push("enabled = ?"); params.push(enabled ? 1 : 0); }
+    if (send_on_day !== undefined) { updates.push("send_on_day = ?"); params.push(Number(send_on_day)); }
 
     if (updates.length === 0) return res.status(400).json({ error: "Nothing to update" });
 
@@ -1152,17 +1160,18 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
     if (!admin) return res.status(401).json({ error: "Not authenticated" });
 
     const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+    const smtpUser = process.env.SMTP_USER || process.env.SMTP_FROM || "admin@masakheportal.co.za";
     const transporter = process.env.SMTP_PASSWORD
       ? nodemailer.createTransport({
           host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
           port: smtpPort,
           secure: smtpPort === 465,
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+          auth: { user: smtpUser, pass: process.env.SMTP_PASSWORD },
           tls: { rejectUnauthorized: false },
         })
       : null;
 
-    if (!transporter) return res.status(503).json({ error: "SMTP not configured" });
+    if (!transporter) return res.status(503).json({ error: "SMTP not configured — SMTP_PASSWORD secret is missing" });
 
     const bodyHtml = email.body_text
       .split("\n")

@@ -2505,6 +2505,7 @@ function AdminFranchises() {
 interface DripEmail {
   id: number;
   sequence_number: number;
+  send_on_day: number;
   subject: string;
   body_text: string;
   enabled: number;
@@ -2519,6 +2520,7 @@ function AdminDripCampaigns() {
   const [editing, setEditing] = useState<DripEmail | null>(null);
   const [editSubject, setEditSubject] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editSendOnDay, setEditSendOnDay] = useState<number>(1);
   const [saving, setSaving] = useState(false);
   const [testingId, setTestingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
@@ -2541,6 +2543,7 @@ function AdminDripCampaigns() {
     setEditing(email);
     setEditSubject(email.subject);
     setEditBody(email.body_text);
+    setEditSendOnDay(email.send_on_day || (email.sequence_number - 1) * 2 + 1);
   };
 
   const saveEdit = async () => {
@@ -2551,11 +2554,11 @@ function AdminDripCampaigns() {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: editSubject, body_text: editBody }),
+        body: JSON.stringify({ subject: editSubject, body_text: editBody, send_on_day: editSendOnDay }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const updated = await res.json();
-      setEmails(prev => prev.map(e => e.id === updated.id ? { ...e, subject: updated.subject, body_text: updated.body_text, updated_at: updated.updated_at } : e));
+      setEmails(prev => prev.map(e => e.id === updated.id ? { ...e, subject: updated.subject, body_text: updated.body_text, send_on_day: updated.send_on_day, updated_at: updated.updated_at } : e));
       toast.success("Email updated");
       setEditing(null);
     } catch (err: any) {
@@ -2666,7 +2669,7 @@ function AdminDripCampaigns() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground font-medium">Day {(email.sequence_number - 1) * 2 + 1} of drip</span>
+                    <span className="text-xs text-muted-foreground font-medium">Day {email.send_on_day ?? (email.sequence_number - 1) * 2 + 1} of drip</span>
                     {email.enabled ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 font-semibold">
                         <CheckCircle2 className="h-3 w-3" /> Active
@@ -2737,10 +2740,22 @@ function AdminDripCampaigns() {
           <DialogHeader>
             <DialogTitle>Edit Email #{editing?.sequence_number}</DialogTitle>
             <DialogDescription>
-              Update the subject and body for this drip email. Changes take effect immediately for future sends.
+              Update the subject, body, and send day for this drip email. Changes take effect immediately for future sends.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">Send on Day</Label>
+              <p className="text-xs text-muted-foreground mb-1.5">Days after a user signs up that this email is sent (e.g. 1 = day of signup, 7 = one week later)</p>
+              <Input
+                className="mt-1 w-32"
+                type="number"
+                min={1}
+                max={365}
+                value={editSendOnDay}
+                onChange={e => setEditSendOnDay(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+            </div>
             <div>
               <Label className="text-xs font-semibold uppercase tracking-wide">Subject Line</Label>
               <Input
