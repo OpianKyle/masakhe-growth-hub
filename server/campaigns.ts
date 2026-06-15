@@ -2,26 +2,11 @@ import { Router } from "express";
 import { queryAll, queryOne, execute } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
-import nodemailer from "nodemailer";
 import { getUserTransporter } from "./email-settings";
 
 export const campaignsRouter = Router();
 campaignsRouter.use(requireAuth);
 
-function getGlobalTransporter() {
-  if (!process.env.SMTP_PASSWORD) return null;
-  const smtpPort = parseInt(process.env.SMTP_PORT || "465");
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
-    port: smtpPort,
-    secure: smtpPort === 465,
-    auth: {
-      user: process.env.SMTP_USER || "admin@masakheportal.co.za",
-      pass: process.env.SMTP_PASSWORD,
-    },
-    tls: { rejectUnauthorized: false },
-  });
-}
 
 async function resolveTransporter(userId: string, campaign: any) {
   const userSettings = await getUserTransporter(userId);
@@ -33,16 +18,7 @@ async function resolveTransporter(userId: string, campaign: any) {
       replyTo: campaign.reply_to || userSettings.replyTo,
     };
   }
-  const globalTransporter = getGlobalTransporter();
-  if (!globalTransporter) {
-    throw new Error("No email account configured. Go to Settings → Email to set up your SMTP details before sending campaigns.");
-  }
-  return {
-    transporter: globalTransporter,
-    fromEmail: campaign.from_email || process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za",
-    fromName: campaign.from_name || "Masakhe",
-    replyTo: campaign.reply_to || campaign.from_email || process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za",
-  };
+  throw new Error("No email account configured. Go to Settings → Email to connect your email account before sending campaigns.");
 }
 
 function buildEmail(campaign: any, contactFirstName?: string): string {
@@ -524,30 +500,15 @@ async function processScheduledCampaigns(): Promise<void> {
 
         const { getUserTransporter } = await import("./email-settings");
         const userSettings = await getUserTransporter(campaign.user_id);
-        let transporter: any, fromEmail: string, fromName: string, replyTo: string;
-        if (userSettings) {
-          transporter = userSettings.transporter;
-          fromEmail = campaign.from_email || userSettings.fromEmail;
-          fromName = campaign.from_name || userSettings.fromName;
-          replyTo = campaign.reply_to || userSettings.replyTo || fromEmail;
-        } else {
-          if (!process.env.SMTP_PASSWORD) {
-            console.error(`[CampaignScheduler] No SMTP configured for campaign ${campaign.id}`);
-            continue;
-          }
-          const smtpPort = parseInt(process.env.SMTP_PORT || "465");
-          const nm = await import("nodemailer");
-          transporter = nm.default.createTransport({
-            host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: { user: process.env.SMTP_USER || "admin@masakheportal.co.za", pass: process.env.SMTP_PASSWORD },
-            tls: { rejectUnauthorized: false },
-          });
-          fromEmail = campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za";
-          fromName = campaign.from_name || "Masakhe";
-          replyTo = campaign.reply_to || fromEmail;
+        if (!userSettings) {
+          console.error(`[CampaignScheduler] No email settings for user ${campaign.user_id} — skipping campaign ${campaign.id}. User must configure Settings → Email.`);
+          await execute("UPDATE campaigns SET status = 'scheduled' WHERE id = ?", [campaign.id]);
+          continue;
         }
+        const transporter = userSettings.transporter;
+        const fromEmail = campaign.from_email || userSettings.fromEmail;
+        const fromName = campaign.from_name || userSettings.fromName;
+        const replyTo = campaign.reply_to || userSettings.replyTo || fromEmail;
 
         try {
           await transporter.verify();
