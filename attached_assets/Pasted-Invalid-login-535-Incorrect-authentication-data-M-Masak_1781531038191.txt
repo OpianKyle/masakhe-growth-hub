@@ -1,0 +1,304 @@
+Invalid login: 535 Incorrect authentication data
+M
+MasakheADMIN
+
+Overview
+Clients
+Partners
+Franchises
+Tenders
+Websites
+Email Campaigns
+Audit Log
+Help Centre
+Settings
+User Dashboard
+Email Campaigns
+Masakhe Admin
+Sign Out
+Email Drip Campaigns
+20 pre-written marketing emails sent every 2 days to users. Enable individual emails when ready to launch.
+
+Refresh
+Total Emails
+
+20
+
+Active
+
+1
+
+Disabled
+
+19
+
+Total Users
+
+39
+
+1
+Day 1 of drip
+Active
+Welcome to Masakhe! Your Journey starts Here.
+
+Welcome to Masakhe Portal!!
+
+It’s great news that you joined our platform! — I am excited for myself and my team to guide you on this platfo…
+
+
+Test
+
+Edit
+
+On
+2
+Day 3 of drip
+Disabled
+Your website, live in minutes (no developer needed)
+
+With Masakhe's AI website builder, you have a free "drag & drop" website builder. Edit with WYSIWYG What You See is What You Get Editor and …
+
+
+Test
+
+Edit
+
+Off
+3
+Day 5 of drip
+Disabled
+Stop chasing payments. Start sending professional invoices.
+
+Choose from multiple templates, or create your own customised version, add your logo in settings, and send quotes and invoices in minutes fr…
+
+
+Test
+
+Edit
+
+Off
+4
+Day 7 of drip
+Disabled
+Payroll headaches? Not anymore.
+
+Generate payslips, auto-calculate deductions, and manage employee records without spreadsheets. Masakhe handles the numbers so you can focus…
+
+
+Test
+
+Edit
+
+Off
+5
+Day 9 of drip
+Disabled
+Never lose a lead again.
+
+Keep all client conversations, documents, and history in one place. Masakhe's CRM helps you nurture relationships and close deals faster – c…
+
+
+Test
+
+Edit
+
+Off
+6
+Day 11 of drip
+Disabled
+Plan a week of posts in minutes.
+
+Create, download and post to all your social channels from Masakhe in minutes!
+No more last-minute rushes or forgotten posts – just consiste…
+
+
+Test
+
+Edit
+
+Off
+7
+Day 13 of drip
+Disabled
+Know exactly where every rand goes.
+
+Link your transactions, track expenses, and see your cash flow at a glance. Masakhe gives you the financial clarity every SMME needs to grow…
+
+
+Test
+
+Edit
+
+Off
+8
+Day 15 of drip
+Disabled
+Reclaim your time. Let Masakhe do the busy work.
+
+Imagine not switching between six different apps. Masakhe automates invoicing, payroll, social media, and more – so you can focus on serving…
+
+
+Test
+
+Edit
+
+Off
+9
+Day 17 of drip
+Disabled
+Stop paying for 5 separate tools.
+
+Website builder + invoicing + payroll + CRM + social scheduler = thousands of rands. Masakhe combines them all from R899/month after trial.
+…
+
+
+Test
+
+Edit
+
+Off
+10
+Day 19 of drip
+Disabled
+Small business, big brand impression.
+
+A sleek website, branded invoices, and organised client management make you look like a market leader. Masakhe gives you that polished image…
+
+
+Test
+
+Edit
+
+Off
+11
+Day 21 of drip
+Disabled
+Designed for South African SMMEs – easy for everyone.
+
+Drag, drop, click, done. Masakhe's interface is intuitive, with guided steps for every feature. You don't need an IT degree to run your busi…
+
+
+Test
+
+Edit
+
+Off
+12
+Day 23 of drip
+Disabled
+A free trial that's actually free.
+
+No credit card required. No hidden fees. Just 14 full days of access to everything Masakhe offers. If you love it, upgrade later. If not, wa…
+
+
+Test
+
+Edit
+
+Off
+13
+Day 25 of drip
+Disabled
+Your 14-day roadmap to a smoother business.
+
+Day 1: Build your AI website. Day 2: Send an invoice. Day 3: Schedule social posts. By day 14, you'll wonder how you managed without Masakhe…
+
+
+Test
+
+Edit
+
+Off
+14
+Day 27 of drip
+Disabled
+Stop juggling. Start managing.
+
+When your clients, finances, and team are all in one place, running your business becomes calm and clear. Masakhe brings order to the chaos.…
+
+
+Test
+
+Edit
+
+Off
+15
+Day 29 of drip
+Disabled
+Your business is ready to scale. Is your software?
+
+Masakhe grows with you. Add more clients, more employees, more social accounts – the platform handles it all. No need to switch tools when y…
+
+
+Test
+
+Edit
+
+Off
+16
+Day 31 of drip
+Disabled
+Local taxes. Local rules. Local support.
+
+Masakhe understands SARS payroll requirements, local invoice regulations, and the way you do business. Not a generic international tool – ma…
+
+
+Test
+
+Edit
+
+Off
+17
+Day 33 of drip
+Disabled
+Sleep better knowing your business data is protected.
+
+We take security seriously. Your client info, payroll records, and financial data are encrypted and backed up. So you can focus on growing, …
+
+
+Test
+
+Edit
+
+Off
+18
+Day 35 of drip
+Disabled
+The dashboard that does it all.
+
+Log in once. From one dashboard, manage your website, send invoices, run payroll, talk to clients, schedule posts, and track money. That's t…
+
+
+Test
+
+Edit
+
+Off
+19
+Day 37 of drip
+Disabled
+Join hundreds of South African businesses already saving time.
+
+"Masakhe cut my admin by 70%." "I built my site in 10 minutes." "Finally, one tool for everything." Don't just take our word for it.
+
+Join t…
+
+
+Test
+
+Edit
+
+Off
+20
+Day 39 of drip
+Disabled
+Don't let another week slip away.
+
+Every day you wait is another day of juggling spreadsheets, missed social posts, and late invoices. Your 14-day free trial is ready – click …
+
+
+Test
+
+Edit
+
+Off

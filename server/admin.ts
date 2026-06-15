@@ -1165,8 +1165,32 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
     const admin = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [req.session?.userId]);
     if (!admin) return res.status(401).json({ error: "Not authenticated" });
 
-    const transporter = getSharedTransporter();
-    if (!transporter) return res.status(503).json({ error: "SMTP not configured — SMTP_PASSWORD secret is missing" });
+    if (!process.env.SMTP_PASSWORD) return res.status(503).json({ error: "SMTP not configured — SMTP_PASSWORD secret is missing" });
+
+    const smtpHost = process.env.SMTP_HOST || "smtp.masakheportal.co.za";
+    const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+    const smtpUser = process.env.SMTP_USER || process.env.SMTP_FROM || "admin@masakheportal.co.za";
+
+    console.log(`[DripTest] SMTP host=${smtpHost} port=${smtpPort} user=${smtpUser} passLen=${process.env.SMTP_PASSWORD?.length}`);
+
+    // Create a fresh transporter per request — avoids stale idle-connection re-auth failures (SMTP 535)
+    const freshTransporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: process.env.SMTP_PASSWORD },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+    });
+
+    try {
+      await freshTransporter.verify();
+      console.log("[DripTest] SMTP verify OK");
+    } catch (verifyErr: any) {
+      console.error("[DripTest] SMTP verify failed:", verifyErr.message);
+      return res.status(502).json({ error: `SMTP connection failed: ${verifyErr.message}` });
+    }
 
     const toAddress: string = req.body?.to || admin.email;
 
@@ -1199,13 +1223,14 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
 </body>
 </html>`;
 
-    await transporter.sendMail({
-      from: `"Masakhe" <${process.env.SMTP_FROM || process.env.SMTP_USER || "admin@masakheportal.co.za"}>`,
+    await freshTransporter.sendMail({
+      from: `"Masakhe" <${process.env.SMTP_FROM || smtpUser}>`,
       to: toAddress,
       subject: `[TEST] ${email.subject}`,
       html,
       text: email.body_text,
     });
+    console.log(`[DripTest] Sent OK → ${toAddress}`);
 
     res.json({ ok: true, sentTo: toAddress });
   } catch (err: any) {
