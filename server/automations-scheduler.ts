@@ -375,6 +375,14 @@ async function processLeadDrip() {
   for (const lead of leads) {
     try {
       if (!lead.email || !String(lead.email).trim().includes("@")) continue;
+
+      // Skip leads whose owner no longer exists — mark complete so we stop retrying
+      const ownerExists = await queryOne("SELECT id FROM users WHERE id = ?", [lead.user_id]);
+      if (!ownerExists) {
+        await execute("UPDATE website_leads SET drip_completed = 1 WHERE id = ?", [lead.id]);
+        continue;
+      }
+
       const settings = await getSettings(lead.user_id);
       if (!settings.drip_enabled) continue;
 

@@ -138,20 +138,24 @@ async function main() {
     startDripScheduler();
     startCampaignScheduler();
 
+    // Each migration group runs independently so one failure never blocks the others
     runMigrations()
-      .then(() => runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message)))
-      .then(() => runInventoryMigrations().catch(e => console.error("[Inventory] Migration error:", e.message)))
-      .then(() => runContactMigration().catch(e => console.error("[Contact] Migration error:", e.message)))
-      .then(() => seedIfEmpty())
-      .then(() => {
-        migrationsDone = true;
-        console.log("[Startup] All migrations and seed complete");
-      })
+      .then(() => console.log("MySQL migrations completed successfully"))
       .catch(e => console.error("[Startup] Migration error:", e.message));
 
+    runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));
+    runInventoryMigrations().catch(e => console.error("[Inventory] Migration error:", e.message));
+    runContactMigration().catch(e => console.error("[Contact] Migration error:", e.message));
     runLeaveMigrations().catch(e => console.error("[Leave] Migration error:", e.message));
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
     runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));
+
+    // Seed after a short delay to let migrations finish
+    setTimeout(() => {
+      seedIfEmpty()
+        .then(() => { migrationsDone = true; console.log("[Startup] All migrations and seed complete"); })
+        .catch(e => console.error("[Startup] Seed error:", e.message));
+    }, 5000);
   });
 }
 
