@@ -1128,7 +1128,7 @@ export async function runMigrations() {
         id VARCHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        icon VARCHAR(50) DEFAULT '💡',
+        icon VARCHAR(50) DEFAULT '',
         color VARCHAR(50) DEFAULT 'blue',
         order_index INT DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP

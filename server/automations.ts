@@ -71,6 +71,8 @@ export async function getSettings(userId: string) {
     [userId]
   );
   if (!row) {
+    const userExists = await queryOne("SELECT id FROM users WHERE id = ?", [userId]);
+    if (!userExists) return DEFAULT_SETTINGS;
     await execute(
       "INSERT INTO automation_settings (user_id) VALUES (?)",
       [userId]

@@ -821,7 +821,10 @@ adminRouter.delete("/clients/:id", async (req, res) => {
     await execute("DELETE FROM websites WHERE owner_id = ?", [userId]);
     await execute("DELETE FROM business_profiles WHERE user_id = ?", [userId]);
 
-    // 12. Finally, delete the user
+    // 12. Franchises owned by this user (FK owner_user_id → users)
+    await execute("DELETE FROM franchises WHERE owner_user_id = ?", [userId]);
+
+    // 13. Finally, delete the user
     await execute("DELETE FROM users WHERE id = ?", [userId]);
 
     res.json({ ok: true });

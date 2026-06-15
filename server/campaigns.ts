@@ -332,7 +332,7 @@ campaignsRouter.post("/ai-generate", async (req, res) => {
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",
     });
-    const model = process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
+    const model = process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash";
     const ctaText = cta || "Find Out More";
     const prompt = `You are an expert email marketing copywriter for South African small businesses. Write a professional, engaging ${campaignType || "newsletter"} email.
 

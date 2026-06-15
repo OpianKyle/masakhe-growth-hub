@@ -1,0 +1,103 @@
+buntu@masahke-group:~/masakhe-growth-hub$ pm2 logs masakhe --err --lines 100
+[TAILING] Tailing last 100 lines for [masakhe] process (change the value with --lines option)
+/home/ubuntu/.pm2/logs/masakhe-error.log last 100 lines:
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | Failed to send drip day-7 email to lance.heynes@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | DB execute error [DELETE FROM users WHERE id = ?]: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | [Admin] Delete client error: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | DB execute error [DELETE FROM users WHERE id = ?]: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | [Admin] Delete client error: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | DB execute error [DELETE FROM users WHERE id = ?]: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | [Admin] Delete client error: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | Failed to send drip day-3 email to selekosolomonkhaya@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | DB execute error [DELETE FROM users WHERE id = ?]: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | [Admin] Delete client error: Cannot delete or update a parent row: a foreign key constraint fails (`masakheportal`.`franchises`, CONSTRAINT `franchises_ibfk_1` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`))
+0|masakhe  | Failed to send welcome email to lance.heynes@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [SupportChat] Error: 404 No endpoints found for google/gemini-2.0-flash-001.
+0|masakhe  | [Automations] Quote follow-up failed for f42c0f37-78a8-4713-9788-69f864ef6659: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | UNHANDLED REJECTION: Error: write ECONNRESET
+0|masakhe  |     at PromisePool.query (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/promise/pool.js:36:22)
+0|masakhe  |     at /home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:384:30
+0|masakhe  |     at new Promise (<anonymous>)
+0|masakhe  |     at MySQLStore.query (/home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:381:10)
+0|masakhe  |     at /home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:372:16 {
+0|masakhe  |   code: 'ECONNRESET',
+0|masakhe  |   errno: -104,
+0|masakhe  |   sql: undefined,
+0|masakhe  |   sqlState: undefined,
+0|masakhe  |   sqlMessage: undefined
+0|masakhe  | }
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | Failed to send welcome email to lance.heynes@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)

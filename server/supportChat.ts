@@ -21,7 +21,7 @@ function getOpenAI() {
 }
 
 function getModel() {
-  if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
+  if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash";
   return process.env.AI_MODEL || "gpt-4o-mini";
 }
 

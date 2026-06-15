@@ -650,7 +650,7 @@ financeRouter.post("/scan-receipt", upload.single("image"), async (req, res) => 
     });
 
     const response = await client.chat.completions.create({
-      model: "google/gemini-2.0-flash-001",
+      model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash",
       messages: [{
         role: "user",
         content: [
