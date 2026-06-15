@@ -40,6 +40,7 @@ import { automationsRouter } from "./automations";
 import { startAutomationsScheduler } from "./automations-scheduler";
 import { helpRouter } from "./helpcentre";
 import { startDripScheduler } from "./drip-scheduler";
+import { startCampaignScheduler } from "./campaigns";
 import { subscriptionApiRouter } from "./subscription-api";
 import path from "path";
 import { queryOne } from "./db";
@@ -135,6 +136,7 @@ async function main() {
     startInvoiceScheduler();
     startAutomationsScheduler();
     startDripScheduler();
+    startCampaignScheduler();
 
     runMigrations()
       .then(() => runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message)))

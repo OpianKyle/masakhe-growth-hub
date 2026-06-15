@@ -163,6 +163,38 @@ campaignsRouter.put("/:id", async (req, res) => {
   }
 });
 
+// ── Schedule campaign ────────────────────────────────────────────────────────
+
+campaignsRouter.post("/:id/schedule", async (req, res) => {
+  const userId = (req.session as any).userId;
+  const { scheduled_at } = req.body;
+  if (!scheduled_at) return res.status(400).json({ error: "Scheduled date/time is required" });
+  try {
+    const existing = await queryOne("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    await execute("UPDATE campaigns SET scheduled_at = ?, status = 'scheduled' WHERE id = ?", [scheduled_at, req.params.id]);
+    const campaign = await queryOne("SELECT * FROM campaigns WHERE id = ?", [req.params.id]);
+    res.json(campaign);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Unschedule campaign ──────────────────────────────────────────────────────
+
+campaignsRouter.post("/:id/unschedule", async (req, res) => {
+  const userId = (req.session as any).userId;
+  try {
+    const existing = await queryOne("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    await execute("UPDATE campaigns SET scheduled_at = NULL, status = 'draft' WHERE id = ?", [req.params.id]);
+    const campaign = await queryOne("SELECT * FROM campaigns WHERE id = ?", [req.params.id]);
+    res.json(campaign);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Delete campaign ──────────────────────────────────────────────────────────
 
 campaignsRouter.delete("/:id", async (req, res) => {
@@ -435,3 +467,117 @@ campaignsRouter.post("/contacts/import", async (req, res) => {
   }
   res.json({ imported, skipped });
 });
+
+// ── Scheduled campaign sender ────────────────────────────────────────────────
+
+async function processScheduledCampaigns(): Promise<void> {
+  try {
+    const due = await queryAll(
+      "SELECT * FROM campaigns WHERE status = 'scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= NOW()",
+      []
+    );
+    for (const campaign of due) {
+      try {
+        let contacts: any[];
+        if (campaign.audience === "broker_clients") {
+          contacts = await queryAll(
+            "SELECT id, email, SUBSTRING_INDEX(full_name, ' ', 1) AS first_name FROM broker_clients WHERE user_id = ? AND email IS NOT NULL AND email != ''",
+            [campaign.user_id]
+          );
+        } else if (campaign.audience === "all_with_clients") {
+          const [cc, bc] = await Promise.all([
+            queryAll("SELECT id, email, first_name FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed'", [campaign.user_id]),
+            queryAll("SELECT id, email, SUBSTRING_INDEX(full_name, ' ', 1) AS first_name FROM broker_clients WHERE user_id = ? AND email IS NOT NULL AND email != ''", [campaign.user_id]),
+          ]);
+          const seen = new Set<string>();
+          contacts = [...cc, ...bc].filter(c => {
+            if (!c.email || seen.has(c.email.toLowerCase())) return false;
+            seen.add(c.email.toLowerCase());
+            return true;
+          });
+        } else if (campaign.audience === "tagged" && campaign.audience_tag) {
+          contacts = await queryAll(
+            "SELECT * FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed' AND FIND_IN_SET(?, REPLACE(tags, ', ', ','))",
+            [campaign.user_id, campaign.audience_tag]
+          );
+        } else {
+          contacts = await queryAll(
+            "SELECT * FROM campaign_contacts WHERE user_id = ? AND status = 'subscribed'",
+            [campaign.user_id]
+          );
+        }
+
+        if (contacts.length === 0) {
+          await execute("UPDATE campaigns SET status = 'draft' WHERE id = ?", [campaign.id]);
+          console.log(`[CampaignScheduler] No recipients for campaign ${campaign.id}, reverted to draft`);
+          continue;
+        }
+
+        const { getUserTransporter } = await import("./email-settings");
+        const userSettings = await getUserTransporter(campaign.user_id);
+        let transporter: any, fromEmail: string, fromName: string, replyTo: string;
+        if (userSettings) {
+          transporter = userSettings.transporter;
+          fromEmail = campaign.from_email || userSettings.fromEmail;
+          fromName = campaign.from_name || userSettings.fromName;
+          replyTo = campaign.reply_to || userSettings.replyTo || fromEmail;
+        } else {
+          if (!process.env.SMTP_PASSWORD) {
+            console.error(`[CampaignScheduler] No SMTP configured for campaign ${campaign.id}`);
+            continue;
+          }
+          const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+          const nm = await import("nodemailer");
+          transporter = nm.default.createTransport({
+            host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: { user: process.env.SMTP_USER || "admin@masakheportal.co.za", pass: process.env.SMTP_PASSWORD },
+            tls: { rejectUnauthorized: false },
+          });
+          fromEmail = campaign.from_email || process.env.SMTP_FROM || "admin@masakheportal.co.za";
+          fromName = campaign.from_name || "Masakhe";
+          replyTo = campaign.reply_to || fromEmail;
+        }
+
+        await execute("UPDATE campaigns SET status='sending', total_recipients=? WHERE id=?", [contacts.length, campaign.id]);
+        let sentCount = 0;
+        for (const contact of contacts) {
+          const sendId = randomUUID();
+          const html = buildEmail(campaign, contact.first_name);
+          try {
+            await transporter.sendMail({
+              from: `"${fromName}" <${fromEmail}>`,
+              to: contact.email,
+              replyTo: replyTo || fromEmail,
+              subject: campaign.subject,
+              html,
+            });
+            await execute(
+              "INSERT INTO campaign_sends (id, campaign_id, contact_id, email, status, sent_at) VALUES (?, ?, ?, ?, 'sent', NOW())",
+              [sendId, campaign.id, contact.id, contact.email]
+            );
+            sentCount++;
+          } catch (e: any) {
+            await execute(
+              "INSERT INTO campaign_sends (id, campaign_id, contact_id, email, status, error_message) VALUES (?, ?, ?, ?, 'failed', ?)",
+              [sendId, campaign.id, contact.id, contact.email, e.message]
+            );
+          }
+        }
+        await execute("UPDATE campaigns SET status='sent', sent_at=NOW(), sent_count=? WHERE id=?", [sentCount, campaign.id]);
+        console.log(`[CampaignScheduler] Sent campaign "${campaign.name}" to ${sentCount}/${contacts.length} recipients`);
+      } catch (err: any) {
+        console.error(`[CampaignScheduler] Error processing campaign ${campaign.id}:`, err.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[CampaignScheduler] Scheduler error:", err.message);
+  }
+}
+
+export function startCampaignScheduler(): void {
+  console.log("[CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)");
+  processScheduledCampaigns().catch(() => {});
+  setInterval(() => processScheduledCampaigns().catch(() => {}), 2 * 60 * 1000);
+}

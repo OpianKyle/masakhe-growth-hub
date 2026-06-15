@@ -641,6 +641,14 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [showAi, setShowAi] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(campaign?.id || null);
+  const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
+  const [scheduledAt, setScheduledAt] = useState<string>(
+    campaign?.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : ""
+  );
+  const [showBuilderTest, setShowBuilderTest] = useState(false);
+  const [builderTestEmail, setBuilderTestEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
   const [form, setForm] = useState({
     name: campaign?.name || "",
     subject: campaign?.subject || "",
@@ -663,12 +671,12 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
 
   const allTags = [...new Set(contacts.flatMap(c => (c.tags || "").split(",").map(t => t.trim())).filter(Boolean))];
 
-  async function save(andSend = false) {
-    if (!form.name || !form.subject) { toast.error("Campaign name and subject are required"); return; }
+  async function saveDraft(): Promise<string | null> {
+    if (!form.name || !form.subject) { toast.error("Campaign name and subject are required"); return null; }
     setSaving(true);
     try {
-      const method = campaign ? "PUT" : "POST";
-      const url = campaign ? `/api/campaigns/${campaign.id}` : "/api/campaigns/";
+      const method = savedId ? "PUT" : "POST";
+      const url = savedId ? `/api/campaigns/${savedId}` : "/api/campaigns/";
       const res = await fetch(url, {
         method, credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -676,7 +684,29 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success(campaign ? "Campaign updated" : "Campaign saved as draft");
+      setSavedId(data.id);
+      return data.id;
+    } catch (err: any) {
+      toast.error(err.message);
+      return null;
+    } finally { setSaving(false); }
+  }
+
+  async function save(andSend = false) {
+    if (!form.name || !form.subject) { toast.error("Campaign name and subject are required"); return; }
+    setSaving(true);
+    try {
+      const method = savedId ? "PUT" : "POST";
+      const url = savedId ? `/api/campaigns/${savedId}` : "/api/campaigns/";
+      const res = await fetch(url, {
+        method, credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSavedId(data.id);
+      toast.success(savedId ? "Campaign updated" : "Campaign saved as draft");
       if (andSend) {
         setSending(true);
         const sRes = await fetch(`/api/campaigns/${data.id}/send`, { method: "POST", credentials: "include" });
@@ -689,6 +719,50 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
     } catch (err: any) {
       toast.error(err.message);
     } finally { setSaving(false); setSending(false); }
+  }
+
+  async function scheduleIt() {
+    if (!scheduledAt) { toast.error("Please select a date and time"); return; }
+    if (new Date(scheduledAt) <= new Date()) { toast.error("Scheduled time must be in the future"); return; }
+    setSaving(true);
+    try {
+      const id = await saveDraft();
+      if (!id) return;
+      const res = await fetch(`/api/campaigns/${id}/schedule`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduled_at: scheduledAt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`Campaign scheduled for ${new Date(scheduledAt).toLocaleString("en-ZA")} 📅`);
+      onBack();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally { setSaving(false); }
+  }
+
+  async function saveAndOpenTest() {
+    const id = await saveDraft();
+    if (!id) return;
+    toast.success("Draft saved");
+    setShowBuilderTest(true);
+  }
+
+  async function sendBuilderTest() {
+    if (!savedId || !builderTestEmail) return;
+    setTestSending(true);
+    try {
+      const res = await fetch(`/api/campaigns/${savedId}/test`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: builderTestEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) { toast.success(`Test email sent to ${builderTestEmail}`); setShowBuilderTest(false); setBuilderTestEmail(""); }
+      else toast.error(data.error);
+    } catch { toast.error("Failed to send test email"); }
+    finally { setTestSending(false); }
   }
 
   const recipientCount = form.audience === "all" ? audienceCounts.subscribed
@@ -724,6 +798,9 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={saveAndOpenTest} disabled={saving || !form.name || !form.subject} title="Save draft and send a test email to yourself">
+            <TestTube className="h-3.5 w-3.5 mr-1" />Test Email
+          </Button>
           <Button variant="outline" size="sm" onClick={() => save(false)} disabled={saving}>
             {saving && !sending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}Save Draft
           </Button>
@@ -923,20 +1000,100 @@ function CampaignBuilder({ campaign, contacts, audienceCounts, onBack }: {
                   </div>
                 )}
 
+                {/* Send mode toggle */}
+                <div>
+                  <Label className="text-sm font-semibold">When to send</Label>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSendMode("now")}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${sendMode === "now" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                    >
+                      <Send className="h-4 w-4" />Send Now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSendMode("schedule")}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${sendMode === "schedule" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                    >
+                      <Clock className="h-4 w-4" />Schedule
+                    </button>
+                  </div>
+                </div>
+
+                {sendMode === "schedule" && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Schedule send date &amp; time</p>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      onChange={e => setScheduledAt(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-xs text-blue-700 dark:text-blue-400">The campaign will be sent automatically at the selected time.</p>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={() => setStep(2)}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
                   <Button variant="outline" className="flex-1" onClick={() => save(false)} disabled={saving}>
-                    {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}Save Draft
+                    {saving && !sending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}Save Draft
                   </Button>
                 </div>
-                <Button className="w-full bg-green-600 hover:bg-green-700 h-11 text-base gap-2" onClick={() => save(true)} disabled={saving || sending || recipientCount === 0}>
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Send to {recipientCount.toLocaleString()} recipient{recipientCount !== 1 ? "s" : ""}
-                </Button>
+
+                {sendMode === "now" ? (
+                  <Button className="w-full bg-green-600 hover:bg-green-700 h-11 text-base gap-2" onClick={() => save(true)} disabled={saving || sending || recipientCount === 0}>
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Send to {recipientCount.toLocaleString()} recipient{recipientCount !== 1 ? "s" : ""}
+                  </Button>
+                ) : (
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base gap-2" onClick={scheduleIt} disabled={saving || !scheduledAt || recipientCount === 0}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                    Schedule Campaign
+                  </Button>
+                )}
               </div>
             )}
           </div>
         </div>
+
+        {/* Builder Test Email Modal */}
+        <AnimatePresence>
+          {showBuilderTest && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={e => { if (e.target === e.currentTarget) { setShowBuilderTest(false); setBuilderTestEmail(""); } }}>
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-background rounded-xl shadow-2xl w-full max-w-md p-6">
+                <h3 className="text-lg font-semibold mb-1">Send Test Email</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Preview "<strong>{form.name || "this campaign"}</strong>" in your inbox.
+                </p>
+                <Label className="text-sm">Send test to</Label>
+                <Input
+                  className="mt-1.5 mb-4"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={builderTestEmail}
+                  onChange={e => setBuilderTestEmail(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && builderTestEmail) sendBuilderTest(); }}
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => { setShowBuilderTest(false); setBuilderTestEmail(""); }}>Cancel</Button>
+                  <Button onClick={sendBuilderTest} disabled={!builderTestEmail || testSending}>
+                    {testSending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+                    Send Test
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Right: Live email preview */}
         <div className="hidden lg:flex flex-1 flex-col bg-slate-100 dark:bg-slate-900 overflow-hidden">
