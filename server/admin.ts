@@ -93,8 +93,14 @@ export async function runAdminMigrations() {
     try {
       await conn.query(`ALTER TABLE admin_drip_emails ADD COLUMN send_on_day INT NOT NULL DEFAULT 1`);
       // Backfill existing rows with the old formula: (seq - 1) * 2 + 1
-      await conn.query(`UPDATE admin_drip_emails SET send_on_day = (sequence_number - 1) * 2 + 1 WHERE send_on_day = 1 OR send_on_day IS NULL`);
-    } catch (e: any) { if (!e.message?.includes("Duplicate column")) console.error("[Admin] send_on_day col:", e.message); }
+      await conn.query(`UPDATE admin_drip_emails SET send_on_day = (sequence_number - 1) * 2 + 1`);
+      console.log("[Admin] send_on_day column added and backfilled");
+    } catch (e: any) {
+      const msg = e.message || "";
+      if (!msg.includes("Duplicate column") && !msg.includes("already exists")) {
+        console.error("[Admin] send_on_day col:", msg);
+      }
+    }
 
     // Seed the 20 drip emails if not yet seeded
     const existing = await conn.query(`SELECT COUNT(*) as c FROM admin_drip_emails`);
