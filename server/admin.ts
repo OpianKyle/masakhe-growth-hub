@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { getTransporterForUser } from "./email-settings";
 import { sendFranchiseOwnerInviteEmail, getSharedTransporter } from "./email";
 import nodemailer from "nodemailer";
+import { encrypt, decrypt } from "./crypto";
 
 export const adminRouter = Router();
 
@@ -61,6 +62,20 @@ export async function runAdminMigrations() {
         INDEX idx_audit_action (action),
         INDEX idx_audit_target (target_type, target_id),
         INDEX idx_audit_created (created_at)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS system_smtp_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        smtp_host VARCHAR(255) NOT NULL DEFAULT '',
+        smtp_port INT NOT NULL DEFAULT 465,
+        smtp_secure TINYINT(1) NOT NULL DEFAULT 1,
+        smtp_user VARCHAR(255) NOT NULL DEFAULT '',
+        smtp_pass_enc TEXT NOT NULL DEFAULT '',
+        from_name VARCHAR(255) NOT NULL DEFAULT 'Masakhe',
+        from_email VARCHAR(255) NOT NULL DEFAULT '',
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB
     `);
 
@@ -1168,20 +1183,31 @@ adminRouter.post("/drip-emails/:id/send-test", async (req, res) => {
     const admin = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [req.session?.userId]);
     if (!admin) return res.status(401).json({ error: "Not authenticated" });
 
-    if (!process.env.SMTP_PASSWORD) return res.status(503).json({ error: "SMTP not configured — SMTP_PASSWORD secret is missing" });
+    // Prefer DB-stored system SMTP settings; fall back to env vars
+    const sysSettings = await queryOne("SELECT * FROM system_smtp_settings LIMIT 1");
+    let smtpHost: string, smtpPort: number, smtpUser: string, smtpPass: string;
+    if (sysSettings && sysSettings.smtp_pass_enc) {
+      smtpHost = sysSettings.smtp_host;
+      smtpPort = sysSettings.smtp_port;
+      smtpUser = sysSettings.smtp_user;
+      smtpPass = decrypt(sysSettings.smtp_pass_enc);
+    } else if (process.env.SMTP_PASSWORD) {
+      smtpHost = process.env.SMTP_HOST || "smtp.masakheportal.co.za";
+      smtpPort = parseInt(process.env.SMTP_PORT || "465");
+      smtpUser = process.env.SMTP_USER || process.env.SMTP_FROM || "admin@masakheportal.co.za";
+      smtpPass = process.env.SMTP_PASSWORD;
+    } else {
+      return res.status(503).json({ error: "SMTP not configured — add settings in Admin → Settings or set SMTP_PASSWORD env var" });
+    }
 
-    const smtpHost = process.env.SMTP_HOST || "smtp.masakheportal.co.za";
-    const smtpPort = parseInt(process.env.SMTP_PORT || "465");
-    const smtpUser = process.env.SMTP_USER || process.env.SMTP_FROM || "admin@masakheportal.co.za";
-
-    console.log(`[DripTest] SMTP host=${smtpHost} port=${smtpPort} user=${smtpUser} passLen=${process.env.SMTP_PASSWORD?.length}`);
+    console.log(`[DripTest] SMTP host=${smtpHost} port=${smtpPort} user=${smtpUser} passLen=${smtpPass.length} source=${sysSettings?.smtp_pass_enc ? "db" : "env"}`);
 
     // Create a fresh transporter per request — avoids stale idle-connection re-auth failures (SMTP 535)
     const freshTransporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
-      auth: { user: smtpUser, pass: process.env.SMTP_PASSWORD },
+      auth: { user: smtpUser, pass: smtpPass },
       tls: { rejectUnauthorized: false },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
@@ -1254,6 +1280,85 @@ adminRouter.get("/drip-emails/stats", async (req, res) => {
       totalSends: Number(totalSends),
       uniqueRecipients: Number(uniqueRecipients),
     });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ───────────────────────── System SMTP Settings ─────────────────────────
+
+// GET /api/admin/system-settings — return current settings (no password)
+adminRouter.get("/system-settings", requireAdmin, async (req, res) => {
+  try {
+    const row = await queryOne(
+      "SELECT id, smtp_host, smtp_port, smtp_secure, smtp_user, from_name, from_email, updated_at FROM system_smtp_settings LIMIT 1"
+    );
+    res.json({ ok: true, settings: row || null });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/system-settings — save/update settings
+adminRouter.put("/system-settings", requireAdmin, async (req, res) => {
+  try {
+    const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, from_name, from_email } = req.body;
+    if (!smtp_host || !smtp_user || !from_email) {
+      return res.status(400).json({ error: "Host, username, and from email are required" });
+    }
+    const existing = await queryOne("SELECT id, smtp_pass_enc FROM system_smtp_settings LIMIT 1");
+    const passEnc = smtp_pass ? encrypt(smtp_pass) : (existing?.smtp_pass_enc || "");
+    if (!passEnc) {
+      return res.status(400).json({ error: "Password is required for initial setup" });
+    }
+    if (existing) {
+      await execute(
+        "UPDATE system_smtp_settings SET smtp_host=?, smtp_port=?, smtp_secure=?, smtp_user=?, smtp_pass_enc=?, from_name=?, from_email=? WHERE id=?",
+        [smtp_host, smtp_port || 465, smtp_secure ? 1 : 0, smtp_user, passEnc, from_name || "Masakhe", from_email, existing.id]
+      );
+    } else {
+      await execute(
+        "INSERT INTO system_smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass_enc, from_name, from_email) VALUES (?,?,?,?,?,?,?)",
+        [smtp_host, smtp_port || 465, smtp_secure ? 1 : 0, smtp_user, passEnc, from_name || "Masakhe", from_email]
+      );
+    }
+    await logAudit(req, "system_smtp_updated", { details: { smtp_host, smtp_user, from_email } });
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/system-settings/test — verify and send a test email
+adminRouter.post("/system-settings/test", requireAdmin, async (req, res) => {
+  try {
+    const sysSettings = await queryOne("SELECT * FROM system_smtp_settings LIMIT 1");
+    if (!sysSettings || !sysSettings.smtp_pass_enc) {
+      return res.status(400).json({ error: "No SMTP settings saved yet. Save your settings first." });
+    }
+    const freshTransporter = nodemailer.createTransport({
+      host: sysSettings.smtp_host,
+      port: sysSettings.smtp_port,
+      secure: !!sysSettings.smtp_secure,
+      auth: { user: sysSettings.smtp_user, pass: decrypt(sysSettings.smtp_pass_enc) },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+    });
+    try {
+      await freshTransporter.verify();
+    } catch (verifyErr: any) {
+      return res.status(502).json({ error: `SMTP connection failed: ${verifyErr.message}` });
+    }
+    const adminUser = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [(req.session as any).userId]);
+    const toAddress: string = req.body?.to || adminUser?.email;
+    await freshTransporter.sendMail({
+      from: `"${sysSettings.from_name || "Masakhe"}" <${sysSettings.from_email}>`,
+      to: toAddress,
+      subject: "Masakhe — System SMTP Test",
+      html: `<p>Hi${adminUser?.full_name ? " " + adminUser.full_name : ""},</p><p>Your system SMTP settings are working correctly.</p><p>Sent from <strong>${sysSettings.from_email}</strong> via ${sysSettings.smtp_host}:${sysSettings.smtp_port}.</p><p>— Masakhe Admin</p>`,
+    });
+    res.json({ ok: true, sentTo: toAddress });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

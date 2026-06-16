@@ -112,6 +112,16 @@ export async function getUserTransporter(userId: string) {
   };
 }
 
+export async function getSystemTransporter() {
+  const settings = await queryOne("SELECT * FROM system_smtp_settings LIMIT 1");
+  if (!settings || !settings.smtp_pass_enc) return null;
+  return {
+    transporter: buildTransporter(settings),
+    fromName: settings.from_name || "Masakhe",
+    fromEmail: settings.from_email,
+  };
+}
+
 export async function getTransporterForUser(userId: string) {
   const userResult = await getUserTransporter(userId);
   if (userResult) return userResult;

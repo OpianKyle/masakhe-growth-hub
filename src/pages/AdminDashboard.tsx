@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, Routes, Route, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
-  TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, Receipt, FileText, BarChart3,
+  TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, EyeOff, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
   Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter,
@@ -2830,6 +2830,205 @@ function AdminDripCampaigns() {
   );
 }
 
+// ───────────────────────── Admin System Settings ─────────────────────────
+function AdminSettings() {
+  const [form, setForm] = useState({
+    smtp_host: "",
+    smtp_port: "465",
+    smtp_secure: true,
+    smtp_user: "",
+    smtp_pass: "",
+    from_name: "Masakhe",
+    from_email: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [testTo, setTestTo] = useState("");
+  const [testStatus, setTestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/system-settings", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.settings) {
+          setForm(prev => ({
+            ...prev,
+            smtp_host: data.settings.smtp_host || "",
+            smtp_port: String(data.settings.smtp_port || "465"),
+            smtp_secure: !!data.settings.smtp_secure,
+            smtp_user: data.settings.smtp_user || "",
+            from_name: data.settings.from_name || "Masakhe",
+            from_email: data.settings.from_email || "",
+          }));
+        }
+      })
+      .catch(() => toast.error("Failed to load settings"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setTestStatus(null);
+    try {
+      const res = await fetch("/api/admin/system-settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          smtp_host: form.smtp_host,
+          smtp_port: parseInt(form.smtp_port) || 465,
+          smtp_secure: form.smtp_secure,
+          smtp_user: form.smtp_user,
+          smtp_pass: form.smtp_pass || undefined,
+          from_name: form.from_name,
+          from_email: form.from_email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setForm(prev => ({ ...prev, smtp_pass: "" }));
+      toast.success("System SMTP settings saved");
+    } catch (err: any) {
+      toast.error(err.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendTest = async () => {
+    setTesting(true);
+    setTestStatus(null);
+    try {
+      const res = await fetch("/api/admin/system-settings/test", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testTo.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setTestStatus({ ok: true, msg: `Test email sent successfully to ${data.sentTo}` });
+      toast.success(`Test email sent to ${data.sentTo}`);
+    } catch (err: any) {
+      setTestStatus({ ok: false, msg: err.message });
+      toast.error(err.message || "Test failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading) return <div className="p-6 text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
+
+  return (
+    <div className="p-6 space-y-6 max-w-2xl">
+      <div>
+        <h2 className="text-2xl font-bold font-heading">System Email Settings</h2>
+        <p className="text-muted-foreground text-sm mt-1">
+          Configure the SMTP account used for drip emails, welcome emails, and all platform notifications. Settings saved here are stored securely in the database.
+        </p>
+      </div>
+
+      <div className="rounded-xl border bg-card p-6 space-y-5">
+        <h3 className="font-semibold flex items-center gap-2 text-base">
+          <Mail className="h-4 w-4 text-blue-500" />
+          SMTP Configuration
+        </h3>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="smtp_host">SMTP Host</Label>
+            <Input id="smtp_host" placeholder="smtp.example.com" value={form.smtp_host} onChange={e => setForm(p => ({ ...p, smtp_host: e.target.value }))} />
+          </div>
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="smtp_port">Port</Label>
+            <Input id="smtp_port" type="number" placeholder="465" value={form.smtp_port}
+              onChange={e => setForm(p => ({ ...p, smtp_port: e.target.value, smtp_secure: e.target.value === "465" }))} />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input type="checkbox" id="smtp_secure" checked={form.smtp_secure}
+            onChange={e => setForm(p => ({ ...p, smtp_secure: e.target.checked }))}
+            className="h-4 w-4 accent-emerald-600" />
+          <label htmlFor="smtp_secure" className="text-sm font-medium cursor-pointer">Use SSL/TLS (port 465)</label>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="smtp_user">Username / Email</Label>
+            <Input id="smtp_user" placeholder="admin@yourdomain.com" value={form.smtp_user}
+              onChange={e => setForm(p => ({ ...p, smtp_user: e.target.value }))} />
+          </div>
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="smtp_pass">
+              Password <span className="text-xs text-muted-foreground font-normal">(leave blank to keep existing)</span>
+            </Label>
+            <div className="relative">
+              <Input id="smtp_pass" type={showPass ? "text" : "password"} placeholder="••••••••••••"
+                value={form.smtp_pass} onChange={e => setForm(p => ({ ...p, smtp_pass: e.target.value }))}
+                className="pr-10" />
+              <button type="button" onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4 grid grid-cols-2 gap-4">
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="from_name">From Name</Label>
+            <Input id="from_name" placeholder="Masakhe" value={form.from_name}
+              onChange={e => setForm(p => ({ ...p, from_name: e.target.value }))} />
+          </div>
+          <div className="col-span-2 sm:col-span-1 space-y-1.5">
+            <Label htmlFor="from_email">From Email</Label>
+            <Input id="from_email" type="email" placeholder="noreply@yourdomain.com" value={form.from_email}
+              onChange={e => setForm(p => ({ ...p, from_email: e.target.value }))} />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-1">
+          <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Save Settings
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-6 space-y-4">
+        <h3 className="font-semibold flex items-center gap-2 text-base">
+          <FlaskConical className="h-4 w-4 text-amber-500" />
+          Test Connection
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Send a test email to confirm your SMTP settings are working. Save first, then test.
+        </p>
+        <div className="flex gap-3">
+          <Input type="email" placeholder="Recipient address (leave blank for your admin email)"
+            value={testTo} onChange={e => setTestTo(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") sendTest(); }}
+            className="flex-1" />
+          <Button onClick={sendTest} disabled={testing} variant="outline">
+            {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+            Send Test
+          </Button>
+        </div>
+        {testStatus && (
+          <div className={`flex items-start gap-2 text-sm rounded-lg px-4 py-3 ${testStatus.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            {testStatus.ok
+              ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+              : <XCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+            <span>{testStatus.msg}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -2908,6 +3107,7 @@ export default function AdminDashboard() {
           <Route path="drip-campaigns" element={<AdminDripCampaigns />} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="help-centre" element={<AdminHelpCentre />} />
+          <Route path="settings" element={<AdminSettings />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </main>
