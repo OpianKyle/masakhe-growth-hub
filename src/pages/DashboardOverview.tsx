@@ -110,11 +110,20 @@ export default function DashboardOverview() {
     }
   };
 
+  const [activeModules, setActiveModules] = useState<string[]>([]);
+
   useEffect(() => {
     fetch("/api/dashboard/overview", { credentials: "include" })
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.modules)) setActiveModules(d.modules); })
+      .catch(() => {});
   }, []);
 
   if (loading) {
@@ -129,14 +138,6 @@ export default function DashboardOverview() {
       </div>
     );
   }
-
-  const [activeModules, setActiveModules] = useState<string[]>([]);
-  useEffect(() => {
-    fetch("/api/billing/status", { credentials: "include" })
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d.modules)) setActiveModules(d.modules); })
-      .catch(() => {});
-  }, []);
 
   const MODULE_OVERVIEW = [
     { code: "web_builder", label: "Web Builder", color: "from-sky-500 to-emerald-500", bg: "from-sky-50 to-emerald-50 dark:from-sky-950/30 dark:to-emerald-950/30", border: "border-sky-200 dark:border-sky-800" },
