@@ -756,8 +756,8 @@ function ClientList() {
         )}
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left p-4 font-semibold">Client</th>
