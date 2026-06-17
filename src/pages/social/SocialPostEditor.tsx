@@ -1248,12 +1248,12 @@ export default function SocialPostEditor() {
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-white">
-      {/* ── Canva-style top bar ────────────────────────────────── */}
-      <div ref={topBarRef} className="flex items-center gap-0 border-b bg-white h-12 px-2 shrink-0 relative z-30">
+      {/* ── Top bar ────────────────────────────────── */}
+      <div ref={topBarRef} className="flex items-center gap-0 border-b border-white/[0.08] bg-[#111111] h-[52px] px-3 shrink-0 relative z-30">
 
         {/* Left: logo + menu buttons */}
         <div className="flex items-center gap-0.5">
-          <div className="w-7 h-7 rounded-lg mr-2 ml-1 flex items-center justify-center shrink-0"
+          <div className="w-8 h-8 rounded-xl mr-2.5 ml-0.5 flex items-center justify-center shrink-0 shadow-lg"
             style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
             <Palette className="h-4 w-4 text-white" />
           </div>
@@ -1261,7 +1261,7 @@ export default function SocialPostEditor() {
           {/* File */}
           <div className="relative">
             <button onClick={() => setActiveMenu(activeMenu === "file" ? null : "file")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "file" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "file" ? "bg-violet-500/20 text-violet-300" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
               File <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
             {activeMenu === "file" && (
@@ -1289,7 +1289,7 @@ export default function SocialPostEditor() {
           {/* Resize */}
           <div className="relative">
             <button onClick={() => setActiveMenu(activeMenu === "resize" ? null : "resize")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "resize" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "resize" ? "bg-violet-500/20 text-violet-300" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
               Resize <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
             {activeMenu === "resize" && (
@@ -1310,8 +1310,8 @@ export default function SocialPostEditor() {
           {/* Editing */}
           <div className="relative">
             <button onClick={() => setActiveMenu(activeMenu === "editing" ? null : "editing")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "editing" || snapEnabled ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
-              Editing {snapEnabled && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "editing" || snapEnabled ? "bg-violet-500/20 text-violet-300" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+              Editing {snapEnabled && <span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />}
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
             {activeMenu === "editing" && (
@@ -1332,23 +1332,23 @@ export default function SocialPostEditor() {
             )}
           </div>
 
-          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-full">NEW</span>
+          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 rounded-full">NEW</span>
         </div>
 
         {/* Center: undo/redo + format selector */}
         <div className="flex items-center gap-1.5 mx-auto">
           <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)"
-            className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 transition-colors">
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-25 transition-all">
             <Undo2 className="h-4 w-4" />
           </button>
           <button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)"
-            className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 transition-colors">
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-25 transition-all">
             <Redo2 className="h-4 w-4" />
           </button>
-          <div className="mx-1 h-5 w-px bg-gray-200" />
+          <div className="mx-1.5 h-5 w-px bg-white/15" />
           <select value={preset.id}
             onChange={(e) => { const p = PRESETS.find(x => x.id === e.target.value); if (p) setPreset(p); }}
-            className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs bg-white text-gray-700 font-medium hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-200">
+            className="rounded-lg border border-white/20 px-2.5 py-1.5 text-xs bg-white/10 text-white font-medium hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-colors" style={{ colorScheme: "dark" }}>
             {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </div>
@@ -1359,8 +1359,8 @@ export default function SocialPostEditor() {
           {/* Animate */}
           <div className="relative">
             <button onClick={() => setActiveMenu(activeMenu === "animate" ? null : "animate")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "animate" || animationType !== "none" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
-              Animate {animationType !== "none" && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "animate" || animationType !== "none" ? "bg-violet-500/20 text-violet-300" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+              Animate {animationType !== "none" && <span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />}
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
             {activeMenu === "animate" && (
@@ -1388,7 +1388,7 @@ export default function SocialPostEditor() {
           {/* Position */}
           <div className="relative">
             <button onClick={() => setActiveMenu(activeMenu === "position" ? null : "position")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "position" ? "bg-violet-100 text-violet-700" : "text-gray-600 hover:bg-gray-100"}`}>
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium ${activeMenu === "position" ? "bg-violet-500/20 text-violet-300" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
               Position <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
             {activeMenu === "position" && (
@@ -1437,33 +1437,35 @@ export default function SocialPostEditor() {
             )}
           </div>
 
-          <div className="w-px h-5 bg-gray-200 mx-0.5" />
+          <div className="w-px h-5 bg-white/15 mx-1" />
           <button onClick={exportImage}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all"
-            style={{ background: "linear-gradient(90deg,#7c3aed,#9333ea)" }}>
-            <Download className="h-3.5 w-3.5" /> Share
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-semibold shadow-lg hover:shadow-violet-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            style={{ background: "linear-gradient(90deg,#7c3aed,#a855f7)" }}>
+            <Download className="h-3.5 w-3.5" /> Download
           </button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left tools rail */}
-        <div className="w-16 border-r bg-slate-50 flex flex-col items-center py-3 gap-1 shrink-0">
+        <div className="w-[68px] border-r border-white/[0.07] bg-[#0f0f0f] flex flex-col items-center pt-3 pb-4 gap-0.5 shrink-0">
           {([
             { id: "templates", icon: LayoutTemplate, label: "Templates" },
             { id: "text", icon: Type, label: "Text" },
             { id: "shapes", icon: Square, label: "Shapes" },
-            { id: "background", icon: Palette, label: "Background" },
+            { id: "background", icon: Palette, label: "BG" },
             { id: "uploads", icon: ImageIcon, label: "Uploads" },
           ] as const).map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`w-12 h-14 flex flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] transition-colors ${
-                tab === t.id ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-200"
+              className={`w-14 h-[58px] flex flex-col items-center justify-center gap-1 rounded-xl text-[9.5px] font-medium transition-all ${
+                tab === t.id
+                  ? "bg-violet-500/20 text-violet-400 shadow-inner shadow-violet-500/10"
+                  : "text-white/45 hover:bg-white/8 hover:text-white/75"
               }`}
             >
-              <t.icon className="h-5 w-5" />
+              <t.icon className="h-[18px] w-[18px]" />
               {t.label}
             </button>
           ))}
@@ -1473,7 +1475,7 @@ export default function SocialPostEditor() {
         <div className="border-r bg-white overflow-y-auto p-3 shrink-0 relative" style={{ width: leftWidth }}>
           {tab === "templates" && (
             <div>
-              <h3 className="font-semibold text-sm mb-3">Templates</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Templates</h3>
               <div className={`grid gap-2 ${leftWidth >= 560 ? "grid-cols-4" : leftWidth >= 400 ? "grid-cols-3" : "grid-cols-2"}`}>
                 {TEMPLATES.map(t => {
                   const headlineEl = t.elements.find(e => e.type === "text" && (e as TextEl).fontSize >= 50) as TextEl | undefined;
@@ -1516,7 +1518,7 @@ export default function SocialPostEditor() {
 
           {tab === "background" && (
             <div>
-              <h3 className="font-semibold text-sm mb-3">Background Image</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Background Image</h3>
               <div className="grid grid-cols-2 gap-2">
                 {BACKGROUNDS.map(b => (
                   <button key={b.id} onClick={() => setBgImage(b.url)}
@@ -1528,7 +1530,7 @@ export default function SocialPostEditor() {
                   </button>
                 ))}
               </div>
-              <h3 className="font-semibold text-sm mt-5 mb-2">Background Color</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-5 mb-2">Background Color</h3>
               <div className="grid grid-cols-6 gap-1.5">
                 {PALETTE.map(c => (
                   <button key={c} onClick={() => { setBg(c); setBgImage(""); }}
@@ -1543,39 +1545,57 @@ export default function SocialPostEditor() {
 
           {tab === "text" && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm mb-3">Add Text</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Add Text</h3>
               <button onClick={addHeading}
-                className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-slate-50 transition-all">
-                <div className="text-xl font-bold">Add a Heading</div>
-                <div className="text-xs text-muted-foreground">Big, bold, attention-grabbing</div>
+                className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-violet-400 hover:bg-violet-50/60 hover:shadow-sm transition-all group">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-8 h-8 rounded-lg bg-violet-100 group-hover:bg-violet-200 flex items-center justify-center shrink-0 transition-colors">
+                    <Type className="h-4 w-4 text-violet-600" />
+                  </span>
+                  <div>
+                    <div className="text-base font-bold text-slate-800 leading-tight">Add a Heading</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Big, bold, attention-grabbing</div>
+                  </div>
+                </div>
               </button>
               <button onClick={addText}
-                className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-slate-50 transition-all">
-                <div className="text-base">Add body text</div>
-                <div className="text-xs text-muted-foreground">For descriptions and details</div>
+                className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-violet-400 hover:bg-violet-50/60 hover:shadow-sm transition-all group">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors">
+                    <Type className="h-3.5 w-3.5 text-slate-500 group-hover:text-violet-600 transition-colors" />
+                  </span>
+                  <div>
+                    <div className="text-sm text-slate-700 leading-tight">Add body text</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">For descriptions and details</div>
+                  </div>
+                </div>
               </button>
             </div>
           )}
 
           {tab === "shapes" && (
             <div>
-              <h3 className="font-semibold text-sm mb-3">Shapes</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Shapes</h3>
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={addRect} className="aspect-square rounded-lg border hover:border-primary flex items-center justify-center bg-slate-50">
-                  <Square className="h-8 w-8 text-slate-700" />
+                <button onClick={addRect} className="aspect-square rounded-xl border border-slate-200 hover:border-violet-400 hover:shadow-md flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-violet-50 hover:to-violet-50/60 transition-all group">
+                  <Square className="h-7 w-7 text-slate-500 group-hover:text-violet-600 transition-colors" />
+                  <span className="text-[10px] text-slate-400 group-hover:text-violet-500 transition-colors">Rect</span>
                 </button>
-                <button onClick={addCircle} className="aspect-square rounded-lg border hover:border-primary flex items-center justify-center bg-slate-50">
-                  <CircleIcon className="h-8 w-8 text-slate-700" />
+                <button onClick={addCircle} className="aspect-square rounded-xl border border-slate-200 hover:border-violet-400 hover:shadow-md flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-violet-50 hover:to-violet-50/60 transition-all group">
+                  <CircleIcon className="h-7 w-7 text-slate-500 group-hover:text-violet-600 transition-colors" />
+                  <span className="text-[10px] text-slate-400 group-hover:text-violet-500 transition-colors">Circle</span>
                 </button>
-                <button onClick={addStar} className="aspect-square rounded-lg border hover:border-primary flex items-center justify-center bg-slate-50">
-                  <StarIcon className="h-8 w-8 text-slate-700" />
+                <button onClick={addStar} className="aspect-square rounded-xl border border-slate-200 hover:border-violet-400 hover:shadow-md flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-violet-50 hover:to-violet-50/60 transition-all group">
+                  <StarIcon className="h-7 w-7 text-slate-500 group-hover:text-violet-600 transition-colors" />
+                  <span className="text-[10px] text-slate-400 group-hover:text-violet-500 transition-colors">Star</span>
                 </button>
-                <button onClick={addLine} className="aspect-square rounded-lg border hover:border-primary flex items-center justify-center bg-slate-50">
-                  <Minus className="h-8 w-8 text-slate-700" />
+                <button onClick={addLine} className="aspect-square rounded-xl border border-slate-200 hover:border-violet-400 hover:shadow-md flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-violet-50 hover:to-violet-50/60 transition-all group">
+                  <Minus className="h-7 w-7 text-slate-500 group-hover:text-violet-600 transition-colors" />
+                  <span className="text-[10px] text-slate-400 group-hover:text-violet-500 transition-colors">Line</span>
                 </button>
               </div>
 
-              <h3 className="font-semibold text-sm mt-5 mb-3">CTA Buttons</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-5 mb-3">CTA Buttons</h3>
               <div className="space-y-2">
                 <button onClick={() => addButton("filled", "Shop Now", "#3B82F6")} className="w-full rounded-lg bg-blue-500 text-white text-sm font-semibold py-3 hover:bg-blue-600">
                   Shop Now
@@ -1605,7 +1625,7 @@ export default function SocialPostEditor() {
 
           {tab === "uploads" && (
             <div>
-              <h3 className="font-semibold text-sm mb-3">Uploads</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Uploads</h3>
               <input
                 ref={fileRef}
                 type="file"
@@ -1669,12 +1689,12 @@ export default function SocialPostEditor() {
         </div>
 
         {/* Canvas area */}
-        <div ref={containerRef} className="flex-1 bg-[#1e1e1e] flex items-center justify-center overflow-auto relative">
+        <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-auto relative" style={{ background: "#1a1a1a", backgroundImage: "radial-gradient(circle, #2e2e2e 1px, transparent 1px)", backgroundSize: "22px 22px" }}>
           <div style={{
             width: preset.w * stageScale,
             height: preset.h * stageScale,
             background: bg,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 24px 64px rgba(0,0,0,0.6)",
           }} className="rounded-sm">
             <Stage
               ref={stageRef}
@@ -1837,20 +1857,20 @@ export default function SocialPostEditor() {
         >
           <div className="w-0.5 h-8 rounded-full bg-slate-400 group-hover:bg-primary/80 transition-colors" />
         </div>
-        <div className="border-l bg-white overflow-y-auto shrink-0" style={{ width: rightWidth }}>
-          <div className="border-b">
-            <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <h3 className="font-semibold text-sm flex items-center gap-1.5">
-                <Layers className="h-4 w-4" /> Layers
+        <div className="border-l bg-white overflow-y-auto shrink-0 flex flex-col" style={{ width: rightWidth }}>
+          <div className="border-b bg-slate-50/80 shrink-0">
+            <div className="flex items-center justify-between px-3 pt-3 pb-2">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" /> Layers
               </h3>
-              <span className="text-[10px] text-muted-foreground">{elements.length} item{elements.length === 1 ? "" : "s"}</span>
+              <span className="text-[10px] font-semibold bg-slate-200 text-slate-500 rounded-full px-1.5 py-0.5 leading-none">{elements.length}</span>
             </div>
             {elements.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-4 pb-3">
-                Add text, shapes or images and they will appear here.
+              <p className="text-[11px] text-slate-400 px-3 pb-3 italic">
+                Add elements to see them here.
               </p>
             ) : (
-              <ul className="px-2 pb-2 max-h-64 overflow-y-auto">
+              <ul className="px-1.5 pb-2 max-h-56 overflow-y-auto space-y-0.5">
                 {elements.slice().reverse().map((el) => {
                   const isActive = el.id === selectedId;
                   let label = "";
@@ -1865,11 +1885,15 @@ export default function SocialPostEditor() {
                     <li key={el.id}>
                       <button
                         onClick={() => setSelectedId(el.id)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
-                          isActive ? "bg-primary/10 text-primary" : "hover:bg-slate-100 text-slate-700"
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all ${
+                          isActive
+                            ? "bg-violet-500/10 text-violet-700 font-medium ring-1 ring-violet-200"
+                            : "hover:bg-slate-100 text-slate-600"
                         }`}
                       >
-                        <LIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${isActive ? "bg-violet-100" : "bg-slate-100"}`}>
+                          <LIcon className={`h-3 w-3 ${isActive ? "text-violet-600" : "text-slate-400"}`} />
+                        </span>
                         <span className="truncate flex-1">{label}</span>
                       </button>
                     </li>
@@ -1879,26 +1903,29 @@ export default function SocialPostEditor() {
             )}
           </div>
           {!selected ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">
-              <Palette className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-              Select an element above or on the canvas to edit its properties
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100/60 flex items-center justify-center mb-3 shadow-inner">
+                <Palette className="h-6 w-6 text-violet-300" />
+              </div>
+              <p className="text-xs font-semibold text-slate-500">Nothing selected</p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-snug">Click an element on the canvas<br />to edit its properties</p>
             </div>
           ) : (
             <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm capitalize">{selected.type}</h3>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => moveLayer(1)} title="Bring forward">
-                    <ChevronUp className="h-4 w-4" />
+              <div className="flex items-center justify-between bg-slate-50 -mx-4 -mt-4 px-4 py-2.5 mb-0 border-b">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 capitalize">{selected.type}</h3>
+                <div className="flex gap-0.5">
+                  <Button variant="ghost" size="sm" onClick={() => moveLayer(1)} title="Bring forward" className="h-7 w-7 p-0">
+                    <ChevronUp className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => moveLayer(-1)} title="Send backward">
-                    <ChevronDown className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={() => moveLayer(-1)} title="Send backward" className="h-7 w-7 p-0">
+                    <ChevronDown className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={duplicateSelected} title="Duplicate">
-                    <Copy className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={duplicateSelected} title="Duplicate" className="h-7 w-7 p-0">
+                    <Copy className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={deleteSelected} title="Delete" className="text-red-600">
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={deleteSelected} title="Delete" className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
