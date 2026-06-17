@@ -23,7 +23,7 @@ const MODULES = [
     ring: "ring-sky-400",
     icon: Globe,
     iconBg: "bg-gradient-to-br from-sky-500 to-emerald-500",
-    features: ["Professional website builder", "44+ templates", "AI content generation"],
+    features: ["Create and manage a professional online presence", "44+ industry templates", "AI content generation"],
   },
   {
     code: "social_biz",
@@ -35,7 +35,7 @@ const MODULES = [
     ring: "ring-violet-400",
     icon: Smartphone,
     iconBg: "bg-gradient-to-br from-violet-500 to-fuchsia-500",
-    features: ["Social media scheduler", "AI post generation", "Biz Connect network"],
+    features: ["Draft platform-ready posts faster with AI support", "Publish polished updates for professional visibility", "Facebook, Instagram & LinkedIn scheduling"],
   },
   {
     code: "transactions_ops",
@@ -47,7 +47,7 @@ const MODULES = [
     ring: "ring-emerald-400",
     icon: Wallet,
     iconBg: "bg-gradient-to-br from-emerald-500 to-teal-500",
-    features: ["Invoicing & expenses", "Client management", "Campaigns & automations"],
+    features: ["Track cash flow and keep finances organized", "Send quotes, create invoices, and follow up with ease", "Keep customer records, communication, and updates in one place", "Monitor stock levels and reduce supply gaps", "Run campaigns and automate recurring tasks"],
   },
   {
     code: "people_hr",
@@ -59,7 +59,7 @@ const MODULES = [
     ring: "ring-amber-400",
     icon: Users,
     iconBg: "bg-gradient-to-br from-amber-500 to-orange-500",
-    features: ["Payroll management", "Leave & HR tools", "Up to 3 users"],
+    features: ["Manage team records, payroll, and people operations", "Leave management & HR tools", "Employee records & contracts"],
   },
 ];
 const BUNDLE_PRICE = 129900;
