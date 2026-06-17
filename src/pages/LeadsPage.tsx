@@ -197,33 +197,73 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        style={{ background: "linear-gradient(135deg, #0891b2 0%, #7c3aed 100%)" }}>
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
-            <Users className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight">Leads</h2>
-            <p className="text-white/75 text-sm mt-0.5">Manage enquiries from your website visitors</p>
-          </div>
+    <div className="min-h-full bg-white dark:bg-gray-950">
+
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #cffafe 0%, #e0f2fe 30%, #ede9fe 70%, #f3e8ff 100%)" }}>
+        <div className="pointer-events-none select-none absolute inset-0">
+          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
+            className="absolute -left-4 top-4 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-full bg-cyan-100 flex items-center justify-center"><Users className="h-3.5 w-3.5 text-cyan-600"/></div>
+              <div className="space-y-1"><div className="h-2 w-14 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
+            </div>
+            {["bg-cyan-100","bg-sky-100","bg-indigo-100"].map((c,i) => (
+              <div key={i} className="flex items-center gap-2 mb-1.5"><div className={`h-5 w-5 rounded-full ${c}`}/><div className="h-1.5 flex-1 rounded-full bg-gray-100"/></div>
+            ))}
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute -right-3 top-5 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="h-2 w-14 rounded-full bg-cyan-200 mb-2"/>
+            <div className="grid grid-cols-2 gap-1.5">
+              {["bg-cyan-100","bg-sky-100","bg-violet-100","bg-purple-100"].map((c,i) => <div key={i} className={`h-8 rounded-lg ${c}`}/>)}
+            </div>
+          </motion.div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}
-            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-            {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-            Import CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}
-            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-            Export CSV
-          </Button>
+        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#164e63" }}>
+            Leads
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+            className="text-cyan-800/70 mb-6 text-sm">
+            Manage enquiries from your website visitors and track leads through your pipeline
+          </motion.p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="flex items-center justify-center gap-3 flex-wrap">
+            <Button onClick={() => importRef.current?.click()} disabled={importing}
+              variant="outline" className="bg-white/80 border-white shadow-sm gap-2 text-cyan-900 hover:bg-white rounded-xl">
+              {importing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>} Import CSV
+            </Button>
+            <Button onClick={handleExport} disabled={exporting}
+              className="bg-cyan-700 hover:bg-cyan-800 text-white shadow-md gap-2 rounded-xl">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Download className="h-4 w-4"/>} Export CSV
+            </Button>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
+
+      {/* ── Quick action bar ─────────────────────────────────────── */}
+      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+        <div className="max-w-7xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+          {[
+            { label: "Import CSV", icon: Upload,   action: () => importRef.current?.click(), grad: "from-sky-500 to-blue-500" },
+            { label: "Export CSV", icon: Download, action: handleExport,                     grad: "from-teal-500 to-emerald-500" },
+          ].map((a, i) => (
+            <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              onClick={a.action}
+              className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group min-w-[72px] shrink-0">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
+                <a.icon className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-[11px] font-medium text-gray-600 whitespace-nowrap">{a.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+      <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -357,6 +397,7 @@ export default function LeadsPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

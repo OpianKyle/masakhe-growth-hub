@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import {
   Users, Plus, Pencil, Trash2, ChevronRight, Search, Download,
   Printer, Calculator, CheckCircle, X, Briefcase, Banknote,
@@ -531,32 +532,85 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        style={{ background: "linear-gradient(135deg, #0284c7 0%, #2563eb 100%)" }}>
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
-            <Banknote className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight">Payroll</h2>
-            <p className="text-white/75 text-sm mt-0.5">Manage employees, calculate PAYE & UIF, and generate payslips</p>
-          </div>
+    <div className="min-h-full bg-white dark:bg-gray-950">
+
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 30%, #dbeafe 70%, #e0e7ff 100%)" }}>
+        <div className="pointer-events-none select-none absolute inset-0">
+          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
+            className="absolute -left-4 top-5 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-full bg-sky-100 flex items-center justify-center"><Banknote className="h-3.5 w-3.5 text-sky-600" /></div>
+              <div className="space-y-1"><div className="h-2 w-12 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
+            </div>
+            <div className="h-4 w-full rounded-lg bg-sky-100 mb-1.5" />
+            <div className="h-4 w-3/4 rounded-lg bg-blue-50 mb-1.5" />
+            <div className="h-4 w-1/2 rounded-lg bg-sky-50" />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute -right-3 top-4 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="h-2 w-14 rounded-full bg-blue-200 mb-2" />
+            <div className="space-y-2">
+              {[Users,Briefcase,Banknote].map((Icon,i) => (
+                <div key={i} className="flex items-center gap-2"><div className="h-5 w-5 rounded-full bg-sky-100 flex items-center justify-center"><Icon className="h-2.5 w-2.5 text-sky-600"/></div><div className="h-1.5 flex-1 rounded-full bg-gray-100"/></div>
+              ))}
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 2, y: 30 }} animate={{ opacity: 0.72, rotate: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.28 }}
+            className="absolute right-32 -bottom-2 w-28 rounded-2xl bg-white/70 backdrop-blur shadow-lg border-2 border-white p-2.5">
+            <div className="h-5 w-full rounded-lg bg-sky-100 mb-1.5"/>
+            <div className="h-3 w-3/4 rounded-full bg-gray-100"/>
+          </motion.div>
         </div>
-        <div className="flex gap-2">
-          {tab === "employees" && (
-            <Button size="sm" onClick={openAdd} className="bg-white text-blue-700 hover:bg-white/90 font-semibold">
-              <Plus className="h-4 w-4 mr-2" />Add Employee
+        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#0c4a6e" }}>
+            Payroll
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+            className="text-sky-800/70 mb-6 text-sm">
+            Manage employees, calculate PAYE & UIF, and generate professional payslips
+          </motion.p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="flex items-center justify-center gap-3 flex-wrap">
+            <Button onClick={openAdd} className="bg-sky-700 hover:bg-sky-800 text-white shadow-md gap-2 rounded-xl">
+              <Plus className="h-4 w-4" /> Add Employee
             </Button>
-          )}
-          {tab === "run" && (
-            <Button size="sm" onClick={handleRunPayroll} disabled={!calc || runSaving}
-              className="bg-white text-blue-700 hover:bg-white/90 font-semibold">
-              {runSaving ? "Processing..." : <><CheckCircle className="h-4 w-4 mr-2" />Generate Payslip</>}
-            </Button>
-          )}
+            {tab === "run" && (
+              <Button onClick={handleRunPayroll} disabled={!calc || runSaving}
+                variant="outline" className="bg-white/80 border-white shadow-sm gap-2 text-sky-900 hover:bg-white rounded-xl">
+                <CheckCircle className="h-4 w-4" /> {runSaving ? "Processing..." : "Generate Payslip"}
+              </Button>
+            )}
+          </motion.div>
         </div>
       </div>
+
+      {/* ── Quick action bar ─────────────────────────────────────── */}
+      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+          {(["employees","run","history"] as const).map((t, i) => (
+            <motion.button key={t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              onClick={() => setTab(t)}
+              className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${tab === t ? "bg-sky-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all ${tab === t ? "bg-gradient-to-br from-sky-500 to-blue-600 scale-110" : "bg-gradient-to-br from-sky-400 to-blue-500"}`}>
+                {t === "employees" ? <Users className="h-4 w-4 text-white" /> : t === "run" ? <Calculator className="h-4 w-4 text-white" /> : <Printer className="h-4 w-4 text-white" />}
+              </div>
+              <span className={`text-[11px] font-medium whitespace-nowrap ${tab === t ? "text-sky-700" : "text-gray-600 dark:text-gray-400"}`}>
+                {t === "employees" ? "Employees" : t === "run" ? "Run Payroll" : "History"}
+              </span>
+            </motion.button>
+          ))}
+          <div className="mx-2 h-10 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+            onClick={openAdd}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-sky-700 hover:to-blue-700 transition-all shrink-0">
+            <Plus className="h-4 w-4" /> Add Employee
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
 
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -945,6 +999,7 @@ export default function PayrollPage() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

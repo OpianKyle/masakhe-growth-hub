@@ -257,20 +257,58 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center gap-4"
-        style={{ background: "linear-gradient(135deg, #475569 0%, #334155 100%)" }}>
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
-            <ServerCog className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight">Settings</h2>
-            <p className="text-white/75 text-sm mt-0.5">Manage your profile, business details, and branding</p>
-          </div>
+    <div className="min-h-full bg-white dark:bg-gray-950">
+
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #ede9fe 70%, #f0f9ff 100%)" }}>
+        <div className="pointer-events-none select-none absolute inset-0">
+          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
+            className="absolute -left-4 top-5 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center"><ServerCog className="h-3.5 w-3.5 text-slate-500"/></div>
+              <div className="space-y-1"><div className="h-2 w-14 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
+            </div>
+            <div className="space-y-2">
+              {["bg-slate-100","bg-gray-100","bg-slate-50"].map((c,i) => <div key={i} className={`h-5 w-full rounded-lg ${c}`}/>)}
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute -right-3 top-5 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="h-2 w-14 rounded-full bg-slate-200 mb-2"/>
+            <div className="grid grid-cols-2 gap-1.5">
+              {["bg-slate-100","bg-gray-100","bg-violet-100","bg-blue-100"].map((c,i) => <div key={i} className={`h-8 rounded-lg ${c}`}/>)}
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
+        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#1e293b" }}>
+            Settings
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+            className="text-slate-600/80 mb-6 text-sm">
+            Manage your business profile, branding, integrations and account details
+          </motion.p>
+        </div>
+      </div>
+
+      {/* ── Quick action bar ─────────────────────────────────────── */}
+      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+        <div className="max-w-4xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+          {tabs.map((t, i) => (
+            <motion.button key={t.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${activeTab === t.key ? "bg-slate-50" : "hover:bg-gray-50"}`}>
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center shadow-sm ${activeTab === t.key ? "scale-110" : ""} transition-transform`}>
+                <t.icon className="h-4 w-4 text-white" />
+              </div>
+              <span className={`text-[11px] font-medium whitespace-nowrap ${activeTab === t.key ? "text-slate-700" : "text-gray-600"}`}>{t.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -683,6 +721,7 @@ export default function SettingsPage() {
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 }

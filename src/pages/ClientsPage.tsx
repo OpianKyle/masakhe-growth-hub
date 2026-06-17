@@ -513,38 +513,83 @@ export default function ClientsPage() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)" }}>
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
-            <Users className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight">Clients</h2>
-            <p className="text-white/75 text-sm mt-0.5">Manage your client portfolio and documents</p>
-          </div>
+    <div className="min-h-full bg-white dark:bg-gray-950">
+
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #ede9fe 0%, #f3e8ff 35%, #fce7f3 70%, #ffe4e6 100%)" }}>
+        <div className="pointer-events-none select-none absolute inset-0">
+          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
+            className="absolute -left-4 top-4 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-full bg-violet-100 flex items-center justify-center"><Users className="h-3.5 w-3.5 text-violet-600" /></div>
+              <div className="space-y-1"><div className="h-2 w-14 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
+            </div>
+            {[1,2,3].map(i => (<div key={i} className="flex items-center gap-2 mb-1.5"><div className="h-5 w-5 rounded-full bg-violet-100"/><div className="h-1.5 flex-1 rounded-full bg-gray-100"/></div>))}
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute -right-3 top-5 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
+            <div className="h-2 w-14 rounded-full bg-violet-200 mb-2" />
+            <div className="grid grid-cols-2 gap-1.5">
+              {["bg-violet-100","bg-purple-100","bg-fuchsia-100","bg-pink-100"].map((c,i) => (<div key={i} className={`h-8 rounded-lg ${c}`}/>))}
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, rotate: 2, y: 30 }} animate={{ opacity: 0.72, rotate: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.28 }}
+            className="absolute right-32 -bottom-2 w-28 rounded-2xl bg-white/70 backdrop-blur shadow-lg border-2 border-white p-2.5">
+            <div className="h-2 w-12 rounded-full bg-gray-200 mb-2" />
+            <div className="space-y-1.5">
+              {["w-full","w-4/5","w-3/5"].map((w,i) => <div key={i} className={`h-2 ${w} rounded-full bg-violet-100`}/>)}
+            </div>
+          </motion.div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}
-            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-            {importing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
-            Import CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}
-            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
-            Export CSV
-          </Button>
-          <Button size="sm" onClick={openAdd} className="bg-white text-violet-700 hover:bg-white/90 font-semibold">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Client
-          </Button>
+        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#3b0764" }}>
+            Your Clients
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+            className="text-violet-800/70 mb-6 text-sm">
+            Manage your client portfolio, documents and communication in one place
+          </motion.p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="flex items-center justify-center gap-3 flex-wrap">
+            <Button onClick={openAdd} className="bg-violet-700 hover:bg-violet-800 text-white shadow-md gap-2 rounded-xl">
+              <Plus className="h-4 w-4" /> Add Client
+            </Button>
+            <Button onClick={() => importRef.current?.click()} variant="outline" disabled={importing}
+              className="bg-white/80 border-white shadow-sm gap-2 text-violet-900 hover:bg-white rounded-xl">
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
+            </Button>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
+
+      {/* ── Quick action bar ─────────────────────────────────────── */}
+      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+          {[
+            { label: "Import CSV", icon: Upload,   action: () => importRef.current?.click(), grad: "from-sky-500 to-blue-500" },
+            { label: "Export CSV", icon: Download, action: handleExport,                     grad: "from-teal-500 to-emerald-500" },
+          ].map((a, i) => (
+            <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              onClick={a.action}
+              className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group min-w-[72px] shrink-0">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
+                <a.icon className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">{a.label}</span>
+            </motion.button>
+          ))}
+          <div className="mx-2 h-10 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
+            onClick={openAdd}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-violet-700 hover:to-purple-700 transition-all shrink-0">
+            <Plus className="h-4 w-4" /> Add Client
+          </motion.button>
+        </div>
+      </div>
+      <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1184,6 +1229,7 @@ export default function ClientsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
