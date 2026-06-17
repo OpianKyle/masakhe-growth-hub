@@ -28,8 +28,8 @@ const MODULES = [
   {
     code: "social_biz",
     name: "Social Media & Biz Connect",
-    price: 50000,
-    maxUsers: 3,
+    price: 34900,
+    maxUsers: 4,
     bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30",
     border: "border-violet-200 dark:border-violet-800",
     ring: "ring-violet-400",
@@ -40,8 +40,8 @@ const MODULES = [
   {
     code: "transactions_ops",
     name: "Transactions & Operations",
-    price: 50000,
-    maxUsers: 5,
+    price: 79900,
+    maxUsers: 4,
     bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
     border: "border-emerald-200 dark:border-emerald-800",
     ring: "ring-emerald-400",
@@ -52,17 +52,17 @@ const MODULES = [
   {
     code: "people_hr",
     name: "People & HR",
-    price: 50000,
-    maxUsers: 10,
+    price: 49900,
+    maxUsers: 3,
     bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
     border: "border-amber-200 dark:border-amber-800",
     ring: "ring-amber-400",
     icon: Users,
     iconBg: "bg-gradient-to-br from-amber-500 to-orange-500",
-    features: ["Payroll management", "Leave & HR tools", "Up to 10 users"],
+    features: ["Payroll management", "Leave & HR tools", "Up to 3 users"],
   },
 ];
-const BUNDLE_PRICE = 149900;
+const BUNDLE_PRICE = 129900;
 const ALL_CODES = MODULES.map((m) => m.code);
 
 function fmt(cents: number) {

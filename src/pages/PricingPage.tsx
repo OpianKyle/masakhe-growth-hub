@@ -40,9 +40,9 @@ const MODULES = [
   {
     code: "social_biz",
     name: "Social Media & Biz Connect",
-    price: "R500",
+    price: "R349",
     priceSub: "/month",
-    maxUsers: 3,
+    maxUsers: 4,
     gradient: "from-violet-500 to-fuchsia-500",
     bg: "from-violet-50 to-fuchsia-50",
     border: "border-violet-200",
@@ -53,15 +53,15 @@ const MODULES = [
       "Facebook, Instagram, LinkedIn",
       "AI post generation",
       "Biz Connect networking",
-      "Up to 3 user accounts",
+      "Up to 4 user accounts",
     ],
   },
   {
     code: "transactions_ops",
     name: "Transactions & Operations",
-    price: "R500",
+    price: "R799",
     priceSub: "/month",
-    maxUsers: 5,
+    maxUsers: 4,
     gradient: "from-emerald-500 to-teal-500",
     bg: "from-emerald-50 to-teal-50",
     border: "border-emerald-200",
@@ -73,15 +73,15 @@ const MODULES = [
       "Client & lead management",
       "Inventory management",
       "Campaigns & automations",
-      "Up to 5 user accounts",
+      "Up to 4 user accounts",
     ],
   },
   {
     code: "people_hr",
     name: "People & HR",
-    price: "R500",
+    price: "R499",
     priceSub: "/month",
-    maxUsers: 10,
+    maxUsers: 3,
     gradient: "from-amber-500 to-orange-500",
     bg: "from-amber-50 to-orange-50",
     border: "border-amber-200",
@@ -92,7 +92,7 @@ const MODULES = [
       "Leave & HR tools",
       "Employee records",
       "Team member accounts",
-      "Up to 10 user accounts",
+      "Up to 3 user accounts",
     ],
   },
 ];
@@ -201,7 +201,7 @@ export default function PricingPage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/20 px-3 py-1 text-sm font-semibold text-amber-300 mb-3">
                   <Crown className="h-4 w-4" />
-                  Best value — save R301/month
+                  Best value — save R647/month
                 </div>
                 <h2 className="text-2xl font-extrabold mb-2">Complete Suite</h2>
                 <p className="text-gray-400 max-w-xl">
@@ -209,9 +209,9 @@ export default function PricingPage() {
                 </p>
               </div>
               <div className="text-center md:text-right shrink-0">
-                <div className="text-sm text-gray-400 line-through mb-1">R1,800/month</div>
+                <div className="text-sm text-gray-400 line-through mb-1">R1,946/month</div>
                 <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-5xl font-extrabold">R1,499</span>
+                  <span className="text-5xl font-extrabold">R1,299</span>
                   <span className="text-gray-400">/month</span>
                 </div>
                 <Button
