@@ -1,0 +1,165 @@
+0|masakhe  | [DripTest] SMTP host=smtp.masakhegroup.co.za port=465 user=admin@masakhegroup.co.za passLen=14 source=db
+0|masakhe  | [DripTest] SMTP verify OK
+0|masakhe  | [DripTest] Sent OK → kylemcb.24@gmail.com
+0|masakhe  | [Drip] Day 3 email sent to sitholec79@gmail.com
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [Drip] Day 1 email sent to lance.heynes@gmail.com
+0|masakhe  | [Google OAuth] Redirect URI being used: https://masakheportal.co.za/api/auth/google/callback
+0|masakhe  | [Webhook] Sending signup to: https://masakhemail.co.za/api/webhooks/signup
+0|masakhe  | [Webhook] x-webhook-secret: set (44 chars)
+0|masakhe  | [Webhook] Body: {"name":"Kyle Mc Bryne","email":"kylemcb.24+246@gmail.com","phone":"+27769815243"}
+0|masakhe  | [SMS:MOCK] To: +27769815243 | Message: Hi Kyle! Welcome to Masakhe — your all-in-one SMME platform. Log in at masakheportal.co.za to get started. Our team will be in touch shortly!
+0|masakhe  | [SMS:MOCK] To: +27769815243 | Message: Hi Kyle, the Masakhe team will contact you shortly to schedule your free onboarding call. We're excited to help your business grow!
+0|masakhe  | [Webhook] Success (201) for kylemcb.24+246@gmail.com — agentId: none
+0|masakhe  | [Webhook] Sending signup to: https://masakhemail.co.za/api/webhooks/signup
+0|masakhe  | [Webhook] x-webhook-secret: set (44 chars)
+0|masakhe  | [Webhook] Body: {"name":"Lance LE Heynes","email":"lanceh@opiansystems.co.za","phone":"+27813234297"}
+0|masakhe  | [SMS:MOCK] To: +27813234297 | Message: Hi Lance! Welcome to Masakhe — your all-in-one SMME platform. Log in at masakheportal.co.za to get started. Our team will be in touch shortly!
+0|masakhe  | [SMS:MOCK] To: +27813234297 | Message: Hi Lance, the Masakhe team will contact you shortly to schedule your free onboarding call. We're excited to help your business grow!
+0|masakhe  | [Webhook] Success (201) for lanceh@opiansystems.co.za — agentId: none
+0|masakhe  | [Email] SMTP transporter ready → smtp.masakhegroup.co.za:465
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [Platform Users] Returning 36 users
+0|masakhe  | [Platform Users] Returning 36 users
+0|masakhe  | [Google OAuth] Redirect URI being used: https://masakheportal.co.za/api/auth/google/callback
+0|masakhe  | [Google OAuth] Redirect URI being used: https://masakheportal.co.za/api/auth/google/callback
+0|masakhe  | [Google OAuth] Redirect URI being used: https://masakheportal.co.za/api/auth/google/callback
+0|masakhe  | [Webhook] Sending signup to: https://masakhemail.co.za/api/webhooks/signup
+0|masakhe  | [Webhook] x-webhook-secret: set (44 chars)
+0|masakhe  | [Webhook] Body: {"name":"kyle donn","email":"kylemcb.24+4353@gmail.com","phone":"0769815243"}
+0|masakhe  | [SMS:MOCK] To: +27769815243 | Message: Hi kyle! Welcome to Masakhe — your all-in-one SMME platform. Log in at masakheportal.co.za to get started. Our team will be in touch shortly!
+0|masakhe  | [SMS:MOCK] To: +27769815243 | Message: Hi kyle, the Masakhe team will contact you shortly to schedule your free onboarding call. We're excited to help your business grow!
+0|masakhe  | [Auth] Verification URL for kylemcb.24+4353@gmail.com: https://masakheportal.co.za/verify-email?token=b3052c0346171f16834dff9ac3d14a17bb6d0878feab7fe3d1de695b9f14aeae
+0|masakhe  | [Webhook] Success (201) for kylemcb.24+4353@gmail.com — agentId: none
+
+/home/ubuntu/.pm2/logs/masakhe-error.log last 100 lines:
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Startup] Migration error: Invalid default value for 'icon'
+0|masakhe  | DB execute error [INSERT INTO automation_settings (user_id) VALUES (?)]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [Automations] Lead drip failed for 3fb0aef6-f992-4708-9858-d6657fc4107a: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`automation_settings`, CONSTRAINT `automation_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Error: connect ECONNREFUSED 41.203.16.190:3306
+0|masakhe  |     at PromisePool.query (/home/ubuntu/masakhe-growth-hub/node_modules/mysql2/lib/promise/pool.js:36:22)
+0|masakhe  |     at /home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:384:30
+0|masakhe  |     at new Promise (<anonymous>)
+0|masakhe  |     at MySQLStore.query (/home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:381:10)
+0|masakhe  |     at /home/ubuntu/masakhe-growth-hub/node_modules/express-mysql-session/index.js:170:16
+0|masakhe  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [DripTest] SMTP verify failed: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send drip day-3 email to sitholec79@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send drip day-1 email to lance.heynes@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | DB execute error [INSERT INTO media_assets (id, workspace_id, url, type, file_name, size, uploaded]: Cannot add or update a child row: a foreign key constraint fails (`masakheportal`.`media_assets`, CONSTRAINT `media_assets_ibfk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`))
+0|masakhe  | Failed to send welcome email to lance.heynes@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send admin signup notification: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send verification email to kylemcb.24+246@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send onboarding call email to kylemcb.24+246@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send welcome email to kylemcb.24+246@gmail.com: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send admin signup notification: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send onboarding call email to lanceh@opiansystems.co.za: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send verification email to lanceh@opiansystems.co.za: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Failed to send welcome email to lanceh@opiansystems.co.za: Invalid login: 535 Incorrect authentication data
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Error: ENOENT: no such file or directory, stat '/home/ubuntu/masakhe-growth-hub/dist/index.html'
+0|masakhe  | Failed to send admin signup notification: Invalid login: 535 Incorrect authentication data
+0|masakhe  | [Email] FAILED onboarding to kylemcb.24+4353@gmail.com: Invalid login: 535 Incorrect authentication data 535
+0|masakhe  | [Email] FAILED welcome to kylemcb.24+4353@gmail.com: Invalid login: 535 Incorrect authentication data 535
+0|masakhe  | [Email] FAILED verification to kylemcb.24+4353@gmail.com: Invalid login: 535 Incorrect authentication data 535

@@ -1,31 +1,53 @@
 import nodemailer from "nodemailer";
+import { queryOne } from "./db";
+import { decrypt } from "./crypto";
 
-const smtpPort = parseInt(process.env.SMTP_PORT || "465");
+/**
+ * Creates a fresh SMTP transporter on every call.
+ * Prefers admin DB settings (system_smtp_settings) over env vars.
+ * A fresh connection per send avoids stale idle-connection 535 re-auth errors.
+ */
+async function getTransporter(): Promise<nodemailer.Transporter | null> {
+  // 1. Prefer DB-stored admin SMTP settings
+  try {
+    const s = await queryOne("SELECT * FROM system_smtp_settings LIMIT 1");
+    if (s && s.smtp_pass_enc) {
+      const pass = decrypt(s.smtp_pass_enc);
+      const port = Number(s.smtp_port) || 465;
+      return nodemailer.createTransport({
+        host: s.smtp_host,
+        port,
+        secure: port === 465 || Boolean(s.smtp_secure),
+        auth: { user: s.smtp_user, pass },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      });
+    }
+  } catch (_) { /* fall through to env vars */ }
 
-const transporter = process.env.SMTP_PASSWORD
-  ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: process.env.SMTP_USER || "admin@masakheportal.co.za",
-        pass: process.env.SMTP_PASSWORD,
-      },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    })
-  : null;
-
-if (!transporter) {
-  console.warn("[Email] SMTP_PASSWORD not set — emails disabled");
-} else {
-  console.log(`[Email] SMTP transporter ready → ${process.env.SMTP_HOST || "smtp.masakheportal.co.za"}:${smtpPort}`);
+  // 2. Fall back to environment variables
+  if (!process.env.SMTP_PASSWORD) return null;
+  const port = parseInt(process.env.SMTP_PORT || "465");
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.masakheportal.co.za",
+    port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER || "admin@masakheportal.co.za",
+      pass: process.env.SMTP_PASSWORD,
+    },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
 }
 
+/** Kept for backward compatibility — admin.ts import */
 export function getSharedTransporter() {
-  return transporter;
+  return null;
 }
 
 export function getBaseUrl(reqOrigin?: string): string {
@@ -33,7 +55,8 @@ export function getBaseUrl(reqOrigin?: string): string {
 }
 
 export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUrl?: string) {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = fullName.split(" ")[0];
 
   const html = `
@@ -125,7 +148,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
 </html>`;
 
   try {
-    const info = await transporter.sendMail({
+    const info = await t.sendMail({
       from: `"Lance Heynes - Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
@@ -153,7 +176,8 @@ export async function sendSubscriptionInvoiceEmail(
   dueDate: string,
   baseUrl?: string
 ) {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = clientName.split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const amount = `R${(amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
@@ -234,7 +258,7 @@ export async function sendSubscriptionInvoiceEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `Invoice #${invoiceNumber} — ${planName} Subscription`,
@@ -254,7 +278,8 @@ export async function sendPaymentReminderEmail(
   dueDate: string,
   baseUrl?: string
 ) {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = clientName.split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const amount = `R${(amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
@@ -319,7 +344,7 @@ export async function sendPaymentReminderEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `Subscription Renewal Due — ${dueDate}`,
@@ -338,7 +363,8 @@ export async function sendTeamInviteEmail(
   setupToken: string,
   baseUrl?: string
 ) {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = (inviteeName || toEmail).split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
@@ -398,7 +424,7 @@ export async function sendTeamInviteEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `${ownerName} invited you to ${businessName} on Masakhe`,
@@ -418,7 +444,8 @@ export async function sendFranchiseClientInviteEmail(
   setupToken: string,
   baseUrl?: string
 ) {
-  if (!transporter) return false;
+  const t = await getTransporter();
+  if (!t) return false;
   const firstName = (inviteeName || toEmail).split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
@@ -478,7 +505,7 @@ export async function sendFranchiseClientInviteEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `${ownerName} invited you to Masakhe`,
@@ -500,7 +527,8 @@ export async function sendFranchiseOwnerInviteEmail(
   setupToken: string,
   baseUrl?: string
 ) {
-  if (!transporter) return false;
+  const t = await getTransporter();
+  if (!t) return false;
   const firstName = (inviteeName || toEmail).split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
@@ -567,7 +595,7 @@ export async function sendFranchiseOwnerInviteEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: `You've been appointed as a Franchise Owner on Masakhe`,
@@ -588,7 +616,8 @@ export async function sendFranchiseApplicationEmail(opts: {
   phone: string;
   message: string;
 }) {
-  if (!transporter) {
+  const t = await getTransporter();
+  if (!t) {
     console.warn("SMTP not configured — franchise application email skipped");
     return false;
   }
@@ -656,7 +685,7 @@ export async function sendFranchiseApplicationEmail(opts: {
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe Platform" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: "admin@masakhegroup.co.za",
       replyTo: applicantEmail,
@@ -671,7 +700,8 @@ export async function sendFranchiseApplicationEmail(opts: {
 }
 
 export async function sendPasswordResetEmail(toEmail: string, fullName: string, resetToken: string, baseUrl?: string) {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = fullName.split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
   const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
@@ -737,7 +767,7 @@ export async function sendPasswordResetEmail(toEmail: string, fullName: string, 
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject: "Reset your Masakhe password",
@@ -758,7 +788,8 @@ export async function sendAdminSignupNotification(
   clientPhone: string | null,
   baseUrl?: string
 ): Promise<void> {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || "admin@masakhegroup.co.za";
   const adminRecipients = [adminEmail, "lance.heynes@gmail.com"].join(", ");
   const appUrl = baseUrl || getBaseUrl();
@@ -827,7 +858,7 @@ export async function sendAdminSignupNotification(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe System" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: adminRecipients,
       subject: `🎉 New Signup: ${clientName} — Call to onboard`,
@@ -847,7 +878,8 @@ export async function sendEmailVerificationEmail(
   fullName: string,
   verifyUrl: string
 ): Promise<void> {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = fullName.split(" ")[0];
 
   const html = `
@@ -903,7 +935,7 @@ export async function sendEmailVerificationEmail(
 </html>`;
 
   try {
-    const info = await transporter.sendMail({
+    const info = await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
@@ -928,7 +960,8 @@ export async function sendOnboardingCallEmail(
   fullName: string,
   baseUrl?: string,
 ): Promise<void> {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const firstName = fullName.split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
 
@@ -999,7 +1032,7 @@ export async function sendOnboardingCallEmail(
 </html>`;
 
   try {
-    const info = await transporter.sendMail({
+    const info = await t.sendMail({
       from: `"Masakhe Team" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
@@ -1107,7 +1140,8 @@ export async function sendDripEmail(
   fullName: string,
   baseUrl?: string
 ): Promise<void> {
-  if (!transporter) return;
+  const t = await getTransporter();
+  if (!t) return;
   const config = DRIP_CONFIGS[day];
   if (!config) return;
 
@@ -1167,7 +1201,7 @@ export async function sendDripEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    await t.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       to: toEmail,
       subject,
