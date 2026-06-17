@@ -130,6 +130,21 @@ export default function DashboardOverview() {
     );
   }
 
+  const [activeModules, setActiveModules] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.modules)) setActiveModules(d.modules); })
+      .catch(() => {});
+  }, []);
+
+  const MODULE_OVERVIEW = [
+    { code: "web_builder", label: "Web Builder", color: "from-sky-500 to-emerald-500", bg: "from-sky-50 to-emerald-50 dark:from-sky-950/30 dark:to-emerald-950/30", border: "border-sky-200 dark:border-sky-800" },
+    { code: "social_biz", label: "Social & Biz", color: "from-violet-500 to-fuchsia-500", bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30", border: "border-violet-200 dark:border-violet-800" },
+    { code: "transactions_ops", label: "Transactions", color: "from-emerald-500 to-teal-500", bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30", border: "border-emerald-200 dark:border-emerald-800" },
+    { code: "people_hr", label: "People & HR", color: "from-amber-500 to-orange-500", bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200 dark:border-amber-800" },
+  ];
+
   const k = data?.kpis;
   const hasFinanceData = (k?.ledgerCount || 0) > 0;
   const hasInvoices = (k?.totalInvoices || 0) > 0;
@@ -223,6 +238,25 @@ export default function DashboardOverview() {
           <button onClick={() => setVerifyBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 flex-shrink-0">
             <X className="h-4 w-4" />
           </button>
+        </motion.div>
+      )}
+
+      {/* Module status strip */}
+      {activeModules.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {MODULE_OVERVIEW.map((m) => {
+            const active = activeModules.includes(m.code);
+            return (
+              <div key={m.code} className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 transition-all ${
+                active ? `${m.border} bg-gradient-to-br ${m.bg}` : "border-muted bg-muted/20 opacity-50"
+              }`}>
+                <div className={`h-2.5 w-2.5 rounded-full shrink-0 bg-gradient-to-br ${active ? m.color : "bg-muted-foreground"}`} />
+                <span className={`text-sm font-medium truncate ${active ? "" : "text-muted-foreground"}`}>{m.label}</span>
+                {active && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto shrink-0" />}
+              </div>
+            );
+          })}
         </motion.div>
       )}
 

@@ -1,0 +1,1 @@
+- [Modular pricing system](modular-pricing.md) — replaced 3-tier plans with 4 pick-and-choose modules; billing/status now returns modules[]; DashboardPage uses hasModule() not meetsPlan()

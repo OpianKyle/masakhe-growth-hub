@@ -1,77 +1,99 @@
 import { Helmet } from "react-helmet-async";
 import { motion, type Easing } from "framer-motion";
-import { ArrowRight, Check, Globe, Smartphone, BarChart3, FileText, Shield, Megaphone, Calendar, Image, Headphones, Wallet, ClipboardCheck, Users, Banknote, BookOpen, MessageCircle, Linkedin, Receipt, UserCog, UserCheck, Sparkles, Crown, Gift } from "lucide-react";
+import {
+  Globe, Smartphone, Wallet, Users, Check, ArrowRight, Sparkles,
+  Gift, Shield, Linkedin, Receipt, UserCheck, Banknote, Package,
+  Megaphone, CalendarDays, Crown, Building2, Star
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as Easing },
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.08, duration: 0.55, ease: [0.25, 0.1, 0.25, 1] as Easing },
   }),
 };
 
-const plans = [
+const MODULES = [
   {
-    code: "starter",
-    name: "Enterprize",
-    price: "Free",
-    period: "",
-    description: "Start building your business online — no subscription, no credit card.",
+    code: "web_builder",
+    name: "Web Builder",
+    price: "R299",
+    priceSub: "/month",
+    maxUsers: 2,
+    gradient: "from-sky-500 to-emerald-500",
+    bg: "from-sky-50 to-emerald-50",
+    border: "border-sky-200",
+    icon: Globe,
+    iconBg: "bg-sky-500",
     features: [
-      { icon: Globe, label: "Website Builder" },
-      { icon: BarChart3, label: "Overview Dashboard" },
-      { icon: MessageCircle, label: "WhatsApp Support Portal" },
+      "Professional website builder",
+      "44+ industry templates",
+      "Custom domain support",
+      "AI content generation",
+      "Up to 2 user accounts",
     ],
-    variant: "hero" as const,
-    popular: false,
-    isFree: true,
   },
   {
-    code: "pro",
-    name: "Enterprize Plus",
-    price: "R899",
-    period: "/month",
-    description: "Everything in Enterprize free, plus social media, Biz Connect and transactions.",
+    code: "social_biz",
+    name: "Social Media & Biz Connect",
+    price: "R500",
+    priceSub: "/month",
+    maxUsers: 3,
+    gradient: "from-violet-500 to-fuchsia-500",
+    bg: "from-violet-50 to-fuchsia-50",
+    border: "border-violet-200",
+    icon: Smartphone,
+    iconBg: "bg-violet-500",
     features: [
-      { icon: Gift, label: "7-Day Free Trial included" },
-      { icon: UserCheck, label: "3 User Accounts (Owner + 2)" },
-      { icon: BarChart3, label: "Overview Dashboard" },
-      { icon: Globe, label: "Website Builder" },
-      { icon: Smartphone, label: "Social Media Hub" },
-      { icon: Linkedin, label: "Biz Connect" },
-      { icon: Wallet, label: "Financial Transactions (Income / Expenses, Quotes / Invoices)" },
-      { icon: Headphones, label: "Priority Support" },
+      "Social Media Hub & scheduler",
+      "Facebook, Instagram, LinkedIn",
+      "AI post generation",
+      "Biz Connect networking",
+      "Up to 3 user accounts",
     ],
-    variant: "gold" as const,
-    popular: true,
   },
   {
-    code: "premium",
-    name: "Enterprize Premium",
-    price: "R1,499",
-    period: "/month",
-    description: "Full multi-user suite with operations, payroll, employee management and premium support.",
+    code: "transactions_ops",
+    name: "Transactions & Operations",
+    price: "R500",
+    priceSub: "/month",
+    maxUsers: 5,
+    gradient: "from-emerald-500 to-teal-500",
+    bg: "from-emerald-50 to-teal-50",
+    border: "border-emerald-200",
+    icon: Wallet,
+    iconBg: "bg-emerald-500",
     features: [
-      { icon: Gift, label: "7-Day Free Trial included" },
-      { icon: UserCog, label: "5 User Accounts (Owner + 4)" },
-      { icon: BarChart3, label: "Overview Dashboard" },
-      { icon: Globe, label: "Website Builder" },
-      { icon: Smartphone, label: "Social Media Hub" },
-      { icon: Linkedin, label: "Biz Connect" },
-      { icon: Wallet, label: "Financial Transactions (Income / Expenses, Quotes / Invoices)" },
-      { icon: Users, label: "Clients & Inventory Management" },
-      { icon: Megaphone, label: "Campaigns & Automations" },
-      { icon: UserCheck, label: "Manage Employees" },
-      { icon: Banknote, label: "Manage Payroll" },
-      { icon: Sparkles, label: "All Future Updates for Free" },
-      { icon: Crown, label: "Premium Support" },
+      "Income & expense tracking",
+      "Quotes & invoicing",
+      "Client & lead management",
+      "Inventory management",
+      "Campaigns & automations",
+      "Up to 5 user accounts",
     ],
-    variant: "hero" as const,
-    popular: false,
+  },
+  {
+    code: "people_hr",
+    name: "People & HR",
+    price: "R500",
+    priceSub: "/month",
+    maxUsers: 10,
+    gradient: "from-amber-500 to-orange-500",
+    bg: "from-amber-50 to-orange-50",
+    border: "border-amber-200",
+    icon: Users,
+    iconBg: "bg-amber-500",
+    features: [
+      "Payroll management",
+      "Leave & HR tools",
+      "Employee records",
+      "Team member accounts",
+      "Up to 10 user accounts",
+    ],
   },
 ];
 
@@ -79,186 +101,187 @@ export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleStartTrial = (planCode: string) => {
-    if (!user) {
-      navigate(`/register?plan=${planCode}`);
-    } else {
-      navigate(`/dashboard/billing`);
-    }
+  const handleCTA = () => {
+    if (user) navigate("/dashboard/billing");
+    else navigate("/register");
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
       <Helmet>
-        <title>Pricing Plans | Masakhe SMME Platform — From R599/month</title>
-        <meta name="description" content="Simple, transparent pricing for South African SMMEs. Basic from R599/month — includes website builder, invoicing, compliance & more. No hidden fees." />
-        <link rel="canonical" href="https://masakheportal.co.za/pricing" />
-        <meta property="og:title" content="Masakhe Pricing | SMME Plans from R599/month" />
-        <meta property="og:description" content="Affordable plans for South African small businesses. Website builder, tax compliance, social media & more — all in one place." />
-        <meta property="og:url" content="https://masakheportal.co.za/pricing" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "PriceSpecification",
-          "name": "Masakhe Pricing Plans",
-          "description": "Pricing plans for Masakhe SMME Platform",
-          "offers": [
-            { "@type": "Offer", "name": "Basic", "price": "599", "priceCurrency": "ZAR", "description": "Website builder, invoicing, compliance score, and funding scoring." },
-            { "@type": "Offer", "name": "Pro", "price": "2500", "priceCurrency": "ZAR", "description": "Everything in Basic plus social media hub, content calendar, and analytics." },
-            { "@type": "Offer", "name": "Enterprise", "price": "5500", "priceCurrency": "ZAR", "description": "Full platform access with multi-location, white-label, and dedicated support." }
-          ]
-        })}</script>
+        <title>Pricing — Masakhe Growth Hub</title>
+        <meta name="description" content="Choose the modules your business needs. Start with a 7-day free trial." />
       </Helmet>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain" />
-            <span className="text-xl font-bold font-heading text-foreground">Masakhe</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <Link to="/dashboard">
-                <Button variant="hero" size="sm">Dashboard <ArrowRight className="ml-1 h-4 w-4" /></Button>
-              </Link>
-            ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
-                </Link>
-                <Link to="/register">
-                  <Button variant="hero" size="sm">Get Started <ArrowRight className="ml-1 h-4 w-4" /></Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
 
-      <section className="pt-32 pb-20">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-white">
+        {/* Nav */}
+        <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500">
+                <span className="text-sm font-bold text-white">M</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">Masakhe</span>
+            </Link>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <Button onClick={() => navigate("/dashboard")} className="bg-emerald-600 hover:bg-emerald-700">
+                  Dashboard <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild><Link to="/login">Sign In</Link></Button>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700" asChild><Link to="/register">Get Started</Link></Button>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-7xl px-6 pb-24">
+          {/* Hero */}
           <motion.div
-            initial="hidden"
-            animate="visible"
-            className="text-center mb-16 space-y-4"
+            initial="hidden" animate="visible" variants={fadeUp} custom={0}
+            className="pt-20 pb-12 text-center"
           >
-            <motion.span
-              variants={fadeInUp}
-              custom={0}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary"
-            >
-              <Shield className="h-3 w-3" /> Simple Monthly Billing
-            </motion.span>
-            <motion.h1
-              variants={fadeInUp}
-              custom={1}
-              className="text-4xl md:text-5xl font-bold font-heading text-foreground"
-            >
-              Simple, Transparent{" "}
-              <span className="text-gradient-hero">Pricing</span>
-            </motion.h1>
-            <motion.p
-              variants={fadeInUp}
-              custom={2}
-              className="text-lg text-muted-foreground max-w-2xl mx-auto"
-            >
-              Choose the plan that fits your business. Billed monthly — no contract, cancel anytime.
-            </motion.p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700 mb-6">
+              <Gift className="h-4 w-4" />
+              7-day free trial — no credit card required
+            </div>
+            <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-4">
+              Pay only for what<br />
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">your business needs</span>
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-gray-600">
+              Choose the modules that fit your business. Mix and match, or take everything for one flat rate with a discount.
+            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan, i) => (
+          {/* Module cards */}
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {MODULES.map((mod, i) => (
               <motion.div
-                key={plan.code}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.15, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                className={`relative rounded-2xl border backdrop-blur-sm p-8 flex flex-col transition-all duration-300 ${
-                  plan.popular
-                    ? "border-secondary/60 bg-gradient-to-br from-secondary/20 via-card to-card shadow-2xl shadow-secondary/20 scale-105"
-                    : "border-border/50 bg-gradient-to-br from-card to-card/80 hover:border-primary/30 shadow-lg hover:shadow-xl"
-                }`}
+                key={mod.code}
+                initial="hidden" animate="visible" variants={fadeUp} custom={i + 1}
+                className={`relative flex flex-col rounded-2xl border ${mod.border} bg-gradient-to-br ${mod.bg} p-6 shadow-sm transition-shadow hover:shadow-md`}
               >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-secondary to-secondary/60 rounded-full blur-lg opacity-50"></div>
-                      <span className="relative gradient-gold text-sa-black text-xs font-bold px-5 py-1.5 rounded-full block shadow-lg shadow-secondary/30">
-                        ★ Most Popular
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mb-8">
-                  <h3 className="text-3xl font-bold font-heading bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{plan.description}</p>
+                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl ${mod.iconBg}`}>
+                  <mod.icon className="h-6 w-6 text-white" />
                 </div>
-
-                <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10">
-                  <span className="text-5xl font-black font-heading text-foreground">{plan.price}</span>
-                  {plan.period && <span className="text-muted-foreground text-sm ml-2 font-medium">{plan.period}</span>}
-                  {(plan as any).isFree && <span className="text-muted-foreground text-sm ml-2 font-medium">forever</span>}
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{mod.name}</h3>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-3xl font-extrabold text-gray-900">{mod.price}</span>
+                  <span className="text-gray-500 text-sm">{mod.priceSub}</span>
                 </div>
-
-                <ul className="space-y-4 mb-10 flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature.label} className="flex items-start gap-3 text-sm text-foreground/90">
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                        plan.popular 
-                          ? "bg-gradient-to-br from-secondary to-secondary/60" 
-                          : "bg-primary/15"
-                      }`}>
-                        <Check className={`h-3.5 w-3.5 ${plan.popular ? "text-white" : "text-primary"}`} />
-                      </div>
-                      <span className="font-medium">{feature.label}</span>
+                <p className="text-xs text-gray-500 mb-5">Up to {mod.maxUsers} user accounts</p>
+                <ul className="flex-1 space-y-2.5 mb-6">
+                  {mod.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      {f}
                     </li>
                   ))}
                 </ul>
-
                 <Button
-                  variant={plan.variant}
-                  size="lg"
-                  className={`w-full text-base font-semibold rounded-xl transition-all duration-300 ${
-                    plan.popular
-                      ? "shadow-lg shadow-secondary/30 hover:shadow-xl hover:shadow-secondary/40"
-                      : "hover:shadow-lg"
-                  }`}
-                  onClick={() => handleStartTrial(plan.code)}
+                  onClick={handleCTA}
+                  className={`w-full bg-gradient-to-r ${mod.gradient} text-white border-0 hover:opacity-90 transition-opacity`}
                 >
-                  {(plan as any).isFree ? (
-                    <>Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></>
-                  ) : (
-                    <>Subscribe Now <ArrowRight className="ml-2 h-4 w-4" /></>
-                  )}
+                  Start free trial
                 </Button>
               </motion.div>
             ))}
           </div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="text-center text-sm text-muted-foreground mt-8"
+          {/* Bundle banner */}
+          <motion.div
+            initial="hidden" animate="visible" variants={fadeUp} custom={5}
+            className="mt-8 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-8 text-white shadow-xl"
           >
-            All prices in South African Rand (ZAR). Billed monthly via debit order. Cancel anytime.
-          </motion.p>
-        </div>
-      </section>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/20 px-3 py-1 text-sm font-semibold text-amber-300 mb-3">
+                  <Crown className="h-4 w-4" />
+                  Best value — save R301/month
+                </div>
+                <h2 className="text-2xl font-extrabold mb-2">Complete Suite</h2>
+                <p className="text-gray-400 max-w-xl">
+                  All 4 modules bundled together — Web Builder, Social Media & Biz Connect, Transactions & Operations, and People & HR. Includes up to 10 user accounts.
+                </p>
+              </div>
+              <div className="text-center md:text-right shrink-0">
+                <div className="text-sm text-gray-400 line-through mb-1">R1,800/month</div>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-5xl font-extrabold">R1,499</span>
+                  <span className="text-gray-400">/month</span>
+                </div>
+                <Button
+                  onClick={handleCTA}
+                  className="bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900 font-bold hover:opacity-90 transition-opacity px-8"
+                >
+                  Get Complete Suite <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-white/10">
+              {MODULES.map((m) => (
+                <div key={m.code} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span className="text-sm text-gray-300">{m.name}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
-      <div className="flex h-1.5">
-        <div className="flex-1 bg-sa-green" />
-        <div className="flex-1 bg-sa-gold" />
-        <div className="flex-1 bg-sa-red" />
-        <div className="flex-1 bg-sa-blue" />
-        <div className="flex-1 bg-sa-black" />
+          {/* Trial CTA */}
+          <motion.div
+            initial="hidden" animate="visible" variants={fadeUp} custom={6}
+            className="mt-16 text-center"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700 mb-4">
+              <Gift className="h-4 w-4" />
+              7-day free trial — full access to all modules
+            </div>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-3">Ready to grow your business?</h2>
+            <p className="text-gray-500 mb-8 max-w-lg mx-auto">
+              Start your 7-day free trial today. No credit card required. Access everything, then choose the modules you want.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={handleCTA}
+                size="lg"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              >
+                Start free trial <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/">Learn more</Link>
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* Trust */}
+          <motion.div
+            initial="hidden" animate="visible" variants={fadeUp} custom={7}
+            className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {[
+              { icon: Shield, title: "Secure billing", desc: "All payments via Adumo Online, a registered SA payment gateway." },
+              { icon: Star, title: "SA-built platform", desc: "Designed specifically for South African SMMEs and sole traders." },
+              { icon: Building2, title: "No lock-in", desc: "Cancel anytime. Add or change modules as your business grows." },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex gap-4 rounded-xl border border-gray-100 bg-gray-50 p-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100">
+                  <Icon className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 mb-1">{title}</div>
+                  <div className="text-sm text-gray-500">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </main>
       </div>
-
-      <footer className="border-t border-border py-8 bg-muted/30">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-xs text-muted-foreground">© 2026 Masakhe. A digital platform for South African SMMEs.</p>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }

@@ -1157,6 +1157,31 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Modular pricing migration
+    await addColumnIfMissing("billing_plans", "max_users", "INT NOT NULL DEFAULT 2");
+    await addColumnIfMissing("billing_subscriptions", "modules", "TEXT NULL");
+
+    // Seed module-based plans
+    await conn.query(`
+      INSERT IGNORE INTO billing_plans (code, name, price_cents, currency, bill_interval, max_users)
+      VALUES
+        ('web_builder',       'Web Builder',                    29900, 'ZAR', 'MONTHLY', 2),
+        ('social_biz',        'Social Media & Biz Connect',     50000, 'ZAR', 'MONTHLY', 3),
+        ('transactions_ops',  'Transactions & Operations',      50000, 'ZAR', 'MONTHLY', 5),
+        ('people_hr',         'People & HR',                    50000, 'ZAR', 'MONTHLY', 10),
+        ('all_modules',       'Complete Suite',                149900, 'ZAR', 'MONTHLY', 10)
+    `);
+
+    // Keep old plans updated, set their max_users
+    await conn.query(`UPDATE billing_plans SET max_users = 2  WHERE code = 'starter'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 3  WHERE code = 'pro'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 10 WHERE code = 'premium'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 2  WHERE code = 'web_builder'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 3  WHERE code = 'social_biz'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 5  WHERE code = 'transactions_ops'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 10 WHERE code = 'people_hr'`);
+    await conn.query(`UPDATE billing_plans SET max_users = 10 WHERE code = 'all_modules'`);
+
     console.log("MySQL migrations completed successfully");
   } finally {
     conn.release();

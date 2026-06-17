@@ -270,7 +270,9 @@ billingRouter.get("/terms-pdf", async (_req, res) => {
 
 billingRouter.get("/plans", async (_req, res) => {
   try {
-    const plans = await queryAll("SELECT * FROM billing_plans ORDER BY price_cents ASC");
+    const plans = await queryAll(
+      "SELECT * FROM billing_plans WHERE code IN ('web_builder','social_biz','transactions_ops','people_hr','all_modules') ORDER BY price_cents ASC"
+    );
     res.json({ plans });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -366,10 +368,21 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     );
 
     if (!subscription) {
-      return res.json({ active: false, status: null, plan: null });
+      return res.json({ active: false, status: null, plan: null, modules: [], maxUsers: 0 });
     }
 
-    res.json({ active: true, status: subscription.status, plan: subscription.plan_code || null, trialEndsAt: subscription.trial_end_at || null });
+    const { getActiveModules, MODULE_PLAN_MAP } = await import("./feature-gate.js");
+    const modules = await getActiveModules(workspace.id);
+    const maxUsers = subscription.max_users || 2;
+
+    res.json({
+      active: true,
+      status: subscription.status,
+      plan: subscription.plan_code || null,
+      modules,
+      maxUsers,
+      trialEndsAt: subscription.trial_end_at || null,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -470,21 +483,15 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
 billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { planCode } = req.body || {};
 
-    if (!planCode || !["starter", "pro", "premium"].includes(planCode)) {
-      return res.status(400).json({ error: "Invalid plan code" });
-    }
-
-    const plan = await queryOne("SELECT id, code FROM billing_plans WHERE code = ?", [planCode]);
+    // Always use all_modules for trials — gives access to everything for 7 days
+    const plan = await queryOne("SELECT id, code FROM billing_plans WHERE code = 'all_modules'");
     if (!plan) {
-      return res.status(404).json({ error: "Plan not found" });
+      return res.status(404).json({ error: "Trial plan not found. Please contact support." });
     }
 
     const workspaceId = await ensureDefaultWorkspace(userId);
 
-    // Block trial if ANY subscription record exists (trial used, active, cancelled, past-due)
-    // or if the user has ever made a payment — free trials are one-time only
     const existingSub = await queryOne(
       "SELECT id, status FROM billing_subscriptions WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 1",
       [workspaceId]
@@ -496,7 +503,6 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
       return res.status(400).json({ error: "A free trial can only be used once. Please subscribe to continue." });
     }
 
-    // Also block if any paid billing invoice exists for this workspace
     const paidInvoice = await queryOne(
       "SELECT id FROM billing_invoices WHERE workspace_id = ? AND status = 'PAID' LIMIT 1",
       [workspaceId]
@@ -510,17 +516,18 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
       [userId]
     );
     const isPartner = user?.business_status === "reseller";
-    const trialDays = isPartner ? 30 : 14;
+    const trialDays = isPartner ? 30 : 7;
 
+    const allModules = JSON.stringify(["web_builder", "social_biz", "transactions_ops", "people_hr"]);
     const trialStart = new Date();
     const trialEnd = new Date(trialStart);
     trialEnd.setDate(trialEnd.getDate() + trialDays);
     const now = new Date().toISOString();
 
     await execute(
-      `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at, created_at, updated_at)
-       VALUES (?, ?, 'TRIAL', ?, ?, ?, ?)`,
-      [workspaceId, plan.id, trialStart.toISOString(), trialEnd.toISOString(), now, now]
+      `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, modules, trial_start_at, trial_end_at, created_at, updated_at)
+       VALUES (?, ?, 'TRIAL', ?, ?, ?, ?, ?)`,
+      [workspaceId, plan.id, allModules, trialStart.toISOString(), trialEnd.toISOString(), now, now]
     );
 
     res.json({
@@ -539,6 +546,8 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
     const userId = req.session.userId!;
     const {
       planCode,
+      modules: selectedModules,
+      amountCents: clientAmountCents,
       recipientName,
       email,
       contactNumber,
@@ -551,7 +560,8 @@ billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, r
       promoCode: rawPromoCode,
     } = req.body;
 
-    if (!planCode || !['starter', 'pro', 'premium'].includes(planCode)) {
+    const validPlanCodes = ['starter', 'pro', 'premium', 'web_builder', 'social_biz', 'transactions_ops', 'people_hr', 'all_modules'];
+    if (!planCode || !validPlanCodes.includes(planCode)) {
       return res.status(400).json({ error: "Invalid plan code" });
     }
 
@@ -946,31 +956,43 @@ async function handleReturnRedirect(req: any, res: any) {
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ")
         : null;
 
+      const planModuleMap: Record<string, string[]> = {
+        starter: ["web_builder"],
+        pro: ["web_builder", "social_biz", "transactions_ops"],
+        premium: ["web_builder", "social_biz", "transactions_ops", "people_hr"],
+        web_builder: ["web_builder"],
+        social_biz: ["social_biz"],
+        transactions_ops: ["transactions_ops"],
+        people_hr: ["people_hr"],
+        all_modules: ["web_builder", "social_biz", "transactions_ops", "people_hr"],
+      };
+      const modulesJson = JSON.stringify(planModuleMap[plan.code] || ["web_builder"]);
+
       let subscriptionId;
       if (existingSub) {
         if (isManualPayment) {
           await execute(
-            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, next_billing_at = ?, updated_at = NOW() WHERE id = ?",
-            [plan.id, nextBillingAt, existingSub.id]
+            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, modules = ?, next_billing_at = ?, updated_at = NOW() WHERE id = ?",
+            [plan.id, modulesJson, nextBillingAt, existingSub.id]
           );
         } else {
           await execute(
-            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
-            [plan.id, adumoSubId || null, existingSub.id]
+            "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, modules = ?, adumo_subscription_id = COALESCE(?, adumo_subscription_id), updated_at = NOW() WHERE id = ?",
+            [plan.id, modulesJson, adumoSubId || null, existingSub.id]
           );
         }
         subscriptionId = existingSub.id;
       } else {
         if (isManualPayment) {
           const subResult = await execute(
-            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, next_billing_at) VALUES (?, ?, 'ACTIVE', ?)",
-            [invoice.workspace_id, plan.id, nextBillingAt]
+            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, modules, next_billing_at) VALUES (?, ?, 'ACTIVE', ?, ?)",
+            [invoice.workspace_id, plan.id, modulesJson, nextBillingAt]
           );
           subscriptionId = subResult.insertId;
         } else {
           const subResult = await execute(
-            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, adumo_subscription_id) VALUES (?, ?, 'ACTIVE', ?)",
-            [invoice.workspace_id, plan.id, adumoSubId || null]
+            "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, modules, adumo_subscription_id) VALUES (?, ?, 'ACTIVE', ?, ?)",
+            [invoice.workspace_id, plan.id, modulesJson, adumoSubId || null]
           );
           subscriptionId = subResult.insertId;
         }

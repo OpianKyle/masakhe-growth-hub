@@ -1,2050 +1,588 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
-  CreditCard, Calendar, AlertTriangle,
-  Loader2, Shield, CalendarDays, Wallet,
-  User, Mail, Phone, MapPin, Check, ArrowUpCircle, ArrowDownCircle, Crown,
-  BellRing, Lock, Sparkles, Rocket, Tag, Zap, Globe, ArrowRight,
+  Globe, Smartphone, Wallet, Users, Check, Crown, Loader2,
+  CalendarDays, ArrowRight, CheckCircle2, Gift, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-} from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface Plan {
-  id: number;
-  code: string;
-  name: string;
-  price_cents: number;
-  currency: string;
-  bill_interval: string;
-}
-
-interface Subscription {
-  id?: number;
-  workspace_id?: string;
-  plan_id?: number;
-  status: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELLED";
-  trial_start_at?: string | null;
-  trial_end_at?: string | null;
-  next_billing_at?: string | null;
-  cancelled_at?: string | null;
-  synthetic?: boolean;
-}
-
-interface PaymentMethod {
-  id: number;
-  last4: string | null;
-  brand: string | null;
-  exp_month: number | null;
-  exp_year: number | null;
-  status: string;
-}
-
-interface BillingInvoice {
-  id: number;
-  amount_cents: number;
-  currency: string;
-  status: string;
-  merchant_ref: string | null;
-  created_at: string;
-  paid_at: string | null;
-}
-
-interface BillingData {
-  subscription: Subscription | null;
-  plan: Plan | null;
-  paymentMethod?: PaymentMethod | null;
-  invoices?: BillingInvoice[];
-}
-
-const planOptions = [
+const MODULES = [
   {
-    code: "pro",
-    name: "Enterprize Plus",
-    price: "R899",
-    priceCents: 89900,
-    description: "Everything in Enterprize free, plus social media, Biz Connect and transactions.",
-    features: [
-      "7-Day Free Trial",
-      "3 User Accounts (Owner + 2)",
-      "Overview Dashboard",
-      "Website Builder",
-      "Social Media Hub",
-      "Biz Connect",
-      "Financial Transactions (Income/Expenses, Quotes/Invoices)",
-      "Priority Support",
-    ],
-    popular: true,
+    code: "web_builder",
+    name: "Web Builder",
+    price: 29900,
+    maxUsers: 2,
+    bg: "from-sky-50 to-emerald-50 dark:from-sky-950/30 dark:to-emerald-950/30",
+    border: "border-sky-200 dark:border-sky-800",
+    ring: "ring-sky-400",
+    icon: Globe,
+    iconBg: "bg-gradient-to-br from-sky-500 to-emerald-500",
+    features: ["Professional website builder", "44+ templates", "AI content generation"],
   },
   {
-    code: "premium",
-    name: "Enterprize Premium",
-    price: "R1,499",
-    priceCents: 149900,
-    description: "Full multi-user suite with operations, payroll, employee management and premium support.",
-    features: [
-      "7-Day Free Trial",
-      "5 User Accounts (Owner + 4)",
-      "Overview Dashboard",
-      "Website Builder",
-      "Social Media Hub",
-      "Biz Connect",
-      "Financial Transactions (Income/Expenses, Quotes/Invoices)",
-      "Clients & Inventory Management",
-      "Campaigns & Automations",
-      "Manage Employees",
-      "Manage Payroll",
-      "All Future Updates for Free",
-      "Premium Support",
-    ],
+    code: "social_biz",
+    name: "Social Media & Biz Connect",
+    price: 50000,
+    maxUsers: 3,
+    bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30",
+    border: "border-violet-200 dark:border-violet-800",
+    ring: "ring-violet-400",
+    icon: Smartphone,
+    iconBg: "bg-gradient-to-br from-violet-500 to-fuchsia-500",
+    features: ["Social media scheduler", "AI post generation", "Biz Connect network"],
+  },
+  {
+    code: "transactions_ops",
+    name: "Transactions & Operations",
+    price: 50000,
+    maxUsers: 5,
+    bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
+    border: "border-emerald-200 dark:border-emerald-800",
+    ring: "ring-emerald-400",
+    icon: Wallet,
+    iconBg: "bg-gradient-to-br from-emerald-500 to-teal-500",
+    features: ["Invoicing & expenses", "Client management", "Campaigns & automations"],
+  },
+  {
+    code: "people_hr",
+    name: "People & HR",
+    price: 50000,
+    maxUsers: 10,
+    bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
+    border: "border-amber-200 dark:border-amber-800",
+    ring: "ring-amber-400",
+    icon: Users,
+    iconBg: "bg-gradient-to-br from-amber-500 to-orange-500",
+    features: ["Payroll management", "Leave & HR tools", "Up to 10 users"],
   },
 ];
+const BUNDLE_PRICE = 149900;
+const ALL_CODES = MODULES.map((m) => m.code);
 
-function formatCents(cents: number): string {
-  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
+function fmt(cents: number) {
+  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0 })}`;
 }
 
-interface PromoState {
-  code: string | null;
-  loading: boolean;
-  eligible: boolean;
-  percentOff: number;
-  label: string;
-  reason?: string;
-}
+type View = "modules" | "checkout" | "active";
 
-/**
- * Reads a promo code from the URL (?promo=) or sessionStorage (set by the
- * PromoCodeCapture in App.tsx and the RegisterPage), then asks the server
- * whether this account is eligible to redeem it. The result drives the
- * "Start today with 50% off" UI on the billing page.
- */
-function usePromoCode(): PromoState & { clear: () => void } {
+export default function BillingPage() {
   const [searchParams] = useSearchParams();
-  const urlCode = searchParams.get("promo");
-  const stashedCode = (() => {
-    try { return sessionStorage.getItem("masakhe.promoCode"); } catch { return null; }
-  })();
-  const code = (urlCode || stashedCode || "").trim().toUpperCase() || null;
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const [state, setState] = useState<PromoState>({
-    code,
-    loading: !!code,
-    eligible: false,
-    percentOff: 0,
-    label: "",
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [activeModules, setActiveModules] = useState<string[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [view, setView] = useState<View>("modules");
+  const [trialLoading, setTrialLoading] = useState(false);
+  const [trialEligible, setTrialEligible] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [adumoForm, setAdumoForm] = useState<{ action: string; fields: Record<string, string> } | null>(null);
+
+  const [form, setForm] = useState({
+    recipientName: user?.full_name || "",
+    email: user?.email || "",
+    contactNumber: "",
+    collectionDay: "1",
+    shippingAddress1: "",
+    promoCode: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const adumoRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (!code) {
-      setState({ code: null, loading: false, eligible: false, percentOff: 0, label: "" });
+    const status = searchParams.get("status");
+    if (status === "success") {
+      toast({ title: "Payment successful!", description: "Your subscription is now active." });
+      fetchBilling();
+    } else if (status === "failed") {
+      toast({ title: "Payment failed", description: "Please try again.", variant: "destructive" });
+    }
+  }, []);
+
+  useEffect(() => { fetchBilling(); }, []);
+
+  useEffect(() => {
+    if (adumoForm && adumoRef.current) {
+      adumoRef.current.submit();
+    }
+  }, [adumoForm]);
+
+  async function fetchBilling() {
+    try {
+      const [subRes, statusRes] = await Promise.all([
+        fetch("/api/billing/subscription", { credentials: "include" }),
+        fetch("/api/billing/status", { credentials: "include" }),
+      ]);
+      const subData = await subRes.json();
+      const statusData = await statusRes.json();
+
+      if (subData.subscription) {
+        setSubscription(subData.subscription);
+        setInvoices(subData.invoices || []);
+      }
+      if (Array.isArray(statusData.modules)) {
+        setActiveModules(statusData.modules);
+      }
+
+      const isActive = statusData.active && statusData.status === "ACTIVE";
+      const onTrial = statusData.active && statusData.status === "TRIAL";
+      const hadSub = !!subData.subscription;
+
+      if (isActive) {
+        setView("active");
+      } else {
+        setView("modules");
+        setTrialEligible(!hadSub);
+      }
+    } catch {
+      setView("modules");
+    }
+  }
+
+  const isBundle = ALL_CODES.every((c) => selectedModules.includes(c));
+  const totalCents = isBundle
+    ? BUNDLE_PRICE
+    : selectedModules.reduce((sum, code) => sum + (MODULES.find((m) => m.code === code)?.price ?? 0), 0);
+  const savings = isBundle ? MODULES.reduce((s, m) => s + m.price, 0) - BUNDLE_PRICE : 0;
+  const maxUsers = isBundle ? 10 : Math.max(0, ...selectedModules.map((c) => MODULES.find((m) => m.code === c)?.maxUsers ?? 0));
+
+  function toggleModule(code: string) {
+    setSelectedModules((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+  }
+
+  function selectBundle() {
+    setSelectedModules([...ALL_CODES]);
+  }
+
+  async function handleStartTrial() {
+    setTrialLoading(true);
+    try {
+      const res = await fetch("/api/billing/start-trial", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start trial");
+      toast({ title: "7-day free trial started!", description: "You have full access to all modules." });
+      window.dispatchEvent(new Event("billing:updated"));
+      fetchBilling();
+    } catch (err: any) {
+      toast({ title: "Could not start trial", description: err.message, variant: "destructive" });
+    } finally {
+      setTrialLoading(false);
+    }
+  }
+
+  function validateCheckout() {
+    const e: Record<string, string> = {};
+    if (!form.recipientName.trim()) e.recipientName = "Full name is required";
+    if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Valid email required";
+    if (form.contactNumber.trim().length < 10) e.contactNumber = "Valid phone number required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  async function handleCheckoutSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (selectedModules.length === 0) {
+      toast({ title: "Select at least one module", variant: "destructive" });
       return;
     }
-    let cancelled = false;
-    setState(s => ({ ...s, code, loading: true }));
-    fetch(`/api/billing/promo/${encodeURIComponent(code)}`, { credentials: "include" })
-      .then(r => r.json())
-      .then(d => {
-        if (cancelled) return;
-        setState({
-          code,
-          loading: false,
-          eligible: !!d.eligible,
-          percentOff: Number(d.percentOff || 0),
-          label: d.label || "",
-          reason: d.reason,
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setState({ code, loading: false, eligible: false, percentOff: 0, label: "", reason: "Could not check this code" });
-      });
-    return () => { cancelled = true; };
-  }, [code]);
-
-  const clear = () => {
-    try { sessionStorage.removeItem("masakhe.promoCode"); } catch {}
-    setState({ code: null, loading: false, eligible: false, percentOff: 0, label: "" });
-  };
-
-  return { ...state, clear };
-}
-
-function PromoBanner({ promo }: { promo: PromoState }) {
-  if (!promo.code || promo.loading) return null;
-  if (!promo.eligible) {
-    // Code present but ineligible — let them know politely so they aren't
-    // confused about why the discount isn't being applied.
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-border bg-muted/40 p-4 flex items-start gap-3"
-      >
-        <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-        <div className="text-sm text-muted-foreground">
-          <strong className="text-foreground">{promo.code}</strong> can't be applied to this account.
-          {promo.reason ? ` ${promo.reason}.` : ""}
-        </div>
-      </motion.div>
-    );
-  }
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-emerald-400/40 bg-emerald-50 dark:bg-emerald-950/20 p-5 flex items-start gap-4"
-    >
-      <div className="mt-0.5 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-        <Tag className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
-          Promo code <span className="font-mono">{promo.code}</span> applied
-        </h4>
-        <p className="text-sm text-muted-foreground mt-1">
-          Skip the free trial and {promo.label.toLowerCase()}. From month two onwards your subscription continues at the normal monthly price.
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
-}
-
-
-function statusBadge(status: string) {
-  const variants: Record<string, { className: string; label: string }> = {
-    TRIAL: { className: "bg-sa-blue/10 text-[hsl(225,100%,29%)] border-[hsl(225,100%,29%)]/20", label: "Trial" },
-    ACTIVE: { className: "bg-sa-green/10 text-[hsl(155,100%,24%)] border-[hsl(155,100%,24%)]/20", label: "Active" },
-    PAST_DUE: { className: "bg-sa-red/10 text-[hsl(2,72%,54%)] border-[hsl(2,72%,54%)]/20", label: "Past Due" },
-    CANCELLED: { className: "bg-muted text-muted-foreground border-border", label: "Cancelled" },
-    PAID: { className: "bg-sa-green/10 text-[hsl(155,100%,24%)] border-[hsl(155,100%,24%)]/20", label: "Paid" },
-    PENDING: { className: "bg-sa-gold/10 text-[hsl(41,100%,40%)] border-[hsl(41,100%,40%)]/20", label: "Pending" },
-    FAILED: { className: "bg-sa-red/10 text-[hsl(2,72%,54%)] border-[hsl(2,72%,54%)]/20", label: "Failed" },
-  };
-  const v = variants[status] || { className: "bg-muted text-muted-foreground", label: status };
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${v.className}`}>
-      {v.label}
-    </span>
-  );
-}
-
-const checkoutSchema = z.object({
-  planCode: z.enum(["pro", "premium"]),
-  recipientName: z.string().min(2, "Full name is required"),
-  email: z.string().email("A valid email address is required"),
-  contactNumber: z.string().min(7, "Contact number is required"),
-  mobileNumber: z.string().optional(),
-  collectionDay: z.number().min(1).max(28),
-  startDate: z.string().min(1, "Start date is required"),
-  shippingAddress1: z.string().optional(),
-  shippingAddress2: z.string().optional(),
-  shippingAddress3: z.string().optional(),
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: "You must accept the Terms and Conditions" }) }),
-});
-
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
-
-function ordinal(n: number) {
-  return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
-}
-
-const manualPaySchema = z.object({
-  planCode: z.enum(["pro", "premium"]),
-  recipientName: z.string().min(2, "Full name is required"),
-  email: z.string().email("A valid email address is required"),
-  contactNumber: z.string().min(7, "Contact number is required"),
-});
-type ManualPayFormData = z.infer<typeof manualPaySchema>;
-
-function ManualPayNowForm({ onSuccess, promo }: { onSuccess: () => void; promo?: PromoState }) {
-  const { user } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const { toast } = useToast();
-
-  const form = useForm<ManualPayFormData>({
-    resolver: zodResolver(manualPaySchema),
-    defaultValues: {
-      planCode: "pro",
-      recipientName: user?.full_name || "",
-      email: user?.email || "",
-      contactNumber: "",
-    },
-  });
-
-  useEffect(() => {
-    if (paymentData && formRef.current) formRef.current.submit();
-  }, [paymentData]);
-
-  const selectedPlanCode = form.watch("planCode");
-  const plan = planOptions.find((p) => p.code === selectedPlanCode)!;
-
-  const onSubmit = async (data: ManualPayFormData) => {
+    if (!validateCheckout()) return;
+    setCheckoutLoading(true);
     try {
-      const res = await fetch("/api/billing/manual-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          ...data,
-          promoCode: promo?.eligible ? promo.code : undefined,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        toast({ title: "Error", description: json.error || "Failed to start payment.", variant: "destructive" });
-        return;
-      }
-      if (json.formAction && json.fields) setPaymentData(json);
-    } catch {
-      toast({ title: "Error", description: "Failed to process payment.", variant: "destructive" });
-    }
-  };
-
-  return (
-    <>
-      {paymentData && (
-        <form ref={formRef} action={paymentData.formAction} method="POST" style={{ display: "none" }}>
-          {Object.entries(paymentData.fields).map(([key, value]) => (
-            <input key={key} type="hidden" name={key} value={String(value)} />
-          ))}
-        </form>
-      )}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          <div>
-            <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Wallet className="h-3.5 w-3.5 text-primary" /> Choose a Plan
-            </p>
-            <FormField
-              control={form.control}
-              name="planCode"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="grid gap-2">
-                    {planOptions.map((p) => (
-                      <label key={p.code} className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${field.value === p.code ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                        <input type="radio" name="manualPlan" value={p.code} checked={field.value === p.code} onChange={() => field.onChange(p.code)} className="accent-primary" />
-                        <div className="flex-1 min-w-0 flex items-center justify-between">
-                          <span className="font-semibold text-sm text-foreground">{p.name}</span>
-                          <span className="text-sm font-bold text-foreground">{p.price}<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <Separator />
-          <div className="space-y-3">
-            <FormField control={form.control} name="recipientName" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs flex items-center gap-1.5"><User className="h-3 w-3" /> Full Name</FormLabel>
-                <FormControl><Input placeholder="John Smith" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs flex items-center gap-1.5"><Mail className="h-3 w-3" /> Email</FormLabel>
-                <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="contactNumber" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs flex items-center gap-1.5"><Phone className="h-3 w-3" /> Contact Number</FormLabel>
-                <FormControl><Input placeholder="+27211234567" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-          {(() => {
-            const promoActive = !!(promo?.eligible && promo.percentOff && plan);
-            const discountedCents = promoActive
-              ? Math.max(100, Math.round(plan!.priceCents * (100 - promo!.percentOff) / 100))
-              : 0;
-            return (
-              <>
-                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-                  <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                  {promoActive ? (
-                    <span>
-                      First payment <strong className="text-foreground">{formatCents(discountedCents)}</strong>
-                      {" "}with code <strong className="text-foreground font-mono">{promo!.code}</strong>
-                      {" "}(was {plan?.price}). After that you'll be billed {plan?.price}/month. Your subscription is active for 30 days once payment is confirmed.
-                    </span>
-                  ) : (
-                    <span>You will be redirected to Adumo Online to complete your {plan?.price}/month payment securely. Your subscription will be activated for 30 days once payment is confirmed.</span>
-                  )}
-                </div>
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !!paymentData}>
-                  {form.formState.isSubmitting || paymentData
-                    ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
-                    : promoActive
-                      ? <><Zap className="h-4 w-4 mr-2" />Pay {formatCents(discountedCents)} now ({promo!.percentOff}% off)</>
-                      : <><CreditCard className="h-4 w-4 mr-2" />Pay {plan?.price} Now</>}
-                </Button>
-              </>
-            );
-          })()}
-        </form>
-      </Form>
-    </>
-  );
-}
-
-function InlineSubscribeForm({ onSuccess, promo }: { onSuccess: () => void; promo?: PromoState }) {
-  const { user } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const { toast } = useToast();
-
-  const defaultStartDate = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(1);
-    return d.toISOString().split("T")[0];
-  })();
-
-  const form = useForm<CheckoutFormData>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      planCode: "pro",
-      recipientName: user?.full_name || "",
-      email: user?.email || "",
-      contactNumber: user?.phone || "",
-      mobileNumber: "",
-      collectionDay: 1,
-      startDate: defaultStartDate,
-      shippingAddress1: "",
-      shippingAddress2: "",
-      shippingAddress3: "",
-      acceptTerms: false as any,
-    },
-  });
-
-  useEffect(() => {
-    if (paymentData && formRef.current) {
-      formRef.current.submit();
-    }
-  }, [paymentData]);
-
-  const selectedPlanCode = form.watch("planCode");
-  const plan = planOptions.find((p) => p.code === selectedPlanCode)!;
-
-  const onSubmit = async (data: CheckoutFormData) => {
-    try {
+      const planCode = isBundle ? "all_modules" : selectedModules.length === 1 ? selectedModules[0] : "all_modules";
       const res = await fetch("/api/billing/checkout-session", {
-        method: "POST",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
-          planCode: data.planCode,
-          recipientName: data.recipientName,
-          email: data.email,
-          contactNumber: data.contactNumber,
-          mobileNumber: data.mobileNumber || data.contactNumber,
-          collectionDay: String(data.collectionDay),
-          startDate: data.startDate,
-          shippingAddress1: data.shippingAddress1 || "",
-          shippingAddress2: data.shippingAddress2 || "",
-          shippingAddress3: data.shippingAddress3 || "",
-          promoCode: promo?.eligible ? promo.code : undefined,
+          planCode,
+          modules: selectedModules,
+          amountCents: totalCents,
+          recipientName: form.recipientName,
+          email: form.email,
+          contactNumber: form.contactNumber,
+          mobileNumber: form.contactNumber,
+          collectionDay: form.collectionDay,
+          shippingAddress1: form.shippingAddress1,
+          promoCode: form.promoCode,
         }),
       });
-      const json = await res.json();
-
-      if (!res.ok) {
-        if (json.error === "You already have an active subscription") {
-          toast({ title: "Already subscribed", description: "You already have an active subscription." });
-          onSuccess();
-          return;
-        }
-        toast({ title: "Error", description: json.error || "Failed to start checkout.", variant: "destructive" });
-        return;
-      }
-
-      if (json.formAction && json.fields) {
-        setPaymentData(json);
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to process subscription.", variant: "destructive" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      setAdumoForm({ action: data.formAction, fields: data.fields });
+    } catch (err: any) {
+      toast({ title: "Checkout error", description: err.message, variant: "destructive" });
+      setCheckoutLoading(false);
     }
-  };
-
-  return (
-    <>
-      {paymentData && (
-        <form
-          ref={formRef}
-          action={paymentData.formAction}
-          method="POST"
-          style={{ display: "none" }}
-        >
-          {Object.entries(paymentData.fields).map(([key, value]) => (
-            <input key={key} type="hidden" name={key} value={String(value)} />
-          ))}
-        </form>
-      )}
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-primary" />
-              Choose a Plan
-            </h3>
-            <FormField
-              control={form.control}
-              name="planCode"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="grid gap-3">
-                    {planOptions.map((p) => (
-                      <label
-                        key={p.code}
-                        className={`relative flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                          field.value === p.code
-                            ? "border-primary bg-primary/5 shadow-sm"
-                            : "border-border hover:border-primary/30"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="plan"
-                          value={p.code}
-                          checked={field.value === p.code}
-                          onChange={() => field.onChange(p.code)}
-                          className="mt-1 accent-primary"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground font-heading">{p.name}</span>
-                            {p.popular && (
-                              <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
-                            )}
-                          </div>
-                          <p className="text-lg font-bold font-heading text-foreground">
-                            {p.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
-                          <ul className="mt-3 space-y-1.5">
-                            {p.features.map((feat) => (
-                              <li key={feat} className="flex items-start gap-2 text-xs text-foreground/80">
-                                <Check className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
-                                <span>{feat}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              Subscriber Details
-            </h3>
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="recipientName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <User className="h-3 w-3" /> Full Name
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Smith" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <Mail className="h-3 w-3" /> Email Address
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="contactNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Phone className="h-3 w-3" /> Contact Number
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="+27211234567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="mobileNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Phone className="h-3 w-3" /> Mobile Number <span className="text-muted-foreground">(optional)</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="+27871234567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              Debit Order Schedule
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="collectionDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Collection Day</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(parseInt(v))}
-                      defaultValue={String(field.value)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                          <SelectItem key={day} value={String(day)}>
-                            {ordinal(day)} of each month
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <Calendar className="h-3 w-3" /> First Collection Date
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              Address <span className="text-muted-foreground font-normal">(optional)</span>
-            </h3>
-            <div className="space-y-3">
-              <FormField
-                control={form.control}
-                name="shippingAddress1"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Address Line 1</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Street address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="shippingAddress2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Suburb / City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Sandton" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="shippingAddress3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Province / Postal Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Gauteng, 2196" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Plan</span>
-              <span className="font-semibold text-foreground">{plan.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Billing Starts</span>
-              <span className="text-sa-green font-semibold">Upon subscription activation</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Then</span>
-              <span className="font-semibold text-foreground">{plan.price}/month</span>
-            </div>
-          </div>
-
-          <FormField
-            control={form.control}
-            name="acceptTerms"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-start gap-3 rounded-lg border border-border p-4">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value === true}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="mt-0.5 accent-primary h-4 w-4"
-                    />
-                  </FormControl>
-                  <div className="text-xs text-muted-foreground leading-relaxed">
-                    I have read and agree to the{" "}
-                    <a
-                      href="/api/billing/terms-pdf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline font-medium"
-                    >
-                      Terms and Conditions
-                    </a>
-                    , and authorise a monthly debit order via Adumo Online for the selected subscription plan.
-                  </div>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {(() => {
-            const promoActive = !!(promo?.eligible && promo.percentOff && plan);
-            const discountedCents = promoActive
-              ? Math.max(100, Math.round(plan!.priceCents * (100 - promo!.percentOff) / 100))
-              : 0;
-            return (
-              <>
-                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-                  <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                  {promoActive ? (
-                    <span>
-                      First debit (today) is <strong className="text-foreground">{formatCents(discountedCents)}</strong>
-                      {" "}with code <strong className="text-foreground font-mono">{promo!.code}</strong> — a {promo!.percentOff}% saving on {plan?.price}.
-                      Recurring monthly debit from next month onwards is {plan?.price}.
-                    </span>
-                  ) : (
-                    <span>Your debit order will be processed securely via Adumo Online. Your subscription activates immediately upon successful payment.</span>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  disabled={form.formState.isSubmitting || !!paymentData}
-                >
-                  {form.formState.isSubmitting || paymentData ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
-                  ) : promoActive ? (
-                    <><Zap className="h-4 w-4 mr-2" />Subscribe — pay {formatCents(discountedCents)} today ({promo!.percentOff}% off)</>
-                  ) : (
-                    <><Check className="h-4 w-4 mr-2" />Subscribe Now</>
-                  )}
-                </Button>
-              </>
-            );
-          })()}
-        </form>
-      </Form>
-    </>
-  );
-}
-
-const changePlanSchema = z.object({
-  recipientName: z.string().min(2, "Full name is required"),
-  email: z.string().email("A valid email address is required"),
-  contactNumber: z.string().min(7, "Contact number is required"),
-  mobileNumber: z.string().optional(),
-  collectionDay: z.number().min(1).max(28),
-  startDate: z.string().min(1, "Start date is required"),
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: "You must accept the Terms and Conditions" }) }),
-});
-
-type ChangePlanFormData = z.infer<typeof changePlanSchema>;
-
-function SubscribeTabSection({ onSuccess, promo, defaultTab }: { onSuccess: () => void; promo?: PromoState; defaultTab?: "manual" | "debit" }) {
-  // Form is hidden until the user explicitly picks "Pay Now" or "Start Debit Order".
-  const [tab, setTab] = useState<"manual" | "debit" | null>(defaultTab ?? null);
-
-  if (tab === null) {
-    return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => setTab("manual")}
-          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-foreground">Pay Now</div>
-            <p className="mt-0.5 text-xs text-muted-foreground">Once-off payment for this month via card or EFT.</p>
-          </div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("debit")}
-          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <CreditCard className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-foreground">Start Debit Order</div>
-            <p className="mt-0.5 text-xs text-muted-foreground">Automatic monthly debit order via Adumo Online.</p>
-          </div>
-        </button>
-      </div>
-    );
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex rounded-lg border border-border overflow-hidden flex-1">
-          <button type="button" onClick={() => setTab("manual")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
-            Pay This Month
-          </button>
-          <button type="button" onClick={() => setTab("debit")} className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}>
-            Set Up Debit Order
-          </button>
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setTab(null)} className="shrink-0">
-          Cancel
-        </Button>
-      </div>
-      {tab === "manual"
-        ? <ManualPayNowForm onSuccess={onSuccess} promo={promo} />
-        : <InlineSubscribeForm onSuccess={onSuccess} promo={promo} />
-      }
-    </div>
-  );
-}
-
-function PayNowSection({ onSuccess }: { onSuccess: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"manual" | "debit">("manual");
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.18 }}
-      className="rounded-xl border border-border bg-card p-6 shadow-card space-y-4"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold font-heading text-foreground flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Pay Subscription
-          </h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Pay this month manually or set up a debit order.</p>
-        </div>
-        <Button size="sm" onClick={() => setOpen(v => !v)} className="shrink-0">
-          {open ? "Hide" : "Pay Now"}
-        </Button>
-      </div>
-      {open && (
-        <div className="pt-2 border-t border-border space-y-4">
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setTab("manual")}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "manual" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}
-            >
-              Pay This Month
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("debit")}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "debit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-muted"}`}
-            >
-              Set Up Debit Order
-            </button>
-          </div>
-          {tab === "manual"
-            ? <ManualPayNowForm onSuccess={() => { setOpen(false); onSuccess(); }} />
-            : <InlineSubscribeForm onSuccess={() => { setOpen(false); onSuccess(); }} />
-          }
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-function ChangePlanSection({ currentPlanCode, onSuccess }: { currentPlanCode: string; onSuccess: () => void }) {
-  const { user } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedTargetCode, setSelectedTargetCode] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  const currentPlan = planOptions.find((p) => p.code === currentPlanCode)!;
-  const otherPlans = planOptions.filter((p) => p.code !== currentPlanCode);
-  const targetPlan = planOptions.find((p) => p.code === selectedTargetCode) || otherPlans[0];
-  const isUpgrade = targetPlan.priceCents > currentPlan.priceCents;
-
-  const defaultStartDate = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(1);
-    return d.toISOString().split("T")[0];
-  })();
-
-  const form = useForm<ChangePlanFormData>({
-    resolver: zodResolver(changePlanSchema),
-    defaultValues: {
-      recipientName: user?.full_name || "",
-      email: user?.email || "",
-      contactNumber: user?.phone || "",
-      mobileNumber: "",
-      collectionDay: 1,
-      startDate: defaultStartDate,
-      acceptTerms: false as any,
-    },
-  });
-
-  useEffect(() => {
-    if (paymentData && formRef.current) {
-      formRef.current.submit();
-    }
-  }, [paymentData]);
-
-  const onSubmit = async (data: ChangePlanFormData) => {
-    try {
-      const res = await fetch("/api/billing/change-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          newPlanCode: targetPlan.code,
-          recipientName: data.recipientName,
-          email: data.email,
-          contactNumber: data.contactNumber,
-          mobileNumber: data.mobileNumber || data.contactNumber,
-          collectionDay: String(data.collectionDay),
-          startDate: data.startDate,
-        }),
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast({ title: "Error", description: json.error || "Failed to change plan.", variant: "destructive" });
-        return;
-      }
-
-      if (json.formAction && json.fields) {
-        setPaymentData(json);
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to process plan change.", variant: "destructive" });
-    }
-  };
+  const onTrial = subscription?.status === "TRIAL";
+  const trialEnd = subscription?.trial_end_at ? new Date(subscription.trial_end_at) : null;
+  const daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="rounded-xl border border-border bg-card p-6 shadow-card"
-    >
-      {paymentData && (
-        <form
-          ref={formRef}
-          action={paymentData.formAction}
-          method="POST"
-          style={{ display: "none" }}
-        >
-          {Object.entries(paymentData.fields).map(([key, value]) => (
-            <input key={key} type="hidden" name={key} value={String(value)} />
+    <div className="p-6 max-w-5xl mx-auto space-y-8">
+      {/* Hidden Adumo form */}
+      {adumoForm && (
+        <form ref={adumoRef} action={adumoForm.action} method="POST" style={{ display: "none" }}>
+          {Object.entries(adumoForm.fields).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
           ))}
         </form>
       )}
 
-      <h3 className="text-lg font-bold font-heading text-foreground mb-2 flex items-center gap-2">
-        {isUpgrade ? (
-          <ArrowUpCircle className="h-5 w-5 text-sa-green" />
-        ) : (
-          <ArrowDownCircle className="h-5 w-5 text-muted-foreground" />
-        )}
-        {isUpgrade ? "Upgrade Your Plan" : "Change Plan"}
-      </h3>
+      <div>
+        <h1 className="text-2xl font-bold font-heading mb-1">Billing & Modules</h1>
+        <p className="text-muted-foreground text-sm">Choose the modules your business needs. Upgrade or change anytime.</p>
+      </div>
 
-      {!showForm ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Select a plan to switch to:</p>
-          <div className="grid gap-3">
-            {otherPlans.map((plan) => {
-              const isPlanUpgrade = plan.priceCents > currentPlan.priceCents;
-              const isSelected = (selectedTargetCode || otherPlans[0].code) === plan.code;
-              return (
-                <label
-                  key={plan.code}
-                  className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-all ${
-                    isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
-                  }`}
-                  onClick={() => setSelectedTargetCode(plan.code)}
-                >
-                  <input
-                    type="radio"
-                    name="targetPlan"
-                    value={plan.code}
-                    checked={isSelected}
-                    onChange={() => setSelectedTargetCode(plan.code)}
-                    className="mt-1 accent-primary"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-bold text-foreground font-heading">{plan.name}</span>
-                      {isPlanUpgrade && (
-                        <span className="gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Crown className="h-2.5 w-2.5" /> Upgrade
-                        </span>
-                      )}
+      {/* Trial banner */}
+      {onTrial && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-5 py-4"
+        >
+          <div className="flex items-center gap-3">
+            <Gift className="h-5 w-5 text-amber-600 shrink-0" />
+            <div>
+              <div className="font-semibold text-amber-900 dark:text-amber-200">Free trial active</div>
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                {daysLeft > 0
+                  ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining — full access to all modules.`
+                  : "Your trial expires today."}
+              </div>
+            </div>
+          </div>
+          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => setView("modules")}>
+            Subscribe now
+          </Button>
+        </motion.div>
+      )}
+
+      {/* ── ACTIVE VIEW ─────────────────────────────────────────── */}
+      {view === "active" && subscription?.status === "ACTIVE" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border bg-card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="font-bold text-lg">Active Subscription</h2>
+                <p className="text-sm text-muted-foreground">Your currently subscribed modules</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-600">
+                <CheckCircle2 className="h-4 w-4" />
+                Active
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              {MODULES.map((mod) => {
+                const active = activeModules.includes(mod.code);
+                return (
+                  <div
+                    key={mod.code}
+                    className={`rounded-lg border p-3 text-center transition-all ${
+                      active ? `${mod.border} bg-gradient-to-br ${mod.bg}` : "border-muted bg-muted/30 opacity-50"
+                    }`}
+                  >
+                    <div className={`mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg ${active ? mod.iconBg : "bg-muted"}`}>
+                      <mod.icon className={`h-5 w-5 ${active ? "text-white" : "text-muted-foreground"}`} />
                     </div>
-                    <p className="text-base font-bold font-heading text-foreground">
-                      {plan.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{plan.description}</p>
+                    <div className="text-xs font-medium leading-tight">{mod.name}</div>
+                    <div className={`mt-1 text-xs font-semibold ${active ? "text-emerald-600" : "text-muted-foreground"}`}>
+                      {active ? "Active" : "Not included"}
+                    </div>
                   </div>
-                </label>
+                );
+              })}
+            </div>
+
+            {subscription.next_billing_at && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                Next billing: {new Date(subscription.next_billing_at).toLocaleDateString("en-ZA")}
+              </div>
+            )}
+          </div>
+
+          <Button variant="outline" onClick={() => setView("modules")}>
+            <Zap className="mr-2 h-4 w-4" />
+            Manage modules
+          </Button>
+
+          {invoices.length > 0 && (
+            <div className="rounded-xl border bg-card">
+              <div className="border-b px-6 py-4">
+                <h3 className="font-semibold">Payment History</h3>
+              </div>
+              <div className="divide-y">
+                {invoices.slice(0, 10).map((inv: any) => (
+                  <div key={inv.id} className="flex items-center justify-between px-6 py-3.5 text-sm">
+                    <div>
+                      <div className="font-medium">
+                        {new Date(inv.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
+                      {inv.merchant_ref && <div className="text-xs text-muted-foreground">{inv.merchant_ref}</div>}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold">{fmt(inv.amount_cents)}</span>
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        inv.status === "PAID" ? "bg-emerald-500/10 text-emerald-600" :
+                        inv.status === "FAILED" ? "bg-red-500/10 text-red-600" :
+                        "bg-amber-500/10 text-amber-600"
+                      }`}>
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MODULE SELECTION VIEW ───────────────────────────────── */}
+      {view === "modules" && (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {MODULES.map((mod) => {
+              const selected = selectedModules.includes(mod.code);
+              return (
+                <motion.button
+                  key={mod.code}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => toggleModule(mod.code)}
+                  className={`relative flex flex-col rounded-xl border-2 p-5 text-left transition-all ${
+                    selected
+                      ? `${mod.border} ring-2 ${mod.ring} bg-gradient-to-br ${mod.bg} shadow-md`
+                      : "border-border bg-card hover:border-muted-foreground/30 hover:shadow-sm"
+                  }`}
+                >
+                  {selected && (
+                    <div className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500">
+                      <Check className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  )}
+                  <div className={`mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl ${mod.iconBg}`}>
+                    <mod.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="font-semibold mb-1 pr-8 text-sm">{mod.name}</div>
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="text-2xl font-extrabold">{fmt(mod.price)}</span>
+                    <span className="text-xs text-muted-foreground">/mo</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-3">Up to {mod.maxUsers} users</div>
+                  <ul className="space-y-1.5">
+                    {mod.features.map((f) => (
+                      <li key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.button>
               );
             })}
           </div>
 
-          <Button
-            onClick={() => setShowForm(true)}
-            variant={isUpgrade ? "default" : "outline"}
-            size="lg"
-            className="w-full"
+          {/* Bundle option */}
+          <motion.button
+            whileTap={{ scale: 0.99 }}
+            onClick={selectBundle}
+            className={`w-full rounded-xl border-2 p-5 text-left transition-all ${
+              isBundle
+                ? "border-amber-500 ring-2 ring-amber-400 bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-xl"
+                : "border-border bg-gradient-to-br from-gray-900 to-gray-800 text-white hover:border-amber-500/50"
+            }`}
           >
-            {isUpgrade ? (
-              <><ArrowUpCircle className="h-4 w-4 mr-2" />Upgrade to {targetPlan.name} — {targetPlan.price}/month</>
-            ) : (
-              <><ArrowDownCircle className="h-4 w-4 mr-2" />Switch to {targetPlan.name} — {targetPlan.price}/month</>
-            )}
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4 mt-4">
-          <div className="rounded-lg bg-muted/50 p-3 text-sm flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUpgrade ? "bg-sa-green/10" : "bg-muted"}`}>
-              {isUpgrade ? <ArrowUpCircle className="h-4 w-4 text-sa-green" /> : <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />}
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">
-                {isUpgrade ? "Upgrading" : "Switching"} to {targetPlan.name} — {targetPlan.price}/month
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Your current subscription will be cancelled and replaced with the new plan. A new debit order will be set up via Adumo.
-              </p>
-            </div>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="recipientName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <User className="h-3 w-3" /> Full Name
-                      </FormLabel>
-                      <FormControl><Input placeholder="John Smith" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Mail className="h-3 w-3" /> Email
-                      </FormLabel>
-                      <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="contactNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <Phone className="h-3 w-3" /> Contact Number
-                      </FormLabel>
-                      <FormControl><Input placeholder="+27211234567" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="collectionDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1.5 text-xs">
-                        <CalendarDays className="h-3 w-3" /> Collection Day
-                      </FormLabel>
-                      <Select
-                        value={String(field.value)}
-                        onValueChange={(v) => field.onChange(parseInt(v))}
-                      >
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Day of month" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                            <SelectItem key={d} value={String(d)}>{ordinal(d)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1.5 text-xs">
-                      <Calendar className="h-3 w-3" /> Debit Order Start Date
-                    </FormLabel>
-                    <FormControl><Input type="date" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                {isBundle && (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500">
+                    <Check className="h-5 w-5 text-white" />
+                  </div>
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="acceptTerms"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="mt-1 accent-primary"
-                      />
-                      <div className="text-xs text-muted-foreground">
-                        I accept the{" "}
-                        <a href="/api/billing/terms-pdf" target="_blank" rel="noopener noreferrer" className="text-primary underline font-medium">
-                          Terms and Conditions
-                        </a>
-                        , and authorise a new monthly debit order via Adumo Online for the {targetPlan.name} plan.
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-                <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                Your new debit order will be processed securely via Adumo Online.
+                <Crown className="h-6 w-6 text-amber-400" />
+                <div>
+                  <div className="font-bold text-lg">Complete Suite — All 4 modules</div>
+                  <div className="text-sm text-gray-400">Up to 10 users · Save {fmt(MODULES.reduce((s, m) => s + m.price, 0) - BUNDLE_PRICE)}/month</div>
+                </div>
               </div>
-
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="flex-1">
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={form.formState.isSubmitting || !!paymentData}
-                >
-                  {form.formState.isSubmitting || paymentData ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting to payment...</>
-                  ) : (
-                    <><Check className="h-4 w-4 mr-2" />Confirm {isUpgrade ? "Upgrade" : "Plan Change"}</>
-                  )}
-                </Button>
+              <div className="text-right">
+                <div className="text-sm text-gray-400 line-through">{fmt(MODULES.reduce((s, m) => s + m.price, 0))}/mo</div>
+                <div className="text-2xl font-extrabold">{fmt(BUNDLE_PRICE)}<span className="text-sm font-normal text-gray-400">/mo</span></div>
               </div>
-            </form>
-          </Form>
-        </div>
-      )}
-    </motion.div>
-  );
-}
+            </div>
+          </motion.button>
 
-interface AccessStatus {
-  blocked: boolean;
-  showPayNow: boolean;
-  daysUntilBilling: number | null;
-  nextBillingDate: string | null;
-  subscriptionStatus: string | null;
-  planName?: string;
-  amountCents?: number;
-}
-
-function TrialPickerSection({ onStarted, promo, onChoosePaid }: { onStarted: () => void; promo?: PromoState; onChoosePaid?: () => void }) {
-  const [selected, setSelected] = useState<string>("pro");
-  const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
-  const promoActive = !!(promo?.eligible && promo.percentOff && onChoosePaid);
-
-  const handleStartTrial = async () => {
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/billing/start-trial", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ planCode: selected }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        toast({
-          title: "Couldn't start your trial",
-          description: json.error || "Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const days = json.trialDays || 14;
-      toast({
-        title: `Your ${days}-day free trial has started`,
-        description: "Enjoy full access to your plan. Add a payment method anytime before it ends.",
-      });
-      onStarted();
-    } catch {
-      toast({
-        title: "Network error",
-        description: "Couldn't start your trial. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const selectedPlan = planOptions.find((p) => p.code === selected)!;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 }}
-      className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-6"
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center shrink-0">
-          <ArrowRight className="h-7 w-7 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-2xl font-bold font-heading text-foreground">Upgrade your plan</h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            {promoActive ? (
-              <>Unlock more features with a paid plan. <strong>Start your 14-day free trial</strong> — or skip the trial and {promo!.label.toLowerCase()} with code <span className="font-mono">{promo!.code}</span>.</>
-            ) : (
-              <>Unlock Social Media, Finance, Payroll and more. You'll get <strong>14 days free</strong> — no card required to start.</>
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {planOptions.map((p) => {
-          const isSelected = selected === p.code;
-          const isPopular = (p as any).popular;
-          return (
-            <label
-              key={p.code}
-              className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all ${
-                isSelected
-                  ? "border-primary bg-primary/5 shadow-md"
-                  : "border-border hover:border-primary/40 bg-background"
-              }`}
+          {/* Summary & CTA */}
+          {selectedModules.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-5"
             >
-              <input
-                type="radio"
-                name="trialPlan"
-                value={p.code}
-                checked={isSelected}
-                onChange={() => setSelected(p.code)}
-                className="sr-only"
-              />
-              {isPopular && (
-                <span className="absolute -top-2 right-4 gradient-gold text-sa-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-                  Popular
-                </span>
-              )}
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="font-bold text-foreground font-heading">{p.name}</span>
-                {isSelected && (
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground shrink-0">
-                    <Check className="h-3 w-3" />
-                  </span>
-                )}
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-semibold">Your selection</div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold">{fmt(totalCents)}<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+                  {savings > 0 && <div className="text-xs text-emerald-600 font-semibold">Saving {fmt(savings)}/month!</div>}
+                </div>
               </div>
-              <p className="text-xl font-bold font-heading text-foreground">
-                {p.price}
-                {!(p as any).isFree && <span className="text-xs font-normal text-muted-foreground">/month</span>}
-                {(p as any).isFree && <span className="text-xs font-normal text-muted-foreground"> forever</span>}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{p.description}</p>
-            </label>
-          );
-        })}
-      </div>
-
-      <div className="rounded-lg bg-muted/40 border border-border/60 p-4 text-sm text-muted-foreground flex items-start gap-3">
-        <Shield className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-        <div>
-          You'll get <strong className="text-foreground">14 days of free access</strong> to <strong className="text-foreground">{selectedPlan.name}</strong>. When your trial ends you'll be asked to add payment to keep using your account — you can change plans or cancel anytime before then.
-        </div>
-      </div>
-
-      {promoActive ? (
-        <div className="space-y-3">
-          {(() => {
-            const discountedCents = Math.max(100, Math.round(selectedPlan.priceCents * (100 - promo!.percentOff) / 100));
-            return (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedModules.map((code) => {
+                  const m = MODULES.find((x) => x.code === code)!;
+                  return (
+                    <span key={code} className={`inline-flex items-center gap-1.5 rounded-full border ${m.border} bg-gradient-to-br ${m.bg} px-3 py-1 text-xs font-semibold`}>
+                      <m.icon className="h-3.5 w-3.5" />
+                      {m.name}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="text-xs text-muted-foreground mb-4">Up to {maxUsers} user accounts included</div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {trialEligible && (
                   <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full h-auto py-4 flex-col items-start text-left whitespace-normal"
                     onClick={handleStartTrial}
-                    disabled={submitting}
+                    disabled={trialLoading}
+                    variant="outline"
+                    className="flex-1 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
                   >
-                    {submitting ? (
-                      <span className="flex items-center"><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</span>
-                    ) : (
-                      <>
-                        <span className="flex items-center font-semibold"><Rocket className="h-4 w-4 mr-2" />Start 14-day free trial</span>
-                        <span className="text-xs text-muted-foreground mt-1 font-normal">No card required. Pay later.</span>
-                      </>
-                    )}
+                    {trialLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
+                    Start 7-day free trial
                   </Button>
-                  <Button
-                    size="lg"
-                    className="w-full h-auto py-4 flex-col items-start text-left whitespace-normal bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => onChoosePaid && onChoosePaid()}
-                    disabled={submitting}
-                  >
-                    <span className="flex items-center font-semibold">
-                      <Zap className="h-4 w-4 mr-2" />Start today — {promo!.percentOff}% off for 3 months
-                    </span>
-                    <span className="text-xs text-white/85 mt-1 font-normal">
-                      Pay {formatCents(discountedCents)}/month for the first 3 months (normally {selectedPlan.price}). Code <span className="font-mono">{promo!.code}</span> applied.
-                    </span>
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  Once you've used (or skipped) the trial, this discount can no longer be applied.
-                </p>
-              </>
-            );
-          })()}
-        </div>
-      ) : (
-        <Button
-          size="lg"
-          className="w-full"
-          onClick={handleStartTrial}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <><Loader2 className="h-4 w-4 animate-spin mr-2" />Starting your trial...</>
-          ) : (
-            <><Rocket className="h-4 w-4 mr-2" />Start my 14-day free trial of {selectedPlan.name}</>
-          )}
-        </Button>
-      )}
-    </motion.div>
-  );
-}
-
-interface InvoiceInfo {
-  id: string;
-  invoice_number: string;
-  customer_name: string;
-  total_cents: number;
-  type: string;
-}
-
-function InvoicePayForm({ invoice, onSuccess }: { invoice: InvoiceInfo; onSuccess: () => void }) {
-  const { user } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
-  const [name, setName] = useState(user?.full_name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState("");
-
-  useEffect(() => { if (paymentData && formRef.current) formRef.current.submit(); }, [paymentData]);
-
-  const handlePay = async () => {
-    if (!name.trim() || !email.trim()) {
-      toast({ title: "Required", description: "Please enter your name and email.", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/billing/invoice-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ invoiceId: invoice.id, recipientName: name, email, contactNumber: phone }),
-      });
-      const json = await res.json();
-      if (!res.ok) { toast({ title: "Error", description: json.error || "Failed to start payment.", variant: "destructive" }); return; }
-      if (json.formAction && json.fields) setPaymentData(json);
-    } catch {
-      toast({ title: "Error", description: "Failed to process payment.", variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const amountFormatted = `R${(invoice.total_cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border-2 border-primary/30 bg-primary/5 p-6 shadow-card space-y-5">
-      {paymentData && (
-        <form ref={formRef} action={paymentData.formAction} method="POST" style={{ display: "none" }}>
-          {Object.entries(paymentData.fields).map(([k, v]) => <input key={k} type="hidden" name={k} value={String(v)} />)}
-        </form>
-      )}
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <CreditCard className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold font-heading text-foreground">Pay Invoice {invoice.invoice_number}</h3>
-          <p className="text-sm text-muted-foreground">Complete payment for {invoice.customer_name}</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-2xl font-bold text-primary">{amountFormatted}</p>
-          <p className="text-xs text-muted-foreground">Amount due</p>
-        </div>
-      </div>
-      <Separator />
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><User className="h-3 w-3" /> Full Name</label>
-          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
-        </div>
-        <div>
-          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><Mail className="h-3 w-3" /> Email</label>
-          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
-        </div>
-        <div>
-          <label className="text-xs font-medium flex items-center gap-1.5 mb-1.5"><Phone className="h-3 w-3" /> Contact Number</label>
-          <input className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+27211234567" />
-        </div>
-      </div>
-      <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-        <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-        You will be redirected to Adumo Online to pay {amountFormatted} securely.
-      </div>
-      <Button className="w-full" onClick={handlePay} disabled={submitting || !!paymentData}>
-        {submitting || paymentData ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting...</> : <><CreditCard className="h-4 w-4 mr-2" />Pay {amountFormatted} Now</>}
-      </Button>
-    </motion.div>
-  );
-}
-
-export default function BillingPage() {
-  const [data, setData] = useState<BillingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
-  const [invoiceInfo, setInvoiceInfo] = useState<InvoiceInfo | null>(null);
-  // When the user clicks "Skip trial — start today with X% off" we replace the
-  // trial picker with the paid-subscribe form (with the promo code applied).
-  const [skipTrialChosen, setSkipTrialChosen] = useState(false);
-  const promo = usePromoCode();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const payNowRef = useRef<HTMLDivElement>(null);
-
-  const scrollToPayNow = () => {
-    payNowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  const fetchAccessStatus = async () => {
-    try {
-      const res = await fetch("/api/billing/access-status", { credentials: "include" });
-      if (res.ok) setAccessStatus(await res.json());
-    } catch {}
-  };
-
-  const fetchBilling = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/billing/subscription", { credentials: "include" });
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      } else {
-        setData({ subscription: null, plan: null });
-      }
-    } catch {
-      setData({ subscription: null, plan: null });
-    } finally {
-      setLoading(false);
-      // Tell the rest of the app (e.g. dashboard sidebar lock badges) that
-      // the billing/plan state may have changed, so they can re-fetch.
-      try {
-        window.dispatchEvent(new Event("billing:updated"));
-      } catch {}
-    }
-  };
-
-  useEffect(() => {
-    fetchBilling();
-    fetchAccessStatus();
-    const invId = searchParams.get("invId");
-    if (invId) {
-      fetch(`/api/billing/invoice-info/${invId}`, { credentials: "include" })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d) setInvoiceInfo(d); })
-        .catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    const paymentResult = searchParams.get("payment");
-    if (paymentResult) {
-      if (paymentResult === "success") {
-        toast({ title: "Payment Successful!", description: "Your subscription is now active. Welcome to Masakhe!" });
-      } else if (paymentResult === "failed") {
-        toast({ title: "Payment Failed", description: "Your payment was not processed. Please try again.", variant: "destructive" });
-      } else if (paymentResult === "error") {
-        toast({ title: "Something went wrong", description: "There was an issue processing your payment. Please contact support.", variant: "destructive" });
-      }
-      setSearchParams({}, { replace: true });
-    }
-  }, []);
-
-  const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      const res = await fetch("/api/billing/cancel", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const json = await res.json();
-      if (json.ok) {
-        toast({ title: "Subscription cancelled", description: "Your subscription has been cancelled." });
-        fetchBilling();
-      } else {
-        toast({ title: "Error", description: json.error || "Failed to cancel.", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to cancel subscription.", variant: "destructive" });
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const { subscription, plan, invoices } = data || {};
-  const isNewSignup = searchParams.get("welcome") === "1";
-
-  return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold font-heading text-foreground">Billing</h2>
-        <p className="text-muted-foreground mt-1">Manage your subscription, payment method, and view billing history.</p>
-      </motion.div>
-
-      {isNewSignup && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-6 text-white shadow-lg"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-              <Sparkles className="h-7 w-7 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold font-heading">Welcome to Masakhe! 🎉</h3>
-              <p className="text-white/85 text-sm mt-1">
-                Your account is ready. Start your <strong>14-day free trial</strong> below — pick the plan that suits your business and get full access instantly. No credit card needed.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {invoiceInfo && (
-        <InvoicePayForm invoice={invoiceInfo} onSuccess={fetchBilling} />
-      )}
-
-      <PromoBanner promo={promo} />
-
-      {accessStatus?.blocked && accessStatus.subscriptionStatus !== "NONE" && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 flex items-start gap-4"
-        >
-          <div className="mt-0.5 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-            <Lock className="h-5 w-5 text-destructive" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-destructive text-sm">
-              {accessStatus.subscriptionStatus === "TRIAL"
-                ? "Your free trial has ended"
-                : "Account Access Suspended"}
-            </h4>
-            <p className="text-sm text-muted-foreground mt-1">
-              {accessStatus.subscriptionStatus === "TRIAL"
-                ? "Subscribe below to continue using your account and keep all your data."
-                : "Your account has been suspended because payment is overdue. Please settle your outstanding balance to restore full access to all features."}
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      {accessStatus?.showPayNow && !accessStatus?.blocked && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 p-5 flex items-start gap-4"
-        >
-          <div className="mt-0.5 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-            <BellRing className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-amber-700 dark:text-amber-400 text-sm">
-              {accessStatus.daysUntilBilling !== null && accessStatus.daysUntilBilling > 0
-                ? `Subscription renews in ${accessStatus.daysUntilBilling} day${accessStatus.daysUntilBilling === 1 ? "" : "s"}`
-                : "Subscription renewal due"}
-            </h4>
-            <p className="text-sm text-muted-foreground mt-1">
-              Your {accessStatus.planName || ""} subscription
-              {accessStatus.nextBillingDate
-                ? ` renews on ${new Date(accessStatus.nextBillingDate).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}`
-                : " is due for renewal"}.
-              {accessStatus.amountCents
-                ? ` Amount: R${(accessStatus.amountCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}.`
-                : ""}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
-            onClick={scrollToPayNow}
-          >
-            Pay Now
-          </Button>
-        </motion.div>
-      )}
-
-      {!subscription ? (
-        <>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 sm:p-8 shadow-card space-y-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center shrink-0">
-                <Globe className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-xl font-bold font-heading text-foreground">Enterprize Free</h3>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                    <Check className="h-3 w-3" /> Current Plan
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">Website Builder, Overview Dashboard &amp; WhatsApp Support — completely free, forever.</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-2xl font-black font-heading text-foreground">Free</p>
-                <p className="text-xs text-muted-foreground">forever</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {skipTrialChosen && promo.eligible ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card space-y-5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-bold font-heading text-foreground flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-emerald-600" />
-                    Start today with {promo.percentOff}% off for 3 months
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Pick a payment method below. Code <span className="font-mono">{promo.code}</span> will be applied automatically — your first 3 months are half price, then your normal monthly rate after that.
-                  </p>
-                </div>
-                <Button size="sm" variant="ghost" onClick={() => setSkipTrialChosen(false)}>
-                  Back to free trial
+                )}
+                <Button
+                  onClick={() => setView("checkout")}
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
+                >
+                  Subscribe now <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-              <SubscribeTabSection onSuccess={() => { fetchBilling(); fetchAccessStatus(); }} promo={promo} />
-            </motion.div>
-          ) : (
-            <TrialPickerSection
-              onStarted={() => { fetchBilling(); fetchAccessStatus(); }}
-              promo={promo}
-              onChoosePaid={() => setSkipTrialChosen(true)}
-            />
-          )}
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            className="text-center"
-          >
-            <Button
-              variant="ghost"
-              className="text-muted-foreground hover:text-foreground text-sm"
-              onClick={() => navigate("/dashboard")}
-            >
-              Continue with Free plan
-            </Button>
-          </motion.div>
-        </>
-      ) : subscription.status === "CANCELLED" ? (
-        <>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-xl border border-border bg-card p-8 shadow-card space-y-6"
-          >
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-14 h-14 rounded-full gradient-hero flex items-center justify-center">
-                <CreditCard className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold font-heading text-foreground">Re-activate Your Subscription</h3>
-              <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                Pay this month manually or set up an automatic monthly debit order.
-              </p>
-            </div>
-            <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
-          </motion.div>
-        </>
-      ) : (
-        <>
-          <motion.div
-            ref={payNowRef}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-xl border border-border bg-card p-6 shadow-card"
-          >
-            <h3 className="text-lg font-bold font-heading text-foreground mb-4 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Current Plan
-            </h3>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold font-heading text-foreground">{plan?.name || "Unknown"}</span>
-                  {statusBadge(subscription.status)}
-                </div>
-                <p className="text-muted-foreground">
-                  {plan ? `${formatCents(plan.price_cents)} / month` : ""}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {subscription.status === "TRIAL" && accessStatus?.blocked && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 shadow-card space-y-5"
-            >
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <Lock className="h-6 w-6 text-destructive" />
-                </div>
-                <h3 className="text-lg font-bold font-heading text-foreground">Free trial ended — subscribe to continue</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Your free trial of {plan?.name} has ended. Pay this month manually or set up an automatic monthly debit order to keep using your account.
-                </p>
-              </div>
-              <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
             </motion.div>
           )}
 
-          {subscription.status === "TRIAL" && !accessStatus?.blocked && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="rounded-xl border border-border bg-card p-6 shadow-card space-y-4"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl gradient-hero flex items-center justify-center shrink-0">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold font-heading text-foreground">Free trial active</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    You're trialling <strong className="text-foreground">{plan?.name}</strong>
-                    {subscription.trial_end_at ? <> until <strong className="text-foreground">{formatDate(subscription.trial_end_at)}</strong></> : null}.
-                    Subscribe below anytime to keep your account active when the trial ends.
-                  </p>
-                </div>
-              </div>
-              <Separator />
-              <SubscribeTabSection onSuccess={fetchBilling} promo={promo} />
-            </motion.div>
-          )}
-
-          {subscription.status === "ACTIVE" && subscription.next_billing_at && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="rounded-xl border border-border bg-card p-6 shadow-card"
-            >
-              <h3 className="text-lg font-bold font-heading text-foreground mb-3 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Next Billing
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Next Charge Date</p>
-                  <p className="text-lg font-semibold text-foreground">{formatDate(subscription.next_billing_at)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Amount</p>
-                  <p className="text-lg font-semibold text-foreground">{plan ? formatCents(plan.price_cents) : "—"}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {subscription.status === "PAST_DUE" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="rounded-xl border border-[hsl(2,72%,54%)]/30 bg-[hsl(2,72%,54%)]/5 p-8 shadow-card space-y-5"
-            >
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-destructive" />
-                </div>
-                <h3 className="text-lg font-bold font-heading text-foreground">Payment Past Due</h3>
-                <p className="text-sm text-muted-foreground">Your last payment failed. Re-subscribe below to restore access to all features.</p>
-              </div>
-              <InlineSubscribeForm onSuccess={fetchBilling} />
-            </motion.div>
-          )}
-
-          {subscription.status === "ACTIVE" && (
-            <PayNowSection onSuccess={fetchBilling} />
-          )}
-
-          {subscription.status === "ACTIVE" && plan?.code && (
-            <ChangePlanSection currentPlanCode={plan.code} onSuccess={fetchBilling} />
-          )}
-
-          {subscription.status === "ACTIVE" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-xl border border-border bg-card p-6 shadow-card"
-            >
-              <h3 className="text-lg font-bold font-heading text-foreground mb-2">Cancel Subscription</h3>
+          {selectedModules.length === 0 && trialEligible && (
+            <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Cancel your subscription. You'll retain access until the end of your current billing period.
+                Select modules above, or start your 7-day free trial for full access.
               </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/5">
-                    Cancel Subscription
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Your subscription will be cancelled. You'll lose access to premium features at the end of your billing period.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleCancel}
-                      disabled={cancelling}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {cancelling ? "Cancelling..." : "Yes, Cancel"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </motion.div>
+              <Button onClick={handleStartTrial} disabled={trialLoading} variant="outline" size="lg">
+                {trialLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
+                Start free 7-day trial (all modules)
+              </Button>
+            </div>
           )}
-        </>
+        </div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="rounded-xl border border-border bg-card p-6 shadow-card"
-      >
-        <h3 className="text-lg font-bold font-heading text-foreground mb-4">Billing History</h3>
-        {invoices && invoices.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">Date</th>
-                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">Reference</th>
-                  <th className="text-right py-2 px-3 text-muted-foreground font-medium">Amount</th>
-                  <th className="text-center py-2 px-3 text-muted-foreground font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-border/50 last:border-0">
-                    <td className="py-2.5 px-3 text-foreground">{formatDate(inv.created_at)}</td>
-                    <td className="py-2.5 px-3 text-muted-foreground font-mono text-xs">{inv.merchant_ref || `INV-${inv.id}`}</td>
-                    <td className="py-2.5 px-3 text-foreground text-right">{formatCents(inv.amount_cents)}</td>
-                    <td className="py-2.5 px-3 text-center">{statusBadge(inv.status)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* ── CHECKOUT VIEW ───────────────────────────────────────── */}
+      {view === "checkout" && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setView("modules")}>← Back</Button>
+            <div>
+              <h2 className="font-bold text-lg">Subscription details</h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedModules.length} module{selectedModules.length !== 1 ? "s" : ""} · <strong>{fmt(totalCents)}/month</strong>
+                {savings > 0 && <span className="ml-2 text-emerald-600 text-xs font-semibold">Saving {fmt(savings)}/mo</span>}
+              </p>
+            </div>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No billing history yet.</p>
-        )}
-      </motion.div>
+
+          <div className="rounded-xl border bg-card p-6">
+            <form onSubmit={handleCheckoutSubmit} className="space-y-5">
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <Label>Full name</Label>
+                  <Input
+                    value={form.recipientName}
+                    onChange={(e) => setForm((f) => ({ ...f, recipientName: e.target.value }))}
+                    placeholder="Your full name"
+                  />
+                  {errors.recipientName && <p className="text-xs text-red-500">{errors.recipientName}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email address</Label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="your@email.com"
+                  />
+                  {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Contact number</Label>
+                  <Input
+                    value={form.contactNumber}
+                    onChange={(e) => setForm((f) => ({ ...f, contactNumber: e.target.value }))}
+                    placeholder="0XX XXX XXXX"
+                  />
+                  {errors.contactNumber && <p className="text-xs text-red-500">{errors.contactNumber}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Preferred collection day</Label>
+                  <Select value={form.collectionDay} onValueChange={(v) => setForm((f) => ({ ...f, collectionDay: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[1, 5, 10, 15, 20, 25, 28].map((d) => (
+                        <SelectItem key={d} value={String(d)}>Day {d} of each month</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    value={form.shippingAddress1}
+                    onChange={(e) => setForm((f) => ({ ...f, shippingAddress1: e.target.value }))}
+                    placeholder="Street address"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Promo code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    value={form.promoCode}
+                    onChange={(e) => setForm((f) => ({ ...f, promoCode: e.target.value }))}
+                    placeholder="Enter code"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+                <p>You will be redirected to our secure payment provider (Adumo Online) to complete your subscription setup. Your banking details are never stored on our servers.</p>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={checkoutLoading}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
+                size="lg"
+              >
+                {checkoutLoading
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparing payment…</>
+                  : <>Proceed to payment — {fmt(totalCents)}/month <ArrowRight className="ml-2 h-4 w-4" /></>
+                }
+              </Button>
+            </form>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
