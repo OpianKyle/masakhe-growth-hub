@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ interface SectionEditorProps {
   onRemove: (index: number) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  isActive?: boolean;
 }
 
 function ArrayEditor({ items, onUpdate, fields, addLabel, minItems, maxItems }: {
@@ -514,13 +515,23 @@ const editorComponents: Record<SectionType, React.ComponentType<{ data: any; onC
   vehicle_listings: VehicleListingsEditor,
 };
 
-export function SectionEditor({ section, index, totalSections, onChange, onToggle, onRemove, onMoveUp, onMoveDown }: SectionEditorProps) {
+export function SectionEditor({ section, index, totalSections, onChange, onToggle, onRemove, onMoveUp, onMoveDown, isActive }: SectionEditorProps) {
   const [expanded, setExpanded] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
   const Icon = sectionIcons[section.type] || Layout;
   const EditorComponent = editorComponents[section.type];
 
+  useEffect(() => {
+    if (isActive) {
+      setExpanded(true);
+      setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 80);
+    }
+  }, [isActive]);
+
   return (
-    <div className={`rounded-lg border ${section.enabled ? "border-slate-200 bg-white" : "border-dashed border-slate-300 bg-slate-50 opacity-60"}`}>
+    <div ref={containerRef} className={`rounded-lg border transition-all ${isActive ? "border-violet-400 ring-2 ring-violet-200 bg-white" : section.enabled ? "border-slate-200 bg-white" : "border-dashed border-slate-300 bg-slate-50 opacity-60"}`}>
       <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none" onClick={() => setExpanded(!expanded)}>
         <GripVertical className="h-4 w-4 text-slate-300 shrink-0" />
         <Icon className="h-4 w-4 text-slate-500 shrink-0" />

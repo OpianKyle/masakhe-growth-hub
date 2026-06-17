@@ -2,7 +2,7 @@ import { SiteConfig, SiteSection, HeroStyle } from "@/types/site";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, MapPin, MessageSquare, CheckCircle2, Globe, Star, Quote, Sparkles, ArrowRight, Fuel, Gauge, Calendar, Car } from "lucide-react";
+import { Phone, Mail, MapPin, MessageSquare, CheckCircle2, Globe, Star, Quote, Sparkles, ArrowRight, Fuel, Gauge, Calendar, Car, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 
@@ -1892,7 +1892,7 @@ const sectionComponents: Record<string, React.ComponentType<{ data: any; site: S
   vehicle_listings: VehicleListingsSection,
 };
 
-export function SectionRenderer({ site }: { site: SiteConfig }) {
+export function SectionRenderer({ site, onSectionClick }: { site: SiteConfig; onSectionClick?: (sectionId: string) => void }) {
   const enabledSections = site.sections.filter((s) => s.enabled);
 
   const isCinematic = site.templateId === "showroom";
@@ -1903,6 +1903,24 @@ export function SectionRenderer({ site }: { site: SiteConfig }) {
       {enabledSections.map((section) => {
         const Component = sectionComponents[section.type];
         if (!Component) return null;
+        if (onSectionClick) {
+          return (
+            <div
+              key={section.id}
+              className="relative group"
+              style={{ cursor: "pointer" }}
+              onClick={() => onSectionClick(section.id)}
+            >
+              <Component data={section.data} site={site} />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-violet-400/70 group-hover:bg-violet-500/5 transition-all pointer-events-none z-10" />
+              <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="inline-flex items-center gap-1.5 bg-violet-600 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow-lg">
+                  <Pencil className="h-3 w-3" /> Edit section
+                </span>
+              </div>
+            </div>
+          );
+        }
         return <Component key={section.id} data={section.data} site={site} />;
       })}
       {isCinematic ? (

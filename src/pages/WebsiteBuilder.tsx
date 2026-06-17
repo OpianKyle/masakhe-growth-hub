@@ -357,6 +357,7 @@ export default function WebsiteBuilder() {
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"settings" | "design" | "media" | "sections">("settings");
   const [publishing, setPublishing] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -1009,6 +1010,7 @@ export default function WebsiteBuilder() {
                     onRemove={removeSection}
                     onMoveUp={() => moveSection(index, "up")}
                     onMoveDown={() => moveSection(index, "down")}
+                    isActive={activeSectionId === section.id}
                   />
                 ))}
 
@@ -1087,7 +1089,13 @@ export default function WebsiteBuilder() {
                 </div>
               )}
               <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 145px)" }}>
-                <SectionRenderer site={site} />
+                <SectionRenderer
+                  site={site}
+                  onSectionClick={(sectionId) => {
+                    setActiveSectionId(sectionId);
+                    setActiveTab("sections");
+                  }}
+                />
               </div>
             </div>
           </div>
