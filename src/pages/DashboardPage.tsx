@@ -318,12 +318,12 @@ export default function DashboardPage() {
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto
+        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-white/10 bg-gradient-to-b from-emerald-600 to-teal-700 transition-all duration-300 md:relative md:z-auto
           ${sidebarWide ? "w-64" : "w-16"}
           ${mobileMenuOpen ? "flex" : "hidden md:flex"}
         `}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-sidebar-border">
+        <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-white/10">
           {sidebarWide && (
             <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
               {user?.logo_url ? (
@@ -406,7 +406,7 @@ export default function DashboardPage() {
                     )}
                   </button>
                   {open && (
-                    <div className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
+                    <div className="mt-0.5 ml-3 pl-3 border-l border-white/20 space-y-0.5">
                       {item.children.map(child => {
                         const childActive = location.pathname.startsWith(child.path);
                         const childLocked = !hasModule(child.requiresModule);
@@ -579,7 +579,7 @@ export default function DashboardPage() {
             .join("")
             .toUpperCase();
           return (
-            <div className="shrink-0 mx-2 mb-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5">
+            <div className="shrink-0 mx-2 mb-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2.5">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
                   {initials2 || "U"}
