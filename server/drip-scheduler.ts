@@ -26,11 +26,12 @@ async function processDripEmails(): Promise<void> {
 
       for (const user of users) {
         try {
-          await sendDripEmail(day, user.email, user.full_name);
+          // Mark as processed BEFORE sending so a failed send is never retried
           await execute(
             "INSERT IGNORE INTO drip_email_log (id, user_id, campaign_day, sent_at) VALUES (?, ?, ?, NOW())",
             [randomUUID(), user.id, day]
           );
+          await sendDripEmail(day, user.email, user.full_name);
           console.log(`[Drip] Day ${day} email sent to ${user.email}`);
         } catch (err: any) {
           console.error(`[Drip] Failed for ${user.email} day ${day}:`, err.message);
