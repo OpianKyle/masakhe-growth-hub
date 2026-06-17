@@ -2513,6 +2513,16 @@ interface DripEmail {
   updated_at: string;
 }
 
+interface SystemEmail {
+  id: number;
+  type: string;
+  subject: string;
+  body_text: string;
+  from_name: string;
+  enabled: number;
+  updated_at: string;
+}
+
 function AdminDripCampaigns() {
   const [emails, setEmails] = useState<DripEmail[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -2528,15 +2538,31 @@ function AdminDripCampaigns() {
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [testSending, setTestSending] = useState(false);
 
+  // Welcome email (transactional)
+  const [welcomeEmail, setWelcomeEmail] = useState<SystemEmail | null>(null);
+  const [editingWelcome, setEditingWelcome] = useState(false);
+  const [editWelcomeSubject, setEditWelcomeSubject] = useState("");
+  const [editWelcomeBody, setEditWelcomeBody] = useState("");
+  const [editWelcomeFromName, setEditWelcomeFromName] = useState("");
+  const [savingWelcome, setSavingWelcome] = useState(false);
+  const [togglingWelcome, setTogglingWelcome] = useState(false);
+  const [showWelcomeTest, setShowWelcomeTest] = useState(false);
+  const [welcomeTestAddress, setWelcomeTestAddress] = useState("");
+  const [testingWelcome, setTestingWelcome] = useState(false);
+
   const load = () => {
     setLoading(true);
-    fetch("/api/admin/drip-emails", { credentials: "include" })
-      .then(r => r.json())
-      .then(data => {
-        setEmails(data.emails || []);
-        setTotalUsers(data.totalUsers || 0);
+    Promise.all([
+      fetch("/api/admin/drip-emails", { credentials: "include" }).then(r => r.json()),
+      fetch("/api/admin/system-emails", { credentials: "include" }).then(r => r.json()),
+    ])
+      .then(([drip, system]) => {
+        setEmails(drip.emails || []);
+        setTotalUsers(drip.totalUsers || 0);
+        const welcome = (system.emails || []).find((e: SystemEmail) => e.type === "welcome") || null;
+        setWelcomeEmail(welcome);
       })
-      .catch(() => toast.error("Failed to load drip emails"))
+      .catch(() => toast.error("Failed to load email campaigns"))
       .finally(() => setLoading(false));
   };
 
@@ -2617,21 +2643,157 @@ function AdminDripCampaigns() {
     }
   };
 
+  // Welcome email handlers
+  const openEditWelcome = () => {
+    if (!welcomeEmail) return;
+    setEditWelcomeSubject(welcomeEmail.subject);
+    setEditWelcomeBody(welcomeEmail.body_text);
+    setEditWelcomeFromName(welcomeEmail.from_name);
+    setEditingWelcome(true);
+  };
+
+  const saveWelcome = async () => {
+    setSavingWelcome(true);
+    try {
+      const res = await fetch("/api/admin/system-emails/welcome", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: editWelcomeSubject, body_text: editWelcomeBody, from_name: editWelcomeFromName }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const updated = await res.json();
+      setWelcomeEmail(updated);
+      toast.success("Welcome email updated");
+      setEditingWelcome(false);
+    } catch (err: any) {
+      toast.error(err.message || "Save failed");
+    } finally {
+      setSavingWelcome(false);
+    }
+  };
+
+  const toggleWelcomeEnabled = async () => {
+    if (!welcomeEmail) return;
+    setTogglingWelcome(true);
+    try {
+      const res = await fetch("/api/admin/system-emails/welcome", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !welcomeEmail.enabled }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const updated = await res.json();
+      setWelcomeEmail(updated);
+      toast.success(updated.enabled ? "Welcome email enabled" : "Welcome email disabled");
+    } catch (err: any) {
+      toast.error(err.message || "Toggle failed");
+    } finally {
+      setTogglingWelcome(false);
+    }
+  };
+
+  const sendWelcomeTest = async () => {
+    setTestingWelcome(true);
+    try {
+      const res = await fetch("/api/admin/system-emails/welcome/send-test", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: welcomeTestAddress.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`Test sent to ${data.sentTo}`);
+      setShowWelcomeTest(false);
+    } catch (err: any) {
+      toast.error(err.message || "Test send failed");
+    } finally {
+      setTestingWelcome(false);
+    }
+  };
+
   const enabledCount = emails.filter(e => e.enabled).length;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-heading">Email Drip Campaigns</h2>
+          <h2 className="text-2xl font-bold font-heading">Email Campaigns</h2>
           <p className="text-muted-foreground text-sm mt-1">
-            20 pre-written marketing emails sent every 2 days to users. Enable individual emails when ready to launch.
+            Manage transactional emails and the 20-email marketing drip sequence.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
+      </div>
+
+      {/* Transactional Emails section */}
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+          <Mail className="h-4 w-4" /> Transactional Emails
+        </h3>
+        {welcomeEmail && (
+          <div className={`rounded-xl border bg-card shadow-sm transition-all ${welcomeEmail.enabled ? "border-emerald-200 bg-emerald-50/30" : "opacity-90"}`}>
+            <div className="flex items-start gap-4 p-4">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${welcomeEmail.enabled ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                <Mail className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground font-medium">Sent on signup</span>
+                  {welcomeEmail.enabled ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 font-semibold">
+                      <CheckCircle2 className="h-3 w-3" /> Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-500 text-xs px-2 py-0.5 font-semibold">
+                      <XCircle className="h-3 w-3" /> Disabled
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 text-blue-700 text-xs px-2 py-0.5">
+                    From: {welcomeEmail.from_name}
+                  </span>
+                </div>
+                <p className="font-semibold text-sm mt-1 truncate">{welcomeEmail.subject}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-wrap">{welcomeEmail.body_text.substring(0, 140)}…</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Supports <code className="bg-muted px-1 rounded text-xs">{"{{firstName}}"}</code>,{" "}
+                  <code className="bg-muted px-1 rounded text-xs">{"{{fullName}}"}</code>,{" "}
+                  <code className="bg-muted px-1 rounded text-xs">{"{{appUrl}}"}</code>
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                <Button variant="ghost" size="sm" onClick={() => { setShowWelcomeTest(true); setWelcomeTestAddress(""); }} title="Send test email">
+                  <FlaskConical className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">Test</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={openEditWelcome}>
+                  <Edit className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">Edit</span>
+                </Button>
+                <button
+                  onClick={toggleWelcomeEnabled}
+                  disabled={togglingWelcome}
+                  title={welcomeEmail.enabled ? "Disable welcome email" : "Enable welcome email"}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${welcomeEmail.enabled ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
+                >
+                  {togglingWelcome ? <Loader2 className="h-4 w-4 animate-spin" /> : welcomeEmail.enabled ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+                  <span className="hidden sm:inline">{welcomeEmail.enabled ? "On" : "Off"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+          <Send className="h-4 w-4" /> Drip Email Sequence
+        </h3>
       </div>
 
       {/* Stats bar */}
@@ -2821,6 +2983,88 @@ function AdminDripCampaigns() {
             <Button variant="outline" onClick={() => setTestEmailTarget(null)}>Cancel</Button>
             <Button onClick={confirmAndSendTest} disabled={testSending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {testSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FlaskConical className="h-4 w-4 mr-2" />}
+              Send Test
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Welcome email edit dialog */}
+      <Dialog open={editingWelcome} onOpenChange={(open) => { if (!open) setEditingWelcome(false); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Welcome Email</DialogTitle>
+            <DialogDescription>
+              This email is sent automatically when a new user signs up. Changes take effect immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">From Name</Label>
+              <p className="text-xs text-muted-foreground mb-1.5">The sender name users will see in their inbox</p>
+              <Input
+                className="mt-1"
+                value={editWelcomeFromName}
+                onChange={e => setEditWelcomeFromName(e.target.value)}
+                placeholder="e.g. Lance Heynes - Masakhe"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">Subject Line</Label>
+              <Input
+                className="mt-1.5"
+                value={editWelcomeSubject}
+                onChange={e => setEditWelcomeSubject(e.target.value)}
+                placeholder="Email subject..."
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide">Email Body</Label>
+              <Textarea
+                className="mt-1.5 min-h-[300px] font-mono text-sm leading-relaxed"
+                value={editWelcomeBody}
+                onChange={e => setEditWelcomeBody(e.target.value)}
+                placeholder="Email body text..."
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Plain text — each line break becomes a paragraph. Use <code className="bg-muted px-1 rounded">{"{{firstName}}"}</code>, <code className="bg-muted px-1 rounded">{"{{fullName}}"}</code>, or <code className="bg-muted px-1 rounded">{"{{appUrl}}"}</code> as template variables.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setEditingWelcome(false)}>Cancel</Button>
+            <Button onClick={saveWelcome} disabled={savingWelcome || !editWelcomeSubject.trim() || !editWelcomeBody.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {savingWelcome ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Welcome email test dialog */}
+      <Dialog open={showWelcomeTest} onOpenChange={(open) => { if (!open) setShowWelcomeTest(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Test Welcome Email</DialogTitle>
+            <DialogDescription>
+              Send a preview of the welcome email using your current saved content. Leave blank to send to your admin account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
+            <Label className="text-xs font-semibold uppercase tracking-wide">Send to email address</Label>
+            <Input
+              className="mt-1.5"
+              type="email"
+              placeholder="Leave blank to send to your account"
+              value={welcomeTestAddress}
+              onChange={e => setWelcomeTestAddress(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") sendWelcomeTest(); }}
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowWelcomeTest(false)}>Cancel</Button>
+            <Button onClick={sendWelcomeTest} disabled={testingWelcome} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {testingWelcome ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FlaskConical className="h-4 w-4 mr-2" />}
               Send Test
             </Button>
           </DialogFooter>

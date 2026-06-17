@@ -4,7 +4,7 @@ import { requireAdmin } from "./auth";
 import { randomUUID, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { getTransporterForUser } from "./email-settings";
-import { sendFranchiseOwnerInviteEmail, getSharedTransporter } from "./email";
+import { sendFranchiseOwnerInviteEmail, getSharedTransporter, emailShell } from "./email";
 import nodemailer from "nodemailer";
 import { encrypt, decrypt } from "./crypto";
 
@@ -129,6 +129,30 @@ export async function runAdminMigrations() {
       }
       console.log("[Admin] Seeded 20 drip emails");
     }
+
+    // Create system_emails table for editable transactional emails (welcome, etc.)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS system_emails (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        type VARCHAR(50) NOT NULL UNIQUE,
+        subject VARCHAR(500) NOT NULL,
+        body_text LONGTEXT NOT NULL,
+        from_name VARCHAR(255) NOT NULL DEFAULT 'Masakhe',
+        enabled TINYINT(1) NOT NULL DEFAULT 1,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    // Seed welcome email if not yet seeded
+    await conn.query(`
+      INSERT IGNORE INTO system_emails (type, subject, body_text, from_name, enabled) VALUES (
+        'welcome',
+        'Welcome to Masakhe Portal',
+        'Dear {{firstName}},\n\nWelcome to Masakhe Portal!\n\nIt''s great news that you''ve joined our platform. I would like to connect with you on a call to understand your needs and how we can further assist in growing your business.\n\nPlease book a free 30-minute onboarding call at a time that suits you:\nhttps://calendly.com/masakhesystems\n\nLooking forward to meeting you!\n\nWith Regards,\nLance Heynes\nCEO, Masakhe Technologies',
+        'Lance Heynes - Masakhe',
+        1
+      )
+    `);
   } finally {
     conn.release();
   }
@@ -1280,6 +1304,117 @@ adminRouter.get("/drip-emails/stats", async (req, res) => {
       totalSends: Number(totalSends),
       uniqueRecipients: Number(uniqueRecipients),
     });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ───────────────────────── System Emails (Transactional) ─────────────────────────
+
+// GET /api/admin/system-emails
+adminRouter.get("/system-emails", requireAdmin, async (req, res) => {
+  try {
+    const emails = await queryAll("SELECT * FROM system_emails ORDER BY type ASC");
+    res.json({ emails });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/admin/system-emails/:type
+adminRouter.patch("/system-emails/:type", requireAdmin, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { subject, body_text, from_name, enabled } = req.body;
+    const existing = await queryOne("SELECT id FROM system_emails WHERE type = ?", [type]);
+    if (!existing) return res.status(404).json({ error: "Email not found" });
+
+    const updates: string[] = [];
+    const params: any[] = [];
+    if (subject !== undefined) { updates.push("subject = ?"); params.push(subject); }
+    if (body_text !== undefined) { updates.push("body_text = ?"); params.push(body_text); }
+    if (from_name !== undefined) { updates.push("from_name = ?"); params.push(from_name); }
+    if (enabled !== undefined) { updates.push("enabled = ?"); params.push(enabled ? 1 : 0); }
+    if (updates.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+    params.push(type);
+    await execute(`UPDATE system_emails SET ${updates.join(", ")} WHERE type = ?`, params);
+    await logAudit(req, "system_email_update", { targetType: "system_email", targetId: type });
+
+    const updated = await queryOne("SELECT * FROM system_emails WHERE type = ?", [type]);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/system-emails/:type/send-test
+adminRouter.post("/system-emails/:type/send-test", requireAdmin, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const emailRow = await queryOne("SELECT * FROM system_emails WHERE type = ?", [type]);
+    if (!emailRow) return res.status(404).json({ error: "Email not found" });
+
+    const admin = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [(req.session as any).userId]);
+    if (!admin) return res.status(401).json({ error: "Not authenticated" });
+
+    const sysSettings = await queryOne("SELECT * FROM system_smtp_settings LIMIT 1");
+    let smtpHost: string, smtpPort: number, smtpUser: string, smtpPass: string;
+    if (sysSettings && sysSettings.smtp_pass_enc) {
+      smtpHost = sysSettings.smtp_host;
+      smtpPort = sysSettings.smtp_port;
+      smtpUser = sysSettings.smtp_user;
+      smtpPass = decrypt(sysSettings.smtp_pass_enc);
+    } else if (process.env.SMTP_PASSWORD) {
+      smtpHost = process.env.SMTP_HOST || "smtp.masakheportal.co.za";
+      smtpPort = parseInt(process.env.SMTP_PORT || "465");
+      smtpUser = process.env.SMTP_USER || "admin@masakheportal.co.za";
+      smtpPass = process.env.SMTP_PASSWORD;
+    } else {
+      return res.status(503).json({ error: "SMTP not configured" });
+    }
+
+    const freshTransporter = nodemailer.createTransport({
+      host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000, greetingTimeout: 10000,
+    });
+    await freshTransporter.verify();
+
+    const toAddress: string = req.body?.to || admin.email;
+    const firstName = (admin.full_name || "Admin").split(" ")[0];
+    const appUrl = process.env.APP_URL || "https://masakheportal.co.za";
+
+    const subject = `[TEST] ${emailRow.subject
+      .replace(/\{\{firstName\}\}/g, firstName)
+      .replace(/\{\{fullName\}\}/g, admin.full_name || firstName)}`;
+
+    const rawBody = emailRow.body_text
+      .replace(/\{\{firstName\}\}/g, firstName)
+      .replace(/\{\{fullName\}\}/g, admin.full_name || firstName)
+      .replace(/\{\{appUrl\}\}/g, appUrl);
+
+    const bodyHtml = rawBody.split("\n").map((line: string) =>
+      line.trim() === ""
+        ? '<div style="height:12px;"></div>'
+        : `<p style="margin:0 0 12px;color:#374151;font-size:15px;line-height:1.7;">${line}</p>`
+    ).join("");
+
+    const html = emailShell({
+      subtitle: "Welcome to Masakhe Portal",
+      body: `<p style="display:inline-block;background:#FEF3C7;color:#92400E;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin:0 0 20px;">TEST PREVIEW</p>${bodyHtml}`,
+      footerNote: "This is a test preview of your welcome email template.",
+    });
+
+    await freshTransporter.sendMail({
+      from: `"${emailRow.from_name}" <${process.env.SMTP_FROM || smtpUser}>`,
+      to: toAddress,
+      subject,
+      html,
+    });
+
+    res.json({ ok: true, sentTo: toAddress });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -59,7 +59,7 @@ export function getBaseUrl(reqOrigin?: string): string {
    ───────────────────────────────────────────────────────────────────────────── */
 
 /** Reusable email shell — green-branded header + white card + footer */
-function emailShell(opts: {
+export function emailShell(opts: {
   preheader?: string;
   subtitle: string;
   body: string;
@@ -176,7 +176,52 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
   const t = await getTransporter();
   if (!t) return;
   const firstName = fullName.split(" ")[0];
+  const appUrl = baseUrl || getBaseUrl();
 
+  // Try loading content from DB (admin-editable system_emails table)
+  try {
+    const dbEmail = await queryOne("SELECT * FROM system_emails WHERE type = 'welcome' AND enabled = 1");
+    if (dbEmail) {
+      const subject = dbEmail.subject
+        .replace(/\{\{firstName\}\}/g, firstName)
+        .replace(/\{\{fullName\}\}/g, fullName);
+      const rawBody = dbEmail.body_text
+        .replace(/\{\{firstName\}\}/g, firstName)
+        .replace(/\{\{fullName\}\}/g, fullName)
+        .replace(/\{\{appUrl\}\}/g, appUrl);
+      const bodyHtml = rawBody.split("\n").map((line: string) =>
+        line.trim() === ""
+          ? '<div style="height:12px;"></div>'
+          : `<p style="margin:0 0 12px;color:#374151;font-size:15px;line-height:1.7;">${line}</p>`
+      ).join("");
+      const body = `
+        <h2 style="margin:0 0 8px;color:#111827;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Welcome, ${firstName}!</h2>
+        <p style="margin:0 0 20px;color:#6B7280;font-size:14px;">We're really glad you're here.</p>
+        ${bodyHtml}
+      `;
+      const html = emailShell({
+        preheader: `Welcome to Masakhe, ${firstName}`,
+        subtitle: "Welcome to Masakhe Portal",
+        body,
+        footerNote: "You received this email because you registered at Masakhe Portal.",
+      });
+      const fromName = dbEmail.from_name || "Masakhe";
+      const info = await t.sendMail({
+        from: `"${fromName}" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+        replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
+        to: toEmail,
+        subject,
+        html,
+        headers: { "X-Priority": "3", "X-Mailer": "Masakhe Platform", "Precedence": "bulk" },
+      });
+      console.log(`[Email] Welcome sent to ${toEmail} (db template) — messageId: ${info.messageId}`);
+      return;
+    }
+  } catch (dbErr: any) {
+    console.warn("[Email] Could not load welcome template from DB, using default:", dbErr.message);
+  }
+
+  // Fallback: hardcoded default template
   const body = `
     <h2 style="margin:0 0 8px;color:#111827;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Welcome, ${firstName}!</h2>
     <p style="margin:0 0 24px;color:#6B7280;font-size:14px;">We're really glad you're here.</p>
