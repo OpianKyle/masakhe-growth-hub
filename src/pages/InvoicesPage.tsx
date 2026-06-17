@@ -1087,15 +1087,21 @@ export default function InvoicesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Quotes & Invoices</h2>
-          <p className="text-muted-foreground">Create and manage your quotes and invoices</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <FileText className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Quotes & Invoices</h2>
+            <p className="text-white/75 text-sm mt-0.5">Create, send and track your invoices and quotes</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
                 <Download className="h-4 w-4 mr-2" /> Export
               </Button>
             </DropdownMenuTrigger>
@@ -1105,13 +1111,16 @@ export default function InvoicesPage() {
               <DropdownMenuItem onClick={() => handleExport("pdf")}>PDF (.pdf)</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
-          <Button variant="outline" onClick={() => openCreate("quote")} className="border-primary text-primary">
+          <Button size="sm" onClick={() => openCreate("quote")}
+            className="bg-white/20 border border-white/40 text-white hover:bg-white/30">
             <Plus className="h-4 w-4 mr-2" /> New Quote
           </Button>
-          <Button onClick={() => openCreate("invoice")} className="gradient-hero text-white">
+          <Button size="sm" onClick={() => openCreate("invoice")}
+            className="bg-white text-blue-700 hover:bg-white/90 font-semibold">
             <Plus className="h-4 w-4 mr-2" /> New Invoice
           </Button>
         </div>

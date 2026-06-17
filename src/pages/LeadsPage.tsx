@@ -198,21 +198,27 @@ export default function LeadsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
-            Leads
-          </h2>
-          <p className="text-muted-foreground mt-1">Manage enquiries from your website visitors.</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #0891b2 0%, #7c3aed 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Users className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Leads</h2>
+            <p className="text-white/75 text-sm mt-0.5">Manage enquiries from your website visitors</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}>
+          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
             Import CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
             Export CSV
           </Button>
@@ -221,22 +227,22 @@ export default function LeadsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Leads", value: stats.total, icon: Users, color: "text-primary" },
-          { label: "New", value: stats.new, icon: Clock, color: "text-blue-500" },
-          { label: "Contacted", value: stats.contacted, icon: MessageSquare, color: "text-amber-500" },
-          { label: "Converted", value: stats.converted, icon: CheckCircle, color: "text-green-500" },
+          { label: "Total Leads", value: stats.total, icon: Users, grad: "from-indigo-500 to-violet-600" },
+          { label: "New", value: stats.new, icon: Clock, grad: "from-blue-500 to-indigo-600" },
+          { label: "Contacted", value: stats.contacted, icon: MessageSquare, grad: "from-amber-500 to-orange-600" },
+          { label: "Converted", value: stats.converted, icon: CheckCircle, grad: "from-emerald-500 to-teal-600" },
         ].map((s) => (
           <motion.div
             key={s.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-border bg-card p-4 shadow-card"
+            className="rounded-xl border border-border bg-card p-4 shadow-card hover:shadow-md transition-shadow"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <s.icon className={`h-4 w-4 ${s.color}`} />
-              <span className="text-sm text-muted-foreground">{s.label}</span>
+            <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${s.grad} shadow-sm mb-2`}>
+              <s.icon className="h-4 w-4 text-white" />
             </div>
             <p className="text-2xl font-bold text-foreground">{s.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
           </motion.div>
         ))}
       </div>

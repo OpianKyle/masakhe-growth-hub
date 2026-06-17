@@ -106,25 +106,47 @@ export default function InventoryPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold font-heading flex items-center gap-2">
-            <Package className="h-7 w-7 text-primary" /> Inventory & Stock
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Manage products, scan barcodes, and run stock takes from any phone or laptop.
-          </p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #f97316 0%, #d97706 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Package className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Inventory & Stock</h1>
+            <p className="text-white/75 text-sm mt-0.5">Manage products, scan barcodes, and run stock takes</p>
+          </div>
         </div>
+        {stats && (
+          <div className="flex gap-4 flex-wrap">
+            {stats.lowStockCount > 0 && (
+              <div className="bg-white/20 rounded-xl px-3 py-2 text-center">
+                <p className="text-xl font-bold">{stats.lowStockCount}</p>
+                <p className="text-white/75 text-xs">Low Stock</p>
+              </div>
+            )}
+            {stats.outOfStockCount > 0 && (
+              <div className="bg-red-500/40 rounded-xl px-3 py-2 text-center">
+                <p className="text-xl font-bold">{stats.outOfStockCount}</p>
+                <p className="text-white/75 text-xs">Out of Stock</p>
+              </div>
+            )}
+            <div className="bg-white/20 rounded-xl px-3 py-2 text-center">
+              <p className="text-xl font-bold">{stats.totalProducts}</p>
+              <p className="text-white/75 text-xs">Products</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          <StatCard icon={Boxes} label="Products" value={stats.totalProducts.toString()} color="bg-blue-500/10 text-blue-600" />
-          <StatCard icon={Package} label="Total units" value={stats.totalUnits.toLocaleString("en-ZA")} color="bg-cyan-500/10 text-cyan-600" />
-          <StatCard icon={TrendingDown} label="Low stock" value={stats.lowStockCount.toString()} color={stats.lowStockCount > 0 ? "bg-amber-500/10 text-amber-600" : "bg-muted text-muted-foreground"} />
-          <StatCard icon={XCircle} label="Out of stock" value={stats.outOfStockCount.toString()} color={stats.outOfStockCount > 0 ? "bg-red-500/10 text-red-600" : "bg-muted text-muted-foreground"} />
-          <StatCard icon={TrendingUp} label="Stock value (cost)" value={fmtR(stats.stockValueCents)} color="bg-emerald-500/10 text-emerald-700" />
-          <StatCard icon={TrendingUp} label="Retail value" value={fmtR(stats.retailValueCents)} color="bg-purple-500/10 text-purple-700" />
+          <StatCard icon={Boxes} label="Products" value={stats.totalProducts.toString()} iconBg="bg-gradient-to-br from-blue-500 to-indigo-600" />
+          <StatCard icon={Package} label="Total units" value={stats.totalUnits.toLocaleString("en-ZA")} iconBg="bg-gradient-to-br from-cyan-500 to-sky-600" />
+          <StatCard icon={TrendingDown} label="Low stock" value={stats.lowStockCount.toString()} iconBg={stats.lowStockCount > 0 ? "bg-gradient-to-br from-amber-500 to-orange-600" : "bg-muted"} />
+          <StatCard icon={XCircle} label="Out of stock" value={stats.outOfStockCount.toString()} iconBg={stats.outOfStockCount > 0 ? "bg-gradient-to-br from-rose-500 to-red-600" : "bg-muted"} />
+          <StatCard icon={TrendingUp} label="Stock value (cost)" value={fmtR(stats.stockValueCents)} iconBg="bg-gradient-to-br from-emerald-500 to-teal-600" />
+          <StatCard icon={TrendingUp} label="Retail value" value={fmtR(stats.retailValueCents)} iconBg="bg-gradient-to-br from-violet-500 to-purple-600" />
         </div>
       )}
 
@@ -145,11 +167,11 @@ export default function InventoryPage() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: string }) {
+function StatCard({ icon: Icon, label, value, iconBg }: { icon: any; label: string; value: string; iconBg: string }) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
-        <Icon className="h-4 w-4" />
+    <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${iconBg} shadow-sm`}>
+        <Icon className="h-4 w-4 text-white" />
       </div>
       <p className="text-xl font-bold mt-2 truncate">{value}</p>
       <p className="text-[11px] text-muted-foreground mt-0.5 uppercase tracking-wide">{label}</p>

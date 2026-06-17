@@ -227,21 +227,29 @@ export default function LeavePage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Leave & HR</h2>
-          <p className="text-muted-foreground">Manage employee leave requests and balances</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #0d9488 0%, #0891b2 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <CalendarDays className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Leave & HR</h2>
+            <p className="text-white/75 text-sm mt-0.5">Manage employee leave requests and balances</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs text-muted-foreground">Year:</Label>
-          <select
-            value={year}
-            onChange={e => setYear(parseInt(e.target.value))}
-            className="h-8 rounded-md border bg-background px-3 text-sm"
-          >
-            {[year - 1, year, year + 1].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <Button onClick={() => setTab("new")} className="gradient-hero text-white">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5">
+            <Label className="text-xs text-white/80">Year:</Label>
+            <select
+              value={year}
+              onChange={e => setYear(parseInt(e.target.value))}
+              className="h-6 rounded bg-transparent text-white text-sm border-0 focus:outline-none"
+            >
+              {[year - 1, year, year + 1].map(y => <option key={y} value={y} className="text-foreground bg-background">{y}</option>)}
+            </select>
+          </div>
+          <Button size="sm" onClick={() => setTab("new")} className="bg-white text-teal-700 hover:bg-white/90 font-semibold">
             <Plus className="h-4 w-4 mr-2" /> New Request
           </Button>
         </div>

@@ -383,21 +383,30 @@ export default function CampaignsPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Megaphone className="h-6 w-6 text-primary" />Email Campaigns
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Create and send targeted email campaigns to your clients</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+        style={{ background: "linear-gradient(135deg, #e11d48 0%, #db2777 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Megaphone className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Email Campaigns</h1>
+            <p className="text-white/75 text-sm mt-0.5">Create and send targeted email campaigns to your clients</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadAll}><RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh</Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={loadAll}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+          </Button>
           {tab === "campaigns" ? (
-            <Button size="sm" onClick={() => openBuilder(null)} className="gap-1.5">
-              <Plus className="h-4 w-4" />New Campaign
+            <Button size="sm" onClick={() => openBuilder(null)}
+              className="bg-white text-rose-700 hover:bg-white/90 font-semibold">
+              <Plus className="h-4 w-4 mr-1" />New Campaign
             </Button>
           ) : (
-            <Button size="sm" onClick={() => { setEditContact(null); setShowContactModal(true); }}>
+            <Button size="sm" onClick={() => { setEditContact(null); setShowContactModal(true); }}
+              className="bg-white text-rose-700 hover:bg-white/90 font-semibold">
               <Plus className="h-4 w-4 mr-1" />Add Contact
             </Button>
           )}
@@ -407,14 +416,14 @@ export default function CampaignsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Campaigns", value: stats.totalCampaigns, icon: Megaphone, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-          { label: "Subscribers", value: stats.totalContacts.toLocaleString(), icon: Users, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
-          { label: "Emails Sent", value: stats.totalSent.toLocaleString(), icon: Send, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-950/30" },
-          { label: "Avg Open Rate", value: `${stats.openRate}%`, icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/30" },
+          { label: "Total Campaigns", value: stats.totalCampaigns, icon: Megaphone, grad: "from-blue-500 to-indigo-600" },
+          { label: "Subscribers", value: stats.totalContacts.toLocaleString(), icon: Users, grad: "from-emerald-500 to-teal-600" },
+          { label: "Emails Sent", value: stats.totalSent.toLocaleString(), icon: Send, grad: "from-violet-500 to-purple-600" },
+          { label: "Avg Open Rate", value: `${stats.openRate}%`, icon: TrendingUp, grad: "from-orange-500 to-amber-600" },
         ].map(s => (
-          <Card key={s.label} className="p-4">
-            <div className={`${s.bg} w-9 h-9 rounded-lg flex items-center justify-center mb-3`}>
-              <s.icon className={`h-5 w-5 ${s.color}`} />
+          <Card key={s.label} className="p-4 hover:shadow-md transition-shadow">
+            <div className={`bg-gradient-to-br ${s.grad} w-9 h-9 rounded-lg flex items-center justify-center mb-3 shadow-sm`}>
+              <s.icon className="h-5 w-5 text-white" />
             </div>
             <p className="text-2xl font-bold">{s.value}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>

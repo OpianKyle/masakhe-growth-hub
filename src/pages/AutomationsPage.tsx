@@ -191,17 +191,19 @@ export default function AutomationsPage() {
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="h-7 w-7 text-amber-500" />
-            Automations
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Set it once. Masakhe handles invoices, follow-ups, and customer love on autopilot.
-          </p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #d97706 0%, #ea580c 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Sparkles className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Automations</h1>
+            <p className="text-white/75 text-sm mt-0.5">Set it once. Masakhe handles invoices, follow-ups, and customer love on autopilot</p>
+          </div>
         </div>
-        <Button onClick={saveSettings} disabled={saving} size="lg">
+        <Button onClick={saveSettings} disabled={saving} size="sm"
+          className="bg-white text-amber-700 hover:bg-white/90 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
           Save all settings
         </Button>
@@ -584,15 +586,15 @@ export default function AutomationsPage() {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent: "amber" | "emerald" | "blue" | "purple" }) {
-  const colors = {
-    amber: "bg-amber-50 text-amber-700",
-    emerald: "bg-emerald-50 text-emerald-700",
-    blue: "bg-blue-50 text-blue-700",
-    purple: "bg-purple-50 text-purple-700",
+  const grads = {
+    amber: "from-amber-500 to-orange-600",
+    emerald: "from-emerald-500 to-teal-600",
+    blue: "from-blue-500 to-indigo-600",
+    purple: "from-violet-500 to-purple-600",
   };
   return (
-    <Card className="p-4 flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colors[accent]}`}>{icon}</div>
+    <Card className="p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${grads[accent]} shadow-sm text-white`}>{icon}</div>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground truncate">{label}</div>
         <div className="text-lg font-bold">{value}</div>

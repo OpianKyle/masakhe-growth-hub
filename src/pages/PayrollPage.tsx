@@ -532,17 +532,26 @@ export default function PayrollPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Payroll</h2>
-          <p className="text-muted-foreground text-sm">Manage employees, calculate PAYE & UIF, and generate payslips.</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #0284c7 0%, #2563eb 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Banknote className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Payroll</h2>
+            <p className="text-white/75 text-sm mt-0.5">Manage employees, calculate PAYE & UIF, and generate payslips</p>
+          </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {tab === "employees" && (
-            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Add Employee</Button>
+            <Button size="sm" onClick={openAdd} className="bg-white text-blue-700 hover:bg-white/90 font-semibold">
+              <Plus className="h-4 w-4 mr-2" />Add Employee
+            </Button>
           )}
           {tab === "run" && (
-            <Button onClick={handleRunPayroll} disabled={!calc || runSaving}>
+            <Button size="sm" onClick={handleRunPayroll} disabled={!calc || runSaving}
+              className="bg-white text-blue-700 hover:bg-white/90 font-semibold">
               {runSaving ? "Processing..." : <><CheckCircle className="h-4 w-4 mr-2" />Generate Payslip</>}
             </Button>
           )}
@@ -550,18 +559,18 @@ export default function PayrollPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10"><Users className="h-5 w-5 text-blue-600" /></div>
+        <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm"><Users className="h-5 w-5 text-white" /></div>
           <p className="text-2xl font-bold mt-2">{activeCount}</p>
           <p className="text-xs text-muted-foreground">Active Employees</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10"><Banknote className="h-5 w-5 text-green-600" /></div>
+        <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm"><Banknote className="h-5 w-5 text-white" /></div>
           <p className="text-2xl font-bold mt-2">{R(totalMonthlyPayroll)}</p>
           <p className="text-xs text-muted-foreground">Total Basic Payroll / Month</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10"><Briefcase className="h-5 w-5 text-amber-600" /></div>
+        <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm"><Briefcase className="h-5 w-5 text-white" /></div>
           <p className="text-2xl font-bold mt-2">{runs.length}</p>
           <p className="text-xs text-muted-foreground">Payslips Generated</p>
         </div>

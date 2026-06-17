@@ -153,6 +153,7 @@ export default function DashboardOverview() {
   const kpiCards = [
     {
       icon: TrendingUp,
+      gradient: "from-emerald-500 to-teal-600",
       label: "Revenue (MTD)",
       value: formatRand(k?.revenueThisMonth || 0),
       change: `${(k?.revenueChange || 0) >= 0 ? "+" : ""}${k?.revenueChange || 0}%`,
@@ -161,6 +162,7 @@ export default function DashboardOverview() {
     },
     {
       icon: Wallet,
+      gradient: "from-rose-500 to-pink-600",
       label: "Expenses (MTD)",
       value: formatRand(k?.expenseThisMonth || 0),
       change: `${(k?.expenseChange || 0) >= 0 ? "+" : ""}${k?.expenseChange || 0}%`,
@@ -169,6 +171,7 @@ export default function DashboardOverview() {
     },
     {
       icon: Receipt,
+      gradient: "from-blue-500 to-indigo-600",
       label: "Invoices",
       value: String(k?.totalInvoices || 0),
       change: `R${((k?.totalInvoiceValue || 0)).toLocaleString("en-ZA")} total`,
@@ -177,6 +180,7 @@ export default function DashboardOverview() {
     },
     {
       icon: Smartphone,
+      gradient: "from-violet-500 to-purple-600",
       label: "Social Posts",
       value: String(k?.socialPosts || 0),
       change: `${k?.socialConnected || 0} accounts`,
@@ -187,10 +191,10 @@ export default function DashboardOverview() {
 
   return (
     <div className="p-6 space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl gradient-hero p-6 text-primary-foreground">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl gradient-hero p-6 text-primary-foreground shadow-lg">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-bold font-heading">Welcome, {firstName}!</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight">Welcome, {firstName}!</h2>
             <p className="text-primary-foreground/80 mt-1">
               {user?.business_name
                 ? hasFinanceData
@@ -263,17 +267,17 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((kpi, i) => (
           <motion.div key={kpi.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-            <Link to={kpi.link} className="block rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-md transition-shadow">
+            <Link to={kpi.link} className="block rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-lg transition-all hover:-translate-y-0.5 group">
               <div className="flex items-center justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <kpi.icon className="h-5 w-5 text-primary" />
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${kpi.gradient} shadow-sm`}>
+                  <kpi.icon className="h-5 w-5 text-white" />
                 </div>
-                <span className={`text-xs font-semibold flex items-center gap-1 ${kpi.positive ? "text-primary" : "text-sa-red"}`}>
+                <span className={`text-xs font-semibold flex items-center gap-1 ${kpi.positive ? "text-emerald-600" : "text-rose-600"}`}>
                   {kpi.change}
                   {kpi.positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 </span>
               </div>
-              <p className="text-2xl font-bold font-heading text-foreground mt-3">{kpi.value}</p>
+              <p className="text-2xl font-bold tracking-tight text-foreground mt-3">{kpi.value}</p>
               <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
             </Link>
           </motion.div>

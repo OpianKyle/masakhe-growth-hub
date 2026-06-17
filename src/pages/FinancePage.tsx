@@ -295,31 +295,37 @@ export default function FinancePage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Income/Expenses</h2>
-          <p className="text-muted-foreground">Track your income and expenses</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #14684b 0%, #1a3a7a 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <TrendingUp className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Income & Expenses</h2>
+            <p className="text-white/75 text-sm mt-0.5">Track your cash flow and financial health</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          <Button variant="outline" onClick={() => { setExportMonth(month); setExportAllMonths(false); setExportDialogOpen(true); }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => { setExportMonth(month); setExportAllMonths(false); setExportDialogOpen(true); }}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             <Download className="h-4 w-4 mr-2" /> Export
           </Button>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             <Upload className="h-4 w-4 mr-2" /> Import
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => receiptInputRef.current?.click()}
-            disabled={scanning}
-            className="border-primary/40 text-primary hover:bg-primary/5"
-          >
+          <Button variant="outline" size="sm" onClick={() => receiptInputRef.current?.click()} disabled={scanning}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             {scanning ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scanning...</> : <><ScanLine className="h-4 w-4 mr-2" /> Scan Receipt</>}
           </Button>
-          <Button onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setScannedBanner(false); setShowForm(true); }} className="gradient-hero text-white">
+          <Button size="sm" onClick={() => { setFormType(tab === "expenses" ? "EXPENSE" : "INCOME"); setScannedBanner(false); setShowForm(true); }}
+            className="bg-white text-gray-900 hover:bg-white/90 font-semibold">
             <Plus className="h-4 w-4 mr-2" /> Add Entry
           </Button>
         </div>
-      </div>
+      </motion.div>
       <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputRef} onChange={handleImport} className="hidden" />
       <input type="file" accept="image/*" capture="environment" ref={receiptInputRef} onChange={handleScanReceipt} className="hidden" />
 
@@ -419,10 +425,10 @@ export default function FinancePage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Opening Balance */}
-        <Card className="p-4">
+        <Card className="p-4 border-l-4 border-l-blue-500">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-              <Wallet className="h-4 w-4 text-blue-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-sm">
+              <Wallet className="h-4 w-4 text-white" />
             </div>
             <p className="text-xs text-muted-foreground">Opening Balance</p>
             <button
@@ -458,34 +464,34 @@ export default function FinancePage() {
           )}
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-4 border-l-4 border-l-emerald-500">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
+              <TrendingUp className="h-4 w-4 text-white" />
             </div>
             <p className="text-xs text-muted-foreground">Income ({month})</p>
           </div>
-          <p className="text-lg font-bold text-green-600">{fmtR(totalIncome)}</p>
+          <p className="text-lg font-bold text-emerald-600">{fmtR(totalIncome)}</p>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-4 border-l-4 border-l-rose-500">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 shadow-sm">
+              <TrendingDown className="h-4 w-4 text-white" />
             </div>
             <p className="text-xs text-muted-foreground">Expenses ({month})</p>
           </div>
-          <p className="text-lg font-bold text-red-600">{fmtR(totalExpense)}</p>
+          <p className="text-lg font-bold text-rose-600">{fmtR(totalExpense)}</p>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-4 border-l-4 border-l-violet-500">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-              <DollarSign className="h-4 w-4 text-purple-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm">
+              <DollarSign className="h-4 w-4 text-white" />
             </div>
             <p className="text-xs text-muted-foreground">Closing Balance</p>
           </div>
-          <p className={`text-lg font-bold ${closingBalance >= 0 ? "text-purple-600" : "text-red-600"}`}>
+          <p className={`text-lg font-bold ${closingBalance >= 0 ? "text-violet-600" : "text-rose-600"}`}>
             {fmtR(closingBalance)}
           </p>
         </Card>

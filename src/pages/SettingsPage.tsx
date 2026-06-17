@@ -258,9 +258,18 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold font-heading text-foreground">Settings</h2>
-        <p className="text-muted-foreground mt-1">Manage your profile, business details, and branding.</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center gap-4"
+        style={{ background: "linear-gradient(135deg, #475569 0%, #334155 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <ServerCog className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Settings</h2>
+            <p className="text-white/75 text-sm mt-0.5">Manage your profile, business details, and branding</p>
+          </div>
+        </div>
       </motion.div>
 
       <motion.div

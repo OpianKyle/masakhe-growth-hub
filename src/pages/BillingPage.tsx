@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Globe, Smartphone, Wallet, Users, Check, Crown, Loader2,
-  CalendarDays, ArrowRight, CheckCircle2, Gift, Zap
+  CalendarDays, ArrowRight, CheckCircle2, Gift, Zap, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,9 +242,15 @@ export default function BillingPage() {
         </form>
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold font-heading mb-1">Billing & Modules</h1>
-        <p className="text-muted-foreground text-sm">Choose the modules your business needs. Upgrade or change anytime.</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex items-center gap-4"
+        style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)" }}>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+          <CreditCard className="h-7 w-7 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">Billing & Modules</h1>
+          <p className="text-white/75 text-sm mt-0.5">Choose the modules your business needs. Upgrade or change anytime.</p>
+        </div>
       </div>
 
       {/* Trial banner */}

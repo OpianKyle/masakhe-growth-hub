@@ -641,16 +641,24 @@ export default function TendersPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Business Tenders</h2>
-          <p className="text-sm text-muted-foreground mt-1">Browse opportunities or post your own tenders</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+        style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #065f46 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Briefcase className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Business Tenders</h2>
+            <p className="text-white/75 text-sm mt-0.5">Browse opportunities or post your own tenders</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { setView("my-tenders"); fetchMyTenders(); }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={() => { setView("my-tenders"); fetchMyTenders(); }}
+            className="bg-white text-blue-800 hover:bg-white/90 font-semibold">
             <Plus className="h-4 w-4 mr-2" /> My Tenders
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setView("my-applications"); fetchMyApplications(); }}>
+          <Button size="sm" onClick={() => { setView("my-applications"); fetchMyApplications(); }}
+            className="bg-white/20 border border-white/40 text-white hover:bg-white/30">
             <FileText className="h-4 w-4 mr-2" /> My Applications
           </Button>
         </div>

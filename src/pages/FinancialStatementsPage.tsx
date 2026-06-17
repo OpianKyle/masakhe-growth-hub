@@ -216,13 +216,20 @@ export default function FinancialStatementsPage() {
 
   if (view === "list") return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-heading">Annual Financial Statements</h2>
-          <p className="text-muted-foreground text-sm mt-1">Generate income statements, balance sheets, and P&L summaries</p>
+      <div className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #14684b 0%, #1a3a7a 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <BarChart2 className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Annual Financial Statements</h2>
+            <p className="text-white/75 text-sm mt-0.5">Generate income statements, balance sheets, and P&L summaries</p>
+          </div>
         </div>
-        <Button onClick={() => { setCurrentId(null); setForm(empty); setComputed(null); setView("form"); }} className="gradient-hero text-white gap-2">
-          <Plus className="h-4 w-4" /> New Statement
+        <Button size="sm" onClick={() => { setCurrentId(null); setForm(empty); setComputed(null); setView("form"); }}
+          className="bg-white text-emerald-800 hover:bg-white/90 font-semibold">
+          <Plus className="h-4 w-4 mr-1" /> New Statement
         </Button>
       </div>
 

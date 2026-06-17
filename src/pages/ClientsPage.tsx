@@ -516,26 +516,30 @@ export default function ClientsPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="relative rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-        <div className="relative">
-          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
-            <Briefcase className="h-6 w-6 text-primary" />
-            Clients
-          </h2>
-          <p className="text-muted-foreground mt-1">Manage your client portfolio and documents.</p>
+        className="rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)" }}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shrink-0">
+            <Users className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Clients</h2>
+            <p className="text-white/75 text-sm mt-0.5">Manage your client portfolio and documents</p>
+          </div>
         </div>
-        <div className="relative flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}>
+          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importing}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             {importing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
             Import CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}
+            className="bg-white/10 border-white/30 text-white hover:bg-white/20">
             {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
             Export CSV
           </Button>
-          <Button size="sm" onClick={openAdd}>
+          <Button size="sm" onClick={openAdd} className="bg-white text-violet-700 hover:bg-white/90 font-semibold">
             <Plus className="h-4 w-4 mr-1" />
             Add Client
           </Button>
