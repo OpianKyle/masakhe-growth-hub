@@ -12,11 +12,16 @@ const transporter = process.env.SMTP_PASSWORD
         pass: process.env.SMTP_PASSWORD,
       },
       tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     })
   : null;
 
 if (!transporter) {
-  console.warn("SMTP_PASSWORD not set — welcome emails disabled");
+  console.warn("[Email] SMTP_PASSWORD not set — emails disabled");
+} else {
+  console.log(`[Email] SMTP transporter ready → ${process.env.SMTP_HOST || "smtp.masakheportal.co.za"}:${smtpPort}`);
 }
 
 export function getSharedTransporter() {
@@ -120,15 +125,21 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
 </html>`;
 
   try {
-    await transporter.sendMail({
-      from: `"Lance Heynes — Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+    const info = await transporter.sendMail({
+      from: `"Lance Heynes - Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
-      subject: `Welcome to Masakhe Portal!!`,
+      subject: `Welcome to Masakhe Portal`,
       html,
+      headers: {
+        "X-Priority": "3",
+        "X-Mailer": "Masakhe Platform",
+        "Precedence": "bulk",
+      },
     });
-    console.log(`Welcome email sent to ${toEmail}`);
+    console.log(`[Email] Welcome sent to ${toEmail} — messageId: ${info.messageId}`);
   } catch (err: any) {
-    console.error(`Failed to send welcome email to ${toEmail}:`, err.message);
+    console.error(`[Email] FAILED welcome to ${toEmail}:`, err.message, err.responseCode ?? "");
   }
 }
 
@@ -892,15 +903,20 @@ export async function sendEmailVerificationEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
-      subject: `Verify your Masakhe email address, ${firstName}`,
+      subject: `Please verify your Masakhe email address`,
       html,
+      headers: {
+        "X-Priority": "1",
+        "X-Mailer": "Masakhe Platform",
+      },
     });
-    console.log(`Verification email sent to ${toEmail}`);
+    console.log(`[Email] Verification sent to ${toEmail} — messageId: ${info.messageId}`);
   } catch (err: any) {
-    console.error(`Failed to send verification email to ${toEmail}:`, err.message);
+    console.error(`[Email] FAILED verification to ${toEmail}:`, err.message, err.responseCode ?? "");
   }
 }
 
@@ -910,7 +926,7 @@ export async function sendEmailVerificationEmail(
 export async function sendOnboardingCallEmail(
   toEmail: string,
   fullName: string,
-  baseUrl?: string
+  baseUrl?: string,
 ): Promise<void> {
   if (!transporter) return;
   const firstName = fullName.split(" ")[0];
@@ -983,15 +999,21 @@ export async function sendOnboardingCallEmail(
 </html>`;
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Masakhe Team" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
-      subject: `${firstName}, we'll be calling you soon — Masakhe Onboarding`,
+      subject: `Your Masakhe onboarding — next steps`,
       html,
+      headers: {
+        "X-Priority": "3",
+        "X-Mailer": "Masakhe Platform",
+        "Precedence": "bulk",
+      },
     });
-    console.log(`Onboarding call email sent to ${toEmail}`);
+    console.log(`[Email] Onboarding sent to ${toEmail} — messageId: ${info.messageId}`);
   } catch (err: any) {
-    console.error(`Failed to send onboarding call email to ${toEmail}:`, err.message);
+    console.error(`[Email] FAILED onboarding to ${toEmail}:`, err.message, err.responseCode ?? "");
   }
 }
 

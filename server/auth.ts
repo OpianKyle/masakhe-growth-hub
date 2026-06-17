@@ -196,8 +196,10 @@ authRouter.post("/register", async (req, res) => {
 
       const baseUrl = getBaseUrl(req.get("origin") || req.get("referer"));
 
-      // 1. Send improved welcome email
-      sendWelcomeEmail(email.toLowerCase(), fullName, baseUrl).catch(() => {});
+      // 1. Send welcome email
+      sendWelcomeEmail(email.toLowerCase(), fullName, baseUrl).catch((e: any) => {
+        console.error("[Auth] Welcome email error:", e?.message);
+      });
 
       // 2. Send email verification link
       const verifyToken = randomBytes(32).toString("hex");
@@ -207,11 +209,18 @@ authRouter.post("/register", async (req, res) => {
         [randomUUID(), userId, verifyToken, expiresAt]
       ).then(() => {
         const verifyUrl = `${baseUrl}/verify-email?token=${verifyToken}`;
-        sendEmailVerificationEmail(email.toLowerCase(), fullName, verifyUrl).catch(() => {});
-      }).catch(() => {});
+        console.log(`[Auth] Verification URL for ${email}: ${verifyUrl}`);
+        sendEmailVerificationEmail(email.toLowerCase(), fullName, verifyUrl).catch((e: any) => {
+          console.error("[Auth] Verification email error:", e?.message);
+        });
+      }).catch((e: any) => {
+        console.error("[Auth] email_verifications insert error:", e?.message);
+      });
 
       // 3. Notify admin of new signup
-      sendAdminSignupNotification(email.toLowerCase(), fullName, phone, baseUrl).catch(() => {});
+      sendAdminSignupNotification(email.toLowerCase(), fullName, phone, baseUrl).catch((e: any) => {
+        console.error("[Auth] Admin notification error:", e?.message);
+      });
 
       // 4a. Fire outbound webhook to external leads system
       fireSignupWebhook({
