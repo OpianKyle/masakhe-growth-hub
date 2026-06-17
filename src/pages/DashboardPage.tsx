@@ -661,7 +661,7 @@ export default function DashboardPage() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-y-hidden">
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-6">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-emerald-100 bg-white/95 backdrop-blur-md px-4 md:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -671,7 +671,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold font-heading text-foreground truncate">{getPageTitle()}</h1>
+            <h1 className="text-xl font-bold font-heading text-emerald-900 truncate">{getPageTitle()}</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative hidden md:block">

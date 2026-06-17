@@ -260,7 +260,7 @@ export default function DashboardOverview() {
         {/* Hero content */}
         <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            {user?.logo_url && <img src={user.logo_url} alt="Logo" className="h-14 w-14 rounded-2xl object-cover border-2 border-white shadow-lg mx-auto mb-3" />}
+            {user?.logo_url && <img src={user.logo_url} alt="Logo" className="h-16 w-16 rounded-2xl object-contain bg-white p-1 border-2 border-white shadow-lg mx-auto mb-3" />}
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#064e3b" }}>
               Welcome back, {firstName}!
             </h1>
