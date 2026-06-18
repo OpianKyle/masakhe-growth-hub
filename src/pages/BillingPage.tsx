@@ -164,16 +164,21 @@ export default function BillingPage() {
   }
 
   async function handleStartTrial() {
+    if (selectedModules.length === 0) {
+      toast({ title: "Select at least one module", description: "Choose the module(s) you want to trial.", variant: "destructive" });
+      return;
+    }
     setTrialLoading(true);
     try {
       const res = await fetch("/api/billing/start-trial", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ modules: selectedModules }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start trial");
-      toast({ title: "7-day free trial started!", description: "You have full access to all modules." });
+      const moduleNames = selectedModules.map(c => MODULES.find(m => m.code === c)?.name ?? c).join(", ");
+      toast({ title: "7-day free trial started!", description: `You now have trial access to: ${moduleNames}.` });
       window.dispatchEvent(new Event("billing:updated"));
       fetchBilling();
     } catch (err: any) {

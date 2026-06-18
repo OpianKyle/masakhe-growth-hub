@@ -483,9 +483,21 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
 billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const VALID_MODULES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
+    const { modules: requestedModules } = req.body as { modules?: string[] };
 
-    // Always use all_modules for trials — gives access to everything for 7 days
-    const plan = await queryOne("SELECT id, code FROM billing_plans WHERE code = 'all_modules'");
+    if (!Array.isArray(requestedModules) || requestedModules.length === 0) {
+      return res.status(400).json({ error: "Please select at least one module to trial." });
+    }
+    const chosenModules = requestedModules.filter(m => VALID_MODULES.includes(m));
+    if (chosenModules.length === 0) {
+      return res.status(400).json({ error: "No valid modules selected." });
+    }
+
+    // Use the matching plan: single module plan if one chosen, otherwise all_modules
+    const planCode = chosenModules.length === 1 ? chosenModules[0] : "all_modules";
+    const plan = await queryOne("SELECT id, code FROM billing_plans WHERE code = ?", [planCode])
+      || await queryOne("SELECT id, code FROM billing_plans WHERE code = 'all_modules'");
     if (!plan) {
       return res.status(404).json({ error: "Trial plan not found. Please contact support." });
     }
@@ -518,7 +530,6 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
     const isPartner = user?.business_status === "reseller";
     const trialDays = isPartner ? 30 : 7;
 
-    const allModules = JSON.stringify(["web_builder", "social_biz", "transactions_ops", "people_hr"]);
     const trialStart = new Date();
     const trialEnd = new Date(trialStart);
     trialEnd.setDate(trialEnd.getDate() + trialDays);
@@ -527,12 +538,13 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
     await execute(
       `INSERT INTO billing_subscriptions (workspace_id, plan_id, status, modules, trial_start_at, trial_end_at, created_at, updated_at)
        VALUES (?, ?, 'TRIAL', ?, ?, ?, ?, ?)`,
-      [workspaceId, plan.id, allModules, trialStart.toISOString(), trialEnd.toISOString(), now, now]
+      [workspaceId, plan.id, JSON.stringify(chosenModules), trialStart.toISOString(), trialEnd.toISOString(), now, now]
     );
 
     res.json({
       ok: true,
       planCode: plan.code,
+      modules: chosenModules,
       trialDays,
       trialEndsAt: trialEnd.toISOString(),
     });
