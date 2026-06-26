@@ -116,3 +116,18 @@ export function FranchiseRoute({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+export function MunicipalityRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <MasakheLoader />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+}

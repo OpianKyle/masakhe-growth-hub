@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute, AdminRoute, FranchiseRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute, AdminRoute, FranchiseRoute, MunicipalityRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResellerRegisterPage from "./pages/ResellerRegisterPage";
@@ -14,6 +14,8 @@ import DashboardPage from "./pages/DashboardPage";
 import ResellerPortal from "./pages/ResellerPortal";
 import AdminDashboard from "./pages/AdminDashboard";
 import FranchiseDashboard from "./pages/FranchiseDashboard";
+import MunicipalityPortal from "./pages/MunicipalityPortal";
+import MunicipalityRegisterPage from "./pages/MunicipalityRegisterPage";
 import PublishedSite from "./pages/PublishedSite";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
 import PricingPage from "./pages/PricingPage";
@@ -115,6 +117,8 @@ const App = () => (
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />
+              <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
+              <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
