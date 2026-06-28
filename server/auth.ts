@@ -14,6 +14,7 @@ import {
 } from "./email";
 import { sendWelcomeSMS, sendCallScheduledSMS } from "./sms";
 import { linkResellerClient, autoRegisterReseller } from "./reseller";
+import { linkSmmeToMunicipality } from "./municipality";
 import { OAuth2Client } from "google-auth-library";
 import { fireSignupWebhook } from "./webhooks";
 
@@ -84,7 +85,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
 authRouter.post("/register", async (req, res) => {
   try {
-    const { email, password, fullName, businessData, referralCode, franchiseCode } = req.body;
+    const { email, password, fullName, businessData, referralCode, franchiseCode, municipalityCode } = req.body;
 
     if (!email || !password || !fullName) {
       return res.status(400).json({ error: "Email, password, and full name are required" });
@@ -250,7 +251,38 @@ authRouter.post("/register", async (req, res) => {
         [randomUUID(), userId]
       ).catch(() => {});
 
-      if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
+        if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
+
+      // Auto-grant 2-week trial for SMMEs linking via a municipality code
+      if (municipalityCode) {
+        (async () => {
+          try {
+            await linkSmmeToMunicipality(userId, municipalityCode, businessData?.businessName || fullName);
+            const plan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium' LIMIT 1", []);
+            if (plan) {
+              const trialEnd = new Date();
+              trialEnd.setDate(trialEnd.getDate() + 14);
+              const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
+              const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");
+              const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [wsId]);
+              if (existing) {
+                await execute(
+                  "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
+                  [plan.id, nowStr, trialEndStr, existing.id]
+                );
+              } else {
+                await execute(
+                  "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
+                  [wsId, plan.id, nowStr, trialEndStr]
+                );
+              }
+            }
+          } catch (e: any) {
+            console.error("[Auth] Municipality trial grant error:", e.message);
+          }
+        })();
+      }
+
       res.json({ ok: true, user });
     });
   } catch (err: any) {

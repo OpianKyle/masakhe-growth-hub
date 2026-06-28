@@ -55,6 +55,7 @@ interface RegisterData {
   businessData?: Record<string, any>;
   referralCode?: string;
   franchiseCode?: string;
+  municipalityCode?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

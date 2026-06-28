@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const referralCode = searchParams.get("ref") || undefined;
   const promoCode = searchParams.get("promo") || undefined;
   const franchiseCode = searchParams.get("franchise") || undefined;
+  const municipalityCode = searchParams.get("municipality") || undefined;
   const source = searchParams.get("source") || undefined;
   const fromEmail = source === "email" || source === "masakhemail";
 
@@ -93,6 +94,7 @@ export default function RegisterPage() {
       fullName: `${form.firstName} ${form.surname}`.trim(),
       referralCode,
       franchiseCode,
+      municipalityCode,
       businessData: form.cell ? { phone: form.cell } : undefined,
     });
     setLoading(false);

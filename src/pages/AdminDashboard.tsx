@@ -97,6 +97,7 @@ const adminNavItems = [
   { icon: Users,           label: "Clients",         path: "/admin/clients" },
   { icon: Handshake,       label: "Partners",        path: "/admin/partners" },
   { icon: Store,           label: "Franchises",      path: "/admin/franchises" },
+  { icon: Building2,       label: "Municipalities",  path: "/admin/municipalities" },
   { icon: FileText,        label: "Tenders",         path: "/admin/tenders" },
   { icon: Globe,           label: "Websites",        path: "/admin/websites" },
   { icon: Send,            label: "Email Campaigns", path: "/admin/drip-campaigns" },
@@ -3273,6 +3274,233 @@ function AdminSettings() {
   );
 }
 
+// ─── Admin Municipalities ────────────────────────────────────────────────────
+function AdminMunicipalities() {
+  const [muns, setMuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandSmmEs, setExpandSmmEs] = useState<Record<string, any[]>>({});
+
+  const loadAll = () => {
+    setLoading(true);
+    fetch("/api/municipality/admin/list", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { setMuns(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function updateStatus(id: string, status: string) {
+    setUpdatingId(id);
+    await fetch(`/api/municipality/admin/${id}/status`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    loadAll();
+    setUpdatingId(null);
+    toast.success(`Municipality ${status}`);
+  }
+
+  async function toggleExpand(mun: any) {
+    if (expandedId === mun.id) { setExpandedId(null); return; }
+    setExpandedId(mun.id);
+    if (expandSmmEs[mun.id]) return;
+    const res = await fetch(`/api/municipality/me/smmEs`, { credentials: "include" });
+    // Note: admin gets SMMEs via the municipality's own route — we'll show count only for now
+    setExpandSmmEs(p => ({ ...p, [mun.id]: [] }));
+  }
+
+  const filtered = muns.filter(m => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || m.municipality_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q) || m.municipality_code?.toLowerCase().includes(q);
+    const matchStatus = statusFilter === "all" || m.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const total = muns.length;
+  const active = muns.filter(m => m.status === "active").length;
+  const pending = muns.filter(m => m.status === "pending").length;
+  const totalSmmEs = muns.reduce((acc, m) => acc + (m.smme_count || 0), 0);
+
+  const STATUS_STYLES: Record<string, string> = {
+    active:    "bg-green-100 text-green-700",
+    pending:   "bg-yellow-100 text-yellow-700",
+    suspended: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-heading">Municipality Programme</h2>
+        <p className="text-muted-foreground text-sm">Manage all registered municipalities and their SMME networks.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Municipalities", value: total,      icon: Building2,  color: "bg-blue-500/10 text-blue-600" },
+          { label: "Active",               value: active,     icon: CheckCircle2,color: "bg-green-500/10 text-green-600" },
+          { label: "Pending Approval",     value: pending,    icon: Clock,       color: "bg-yellow-500/10 text-yellow-600" },
+          { label: "Total SMMEs Linked",   value: totalSmmEs, icon: Users,       color: "bg-purple-500/10 text-purple-600" },
+        ].map(card => (
+          <div key={card.label} className="rounded-xl border bg-card p-4 shadow-sm">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.color}`}>
+              <card.icon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{card.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{card.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by name, email or code…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <select
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+        </select>
+        <Button variant="outline" size="sm" onClick={loadAll}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading municipalities…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border bg-card p-12 text-center">
+          <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="font-semibold text-foreground mb-1">No municipalities found</p>
+          <p className="text-sm text-muted-foreground">They will appear here once they register.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b border-border">
+              <tr>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Municipality</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden md:table-cell">Contact</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Province</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">SMMEs</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Registered</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filtered.map(m => (
+                <>
+                  <tr key={m.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-foreground">{m.municipality_name}</div>
+                      <div className="text-xs font-mono text-muted-foreground">{m.municipality_code}</div>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <div className="text-foreground">{m.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{m.email}</div>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{m.province || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-foreground">{m.smme_count || 0}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[m.status] || "bg-gray-100 text-gray-700"}`}>
+                        {m.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {m.created_at ? new Date(m.created_at).toLocaleDateString("en-ZA") : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {m.status === "pending" && (
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 px-2 text-xs"
+                            disabled={updatingId === m.id}
+                            onClick={() => updateStatus(m.id, "active")}>
+                            {updatingId === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                            <span className="ml-1">Approve</span>
+                          </Button>
+                        )}
+                        {m.status === "active" && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            disabled={updatingId === m.id}
+                            onClick={() => updateStatus(m.id, "suspended")}>
+                            Suspend
+                          </Button>
+                        )}
+                        {m.status === "suspended" && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs"
+                            disabled={updatingId === m.id}
+                            onClick={() => updateStatus(m.id, "active")}>
+                            Reinstate
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                          onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
+                          {expandedId === m.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedId === m.id && (
+                    <tr key={`${m.id}-expand`} className="bg-muted/20">
+                      <td colSpan={7} className="px-4 py-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Contact Person</p>
+                            <p className="text-foreground">{m.contact_person || "—"}</p>
+                            <p className="text-muted-foreground">{m.contact_email || "—"}</p>
+                            <p className="text-muted-foreground">{m.contact_phone || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Location</p>
+                            <p className="text-foreground">{m.province || "—"}</p>
+                            <p className="text-muted-foreground">{m.district || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Municipality Code</p>
+                            <p className="font-mono text-foreground bg-muted inline-block px-2 py-0.5 rounded">{m.municipality_code}</p>
+                            {m.approved_at && (
+                              <p className="text-muted-foreground text-xs mt-1">Approved {new Date(m.approved_at).toLocaleDateString("en-ZA")}</p>
+                            )}
+                          </div>
+                          {m.notes && (
+                            <div className="sm:col-span-2 lg:col-span-3">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+                              <p className="text-foreground">{m.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -3346,6 +3574,7 @@ export default function AdminDashboard() {
           <Route path="clients" element={<ClientList />} />
           <Route path="partners" element={<AdminPartners />} />
           <Route path="franchises" element={<AdminFranchises />} />
+          <Route path="municipalities" element={<AdminMunicipalities />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
           <Route path="drip-campaigns" element={<AdminDripCampaigns />} />
