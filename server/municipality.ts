@@ -190,6 +190,65 @@ municipalityRouter.patch("/me/tickets/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ─── SMME: get my linked municipality info ────────────────────────────────────
+municipalityRouter.get("/my-info", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const row = await queryOne(
+      `SELECT m.municipality_name, m.province, m.district, m.contact_person,
+              m.contact_email, m.contact_phone, m.municipality_code, m.status
+       FROM municipality_smmEs ms
+       JOIN municipalities m ON m.id = ms.municipality_id
+       WHERE ms.smme_user_id = ?`,
+      [userId]
+    );
+    if (!row) return res.json({ linked: false });
+    res.json({ linked: true, ...row });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SMME: submit a support ticket ───────────────────────────────────────────
+municipalityRouter.post("/my-tickets", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const ms = await queryOne(
+      `SELECT ms.municipality_id FROM municipality_smmEs ms WHERE ms.smme_user_id = ?`,
+      [userId]
+    );
+    if (!ms) return res.status(400).json({ error: "You are not linked to a municipality." });
+    const { subject, message } = req.body;
+    if (!subject || !message) return res.status(400).json({ error: "Subject and message are required." });
+    await execute(
+      `INSERT INTO municipality_support_tickets (id, municipality_id, smme_user_id, subject, message, status, created_at)
+       VALUES (?, ?, ?, ?, ?, 'open', NOW())`,
+      [randomUUID(), ms.municipality_id, userId, subject, message]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SMME: view my submitted tickets ─────────────────────────────────────────
+municipalityRouter.get("/my-tickets", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const tickets = await queryAll(
+      `SELECT st.id, st.subject, st.message, st.status, st.created_at, st.resolved_at
+       FROM municipality_support_tickets st
+       JOIN municipality_smmEs ms ON ms.municipality_id = st.municipality_id
+       WHERE ms.smme_user_id = ? AND st.smme_user_id = ?
+       ORDER BY st.created_at DESC`,
+      [userId, userId]
+    );
+    res.json(tickets);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Update profile ───────────────────────────────────────────────────────────
 municipalityRouter.put("/me", requireAuth, async (req, res) => {
   try {
