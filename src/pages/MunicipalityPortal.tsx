@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import {
   Building2, Users, TicketCheck, BarChart2, LogOut, Menu, X,
   MapPin, CheckCircle2, Clock, AlertCircle, Loader2, RefreshCw,
-  Search, Shield, Link2, Copy, ExternalLink, TrendingUp, Mail, Phone,
+  Search, Shield, Link2, Copy, ExternalLink, TrendingUp, Mail,
+  Phone, MessageSquare, Zap, Share2, QrCode, ArrowRight,
+  ChevronRight, Globe, Star, Activity, Inbox, CheckCheck,
+  XCircle, CircleDot, User, Briefcase, CalendarDays, Filter,
+  Sparkles, PenLine, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,12 +28,28 @@ const SA_PROVINCES = [
   "Limpopo","Mpumalanga","Northern Cape","North West","Western Cape",
 ];
 
-const TICKET_COLORS: Record<string, string> = {
-  open:        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  resolved:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  closed:      "bg-muted text-muted-foreground",
+const TICKET_STATUS: Record<string, { label: string; color: string; bg: string; icon: any; border: string }> = {
+  open:        { label: "Open",        color: "text-red-600 dark:text-red-400",    bg: "bg-red-50 dark:bg-red-900/20",    icon: CircleDot,    border: "border-l-red-500"    },
+  in_progress: { label: "In Progress", color: "text-amber-600 dark:text-amber-400",bg: "bg-amber-50 dark:bg-amber-900/20",icon: Clock,        border: "border-l-amber-500"  },
+  resolved:    { label: "Resolved",    color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-emerald-900/20",icon: CheckCheck,  border: "border-l-emerald-500"},
+  closed:      { label: "Closed",      color: "text-slate-500",                    bg: "bg-slate-100 dark:bg-slate-800/40",icon: XCircle,      border: "border-l-slate-400"  },
 };
+
+function InitialAvatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+  const colours = [
+    "from-cyan-500 to-blue-600", "from-violet-500 to-purple-600",
+    "from-rose-500 to-pink-600", "from-amber-500 to-orange-500",
+    "from-emerald-500 to-teal-600", "from-indigo-500 to-blue-700",
+  ];
+  const colour = colours[initials.charCodeAt(0) % colours.length];
+  const sz = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-14 h-14 text-lg" : "w-10 h-10 text-sm";
+  return (
+    <div className={`${sz} rounded-xl bg-gradient-to-br ${colour} flex items-center justify-center shrink-0 font-bold text-white shadow-sm`}>
+      {initials}
+    </div>
+  );
+}
 
 export default function MunicipalityPortal() {
   const { logout: authLogout } = useAuth();
@@ -41,6 +61,7 @@ export default function MunicipalityPortal() {
   const [smmEs, setSmmEs] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [smmeSearch, setSmmeSearch] = useState("");
+  const [ticketFilter, setTicketFilter] = useState("all");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<any>({});
   const [linkCopied, setLinkCopied] = useState(false);
@@ -101,7 +122,7 @@ export default function MunicipalityPortal() {
       method: "PUT", headers: { "Content-Type": "application/json" },
       credentials: "include", body: JSON.stringify(profileForm),
     });
-    if (res.ok) { toast.success("Profile saved"); fetchMun(); }
+    if (res.ok) { toast.success("Profile saved successfully"); fetchMun(); }
     else toast.error("Failed to save");
     setSavingProfile(false);
   }
@@ -114,16 +135,35 @@ export default function MunicipalityPortal() {
     });
   }
 
+  function shareWhatsApp() {
+    const msg = encodeURIComponent(`Register your business on Masakhe — the platform for ${mun?.municipality_name} SMMEs!\n\n${regLink}`);
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  }
+
+  function shareEmail() {
+    const subject = encodeURIComponent(`Join Masakhe — ${mun?.municipality_name} SMME Platform`);
+    const body = encodeURIComponent(`Hi,\n\nRegister your business on Masakhe, the official SMME business platform for ${mun?.municipality_name}.\n\nClick the link below to get started:\n${regLink}\n\nBest regards,\n${mun?.municipality_name}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  }
+
   const filteredSmmEs = smmEs.filter(s => {
     if (!smmeSearch) return true;
     const q = smmeSearch.toLowerCase();
     return `${s.full_name} ${s.business_name || ""} ${s.profile_business_name || ""} ${s.email}`.toLowerCase().includes(q);
   });
 
+  const filteredTickets = tickets.filter(t => ticketFilter === "all" || t.status === ticketFilter);
+  const openCount = tickets.filter(t => t.status === "open").length;
+  const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
+  const resolvedCount = tickets.filter(t => t.status === "resolved").length;
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center animate-pulse shadow-lg">
+          <Building2 className="h-8 w-8 text-white" />
+        </div>
+        <p className="text-muted-foreground text-sm">Loading your municipality portal…</p>
       </div>
     );
   }
@@ -133,6 +173,7 @@ export default function MunicipalityPortal() {
   /* ── Sidebar ── */
   const SidebarContent = () => (
     <aside className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
+      {/* Brand */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
         <img src="/masakhe-logo.png" alt="Masakhe" className="h-9 w-9 object-contain shrink-0" />
         <div className="min-w-0 flex-1">
@@ -149,16 +190,16 @@ export default function MunicipalityPortal() {
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ tab, label, icon: Icon }) => (
           <button key={tab} onClick={() => { setActiveTab(tab); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
               activeTab === tab
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             }`}>
             <Icon className="h-4 w-4 shrink-0" />
             <span>{label}</span>
-            {tab === "tickets" && (mun?.open_tickets ?? 0) > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-                {mun.open_tickets}
+            {tab === "tickets" && openCount > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none animate-pulse">
+                {openCount}
               </span>
             )}
           </button>
@@ -167,10 +208,10 @@ export default function MunicipalityPortal() {
 
       <div className="p-3 border-t border-sidebar-border space-y-2">
         <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
-          isPending ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-green-500/10 text-green-700 dark:text-green-400"
+          isPending ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
         }`}>
           {isPending ? <Clock className="h-3.5 w-3.5 shrink-0" /> : <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
-          {isPending ? "Awaiting approval" : "Active"}
+          {isPending ? "Awaiting approval" : "Active municipality"}
         </div>
         <button onClick={async () => { await authLogout(); navigate("/login"); }}
           className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors">
@@ -191,7 +232,7 @@ export default function MunicipalityPortal() {
       {/* Mobile sidebar */}
       {sidebarOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
           <div className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden"><SidebarContent /></div>
         </>
       )}
@@ -200,7 +241,7 @@ export default function MunicipalityPortal() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Header */}
-        <header className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-card sticky top-0 z-10 shrink-0">
+        <header className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10 shrink-0">
           <button className="lg:hidden text-muted-foreground hover:text-foreground" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
@@ -210,30 +251,37 @@ export default function MunicipalityPortal() {
           <span className="hidden sm:inline text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
             {mun?.municipality_code}
           </span>
-          {isPending
-            ? <Badge className="bg-amber-100 text-amber-700 border-0">Pending</Badge>
-            : <Badge className="bg-green-100 text-green-700 border-0">Active</Badge>
-          }
+          <Badge className={`border-0 ${isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"}`}>
+            {isPending ? "Pending" : "Active"}
+          </Badge>
         </header>
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto">
 
-          {/* ── OVERVIEW ── */}
+          {/* ══════════════════════════════════════
+              OVERVIEW
+          ══════════════════════════════════════ */}
           {activeTab === "overview" && (
             <div>
-              {/* Hero gradient banner */}
-              <div className="relative overflow-hidden px-6 py-8" style={{ background: "linear-gradient(135deg, #0e7490 0%, #1d4ed8 60%, #4f46e5 100%)" }}>
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #0e7490 0%, #1d4ed8 60%, #4f46e5 100%)" }}>
+                <div className="absolute inset-0 opacity-[0.07]" style={{
+                  backgroundImage: "radial-gradient(circle at 20% 50%, white 1.5px, transparent 1.5px), radial-gradient(circle at 80% 20%, white 1.5px, transparent 1.5px), radial-gradient(circle at 60% 80%, white 1.5px, transparent 1.5px)",
+                  backgroundSize: "50px 50px"
+                }} />
+                <div className="absolute right-6 top-6 opacity-10">
+                  <Building2 className="h-32 w-32 text-white" />
+                </div>
                 <div className="relative z-10">
                   {isPending && (
-                    <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-500/20 border border-amber-400/30 px-4 py-2.5 text-amber-200 text-sm">
+                    <div className="mb-5 flex items-center gap-2.5 rounded-xl bg-amber-500/20 border border-amber-400/30 px-4 py-3 text-amber-200 text-sm max-w-xl">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       Awaiting Masakhe admin approval — some features are limited until activated.
                     </div>
                   )}
-                  <p className="text-cyan-200 text-xs font-semibold uppercase tracking-widest mb-1">Municipality Dashboard</p>
-                  <h2 className="text-2xl font-bold text-white mb-1">{mun?.municipality_name}</h2>
+                  <p className="text-cyan-200 text-xs font-semibold uppercase tracking-widest mb-2">Municipality Dashboard</p>
+                  <h2 className="text-3xl font-extrabold text-white mb-1.5">{mun?.municipality_name}</h2>
                   <p className="text-cyan-100 text-sm flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />
                     {mun?.province}{mun?.district ? ` · ${mun.district}` : ""}
@@ -243,313 +291,516 @@ export default function MunicipalityPortal() {
 
               <div className="p-5 lg:p-6 space-y-6">
                 {/* KPI cards */}
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 -mt-8 relative z-10">
                   {[
-                    { icon: Users,      gradient: "from-cyan-500 to-blue-600",    label: "Registered SMMEs",  value: mun?.smme_count ?? 0,                                sub: "In your municipality"    },
-                    { icon: TicketCheck,gradient: "from-rose-500 to-pink-600",    label: "Open Tickets",      value: mun?.open_tickets ?? 0,                              sub: "Awaiting your response"  },
-                    { icon: MapPin,     gradient: "from-violet-500 to-purple-600",label: "Province",          value: mun?.province || "—",                                sub: mun?.district || "No district set" },
+                    { icon: Users,      gradient: "from-cyan-500 to-blue-600",     label: "Registered SMMEs",  value: mun?.smme_count ?? 0,          sub: "In your municipality",     tab: "smmEs"    },
+                    { icon: TicketCheck,gradient: "from-rose-500 to-pink-600",     label: "Open Tickets",      value: mun?.open_tickets ?? 0,        sub: "Awaiting your response",   tab: "tickets"  },
+                    { icon: TrendingUp, gradient: "from-violet-500 to-purple-600", label: "District",          value: mun?.district || "—",          sub: mun?.province || "Province" },
                     { icon: Shield,     gradient: isPending ? "from-amber-500 to-orange-500" : "from-emerald-500 to-teal-600",
-                                        label: "Status",            value: isPending ? "Pending" : "Active",            sub: isPending ? "Under review" : "Full access"      },
+                                        label: "Status",            value: isPending ? "Pending" : "Active", sub: isPending ? "Under review" : "Full access enabled" },
                   ].map((c, i) => (
-                    <div key={i} className="bg-card border border-border rounded-xl p-5 flex items-start gap-3.5">
-                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${c.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <div key={i}
+                      onClick={() => c.tab && setActiveTab(c.tab)}
+                      className={`bg-card border border-border rounded-2xl p-5 shadow-sm flex items-start gap-3.5 ${c.tab ? "cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group" : ""}`}>
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
                         <c.icon className="h-5 w-5 text-white" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground truncate">{c.label}</p>
-                        <p className="text-xl font-bold text-foreground leading-tight mt-0.5 truncate">{c.value}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.sub}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">{c.label}</p>
+                        <p className="text-2xl font-extrabold text-foreground leading-tight mt-0.5 truncate">{c.value}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{c.sub}</p>
                       </div>
+                      {c.tab && <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary shrink-0 mt-1 transition-colors" />}
                     </div>
                   ))}
                 </div>
 
-                {/* Details + Registration link */}
+                {/* Quick actions */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { label: "Share Registration Link", desc: "Invite local businesses", icon: Share2,    tab: "link",    gradient: "from-cyan-500 to-blue-500"     },
+                      { label: "Manage Tickets",          desc: "Respond to SMME queries", icon: Inbox,     tab: "tickets", gradient: "from-rose-500 to-pink-500"     },
+                      { label: "View All SMMEs",          desc: "Browse registered businesses", icon: Users, tab: "smmEs",  gradient: "from-violet-500 to-purple-500" },
+                    ].map(a => (
+                      <button key={a.tab} onClick={() => setActiveTab(a.tab)}
+                        className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 hover:border-primary/40 hover:shadow-md transition-all text-left group">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
+                          <a.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{a.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary ml-auto shrink-0 group-hover:translate-x-1 transition-all" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact & Code */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {/* Municipality details */}
-                  <div className="bg-card border border-border rounded-xl p-5">
-                    <h3 className="font-semibold text-foreground mb-4 text-sm flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" /> Municipality Details
-                    </h3>
-                    <dl className="space-y-0 divide-y divide-border text-sm">
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5" /> Contact Details
+                    </p>
+                    <div className="space-y-3">
                       {[
-                        { label: "Name",    value: mun?.municipality_name },
-                        { label: "Province",value: mun?.province || "—"   },
-                        { label: "District",value: mun?.district  || "—"  },
-                        { label: "Contact", value: mun?.contact_person || "—" },
-                      ].map(r => (
-                        <div key={r.label} className="flex justify-between gap-4 py-2.5">
-                          <dt className="text-muted-foreground shrink-0">{r.label}</dt>
-                          <dd className="font-medium text-foreground text-right truncate">{r.value}</dd>
+                        { icon: User,  val: mun?.contact_person || "Not set",  label: "Contact Person" },
+                        { icon: Mail,  val: mun?.contact_email  || "Not set",  label: "Email"          },
+                        { icon: Phone, val: mun?.contact_phone  || "Not set",  label: "Phone"          },
+                      ].map(row => (
+                        <div key={row.label} className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <row.icon className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{row.label}</p>
+                            <p className="text-sm font-medium text-foreground truncate">{row.val}</p>
+                          </div>
                         </div>
                       ))}
-                      <div className="flex justify-between gap-4 py-2.5">
-                        <dt className="text-muted-foreground shrink-0">Code</dt>
-                        <dd className="font-mono text-xs bg-muted px-2 py-1 rounded font-semibold">{mun?.municipality_code}</dd>
-                      </div>
-                    </dl>
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full mt-4 gap-2" onClick={() => setActiveTab("profile")}>
+                      <PenLine className="h-3.5 w-3.5" /> Edit Profile
+                    </Button>
                   </div>
 
-                  {/* Quick registration link */}
-                  <div className="bg-card border border-border rounded-xl p-5">
-                    <h3 className="font-semibold text-foreground mb-1 text-sm flex items-center gap-2">
-                      <Link2 className="h-4 w-4 text-muted-foreground" /> Registration Link
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Share with local businesses — they'll be auto-linked to your municipality when they register.
+                  <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <QrCode className="h-3.5 w-3.5" /> Registration Link
                     </p>
-                    <div className="bg-muted rounded-lg px-3 py-2.5 text-xs font-mono text-muted-foreground truncate border border-border mb-3">
-                      {regLink}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="gap-1.5 flex-1" onClick={copyLink}>
-                        {linkCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        {linkCopied ? "Copied!" : "Copy Link"}
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setActiveTab("link")}>
-                        <ExternalLink className="h-3.5 w-3.5" /> More
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick actions row */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[
-                    { label: "View SMMEs",       icon: Users,       tab: "smmEs",    gradient: "from-cyan-500 to-blue-500"    },
-                    { label: "Open Tickets",      icon: TicketCheck, tab: "tickets",  gradient: "from-rose-500 to-pink-500"    },
-                    { label: "Manage Profile",    icon: Building2,   tab: "profile",  gradient: "from-violet-500 to-purple-500"},
-                  ].map(a => (
-                    <button key={a.tab} onClick={() => setActiveTab(a.tab)}
-                      className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/40 hover:bg-muted/50 transition-all text-left group">
-                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${a.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                        <a.icon className="h-4.5 w-4.5 text-white h-4 w-4" />
+                    <div className="flex-1 flex flex-col gap-4">
+                      <div className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
+                        <p className="text-xs font-mono text-muted-foreground break-all leading-relaxed">{regLink}</p>
                       </div>
-                      <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{a.label}</span>
-                    </button>
-                  ))}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button className="gap-2" onClick={copyLink}>
+                          {linkCopied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          {linkCopied ? "Copied!" : "Copy"}
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={shareWhatsApp}>
+                          <MessageSquare className="h-4 w-4 text-green-600" /> WhatsApp
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 px-4 py-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Municipality Code</p>
+                          <p className="text-xl font-black font-mono text-foreground tracking-widest">{mun?.municipality_code}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(mun?.municipality_code); toast.success("Code copied!"); }}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── REGISTRATION LINK ── */}
+          {/* ══════════════════════════════════════
+              REGISTRATION LINK
+          ══════════════════════════════════════ */}
           {activeTab === "link" && (
-            <div className="p-5 lg:p-6 max-w-2xl space-y-5">
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20">
-                  <h3 className="font-semibold text-foreground">Your Municipality Registration Link</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Anyone who registers via this link is automatically linked to <strong>{mun?.municipality_name}</strong>.
-                  </p>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">Registration URL</label>
-                    <div className="bg-muted border border-border rounded-lg px-4 py-3 font-mono text-sm text-foreground break-all mb-3">{regLink}</div>
-                    <div className="flex gap-2">
-                      <Button className="gap-2" onClick={copyLink}>
-                        {linkCopied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {linkCopied ? "Copied!" : "Copy Link"}
-                      </Button>
-                      <Button variant="outline" className="gap-2" onClick={() => window.open(regLink, "_blank")}>
-                        <ExternalLink className="h-4 w-4" /> Preview
-                      </Button>
-                    </div>
-                  </div>
-                  <hr className="border-border" />
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">How it works</h4>
-                    <ol className="space-y-3">
-                      {[
-                        "Share the link via WhatsApp, email, or social media",
-                        "The SMME clicks the link and registers their business",
-                        "They're automatically added to your municipality dashboard",
-                        "Monitor their activity and respond to support requests",
-                      ].map((s, i) => (
-                        <li key={i} className="flex gap-3 items-start">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">{i + 1}</div>
-                          <p className="text-sm text-muted-foreground leading-relaxed pt-1">{s}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  <hr className="border-border" />
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Or share your code manually</h4>
-                    <div className="flex items-center gap-3 bg-muted rounded-lg px-4 py-3">
-                      <span className="text-xs text-muted-foreground">Municipality Code</span>
-                      <span className="font-mono font-bold text-foreground text-lg tracking-wider">{mun?.municipality_code}</span>
-                      <Button size="sm" variant="ghost" className="ml-auto gap-1.5 h-7 text-xs"
-                        onClick={() => { navigator.clipboard.writeText(mun?.municipality_code); toast.success("Code copied!"); }}>
-                        <Copy className="h-3 w-3" /> Copy
-                      </Button>
-                    </div>
-                  </div>
+            <div>
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #0891b2 0%, #2563eb 100%)" }}>
+                <div className="absolute right-0 top-0 opacity-10"><Globe className="h-48 w-48 text-white" /></div>
+                <div className="relative z-10">
+                  <p className="text-cyan-200 text-xs font-semibold uppercase tracking-widest mb-2">Grow Your Network</p>
+                  <h2 className="text-2xl font-extrabold text-white mb-1">Registration Link</h2>
+                  <p className="text-cyan-100 text-sm max-w-lg">Share with local businesses and they'll be automatically linked to <strong>{mun?.municipality_name}</strong> when they sign up.</p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* ── SMMEs ── */}
-          {activeTab === "smmEs" && (
-            <div className="p-5 lg:p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search SMMEs…" className="pl-9" value={smmeSearch} onChange={e => setSmmeSearch(e.target.value)} />
-                </div>
-                <Button variant="outline" size="sm" onClick={fetchSmmEs}><RefreshCw className="h-4 w-4" /></Button>
-              </div>
-
-              {filteredSmmEs.length === 0 ? (
-                <div className="bg-card border border-border rounded-xl p-12 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <Users className="h-7 w-7 text-white" />
+              <div className="p-5 lg:p-6 space-y-5 max-w-2xl">
+                {/* Link card */}
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 border-b border-border">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Your Unique URL</p>
+                    <p className="font-mono text-sm text-foreground break-all leading-relaxed">{regLink}</p>
                   </div>
-                  <p className="font-semibold text-foreground mb-2">No SMMEs registered yet</p>
-                  <p className="text-sm text-muted-foreground mb-4">Share your registration link to get started.</p>
-                  <Button size="sm" className="gap-2" onClick={() => setActiveTab("link")}>
-                    <Link2 className="h-4 w-4" /> View Registration Link
+                  <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Button className="gap-2 col-span-1" onClick={copyLink}>
+                      {linkCopied ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {linkCopied ? "Copied!" : "Copy Link"}
+                    </Button>
+                    <Button variant="outline" className="gap-2" onClick={shareWhatsApp}>
+                      <MessageSquare className="h-4 w-4 text-green-600" /> WhatsApp
+                    </Button>
+                    <Button variant="outline" className="gap-2" onClick={shareEmail}>
+                      <Mail className="h-4 w-4 text-blue-600" /> Email
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Municipality code */}
+                <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-2xl p-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Municipality Code</p>
+                    <p className="text-3xl font-black font-mono text-foreground tracking-widest">{mun?.municipality_code}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Businesses can enter this manually when registering</p>
+                  </div>
+                  <Button size="lg" variant="outline" className="gap-2 shrink-0"
+                    onClick={() => { navigator.clipboard.writeText(mun?.municipality_code); toast.success("Code copied!"); }}>
+                    <Copy className="h-4 w-4" /> Copy Code
                   </Button>
                 </div>
-              ) : (
-                <div className="bg-card border border-border rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 bg-muted/40 border-b border-border flex items-center justify-between">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{filteredSmmEs.length} Business{filteredSmmEs.length !== 1 ? "es" : ""}</p>
+
+                {/* How it works */}
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <p className="text-sm font-bold text-foreground mb-5 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" /> How it works
+                  </p>
+                  <div className="space-y-4">
+                    {[
+                      { step: 1, title: "Share the link",        desc: "Send via WhatsApp, email, SMS, social media or print it on flyers.", color: "from-cyan-500 to-blue-600"     },
+                      { step: 2, title: "Business registers",     desc: "The SMME clicks the link and completes the free Masakhe registration.", color: "from-violet-500 to-purple-600" },
+                      { step: 3, title: "Auto-linked to you",     desc: "They appear in your SMMEs tab — no manual approval needed.", color: "from-emerald-500 to-teal-600"  },
+                      { step: 4, title: "Monitor & support",      desc: "Track their activity and respond to any support tickets they raise.", color: "from-rose-500 to-pink-600"    },
+                    ].map(s => (
+                      <div key={s.step} className="flex gap-4 items-start">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shrink-0 font-bold text-sm shadow-sm`}>{s.step}</div>
+                        <div className="pt-0.5">
+                          <p className="text-sm font-semibold text-foreground">{s.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <table className="w-full text-sm">
-                    <thead className="border-b border-border">
-                      <tr>
-                        {["Business","Owner","Sector","Registered","Status"].map(h => (
-                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filteredSmmEs.map(s => (
-                        <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 font-medium text-foreground">{s.profile_business_name || s.business_name || "—"}</td>
-                          <td className="px-4 py-3">
-                            <div className="text-foreground">{s.full_name}</div>
-                            <div className="text-xs text-muted-foreground">{s.email}</div>
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">{s.business_type || s.sector || "—"}</td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs">{s.registered_at ? new Date(s.registered_at).toLocaleDateString("en-ZA") : "—"}</td>
-                          <td className="px-4 py-3">
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">{s.status}</Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
-              )}
+
+                {/* Preview button */}
+                <Button variant="outline" className="w-full gap-2" onClick={() => window.open(regLink, "_blank")}>
+                  <ExternalLink className="h-4 w-4" /> Preview Registration Page
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* ── TICKETS ── */}
-          {activeTab === "tickets" && (
-            <div className="p-5 lg:p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-foreground">Support Tickets</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{tickets.length} ticket{tickets.length !== 1 ? "s" : ""} from your SMMEs</p>
+          {/* ══════════════════════════════════════
+              SMMES
+          ══════════════════════════════════════ */}
+          {activeTab === "smmEs" && (
+            <div>
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)" }}>
+                <div className="absolute right-0 top-0 opacity-10"><Users className="h-48 w-48 text-white" /></div>
+                <div className="relative z-10">
+                  <p className="text-violet-200 text-xs font-semibold uppercase tracking-widest mb-2">Your Network</p>
+                  <h2 className="text-2xl font-extrabold text-white mb-1">Registered SMMEs</h2>
+                  <p className="text-violet-100 text-sm">{smmEs.length} business{smmEs.length !== 1 ? "es" : ""} linked to {mun?.municipality_name}</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={fetchTickets} className="gap-1.5"><RefreshCw className="h-4 w-4" /></Button>
               </div>
 
-              {tickets.length === 0 ? (
-                <div className="bg-card border border-border rounded-xl p-12 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <TicketCheck className="h-7 w-7 text-white" />
+              <div className="p-5 lg:p-6 space-y-4">
+                {/* Search + refresh */}
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search by name, email or sector…" className="pl-9 rounded-xl" value={smmeSearch} onChange={e => setSmmeSearch(e.target.value)} />
                   </div>
-                  <p className="font-semibold text-foreground mb-1">No support tickets</p>
-                  <p className="text-sm text-muted-foreground">Tickets from your registered SMMEs will appear here.</p>
+                  <Button variant="outline" size="sm" className="rounded-xl gap-2" onClick={fetchSmmEs}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {tickets.map(t => (
-                    <div key={t.id} className="bg-card border border-border rounded-xl p-4">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                          <p className="font-semibold text-foreground">{t.subject}</p>
-                          {t.full_name && <p className="text-xs text-muted-foreground mt-0.5">{t.full_name} · {t.email}</p>}
+
+                {filteredSmmEs.length === 0 ? (
+                  <div className="bg-card border border-border rounded-2xl p-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-5 shadow-lg">
+                      <Users className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="font-bold text-foreground text-lg mb-2">
+                      {smmeSearch ? "No matches found" : "No SMMEs registered yet"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-5 max-w-xs mx-auto">
+                      {smmeSearch ? "Try a different search term." : "Share your registration link and local businesses will appear here once they sign up."}
+                    </p>
+                    {!smmeSearch && (
+                      <Button className="gap-2" onClick={() => setActiveTab("link")}>
+                        <Share2 className="h-4 w-4" /> Share Registration Link
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredSmmEs.map(s => {
+                      const bizName = s.profile_business_name || s.business_name || s.full_name;
+                      const sector = s.business_type || s.sector || null;
+                      const regDate = s.registered_at ? new Date(s.registered_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : null;
+                      return (
+                        <div key={s.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:border-primary/30 transition-all group">
+                          <div className="flex items-start gap-3">
+                            <InitialAvatar name={bizName} size="md" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{bizName}</p>
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{s.full_name}</p>
+                            </div>
+                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 shrink-0 text-[10px]">
+                              {s.status || "active"}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{s.email}</span>
+                            </div>
+                            {sector && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Briefcase className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{sector}</span>
+                              </div>
+                            )}
+                            {regDate && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <CalendarDays className="h-3 w-3 shrink-0" />
+                                <span>Registered {regDate}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <Badge className={`${TICKET_COLORS[t.status] || ""} border-0 shrink-0`}>{t.status.replace("_", " ")}</Badge>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════
+              TICKETS
+          ══════════════════════════════════════ */}
+          {activeTab === "tickets" && (
+            <div>
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #e11d48 0%, #be185d 60%, #9333ea 100%)" }}>
+                <div className="absolute right-0 top-0 opacity-10"><Inbox className="h-48 w-48 text-white" /></div>
+                <div className="relative z-10">
+                  <p className="text-rose-200 text-xs font-semibold uppercase tracking-widest mb-2">SMME Requests</p>
+                  <h2 className="text-2xl font-extrabold text-white mb-1">Support Tickets</h2>
+                  <p className="text-rose-100 text-sm">{tickets.length} ticket{tickets.length !== 1 ? "s" : ""} from your registered businesses</p>
+                </div>
+              </div>
+
+              <div className="p-5 lg:p-6 space-y-5">
+                {/* Stats row */}
+                {tickets.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "Open",        count: openCount,       color: "from-red-500 to-rose-600",         icon: CircleDot   },
+                      { label: "In Progress", count: inProgressCount, color: "from-amber-500 to-orange-500",     icon: Clock       },
+                      { label: "Resolved",    count: resolvedCount,   color: "from-emerald-500 to-teal-600",     icon: CheckCheck  },
+                    ].map(s => (
+                      <button key={s.label}
+                        onClick={() => setTicketFilter(ticketFilter === s.label.toLowerCase().replace(" ", "_") ? "all" : s.label.toLowerCase().replace(" ", "_"))}
+                        className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:shadow-md hover:border-primary/30 transition-all text-left">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shrink-0`}>
+                          <s.icon className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-extrabold text-foreground">{s.count}</p>
+                          <p className="text-xs text-muted-foreground">{s.label}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Filter + Refresh */}
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5 flex-wrap flex-1">
+                    {["all","open","in_progress","resolved","closed"].map(f => (
+                      <button key={f}
+                        onClick={() => setTicketFilter(f)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          ticketFilter === f ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}>
+                        {f === "all" ? "All" : f === "in_progress" ? "In Progress" : f.charAt(0).toUpperCase() + f.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-xl gap-2 shrink-0" onClick={fetchTickets}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {filteredTickets.length === 0 ? (
+                  <div className="bg-card border border-border rounded-2xl p-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center mx-auto mb-5 shadow-lg">
+                      <TicketCheck className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="font-bold text-foreground text-lg mb-2">
+                      {ticketFilter !== "all" ? `No ${ticketFilter.replace("_", " ")} tickets` : "All clear!"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {ticketFilter !== "all" ? "Try a different filter." : "No support tickets from your SMMEs yet."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredTickets.map(t => {
+                      const ts = TICKET_STATUS[t.status] || TICKET_STATUS.closed;
+                      const TsIcon = ts.icon;
+                      return (
+                        <div key={t.id} className={`bg-card border border-border border-l-4 ${ts.border} rounded-2xl overflow-hidden hover:shadow-md transition-all`}>
+                          <div className="p-5">
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className={`w-8 h-8 rounded-xl ${ts.bg} flex items-center justify-center shrink-0 mt-0.5`}>
+                                <TsIcon className={`h-4 w-4 ${ts.color}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="font-bold text-foreground">{t.subject}</p>
+                                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${ts.bg} ${ts.color}`}>
+                                    {ts.label}
+                                  </span>
+                                </div>
+                                {t.full_name && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                    <User className="h-3 w-3" /> {t.full_name}
+                                    {t.email && <span className="opacity-60">· {t.email}</span>}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="ml-11 bg-muted/50 rounded-xl px-4 py-3 mb-3">
+                              <p className="text-sm text-muted-foreground leading-relaxed">{t.message}</p>
+                            </div>
+                            <div className="ml-11 flex items-center gap-2 flex-wrap">
+                              <p className="text-xs text-muted-foreground mr-auto flex items-center gap-1">
+                                <CalendarDays className="h-3 w-3" />
+                                {new Date(t.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                              </p>
+                              {t.status === "open" && (
+                                <Button size="sm" variant="outline" className="rounded-xl h-8 text-xs" onClick={() => updateTicketStatus(t.id, "in_progress")}>
+                                  <Clock className="h-3 w-3 mr-1" /> In Progress
+                                </Button>
+                              )}
+                              {(t.status === "open" || t.status === "in_progress") && (
+                                <Button size="sm" className="rounded-xl h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateTicketStatus(t.id, "resolved")}>
+                                  <CheckCheck className="h-3 w-3 mr-1" /> Resolve
+                                </Button>
+                              )}
+                              {t.status === "resolved" && (
+                                <Button size="sm" variant="outline" className="rounded-xl h-8 text-xs" onClick={() => updateTicketStatus(t.id, "closed")}>
+                                  <XCircle className="h-3 w-3 mr-1" /> Close
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════
+              PROFILE
+          ══════════════════════════════════════ */}
+          {activeTab === "profile" && (
+            <div>
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #0f766e 0%, #0369a1 100%)" }}>
+                <div className="absolute right-0 top-0 opacity-10"><Building2 className="h-48 w-48 text-white" /></div>
+                <div className="relative z-10 flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0 border border-white/30">
+                    <Building2 className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-teal-200 text-xs font-semibold uppercase tracking-widest mb-1">Municipality Profile</p>
+                    <h2 className="text-2xl font-extrabold text-white">{mun?.municipality_name}</h2>
+                    <p className="text-teal-100 text-sm">{mun?.province}{mun?.district ? ` · ${mun.district}` : ""}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 lg:p-6 max-w-xl space-y-5">
+                {/* Municipality info */}
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                      <Building2 className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">Municipality Information</p>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Municipality Name</label>
+                      <Input className="rounded-xl" value={profileForm.municipality_name || ""} onChange={e => setProfileForm((p: any) => ({ ...p, municipality_name: e.target.value }))} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Province</label>
+                        <select className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          value={profileForm.province || ""} onChange={e => setProfileForm((p: any) => ({ ...p, province: e.target.value }))}>
+                          <option value="">Select province</option>
+                          {SA_PROVINCES.map(pr => <option key={pr}>{pr}</option>)}
+                        </select>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{t.message}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-xs text-muted-foreground mr-auto">{new Date(t.created_at).toLocaleDateString("en-ZA")}</p>
-                        {t.status === "open" && (
-                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(t.id, "in_progress")}>Mark In Progress</Button>
-                        )}
-                        {(t.status === "open" || t.status === "in_progress") && (
-                          <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white" onClick={() => updateTicketStatus(t.id, "resolved")}>Mark Resolved</Button>
-                        )}
-                        {t.status === "resolved" && (
-                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(t.id, "closed")}>Close</Button>
-                        )}
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">District / Region</label>
+                        <Input className="rounded-xl" value={profileForm.district || ""} onChange={e => setProfileForm((p: any) => ({ ...p, district: e.target.value }))} />
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* ── PROFILE ── */}
-          {activeTab === "profile" && (
-            <div className="p-5 lg:p-6 max-w-xl space-y-5">
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 text-sm">Municipality Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Municipality Name</label>
-                    <Input value={profileForm.municipality_name || ""} onChange={e => setProfileForm((p: any) => ({ ...p, municipality_name: e.target.value }))} />
+                {/* Contact details */}
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                      <Phone className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">Contact Details</p>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Province</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      value={profileForm.province || ""} onChange={e => setProfileForm((p: any) => ({ ...p, province: e.target.value }))}>
-                      <option value="">Select province</option>
-                      {SA_PROVINCES.map(pr => <option key={pr}>{pr}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">District / Region</label>
-                    <Input value={profileForm.district || ""} onChange={e => setProfileForm((p: any) => ({ ...p, district: e.target.value }))} />
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                        <User className="h-3 w-3" /> Contact Person
+                      </label>
+                      <Input className="rounded-xl" placeholder="Full name" value={profileForm.contact_person || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_person: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                        <Mail className="h-3 w-3" /> Email Address
+                      </label>
+                      <Input className="rounded-xl" type="email" placeholder="office@municipality.gov.za" value={profileForm.contact_email || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_email: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                        <Phone className="h-3 w-3" /> Phone Number
+                      </label>
+                      <Input className="rounded-xl" placeholder="+27 xx xxx xxxx" value={profileForm.contact_phone || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_phone: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                        <PenLine className="h-3 w-3" /> Notes
+                      </label>
+                      <textarea
+                        className="flex w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm resize-none min-h-[90px] focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Any additional notes about this municipality…"
+                        value={profileForm.notes || ""} onChange={e => setProfileForm((p: any) => ({ ...p, notes: e.target.value }))} />
+                    </div>
                   </div>
                 </div>
+
+                {/* Read-only code section */}
+                <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-2xl p-5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Municipality Code</p>
+                  <p className="text-3xl font-black font-mono text-foreground tracking-widest">{mun?.municipality_code}</p>
+                  <p className="text-xs text-muted-foreground mt-1">This code is permanent and cannot be changed.</p>
+                </div>
+
+                <Button className="w-full gap-2 h-12 text-sm font-semibold rounded-xl" onClick={saveProfile} disabled={savingProfile}>
+                  {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {savingProfile ? "Saving…" : "Save Changes"}
+                </Button>
               </div>
-
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 text-sm">Contact Details</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Contact Person</label>
-                    <Input value={profileForm.contact_person || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_person: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Contact Email</label>
-                    <Input type="email" value={profileForm.contact_email || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_email: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Contact Phone</label>
-                    <Input value={profileForm.contact_phone || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_phone: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Notes</label>
-                    <textarea className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ring"
-                      value={profileForm.notes || ""} onChange={e => setProfileForm((p: any) => ({ ...p, notes: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-
-              <Button className="w-full gap-2" onClick={saveProfile} disabled={savingProfile}>
-                {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Save Changes
-              </Button>
             </div>
           )}
 
