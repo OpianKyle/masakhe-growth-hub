@@ -37,6 +37,7 @@ import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
 import AIChatBot from "@/components/AIChatBot";
+import OnboardingTour from "@/components/OnboardingTour";
 
 type ModuleCode = "web_builder" | "social_biz" | "transactions_ops" | "people_hr";
 
@@ -308,8 +309,11 @@ export default function DashboardPage() {
 
   const sidebarWide = mobileMenuOpen || !collapsed;
 
+  const showOnboarding = new URLSearchParams(location.search).get("onboarding") === "1";
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {showOnboarding && <OnboardingTour />}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/50 md:hidden"

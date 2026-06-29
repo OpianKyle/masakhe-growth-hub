@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
-import React, { useState } from "react";
-import { Check, Loader2, Eye, EyeOff, Building2, Mail } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Check, Loader2, Eye, EyeOff, Building2, Mail, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [referrerName, setReferrerName] = useState<string | null>(null);
   const [franchiseName, setFranchiseName] = useState<string | null>(null);
+  const [municipalityInfo, setMunicipalityInfo] = useState<{ name: string; province: string } | null>(null);
   const { register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -59,6 +60,15 @@ export default function RegisterPage() {
     }
   }, [franchiseCode]);
 
+  useEffect(() => {
+    if (municipalityCode) {
+      fetch(`/api/municipality/check/${encodeURIComponent(municipalityCode)}`)
+        .then(r => r.json())
+        .then(d => { if (d.valid) setMunicipalityInfo({ name: d.name, province: d.province }); })
+        .catch(() => {});
+    }
+  }, [municipalityCode]);
+
   const [form, setForm] = useState({
     firstName: "",
     surname: "",
@@ -100,11 +110,16 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.ok) {
-      navigate(
-        promoCode
-          ? `/dashboard/billing?welcome=1&promo=${encodeURIComponent(promoCode)}`
-          : "/dashboard/billing?welcome=1"
-      );
+      if (municipalityCode) {
+        // Trial already activated by municipality — skip billing, go straight to onboarding
+        navigate(`/dashboard?onboarding=1&municipality=${encodeURIComponent(municipalityCode)}`);
+      } else {
+        navigate(
+          promoCode
+            ? `/dashboard/billing?welcome=1&promo=${encodeURIComponent(promoCode)}`
+            : "/dashboard/billing?welcome=1"
+        );
+      }
     } else {
       toast.error(result.error || "Registration failed");
     }
@@ -208,6 +223,24 @@ export default function RegisterPage() {
                 <div>
                   <p className="text-sm font-semibold text-blue-800">You're signing up via the Masakhe newsletter</p>
                   <p className="text-xs text-blue-600">Welcome! Create your account below to get started.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Municipality banner */}
+            {municipalityInfo && (
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-cyan-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Building2 className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-cyan-900">
+                    Registering under {municipalityInfo.name}
+                  </p>
+                  <p className="text-xs text-cyan-700 mt-0.5 flex items-center gap-1">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    {municipalityInfo.province} · Your 14-day free trial is included — no credit card needed.
+                  </p>
                 </div>
               </div>
             )}
