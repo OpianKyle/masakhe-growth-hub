@@ -42,6 +42,26 @@ export default function MunicipalityRegisterPage() {
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
+  const doJoin = async () => {
+    const joinRes = await fetch("/api/municipality/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        municipality_name: form.municipality_name,
+        province: form.province,
+        district: form.district,
+        contact_person: form.contact_person || form.full_name,
+        contact_email: form.contact_email || form.email,
+        contact_phone: form.contact_phone,
+      }),
+    });
+    if (!joinRes.ok) {
+      const d = await joinRes.json().catch(() => ({}));
+      throw new Error(d.error || "Failed to register municipality");
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.municipality_name || !form.province) {
       toast.error("Municipality name and province are required");
@@ -49,6 +69,7 @@ export default function MunicipalityRegisterPage() {
     }
     setSaving(true);
     try {
+      // Step 1: register new account
       const regRes = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,38 +81,38 @@ export default function MunicipalityRegisterPage() {
           businessData: { businessStatus: "municipality" },
         }),
       });
+
       if (!regRes.ok) {
-        const d = await regRes.json();
-        toast.error(d.error || "Registration failed");
-        setSaving(false);
-        return;
+        const d = await regRes.json().catch(() => ({}));
+        const msg: string = d.error || "";
+
+        // Account already exists — try logging in so we can still call /join
+        if (msg.toLowerCase().includes("already exists")) {
+          const loginRes = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ email: form.email, password: form.password }),
+          });
+          if (!loginRes.ok) {
+            toast.error("An account with this email already exists. Please check your password or sign in separately.");
+            setSaving(false);
+            return;
+          }
+        } else {
+          toast.error(msg || "Registration failed");
+          setSaving(false);
+          return;
+        }
       }
 
-      const joinRes = await fetch("/api/municipality/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          municipality_name: form.municipality_name,
-          province: form.province,
-          district: form.district,
-          contact_person: form.contact_person || form.full_name,
-          contact_email: form.contact_email || form.email,
-          contact_phone: form.contact_phone,
-        }),
-      });
-
-      if (!joinRes.ok) {
-        const d = await joinRes.json();
-        toast.error(d.error || "Failed to register municipality");
-        setSaving(false);
-        return;
-      }
+      // Step 2: create the municipality entry
+      await doJoin();
 
       toast.success("Registration submitted! Taking you to your portal…");
       setTimeout(() => navigate("/municipality"), 1200);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err: any) {
+      toast.error(err?.message || "Something went wrong. Please try again.");
       setSaving(false);
     }
   };

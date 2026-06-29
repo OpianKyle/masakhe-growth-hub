@@ -180,20 +180,26 @@ authRouter.post("/register", async (req, res) => {
     req.session.userId = userId;
     req.session.actingAsOwnerId = null;
     req.session.save(async () => {
-      const user = await queryOne(
-        `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.phone, u.email_verified,
-                bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
-                bp.business_type, bp.years_operating, bp.employee_count, bp.phone as bp_phone, bp.whatsapp,
-                bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
-                bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
-                bp.vat_number, bp.invoice_color, bp.popia_consent,
-                IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
-         FROM users u
-         LEFT JOIN business_profiles bp ON bp.user_id = u.id
-         LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
-         WHERE u.id = ?`,
-        [userId]
-      );
+      // Wrap entire callback so a thrown error never leaves res unsent
+      let user: any = null;
+      try {
+        user = await queryOne(
+          `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.phone, u.email_verified,
+                  bp.business_name, bp.trading_name, bp.business_status, bp.industry_sector,
+                  bp.business_type, bp.years_operating, bp.employee_count, bp.phone as bp_phone, bp.whatsapp,
+                  bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
+                  bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
+                  bp.vat_number, bp.invoice_color, bp.popia_consent,
+                  IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
+           FROM users u
+           LEFT JOIN business_profiles bp ON bp.user_id = u.id
+           LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
+           WHERE u.id = ?`,
+          [userId]
+        );
+      } catch (e: any) {
+        console.error("[Auth] session.save user-fetch error:", e.message);
+      }
 
       const baseUrl = getBaseUrl(req.get("origin") || req.get("referer"));
 
@@ -283,7 +289,11 @@ authRouter.post("/register", async (req, res) => {
         })();
       }
 
-      res.json({ ok: true, user });
+      try {
+        res.json({ ok: true, user });
+      } catch (e: any) {
+        console.error("[Auth] res.json error:", e.message);
+      }
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Registration failed" });
