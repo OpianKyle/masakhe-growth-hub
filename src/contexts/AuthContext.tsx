@@ -41,7 +41,7 @@ interface AuthContextType {
   loading: boolean;
   isImpersonating: boolean;
   originalAdminName: string | null;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean; isFranchise?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean; isFranchise?: boolean; isMunicipality?: boolean }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -103,7 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isReseller = !!data.user.is_reseller;
         const isAdmin = data.user.role === "admin";
         const isFranchise = data.user.role === "franchise";
-        return { ok: true, isReseller, isAdmin, isFranchise };
+        const isMunicipality = data.user.business_status === "municipality";
+        return { ok: true, isReseller, isAdmin, isFranchise, isMunicipality };
       }
       return { ok: false, error: data.error || "Login failed" };
     } catch {

@@ -46,6 +46,9 @@ export default function LoginPage() {
       } else if (result.isFranchise) {
         toast.success("Welcome back!");
         navigate("/franchise", { replace: true });
+      } else if (result.isMunicipality) {
+        toast.success("Welcome back!");
+        navigate("/municipality", { replace: true });
       } else if (result.isReseller) {
         toast.success("Welcome back, Partner!");
         navigate("/partner", { replace: true });
