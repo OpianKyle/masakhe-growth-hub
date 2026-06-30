@@ -24,6 +24,8 @@ dashboardRouter.get("/overview", async (req, res) => {
       websiteCountRow,
       publishedWebsite,
       ledgerCountRow,
+      clientCountRow,
+      employeeCountRow,
       monthlySummary,
       expensesByCategory,
       incomeByCategory,
@@ -41,6 +43,8 @@ dashboardRouter.get("/overview", async (req, res) => {
       queryOne("SELECT COUNT(*) as c FROM websites WHERE owner_id = ?", [userId]),
       queryOne("SELECT slug, status FROM websites WHERE owner_id = ? AND status = 'published' LIMIT 1", [userId]),
       queryOne("SELECT COUNT(*) as c FROM ledger_entries WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM broker_clients WHERE user_id = ?", [userId]),
+      queryOne("SELECT COUNT(*) as c FROM employees WHERE user_id = ?", [userId]),
       queryAll("SELECT LEFT(occurred_at, 7) as month, type, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? GROUP BY month, type ORDER BY month ASC", [userId]),
       queryAll("SELECT category, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? AND type = 'EXPENSE' GROUP BY category ORDER BY total DESC LIMIT 8", [userId]),
       queryAll("SELECT category, SUM(amount_cents) as total FROM ledger_entries WHERE user_id = ? AND type = 'INCOME' GROUP BY category ORDER BY total DESC LIMIT 8", [userId]),
@@ -58,6 +62,8 @@ dashboardRouter.get("/overview", async (req, res) => {
     const totalInvoiceValue = totalInvoiceValueRow?.total || 0;
     const websiteCount = websiteCountRow?.c || 0;
     const ledgerCount = ledgerCountRow?.c || 0;
+    const clientCount = clientCountRow?.c || 0;
+    const employeeCount = employeeCountRow?.c || 0;
 
     const monthlyData: Record<string, { month: string; income: number; expense: number }> = {};
     for (const row of monthlySummary) {
@@ -107,6 +113,8 @@ dashboardRouter.get("/overview", async (req, res) => {
         websiteCount,
         websitePublished: !!publishedWebsite,
         ledgerCount,
+        clientCount,
+        employeeCount,
         socialPosts: socialStats.totalPosts,
         socialConnected: socialStats.connectedAccounts,
       },

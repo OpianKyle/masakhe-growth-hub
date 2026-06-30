@@ -5,7 +5,8 @@ import {
   ArrowUpRight, ArrowDownRight, Wallet, CheckCircle2,
   AlertCircle, FileText, BarChart3, BookOpen, HandCoins,
   Send, Handshake, Phone, Loader2, Star,
-  Users, Package, Banknote, CalendarDays, Plus
+  Users, Package, Banknote, CalendarDays, Plus,
+  Trophy, Zap, Lock, Award, Target, ShieldCheck, Flame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ interface OverviewData {
     websiteCount: number;
     websitePublished: boolean;
     ledgerCount: number;
+    clientCount: number;
+    employeeCount: number;
     socialPosts: number;
     socialConnected: number;
   };
@@ -151,6 +154,60 @@ export default function DashboardOverview() {
   const hasFinanceData = (k?.ledgerCount || 0) > 0;
   const hasInvoices = (k?.totalInvoices || 0) > 0;
   const hasSocial = (k?.socialPosts || 0) > 0;
+
+  // ── Gamification computations ────────────────────────────────────────────
+  const ACHIEVEMENTS = [
+    { key: "profile",       label: "Open for Business", desc: "Set up your business profile",       icon: ShieldCheck, grad: "from-emerald-500 to-teal-500",   unlocked: !!user?.business_name },
+    { key: "verified",      label: "Verified",          desc: "Verify your email address",          icon: CheckCircle2, grad: "from-blue-500 to-indigo-500",   unlocked: !!user?.email_verified },
+    { key: "finance",       label: "Money Tracker",     desc: "Log your first transaction",         icon: TrendingUp,   grad: "from-green-500 to-emerald-500", unlocked: (k?.ledgerCount || 0) >= 1 },
+    { key: "invoice",       label: "Invoice Pioneer",   desc: "Create your first invoice",          icon: Receipt,      grad: "from-blue-500 to-sky-500",      unlocked: (k?.totalInvoices || 0) >= 1 },
+    { key: "website",       label: "Website Live",      desc: "Publish your website",               icon: Globe,        grad: "from-sky-500 to-cyan-500",      unlocked: !!k?.websitePublished },
+    { key: "social_acct",   label: "Connected",         desc: "Connect a social media account",     icon: Smartphone,   grad: "from-violet-500 to-purple-500", unlocked: (k?.socialConnected || 0) >= 1 },
+    { key: "social_post",   label: "Social Buzz",       desc: "Publish your first social post",     icon: Zap,          grad: "from-pink-500 to-rose-500",     unlocked: (k?.socialPosts || 0) >= 1 },
+    { key: "client",        label: "Client Champion",   desc: "Add your first client",              icon: Users,        grad: "from-amber-500 to-orange-500",  unlocked: (k?.clientCount || 0) >= 1 },
+    { key: "employee",      label: "Payroll Ready",     desc: "Add your first employee",            icon: Banknote,     grad: "from-red-500 to-rose-500",      unlocked: (k?.employeeCount || 0) >= 1 },
+    { key: "revenue",       label: "Revenue Maker",     desc: "Record income this month",           icon: Trophy,       grad: "from-yellow-400 to-amber-500",  unlocked: (k?.revenueThisMonth || 0) > 0 },
+  ];
+
+  const CHECKLIST = [
+    { label: "Set up your business profile", done: !!user?.business_name,           path: "/dashboard/settings",  cta: "Complete Profile" },
+    { label: "Verify your email address",    done: !!user?.email_verified,           path: "#",                    cta: "Verify Email" },
+    { label: "Log your first transaction",   done: (k?.ledgerCount || 0) >= 1,       path: "/dashboard/finance",   cta: "Add Finance Entry" },
+    { label: "Create your first invoice",    done: (k?.totalInvoices || 0) >= 1,     path: "/dashboard/invoices",  cta: "Create Invoice" },
+    { label: "Publish your website",         done: !!k?.websitePublished,            path: "/website-builder",     cta: "Build Website" },
+    { label: "Add your first client",        done: (k?.clientCount || 0) >= 1,       path: "/dashboard/clients",   cta: "Add Client" },
+    { label: "Connect a social account",     done: (k?.socialConnected || 0) >= 1,   path: "/dashboard/social",    cta: "Connect Social" },
+  ];
+
+  const unlockedCount = ACHIEVEMENTS.filter(a => a.unlocked).length;
+  const checklistDone = CHECKLIST.filter(c => c.done).length;
+  const checklistPct = Math.round((checklistDone / CHECKLIST.length) * 100);
+
+  const scorePoints = [
+    !!user?.business_name ? 10 : 0,
+    !!user?.email_verified ? 10 : 0,
+    (k?.ledgerCount || 0) >= 1 ? 15 : 0,
+    (k?.totalInvoices || 0) >= 1 ? 15 : 0,
+    k?.websitePublished ? 15 : 0,
+    (k?.socialConnected || 0) >= 1 ? 10 : 0,
+    (k?.socialPosts || 0) >= 1 ? 10 : 0,
+    (k?.clientCount || 0) >= 1 ? 10 : 0,
+    (k?.employeeCount || 0) >= 1 ? 5 : 0,
+  ];
+  const growthScore = scorePoints.reduce((a, b) => a + b, 0);
+
+  const LEVEL =
+    growthScore >= 100 ? { label: "Business Champion", emoji: "🏆", color: "text-amber-600" } :
+    growthScore >= 80  ? { label: "Nearly There",      emoji: "🚀", color: "text-purple-600" } :
+    growthScore >= 60  ? { label: "Growing Strong",    emoji: "💪", color: "text-blue-600"   } :
+    growthScore >= 40  ? { label: "On the Rise",       emoji: "📈", color: "text-emerald-600"} :
+    growthScore >= 20  ? { label: "Building Momentum", emoji: "🔨", color: "text-orange-600" } :
+                         { label: "Just Getting Started", emoji: "🌱", color: "text-teal-600" };
+
+  const RING_R = 46;
+  const RING_CIRC = 2 * Math.PI * RING_R;
+
+  const nudgeItem = CHECKLIST.find(c => !c.done);
 
   const kpiCards = [
     {
@@ -341,6 +398,132 @@ export default function DashboardOverview() {
             </button>
           </motion.div>
         )}
+
+        {/* ── Growth Score Panel ──────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="rounded-2xl border border-gray-100 bg-white dark:bg-gray-900 dark:border-gray-800 shadow-sm overflow-hidden">
+
+          {/* Panel header */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+              <Trophy className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 dark:text-white text-sm">Business Growth Score</h3>
+              <p className="text-xs text-gray-500">Complete milestones to level up your business</p>
+            </div>
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-1 rounded-full">
+              {unlockedCount}/{ACHIEVEMENTS.length} badges
+            </span>
+          </div>
+
+          <div className="p-6 grid lg:grid-cols-[auto_1fr] gap-6">
+            {/* Score ring */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <svg width="140" height="140" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r={RING_R} fill="none" stroke="#f1f5f9" strokeWidth="8" />
+                  <circle
+                    cx="50" cy="50" r={RING_R} fill="none"
+                    stroke="url(#scoreGrad)" strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRC}
+                    strokeDashoffset={RING_CIRC * (1 - growthScore / 100)}
+                    transform="rotate(-90 50 50)"
+                    style={{ transition: "stroke-dashoffset 1s ease" }}
+                  />
+                  <defs>
+                    <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  <text x="50" y="44" textAnchor="middle" className="font-bold" style={{ fontSize: 22, fontWeight: 800, fill: "#111827" }}>{growthScore}</text>
+                  <text x="50" y="57" textAnchor="middle" style={{ fontSize: 8, fill: "#6b7280" }}>out of 100</text>
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className={`text-sm font-bold ${LEVEL.color}`}>{LEVEL.emoji} {LEVEL.label}</p>
+                {growthScore < 100 && (
+                  <p className="text-xs text-gray-400 mt-0.5">{100 - growthScore} pts to Champion</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right column: achievements + checklist */}
+            <div className="space-y-5 min-w-0">
+              {/* Achievement badges */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Achievements</p>
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                  {ACHIEVEMENTS.map(a => (
+                    <div key={a.key} title={a.unlocked ? `✅ ${a.label}` : `🔒 ${a.desc}`}
+                      className={`flex flex-col items-center gap-1 cursor-default transition-all duration-200 ${a.unlocked ? "opacity-100 hover:scale-110" : "opacity-40 grayscale"}`}>
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shadow-sm ${a.unlocked ? `bg-gradient-to-br ${a.grad}` : "bg-gray-200 dark:bg-gray-700"}`}>
+                        {a.unlocked
+                          ? <a.icon className="h-4 w-4 text-white" />
+                          : <Lock className="h-3.5 w-3.5 text-gray-400" />}
+                      </div>
+                      <span className={`text-[9px] font-medium text-center leading-tight ${a.unlocked ? "text-gray-700 dark:text-gray-300" : "text-gray-400"}`}>
+                        {a.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Checklist */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Launch Checklist</p>
+                  <span className="text-xs font-bold text-emerald-600">{checklistDone}/{CHECKLIST.length} done</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-gray-100 mb-3 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700"
+                    style={{ width: `${checklistPct}%` }} />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-1.5">
+                  {CHECKLIST.map(item => (
+                    <div key={item.label} className={`flex items-center gap-2 text-xs rounded-lg px-2.5 py-1.5 transition-colors ${
+                      item.done ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700" : "bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100"
+                    }`}>
+                      {item.done
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        : <div className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 shrink-0" />}
+                      <span className={item.done ? "line-through opacity-60" : ""}>{item.label}</span>
+                      {!item.done && (
+                        <Link to={item.path} className="ml-auto text-[10px] font-semibold text-blue-600 hover:underline whitespace-nowrap shrink-0">{item.cta} →</Link>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Daily nudge footer */}
+          {nudgeItem ? (
+            <div className="border-t border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 px-6 py-3 flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 shrink-0">
+                <Flame className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <p className="text-xs text-blue-800 dark:text-blue-300 flex-1">
+                <span className="font-semibold">Today's Goal:</span> {nudgeItem.label}
+              </p>
+              <Link to={nudgeItem.path}
+                className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 transition-colors whitespace-nowrap">
+                {nudgeItem.cta}
+              </Link>
+            </div>
+          ) : (
+            <div className="border-t border-emerald-100 dark:border-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 px-6 py-3 flex items-center gap-3">
+              <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-emerald-800 dark:text-emerald-300 font-semibold">
+                🏆 You're a Business Champion — all milestones complete!
+              </p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Module status strip */}
         {activeModules.length > 0 && (
