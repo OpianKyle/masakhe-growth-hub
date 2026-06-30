@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import React, { useState, useEffect } from "react";
-import { Check, Loader2, Eye, EyeOff, Building2, Mail, MapPin } from "lucide-react";
+import { Check, Loader2, Eye, EyeOff, Building2, Mail, MapPin, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +74,7 @@ export default function RegisterPage() {
     surname: "",
     email: "",
     cell: "",
+    businessName: "",
     password: "",
     confirmPassword: "",
   });
@@ -86,6 +87,10 @@ export default function RegisterPage() {
 
     if (!form.firstName || !form.surname || !form.email || !form.password) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    if (municipalityCode && !form.businessName.trim()) {
+      toast.error("Please enter your business name");
       return;
     }
     if (form.password.length < 6) {
@@ -105,7 +110,10 @@ export default function RegisterPage() {
       referralCode,
       franchiseCode,
       municipalityCode,
-      businessData: form.cell ? { phone: form.cell } : undefined,
+      businessData: {
+        ...(form.cell ? { phone: form.cell } : {}),
+        ...(form.businessName.trim() ? { businessName: form.businessName.trim() } : {}),
+      },
     });
     setLoading(false);
 
@@ -356,6 +364,28 @@ export default function RegisterPage() {
                   autoComplete="tel"
                 />
               </div>
+
+              {municipalityCode && (
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Business Name <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Input
+                      placeholder="e.g. Thabo's Hair Studio"
+                      className="h-11 pl-9 bg-cyan-50 border-cyan-200 focus:bg-white focus:border-cyan-400"
+                      value={form.businessName}
+                      onChange={e => set("businessName", e.target.value)}
+                      autoComplete="organization"
+                    />
+                  </div>
+                  <p className="text-xs text-cyan-600 mt-1.5 flex items-center gap-1">
+                    <Building2 className="h-3 w-3 shrink-0" />
+                    This is how your business will appear to {municipalityInfo?.name || "your municipality"}.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">Password *</Label>
