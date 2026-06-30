@@ -98,6 +98,7 @@ const adminNavItems = [
   { icon: Handshake,       label: "Partners",        path: "/admin/partners" },
   { icon: Store,           label: "Franchises",      path: "/admin/franchises" },
   { icon: Building2,       label: "Municipalities",  path: "/admin/municipalities" },
+  { icon: UserCheck,       label: "Municipal Clients", path: "/admin/municipal-clients" },
   { icon: FileText,        label: "Tenders",         path: "/admin/tenders" },
   { icon: Globe,           label: "Websites",        path: "/admin/websites" },
   { icon: Send,            label: "Email Campaigns", path: "/admin/drip-campaigns" },
@@ -3274,6 +3275,144 @@ function AdminSettings() {
   );
 }
 
+// ─── Admin Municipal Clients ──────────────────────────────────────────────────
+function AdminMunicipalClients() {
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [munFilter, setMunFilter] = useState("all");
+
+  const loadAll = () => {
+    setLoading(true);
+    fetch("/api/municipality/admin/smmEs", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { setClients(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  const municipalities = Array.from(new Set(clients.map(c => c.municipality_name))).sort();
+
+  const filtered = clients.filter(c => {
+    const q = search.toLowerCase();
+    const biz = (c.profile_business_name || c.business_name || c.full_name || "").toLowerCase();
+    const matchSearch = !q || biz.includes(q) || (c.email || "").toLowerCase().includes(q) || (c.municipality_name || "").toLowerCase().includes(q);
+    const matchMun = munFilter === "all" || c.municipality_name === munFilter;
+    return matchSearch && matchMun;
+  });
+
+  const STATUS_STYLES: Record<string, string> = {
+    active:    "bg-green-100 text-green-700",
+    pending:   "bg-yellow-100 text-yellow-700",
+    suspended: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-heading">Municipal Clients</h2>
+        <p className="text-muted-foreground text-sm">All SMMEs registered through a municipality link, grouped with their municipality.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { label: "Total Municipal Clients", value: clients.length,        icon: Users,      color: "bg-blue-500/10 text-blue-600" },
+          { label: "Municipalities",           value: municipalities.length, icon: Building2,  color: "bg-purple-500/10 text-purple-600" },
+          { label: "Active Clients",           value: clients.filter(c => c.status === "active").length, icon: CheckCircle2, color: "bg-green-500/10 text-green-600" },
+        ].map(card => (
+          <div key={card.label} className="rounded-xl border bg-card p-4 shadow-sm">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.color}`}>
+              <card.icon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{card.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{card.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by business, email or municipality…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <select
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          value={munFilter} onChange={e => setMunFilter(e.target.value)}
+        >
+          <option value="all">All Municipalities</option>
+          {municipalities.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <Button variant="outline" size="sm" onClick={loadAll}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading municipal clients…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border bg-card p-12 text-center">
+          <UserCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="font-semibold text-foreground mb-1">No municipal clients found</p>
+          <p className="text-sm text-muted-foreground">Clients who register via a municipality link will appear here.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Business</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Account Holder</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Municipality</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Province</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Registered</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map(c => {
+                  const bizName = c.profile_business_name || c.business_name || "—";
+                  return (
+                    <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-foreground">{bizName}</div>
+                        {c.business_type && <div className="text-xs text-muted-foreground">{c.business_type}</div>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-foreground">{c.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{c.email}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-foreground">{c.municipality_name}</div>
+                        <div className="text-xs font-mono text-muted-foreground">{c.municipality_code}</div>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{c.province || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[c.status] || "bg-gray-100 text-gray-700"}`}>
+                          {c.status || "active"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {c.registered_at ? new Date(c.registered_at).toLocaleDateString("en-ZA") : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Admin Municipalities ────────────────────────────────────────────────────
 function AdminMunicipalities() {
   const [muns, setMuns] = useState<any[]>([]);
@@ -3575,6 +3714,7 @@ export default function AdminDashboard() {
           <Route path="partners" element={<AdminPartners />} />
           <Route path="franchises" element={<AdminFranchises />} />
           <Route path="municipalities" element={<AdminMunicipalities />} />
+          <Route path="municipal-clients" element={<AdminMunicipalClients />} />
           <Route path="tenders" element={<AdminTenders />} />
           <Route path="websites" element={<WebsiteList />} />
           <Route path="drip-campaigns" element={<AdminDripCampaigns />} />

@@ -296,6 +296,26 @@ municipalityRouter.get("/admin/list", requireAuth, requireAdmin, async (req, res
   }
 });
 
+municipalityRouter.get("/admin/smmEs", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT ms.id, ms.smme_user_id, ms.business_name, ms.sector, ms.status, ms.registered_at,
+              u.full_name, u.email,
+              bp.business_name as profile_business_name, bp.business_type,
+              m.municipality_name, m.province, m.municipality_code
+       FROM municipality_smmEs ms
+       JOIN users u ON u.id = ms.smme_user_id
+       JOIN municipalities m ON m.id = ms.municipality_id
+       LEFT JOIN business_profiles bp ON bp.user_id = ms.smme_user_id
+       ORDER BY ms.registered_at DESC`,
+      []
+    );
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 municipalityRouter.patch("/admin/:id/status", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;

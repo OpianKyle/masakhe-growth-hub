@@ -1168,7 +1168,7 @@ export async function runMigrations() {
         ('web_builder',       'Web Builder',                    29900, 'ZAR', 'MONTHLY', 2),
         ('social_biz',        'Social Media & Biz Connect',     34900, 'ZAR', 'MONTHLY', 4),
         ('transactions_ops',  'Transactions & Operations',      79900, 'ZAR', 'MONTHLY', 4),
-        ('people_hr',         'People & HR',                    49900, 'ZAR', 'MONTHLY', 3),
+        ('people_hr',         'Human Capital',                  49900, 'ZAR', 'MONTHLY', 3),
         ('all_modules',       'Complete Suite',                129900, 'ZAR', 'MONTHLY', 10)
     `);
 

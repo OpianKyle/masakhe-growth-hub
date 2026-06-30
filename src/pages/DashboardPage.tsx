@@ -46,7 +46,7 @@ const MODULE_NAME: Record<ModuleCode, string> = {
   web_builder:      "Web Builder",
   social_biz:       "Social Media & Biz Connect",
   transactions_ops: "Transactions & Operations",
-  people_hr:        "People & HR",
+  people_hr:        "Human Capital",
 };
 
 const MODULE_BADGE: Record<ModuleCode, string> = {
@@ -136,7 +136,7 @@ const baseNavItems: NavItem[] = [
   },
   {
     icon: Banknote,
-    label: "People & HR",
+    label: "Human Capital",
     groupId: "hr",
     requiresModule: "people_hr",
     perms: ["payroll", "leave"],

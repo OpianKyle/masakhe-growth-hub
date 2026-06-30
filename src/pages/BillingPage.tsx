@@ -51,7 +51,7 @@ const MODULES = [
   },
   {
     code: "people_hr",
-    name: "People & HR",
+    name: "Human Capital",
     price: 49900,
     maxUsers: 3,
     bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",

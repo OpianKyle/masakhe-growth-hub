@@ -144,7 +144,7 @@ export default function DashboardOverview() {
     { code: "web_builder", label: "Web Builder", color: "from-sky-500 to-emerald-500", bg: "from-sky-50 to-emerald-50 dark:from-sky-950/30 dark:to-emerald-950/30", border: "border-sky-200 dark:border-sky-800" },
     { code: "social_biz", label: "Social & Biz", color: "from-violet-500 to-fuchsia-500", bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30", border: "border-violet-200 dark:border-violet-800" },
     { code: "transactions_ops", label: "Transactions", color: "from-emerald-500 to-teal-500", bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30", border: "border-emerald-200 dark:border-emerald-800" },
-    { code: "people_hr", label: "People & HR", color: "from-amber-500 to-orange-500", bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200 dark:border-amber-800" },
+    { code: "people_hr", label: "Human Capital", color: "from-amber-500 to-orange-500", bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200 dark:border-amber-800" },
   ];
 
   const k = data?.kpis;

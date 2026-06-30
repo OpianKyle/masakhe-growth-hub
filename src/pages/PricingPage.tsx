@@ -78,7 +78,7 @@ const MODULES = [
   },
   {
     code: "people_hr",
-    name: "People & HR",
+    name: "Human Capital",
     price: "R499",
     priceSub: "/month",
     maxUsers: 3,
