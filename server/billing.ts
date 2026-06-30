@@ -340,12 +340,15 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
     
-    // Admin users always have pro access
+    const ALL_MODULES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
+
+    // Admin users always have full access to all modules
     if (user?.role === "admin") {
-      return res.json({ active: true, status: "ACTIVE", plan: "pro" });
+      return res.json({ active: true, status: "ACTIVE", plan: "all_modules", modules: ALL_MODULES, maxUsers: 10 });
     }
+    // Exempt users (free access granted by super admin) get full access to all modules
     if (user?.subscription_exempt) {
-      return res.json({ active: true, status: "EXEMPT", plan: "pro" });
+      return res.json({ active: true, status: "EXEMPT", plan: "all_modules", modules: ALL_MODULES, maxUsers: 10 });
     }
     
     const workspace = await queryOne(
