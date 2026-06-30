@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 function SectionCard({
   number,
@@ -16,29 +16,34 @@ function SectionCard({
   notSetupList: string[];
 }) {
   return (
-    <div className="rounded-2xl border-2 border-teal-300 bg-white overflow-hidden shadow-sm">
-      <div className="flex items-center gap-3 px-6 py-4 bg-white border-b border-teal-100">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-white text-sm font-bold shrink-0">
+    <div className="rounded-xl border-2 border-teal-400 bg-white overflow-hidden">
+      {/* Card header */}
+      <div className="flex items-center gap-3 px-5 py-4 bg-white">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-white text-sm font-black shrink-0">
           {number}
         </div>
-        <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
+        <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide">{title}</h2>
       </div>
 
-      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-teal-100">
+      {/* Divider */}
+      <div className="border-t border-teal-200" />
+
+      {/* Two columns */}
+      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-teal-200">
         {/* Left — already have */}
-        <div className="p-6 space-y-4">
-          <h3 className="text-sm font-bold text-teal-700">
-            If you already have {title.split(" ")[0]} set up, invite us to:
-          </h3>
-          <div className="inline-block rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5">
-            <span className="text-sm font-mono font-medium text-gray-800">{inviteEmail}</span>
+        <div className="p-5 space-y-3">
+          <p className="text-sm font-bold text-teal-700 leading-snug">
+            If you already have {title.split(" ")[0]} set up,<br />invite us to:
+          </p>
+          <div className="inline-block rounded border border-gray-300 bg-white px-3 py-2 text-sm font-mono text-gray-800">
+            {inviteEmail}
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-800 mb-2">Access needed:</p>
-            <ul className="space-y-1.5">
+            <p className="text-sm font-bold text-gray-900 mb-1.5">Access needed:</p>
+            <ul className="space-y-1">
               {accessList.map(item => (
                 <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
+                  <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -47,14 +52,14 @@ function SectionCard({
         </div>
 
         {/* Right — not set up yet */}
-        <div className="p-6 space-y-4">
-          <h3 className="text-sm font-bold text-teal-700">
-            If you do not have these set up yet, we will need:
-          </h3>
-          <ul className="space-y-1.5">
+        <div className="p-5 space-y-3">
+          <p className="text-sm font-bold text-teal-700 leading-snug">
+            If you do not have these set up<br />yet, we will need:
+          </p>
+          <ul className="space-y-1">
             {notSetupList.map(item => (
               <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
+                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
                 {item}
               </li>
             ))}
@@ -67,50 +72,43 @@ function SectionCard({
 
 export default function AdRequirementsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-foreground">
+    <div className="min-h-screen bg-white text-foreground">
       <Helmet>
         <title>Google & Meta Access Requirements | Masakhe</title>
         <meta name="description" content="What Masakhe needs to get your Google and Meta advertising set up correctly." />
       </Helmet>
 
-      {/* Header */}
-      <header className="border-b border-border bg-white/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      {/* Minimal header */}
+      <header className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
-            <span className="text-lg font-bold font-heading text-gray-900">Masakhe</span>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-7 w-7 object-contain" />
+            <span className="text-base font-bold text-gray-900">Masakhe</span>
           </Link>
-          <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/" className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors">
             <ChevronLeft className="h-4 w-4" />
             Back to Home
           </Link>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="border-b border-gray-200 bg-white py-12">
-        <div className="container mx-auto px-4 max-w-4xl text-center space-y-3">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <div className="h-px w-12 bg-teal-300" />
-            <div className="h-2 w-2 rounded-full bg-teal-400" />
-            <div className="h-px w-12 bg-teal-300" />
+      {/* Document body */}
+      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+
+        {/* Page title */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-teal-500 mb-1">
+            <div className="h-px w-10 bg-teal-400" />
+            <div className="h-1.5 w-1.5 rounded-full bg-teal-400" />
+            <div className="h-px w-10 bg-teal-400" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-black text-gray-900 uppercase tracking-tight leading-tight">
             Google &amp; Meta Access Requirements
           </h1>
-          <p className="text-gray-500 text-base max-w-xl mx-auto">
+          <p className="text-gray-500 text-sm">
             What Masakhe needs to get your advertising set up correctly
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="h-px w-12 bg-teal-300" />
-            <div className="h-2 w-2 rounded-full bg-teal-400" />
-            <div className="h-px w-12 bg-teal-300" />
-          </div>
         </div>
-      </section>
-
-      {/* Main content */}
-      <section className="container mx-auto px-4 max-w-4xl py-10 space-y-8">
 
         {/* Section 1 — Google */}
         <SectionCard
@@ -158,55 +156,20 @@ export default function AdRequirementsPage() {
         />
 
         {/* Important notice */}
-        <div className="flex items-start gap-4 rounded-2xl border-2 border-teal-200 bg-teal-50 px-6 py-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 shrink-0 mt-0.5">
-            <Shield className="h-6 w-6 text-teal-600" />
+        <div className="flex items-center gap-4 rounded-xl border-2 border-teal-300 bg-white px-5 py-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-teal-400 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
-          <div>
-            <p className="text-gray-800 text-sm leading-relaxed">
-              <span className="font-bold">Important: </span>
-              Please do not send passwords.
-            </p>
-            <p className="text-gray-600 text-sm mt-0.5">
-              Your business remains the owner of all accounts.
-            </p>
-          </div>
+          <p className="text-sm text-gray-700">
+            <span className="font-bold">Important:</span>{" "}
+            Please do not send passwords.{" "}
+            <span className="text-gray-500">Your business remains the owner of all accounts.</span>
+          </p>
         </div>
 
-        {/* Pre-call checklist */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="font-bold text-gray-900 mb-4 text-base">
-            Before contacting us, make sure you have:
-          </h3>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              "Admin access to your Google or Meta account",
-              "Your business website URL ready",
-              "Your business email address",
-              "A clear idea of your target audience",
-              "Your monthly advertising budget in mind",
-              "A list of products or services to advertise",
-            ].map(item => (
-              <div key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
-                <CheckCircle2 className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white py-6 mt-4">
-        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
-          <span>© {new Date().getFullYear()} Masakhe. All rights reserved.</span>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</Link>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }
