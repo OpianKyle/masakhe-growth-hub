@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet-async";
-import { Shield, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Shield, ChevronLeft, CheckCircle2 } from "lucide-react";
 
 function SectionCard({
   number,
@@ -16,7 +17,6 @@ function SectionCard({
 }) {
   return (
     <div className="rounded-2xl border-2 border-teal-300 bg-white overflow-hidden shadow-sm">
-      {/* Card header */}
       <div className="flex items-center gap-3 px-6 py-4 bg-white border-b border-teal-100">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-white text-sm font-bold shrink-0">
           {number}
@@ -24,7 +24,6 @@ function SectionCard({
         <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
       </div>
 
-      {/* Two columns */}
       <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-teal-100">
         {/* Left — already have */}
         <div className="p-6 space-y-4">
@@ -68,32 +67,50 @@ function SectionCard({
 
 export default function AdRequirementsPage() {
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 text-foreground">
       <Helmet>
         <title>Google & Meta Access Requirements | Masakhe</title>
+        <meta name="description" content="What Masakhe needs to get your Google and Meta advertising set up correctly." />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+      {/* Header */}
+      <header className="border-b border-border bg-white/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-8 w-8 object-contain" />
+            <span className="text-lg font-bold font-heading text-gray-900">Masakhe</span>
+          </Link>
+          <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </div>
+      </header>
 
-        {/* Page header */}
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <div className="h-px flex-1 bg-teal-300 max-w-[60px]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-teal-400" />
-            <div className="h-px flex-1 bg-teal-300 max-w-[60px]" />
+      {/* Hero */}
+      <section className="border-b border-gray-200 bg-white py-12">
+        <div className="container mx-auto px-4 max-w-4xl text-center space-y-3">
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <div className="h-px w-12 bg-teal-300" />
+            <div className="h-2 w-2 rounded-full bg-teal-400" />
+            <div className="h-px w-12 bg-teal-300" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
             Google &amp; Meta Access Requirements
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-base">
+          <p className="text-gray-500 text-base max-w-xl mx-auto">
             What Masakhe needs to get your advertising set up correctly
           </p>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <div className="h-px flex-1 bg-teal-300 max-w-[60px]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-teal-400" />
-            <div className="h-px flex-1 bg-teal-300 max-w-[60px]" />
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-teal-300" />
+            <div className="h-2 w-2 rounded-full bg-teal-400" />
+            <div className="h-px w-12 bg-teal-300" />
           </div>
         </div>
+      </section>
+
+      {/* Main content */}
+      <section className="container mx-auto px-4 max-w-4xl py-10 space-y-8">
 
         {/* Section 1 — Google */}
         <SectionCard
@@ -141,25 +158,25 @@ export default function AdRequirementsPage() {
         />
 
         {/* Important notice */}
-        <div className="flex items-start gap-4 rounded-2xl border-2 border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-800 px-6 py-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-900 shrink-0 mt-0.5">
-            <Shield className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+        <div className="flex items-start gap-4 rounded-2xl border-2 border-teal-200 bg-teal-50 px-6 py-5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 shrink-0 mt-0.5">
+            <Shield className="h-6 w-6 text-teal-600" />
           </div>
           <div>
-            <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
+            <p className="text-gray-800 text-sm leading-relaxed">
               <span className="font-bold">Important: </span>
               Please do not send passwords.
             </p>
-            <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
+            <p className="text-gray-600 text-sm mt-0.5">
               Your business remains the owner of all accounts.
             </p>
           </div>
         </div>
 
-        {/* Checklist helper */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base">
-            Before contacting us, check you have:
+        {/* Pre-call checklist */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 text-base">
+            Before contacting us, make sure you have:
           </h3>
           <div className="grid sm:grid-cols-2 gap-3">
             {[
@@ -168,9 +185,9 @@ export default function AdRequirementsPage() {
               "Your business email address",
               "A clear idea of your target audience",
               "Your monthly advertising budget in mind",
-              "A list of products/services to advertise",
+              "A list of products or services to advertise",
             ].map(item => (
-              <div key={item} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
+              <div key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                 <CheckCircle2 className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" />
                 {item}
               </div>
@@ -178,7 +195,18 @@ export default function AdRequirementsPage() {
           </div>
         </div>
 
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white py-6 mt-4">
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
+          <span>© {new Date().getFullYear()} Masakhe. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
