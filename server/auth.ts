@@ -111,9 +111,9 @@ authRouter.post("/register", async (req, res) => {
       const profileId = randomUUID();
       await execute(
         `INSERT INTO business_profiles (id, user_id, business_name, trading_name, business_status, business_type, industry_sector,
-          years_operating, employee_count, sa_id, cipc_number, phone, whatsapp, email, physical_address,
+          years_operating, employee_count, sa_id, cipc_number, phone, whatsapp, work_phone, email, physical_address,
           bank_name, account_type, account_number, branch_code, popia_consent, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           profileId, userId,
           businessData.businessName || null,
@@ -127,6 +127,7 @@ authRouter.post("/register", async (req, res) => {
           businessData.cipcNumber || null,
           businessData.phone || null,
           businessData.whatsapp || null,
+          businessData.workPhone || null,
           businessData.email || email,
           businessData.physicalAddress || null,
           businessData.bankName || null,

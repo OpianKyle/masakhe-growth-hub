@@ -69,12 +69,13 @@ export default function RegisterPage() {
     }
   }, [municipalityCode]);
 
-  const [whatsappSameAsContact, setWhatsappSameAsContact] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     surname: "",
     email: "",
-    cell: "",
+    workNumber: "",
+    cellNumber: "",
+    whatsappNumber: "",
     businessName: "",
     password: "",
     confirmPassword: "",
@@ -86,7 +87,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.surname || !form.email || !form.cell || !form.businessName.trim() || !form.password) {
+    if (!form.firstName || !form.surname || !form.email || !form.cellNumber || !form.whatsappNumber || !form.businessName.trim() || !form.password) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -108,9 +109,10 @@ export default function RegisterPage() {
       franchiseCode,
       municipalityCode,
       businessData: {
-        phone: form.cell,
-        whatsapp: whatsappSameAsContact ? form.cell : undefined,
+        phone: form.cellNumber,
+        whatsapp: form.whatsappNumber,
         businessName: form.businessName.trim(),
+        workPhone: form.workNumber || undefined,
       },
     });
     setLoading(false);
@@ -348,32 +350,52 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Contact Number *</Label>
+                <Label className="text-sm font-medium text-slate-700">Work Number</Label>
+                <div className="relative mt-1.5">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <Input
+                    type="tel"
+                    placeholder="+27 11 234 5678"
+                    className="h-11 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
+                    value={form.workNumber}
+                    onChange={e => set("workNumber", e.target.value)}
+                    autoComplete="tel-national"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Cell Number *</Label>
                 <div className="relative mt-1.5">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   <Input
                     type="tel"
                     placeholder="+27 81 234 5678"
                     className="h-11 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
-                    value={form.cell}
-                    onChange={e => set("cell", e.target.value)}
+                    value={form.cellNumber}
+                    onChange={e => set("cellNumber", e.target.value)}
                     autoComplete="tel"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 py-1">
-                <input
-                  id="whatsapp-same"
-                  type="checkbox"
-                  checked={whatsappSameAsContact}
-                  onChange={e => setWhatsappSameAsContact(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer"
-                />
-                <label htmlFor="whatsapp-same" className="text-sm text-slate-600 cursor-pointer select-none flex items-center gap-1.5">
-                  <span>My WhatsApp number is the same as my contact number</span>
-                </label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">WhatsApp Number *</Label>
+                <div className="relative mt-1.5">
+                  <svg viewBox="0 0 24 24" fill="none" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: "#25D366" }}>
+                    <path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.532 5.847L.057 23.882a.5.5 0 0 0 .61.61l6.118-1.503A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.893 9.893 0 0 1-5.044-1.378l-.361-.214-3.737.917.951-3.646-.235-.374A9.867 9.867 0 0 1 2.106 12C2.106 6.533 6.533 2.106 12 2.106S21.894 6.533 21.894 12 17.467 21.894 12 21.894z"/>
+                  </svg>
+                  <Input
+                    type="tel"
+                    placeholder="+27 81 234 5678"
+                    className="h-11 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
+                    value={form.whatsappNumber}
+                    onChange={e => set("whatsappNumber", e.target.value)}
+                    autoComplete="tel"
+                    required
+                  />
+                </div>
               </div>
 
               <div>

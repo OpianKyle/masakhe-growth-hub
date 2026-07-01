@@ -891,6 +891,7 @@ export async function runMigrations() {
     await addColumnIfMissing("invoices", "template_config", "TEXT NULL");
     await addColumnIfMissing("business_profiles", "account_name", "VARCHAR(255) NULL");
     await addColumnIfMissing("business_profiles", "registration_number", "VARCHAR(100) NULL");
+    await addColumnIfMissing("business_profiles", "work_phone", "VARCHAR(30) NULL");
 
     await addColumnIfMissing("social_accounts", "facebook_user_id", "VARCHAR(50) NULL");
 
