@@ -187,9 +187,9 @@ function FranchiseClients() {
   };
 
   const grantTrial = async (c: any) => {
-    if (!confirm(`Grant ${c.full_name} a 14-day Premium trial?`)) return;
+    if (!confirm(`Grant ${c.full_name} a 7-day Premium trial?`)) return;
     if (await apiCall(c.id, "POST", "/trial")) {
-      toast.success(`14-day Premium trial granted to ${c.full_name}`);
+      toast.success(`7-day Premium trial granted to ${c.full_name}`);
       load();
     }
   };

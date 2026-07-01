@@ -415,13 +415,13 @@ function ClientList() {
   };
 
   const grantTrial = async (id: string, name: string) => {
-    if (!confirm(`Grant ${name} a 14-day Premium trial?`)) return;
+    if (!confirm(`Grant ${name} a 7-day Premium trial?`)) return;
     const res = await fetch(`/api/admin/clients/${id}/trial`, {
       method: "POST",
       credentials: "include",
     });
     if (res.ok) {
-      toast.success(`14-day Premium trial granted to ${name}`);
+      toast.success(`7-day Premium trial granted to ${name}`);
       loadClients();
     } else {
       const data = await res.json();
@@ -884,7 +884,7 @@ function ClientList() {
                         className="h-7 px-2 text-[10px] gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
                         onClick={() => grantTrial(client.id, client.full_name)}
                       >
-                        <Clock className="h-3 w-3" /> 14-day Trial
+                        <Clock className="h-3 w-3" /> 7-day Trial
                       </Button>
                       <Button
                         variant="outline"

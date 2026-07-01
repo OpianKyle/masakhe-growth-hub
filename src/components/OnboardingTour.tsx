@@ -167,7 +167,7 @@ export default function OnboardingTour() {
                   </p>
                 ) : (
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Your <strong>14-day free trial</strong> is now active. Let's take a quick tour of everything Masakhe has to offer your business.
+                    Your <strong>7-day free trial</strong> is now active. Let's take a quick tour of everything Masakhe has to offer your business.
                   </p>
                 )}
               </div>

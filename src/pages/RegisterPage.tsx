@@ -192,7 +192,7 @@ export default function RegisterPage() {
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
             <p className="text-white/80 text-sm leading-relaxed mb-2">
-              Start with a <span className="text-white font-semibold">14-day free trial</span> — no credit card required.
+              Start with a <span className="text-white font-semibold">7-day free trial</span> — no credit card required.
             </p>
             <p className="text-white/45 text-xs">Plans from R599/month after your trial.</p>
           </div>
@@ -290,7 +290,7 @@ export default function RegisterPage() {
 
             <div className="mb-7">
               <h1 className="text-2xl font-bold text-slate-900 font-heading">Create your account</h1>
-              <p className="text-slate-500 mt-1.5 text-sm">Free 14-day trial — no credit card required.</p>
+              <p className="text-slate-500 mt-1.5 text-sm">Free 7-day trial — no credit card required.</p>
             </div>
 
 
