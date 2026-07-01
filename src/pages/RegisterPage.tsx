@@ -87,7 +87,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.surname || !form.email || !form.cellNumber || !form.whatsappNumber || !form.businessName.trim() || !form.password) {
+    if (!form.firstName || !form.surname || !form.email || !form.workNumber || !form.cellNumber || !form.whatsappNumber || !form.businessName.trim() || !form.password) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -350,7 +350,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Work Number</Label>
+                <Label className="text-sm font-medium text-slate-700">Work Number *</Label>
                 <div className="relative mt-1.5">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   <Input
@@ -360,6 +360,7 @@ export default function RegisterPage() {
                     value={form.workNumber}
                     onChange={e => set("workNumber", e.target.value)}
                     autoComplete="tel-national"
+                    required
                   />
                 </div>
               </div>
