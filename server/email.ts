@@ -723,7 +723,7 @@ export async function sendAdminSignupNotification(
   const t = await getTransporter();
   if (!t) return;
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || "admin@masakhegroup.co.za";
-  const adminRecipients = [adminEmail, "lance.heynes@gmail.com"].join(", ");
+  const adminRecipients = [adminEmail, "lance.heynes@gmail.com", "lanceh@masakhegroup.co.za", "jarvis@masakhegroup.co.za"].join(", ");
   const appUrl = baseUrl || getBaseUrl();
   const signupTime = new Date().toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" });
 
