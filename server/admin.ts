@@ -860,10 +860,14 @@ adminRouter.delete("/clients/:id", async (req, res) => {
     await execute("DELETE FROM websites WHERE owner_id = ?", [userId]);
     await execute("DELETE FROM business_profiles WHERE user_id = ?", [userId]);
 
-    // 12. Franchises owned by this user (FK owner_user_id → users)
+    // 12. franchise_clients — must go before franchises and before users
+    await execute("DELETE FROM franchise_clients WHERE client_user_id = ?", [userId]);
+    await execute("DELETE FROM franchise_clients WHERE franchise_id IN (SELECT id FROM franchises WHERE owner_user_id = ?)", [userId]);
+
+    // 13. Franchises owned by this user (FK owner_user_id → users)
     await execute("DELETE FROM franchises WHERE owner_user_id = ?", [userId]);
 
-    // 13. Finally, delete the user
+    // 14. Finally, delete the user
     await execute("DELETE FROM users WHERE id = ?", [userId]);
 
     res.json({ ok: true });
