@@ -792,6 +792,11 @@ function ClientList() {
                       📞 {client.phone}
                     </a>
                   )}
+                  {client.whatsapp && (
+                    <a href={`https://wa.me/${client.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 hover:underline flex items-center gap-0.5 mt-0.5">
+                      💬 {client.whatsapp}
+                    </a>
+                  )}
                 </td>
                 <td className="p-4">{client.business_name || <span className="text-muted-foreground italic">Not set</span>}</td>
                 <td className="p-4">

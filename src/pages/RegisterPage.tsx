@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import React, { useState, useEffect } from "react";
-import { Check, Loader2, Eye, EyeOff, Building2, Mail, MapPin, Briefcase } from "lucide-react";
+import { Check, Loader2, Eye, EyeOff, Building2, Mail, MapPin, Briefcase, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +69,7 @@ export default function RegisterPage() {
     }
   }, [municipalityCode]);
 
+  const [whatsappSameAsContact, setWhatsappSameAsContact] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     surname: "",
@@ -85,12 +86,8 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.surname || !form.email || !form.password) {
+    if (!form.firstName || !form.surname || !form.email || !form.cell || !form.businessName.trim() || !form.password) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-    if (municipalityCode && !form.businessName.trim()) {
-      toast.error("Please enter your business name");
       return;
     }
     if (form.password.length < 6) {
@@ -111,8 +108,9 @@ export default function RegisterPage() {
       franchiseCode,
       municipalityCode,
       businessData: {
-        ...(form.cell ? { phone: form.cell } : {}),
-        ...(form.businessName.trim() ? { businessName: form.businessName.trim() } : {}),
+        phone: form.cell,
+        whatsapp: whatsappSameAsContact ? form.cell : undefined,
+        businessName: form.businessName.trim(),
       },
     });
     setLoading(false);
@@ -335,38 +333,48 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Cell Number</Label>
-                <Input
-                  type="tel"
-                  placeholder="+27 81 234 5678"
-                  className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white"
-                  value={form.cell}
-                  onChange={e => set("cell", e.target.value)}
-                  autoComplete="tel"
-                />
+                <Label className="text-sm font-medium text-slate-700">Business Name *</Label>
+                <div className="relative mt-1.5">
+                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <Input
+                    placeholder="e.g. Thabo's Hair Studio"
+                    className="h-11 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
+                    value={form.businessName}
+                    onChange={e => set("businessName", e.target.value)}
+                    autoComplete="organization"
+                    required
+                  />
+                </div>
               </div>
 
-              {municipalityCode && (
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">
-                    Business Name <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative mt-1.5">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                    <Input
-                      placeholder="e.g. Thabo's Hair Studio"
-                      className="h-11 pl-9 bg-cyan-50 border-cyan-200 focus:bg-white focus:border-cyan-400"
-                      value={form.businessName}
-                      onChange={e => set("businessName", e.target.value)}
-                      autoComplete="organization"
-                    />
-                  </div>
-                  <p className="text-xs text-cyan-600 mt-1.5 flex items-center gap-1">
-                    <Building2 className="h-3 w-3 shrink-0" />
-                    This is how your business will appear to {municipalityInfo?.name || "your municipality"}.
-                  </p>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Contact Number *</Label>
+                <div className="relative mt-1.5">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <Input
+                    type="tel"
+                    placeholder="+27 81 234 5678"
+                    className="h-11 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
+                    value={form.cell}
+                    onChange={e => set("cell", e.target.value)}
+                    autoComplete="tel"
+                    required
+                  />
                 </div>
-              )}
+              </div>
+
+              <div className="flex items-center gap-2.5 py-1">
+                <input
+                  id="whatsapp-same"
+                  type="checkbox"
+                  checked={whatsappSameAsContact}
+                  onChange={e => setWhatsappSameAsContact(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                />
+                <label htmlFor="whatsapp-same" className="text-sm text-slate-600 cursor-pointer select-none flex items-center gap-1.5">
+                  <span>My WhatsApp number is the same as my contact number</span>
+                </label>
+              </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">Password *</Label>
