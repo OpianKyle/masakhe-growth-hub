@@ -381,6 +381,7 @@ clientsRouter.delete("/:id", requireAuth, async (req, res) => {
     const userId = getDataOwnerId(req);
     const existing = await queryOne("SELECT id FROM broker_clients WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Client not found" });
+    await execute("DELETE FROM broker_client_documents WHERE client_id = ?", [req.params.id]);
     await execute("DELETE FROM broker_clients WHERE id = ?", [req.params.id]);
     res.json({ ok: true });
   } catch (err: any) {
