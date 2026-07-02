@@ -30,7 +30,6 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MetaDeletionStatusPage from "./pages/MetaDeletionStatusPage";
-import AdRequirementsPage from "./pages/AdRequirementsPage";
 import { useEffect, useState } from "react";
 import { MasakheLoader } from "@/components/MasakheLoader";
 
@@ -122,7 +121,6 @@ const App = () => (
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
-              <Route path="/ad-requirements" element={<AdRequirementsPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />

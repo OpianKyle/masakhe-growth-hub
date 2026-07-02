@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package, Briefcase, Target
+  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package, Briefcase
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -36,7 +36,6 @@ import CampaignsPage from "./CampaignsPage";
 import AutomationsPage from "./AutomationsPage";
 import WhatsAppSupportPage from "./WhatsAppSupportPage";
 import MunicipalitySupportPage from "./MunicipalitySupportPage";
-import AdRequirementsPage from "./AdRequirementsPage";
 import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
@@ -114,7 +113,6 @@ const baseNavItems: NavItem[] = [
   { icon: Search, label: "Domain Search", path: "/dashboard/domain-search", requiresModule: "web_builder", perm: "website" },
   { icon: Smartphone, label: "Social Media", path: "/social-hub", requiresModule: "social_biz", perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresModule: "social_biz", perm: "biz_connect" },
-  { icon: Target, label: "Ad Requirements", path: "/dashboard/ad-requirements", requiresModule: "social_biz", perm: "social" },
   {
     icon: Wallet,
     label: "Transactions",
@@ -783,7 +781,6 @@ export default function DashboardPage() {
             <Route path="leads" element={<LeadsPage />} />
             <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="help" element={<HelpCentrePage />} />
-            <Route path="ad-requirements" element={<AdRequirementsPage />} />
             <Route path="municipality-support" element={<MunicipalitySupportPage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
             <Route path="billing" element={<BillingPage />} />
