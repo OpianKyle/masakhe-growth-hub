@@ -345,6 +345,7 @@ export async function runMigrations() {
     await addColumnIfMissing("billing_invoices", "original_amount_cents", "INT NULL");
     await addColumnIfMissing("users", "first_month_promo_used", "TINYINT(1) NOT NULL DEFAULT 0");
     await addColumnIfMissing("users", "first_month_promo_code", "VARCHAR(50) NULL");
+    await addColumnIfMissing("users", "referred_by", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "puid", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "profile_token", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "card_token", "VARCHAR(255) NULL");
