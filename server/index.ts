@@ -43,6 +43,7 @@ import { helpRouter } from "./helpcentre";
 import { startDripScheduler } from "./drip-scheduler";
 import { startCampaignScheduler } from "./campaigns";
 import { subscriptionApiRouter } from "./subscription-api";
+import { domainsRouter } from "./domains";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -116,6 +117,7 @@ async function main() {
   app.use("/api/email-settings", emailSettingsRouter);
   app.use("/api/automations", automationsRouter);
   app.use("/api/help", helpRouter);
+  app.use("/api/domains", domainsRouter);
   app.use("/api/external", subscriptionApiRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
