@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   ChevronRight, Download,
   Printer, Calculator, CheckCircle, X, Briefcase, Banknote,
-  AlertCircle, ArrowLeft, Building2, ChevronsUpDown
+  AlertCircle, ArrowLeft, Building2, ChevronsUpDown, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
