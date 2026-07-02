@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, Routes, Route, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search,
+  LayoutDashboard, Users, Globe, Settings, ChevronLeft, ChevronRight, Bell, Search, Smartphone,
   TrendingUp, Building2, ExternalLink, Trash2, Shield, ShieldCheck, Eye, EyeOff, Receipt, FileText, BarChart3,
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
@@ -429,15 +429,26 @@ function ClientList() {
     }
   };
 
-  const grantSubscription = async (id: string, plan: "starter" | "pro" | "premium", name: string) => {
+  const MODULE_LABELS: Record<string, string> = {
+    web_builder: "Web Builder",
+    social_biz: "Social & Biz Connect",
+    transactions_ops: "Transactions & Operations",
+    people_hr: "Human Capital",
+    all_modules: "All Modules",
+  };
+  const ALL_MODULE_CODES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
+
+  const grantSubscription = async (id: string, moduleCode: string, name: string) => {
+    const modules = moduleCode === "all_modules" ? ALL_MODULE_CODES : [moduleCode];
+    const label = MODULE_LABELS[moduleCode] || moduleCode;
     const res = await fetch(`/api/admin/clients/${id}/subscription`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ modules }),
     });
     if (res.ok) {
-      toast.success(`${plan.charAt(0).toUpperCase() + plan.slice(1)} subscription granted to ${name}`);
+      toast.success(`${label} subscription granted to ${name}`);
       loadClients();
     } else {
       const data = await res.json();
@@ -787,6 +798,11 @@ function ClientList() {
                     })()}
                   </div>
                   <div className="text-xs text-muted-foreground">{client.email}</div>
+                  {client.work_phone && (
+                    <a href={`tel:${client.work_phone}`} className="text-xs text-slate-500 hover:underline flex items-center gap-0.5 mt-0.5">
+                      🏢 {client.work_phone}
+                    </a>
+                  )}
                   {client.phone && (
                     <a href={`tel:${client.phone}`} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5">
                       📞 {client.phone}
@@ -894,26 +910,42 @@ function ClientList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-[10px] gap-1 border-green-300 text-green-700 hover:bg-green-50"
-                        onClick={() => grantSubscription(client.id, "starter", client.full_name)}
+                        className="h-7 px-2 text-[10px] gap-1 border-sky-300 text-sky-700 hover:bg-sky-50"
+                        onClick={() => grantSubscription(client.id, "web_builder" as any, client.full_name)}
                       >
-                        <CreditCard className="h-3 w-3" /> Enterprize
+                        <Globe className="h-3 w-3" /> Web Builder
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-[10px] gap-1 border-blue-300 text-blue-700 hover:bg-blue-50"
-                        onClick={() => grantSubscription(client.id, "pro", client.full_name)}
+                        className="h-7 px-2 text-[10px] gap-1 border-violet-300 text-violet-700 hover:bg-violet-50"
+                        onClick={() => grantSubscription(client.id, "social_biz" as any, client.full_name)}
                       >
-                        <BanknoteIcon className="h-3 w-3" /> Enterprize Plus
+                        <Smartphone className="h-3 w-3" /> Social & Biz
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => grantSubscription(client.id, "transactions_ops" as any, client.full_name)}
+                      >
+                        <Wallet className="h-3 w-3" /> Transactions
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                        onClick={() => grantSubscription(client.id, "people_hr" as any, client.full_name)}
+                      >
+                        <Users className="h-3 w-3" /> Human Capital
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-7 px-2 text-[10px] gap-1 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                        onClick={() => grantSubscription(client.id, "premium", client.full_name)}
+                        onClick={() => grantSubscription(client.id, "all_modules" as any, client.full_name)}
                       >
-                        <Crown className="h-3 w-3" /> Enterprize Premium
+                        <Crown className="h-3 w-3" /> All Modules
                       </Button>
                       <Button
                         variant="outline"

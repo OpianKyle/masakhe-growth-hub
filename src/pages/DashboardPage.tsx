@@ -223,9 +223,15 @@ export default function DashboardPage() {
       .then(d => {
         setSubscriptionActive(!!d.active);
         setActiveModules(Array.isArray(d.modules) ? d.modules : []);
+        if (!d.active && !user?.teamMember && user?.role !== "admin") {
+          const path = window.location.pathname;
+          if (!path.endsWith("/billing") && !path.endsWith("/settings")) {
+            navigate("/dashboard/billing", { replace: true });
+          }
+        }
       })
       .catch(() => { setSubscriptionActive(false); setActiveModules([]); });
-  }, [user]);
+  }, [user, navigate]);
 
   useEffect(() => {
     refreshBillingStatus();

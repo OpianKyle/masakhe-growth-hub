@@ -370,7 +370,8 @@ adminRouter.get("/clients", async (req, res) => {
       `SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.subscription_exempt,
               u.admin_notes, u.admin_tags,
               bp.business_name, bp.trading_name, bp.business_status, bp.business_type,
-              bp.industry_sector, COALESCE(u.phone, bp.phone) as phone, bp.physical_address,
+              bp.industry_sector, COALESCE(u.phone, bp.phone) as phone,
+              bp.work_phone, bp.whatsapp, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
               bs.status as subscription_status, bs.trial_end_at,
               bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents
@@ -521,33 +522,51 @@ adminRouter.post("/clients/:id/trial", async (req, res) => {
 
 adminRouter.post("/clients/:id/subscription", async (req, res) => {
   try {
-    const { plan } = req.body;
-    if (!["starter", "pro", "premium"].includes(plan)) {
-      return res.status(400).json({ error: "Invalid plan. Use 'starter', 'pro', or 'premium'." });
+    const { plan, modules } = req.body;
+    const VALID_MODULES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
+
+    let chosenModules: string[] = [];
+    let planCode = "all_modules";
+
+    if (Array.isArray(modules) && modules.length > 0) {
+      chosenModules = modules.filter((m: string) => VALID_MODULES.includes(m));
+      if (chosenModules.length === 0) return res.status(400).json({ error: "No valid modules provided." });
+      planCode = chosenModules.length === 4 ? "all_modules" : chosenModules[0];
+    } else if (plan) {
+      if (!["starter", "pro", "premium", "all_modules", ...VALID_MODULES].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan code." });
+      }
+      planCode = plan;
+      chosenModules = VALID_MODULES;
+    } else {
+      return res.status(400).json({ error: "Provide modules[] or plan." });
     }
+
     const target = await queryOne("SELECT full_name FROM users WHERE id = ?", [req.params.id]);
     const workspaceId = await ensureWorkspaceForUser(req.params.id);
-    const workspace = { id: workspaceId };
-    const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [plan]);
+    const billingPlan = await queryOne("SELECT id FROM billing_plans WHERE code = ?", [planCode])
+      || await queryOne("SELECT id FROM billing_plans WHERE code = 'all_modules'");
     if (!billingPlan) return res.status(404).json({ error: "Billing plan not found" });
+
     const existing = await queryOne(
       "SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1",
-      [workspace.id]
+      [workspaceId]
     );
+    const modulesJson = JSON.stringify(chosenModules);
     if (existing) {
       await execute(
-        "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, updated_at = NOW() WHERE id = ?",
-        [billingPlan.id, existing.id]
+        "UPDATE billing_subscriptions SET status = 'ACTIVE', plan_id = ?, modules = ?, updated_at = NOW() WHERE id = ?",
+        [billingPlan.id, modulesJson, existing.id]
       );
     } else {
       await execute(
-        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status) VALUES (?, ?, 'ACTIVE')",
-        [workspace.id, billingPlan.id]
+        "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, modules) VALUES (?, ?, 'ACTIVE', ?)",
+        [workspaceId, billingPlan.id, modulesJson]
       );
     }
     await logAudit(req, "subscription.granted", {
       targetType: "user", targetId: req.params.id, targetLabel: target?.full_name,
-      details: { plan },
+      details: { modules: chosenModules },
     });
     res.json({ ok: true });
   } catch (err) {

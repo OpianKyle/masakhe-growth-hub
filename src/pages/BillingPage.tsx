@@ -288,31 +288,6 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Quick action bar ─────────────────────────────────────── */}
-      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
-        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
-          {[
-            { label: "Overview",  icon: Globe,       action: () => setView("overview"),  grad: "from-blue-500 to-indigo-500" },
-            { label: "Modules",   icon: Smartphone,  action: () => setView("modules"),   grad: "from-violet-500 to-purple-500" },
-            { label: "Checkout",  icon: Wallet,      action: () => setView("checkout"),  grad: "from-emerald-500 to-teal-500" },
-          ].map((a, i) => (
-            <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              onClick={a.action}
-              className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${view === a.label.toLowerCase() ? "bg-blue-50" : "hover:bg-gray-50"}`}>
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-                <a.icon className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-[11px] font-medium text-gray-600 whitespace-nowrap">{a.label}</span>
-            </motion.button>
-          ))}
-          <div className="mx-2 h-10 w-px bg-gray-200 shrink-0" />
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            onClick={() => setView("modules")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all shrink-0">
-            <Zap className="h-4 w-4" /> Upgrade
-          </motion.button>
-        </div>
-      </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
 
@@ -333,9 +308,6 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => setView("modules")}>
-            Subscribe now
-          </Button>
         </motion.div>
       )}
 
@@ -424,6 +396,44 @@ export default function BillingPage() {
       {/* ── MODULE SELECTION VIEW ───────────────────────────────── */}
       {view === "modules" && (
         <div className="space-y-6">
+
+          {/* Instructions for new users */}
+          {trialEligible && !subscription && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 px-6 py-5"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-bold text-blue-900 dark:text-blue-200 text-base">Welcome! Start by selecting your modules</h3>
+                  <p className="text-sm text-blue-800/80 dark:text-blue-300">
+                    Masakhe is built around <strong>4 independent modules</strong> — pick the ones your business needs and only pay for what you use. You can always add more later.
+                  </p>
+                  <ol className="text-sm text-blue-800/80 dark:text-blue-300 list-decimal list-inside space-y-1">
+                    <li><strong>Click one or more modules below</strong> to select them (or choose the Complete Suite for maximum value).</li>
+                    <li><strong>Click "Start 7-day free trial"</strong> — no payment required, full access instantly.</li>
+                    <li>After your trial, subscribe to keep access.</li>
+                  </ol>
+                  <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    {MODULES.map(m => (
+                      <div key={m.code} className={`rounded-lg border ${m.border} bg-gradient-to-br ${m.bg} p-2.5`}>
+                        <div className={`mb-1 inline-flex h-7 w-7 items-center justify-center rounded-lg ${m.iconBg}`}>
+                          <m.icon className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="font-semibold text-gray-800 dark:text-gray-200 leading-tight">{m.name}</div>
+                        <div className="font-bold text-gray-700 dark:text-gray-300 mt-0.5">{fmt(m.price)}/mo</div>
+                        <div className="text-muted-foreground mt-1">{m.features[0]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {MODULES.map((mod) => {
               const selected = selectedModules.includes(mod.code);
@@ -525,19 +535,21 @@ export default function BillingPage() {
                   <Button
                     onClick={handleStartTrial}
                     disabled={trialLoading}
-                    variant="outline"
-                    className="flex-1 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
+                    size="lg"
                   >
                     {trialLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
-                    Start 7-day free trial
+                    Start 7-day free trial now
                   </Button>
                 )}
-                <Button
-                  onClick={() => setView("checkout")}
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
-                >
-                  Subscribe now <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                {!trialEligible && (
+                  <Button
+                    onClick={() => setView("checkout")}
+                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
+                  >
+                    Subscribe now <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}
