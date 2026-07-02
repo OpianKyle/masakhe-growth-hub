@@ -29,7 +29,6 @@ import InventoryPage from "./InventoryPage";
 import PayrollPage from "./PayrollPage";
 import LeavePage from "./LeavePage";
 import EmployeesPage from "./EmployeesPage";
-import DomainSearchPage from "./DomainSearchPage";
 import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
@@ -110,7 +109,6 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
   { icon: Globe, label: "Website Builder", path: "/website-builder", requiresModule: "web_builder", perm: "website", openNewTab: true },
-  { icon: Search, label: "Domain Search", path: "/dashboard/domain-search", requiresModule: "web_builder", perm: "website" },
   { icon: Smartphone, label: "Social Media", path: "/social-hub", requiresModule: "social_biz", perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresModule: "social_biz", perm: "biz_connect" },
   {
@@ -733,9 +731,6 @@ export default function DashboardPage() {
           <Routes>
             <Route index element={<DashboardOverview />} />
             <Route path="website/*" element={<WebsiteHub />} />
-            <Route path="domain-search" element={
-              hasModule("web_builder") ? <DomainSearchPage /> : <ModuleGate moduleCode="web_builder" onUpgrade={() => navigate("/dashboard/billing")} />
-            } />
             <Route path="social/*" element={
               hasModule("social_biz") ? <SocialHub /> : <ModuleGate moduleCode="social_biz" onUpgrade={() => navigate("/dashboard/billing")} />
             } />

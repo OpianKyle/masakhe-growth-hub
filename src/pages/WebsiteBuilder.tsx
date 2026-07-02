@@ -21,7 +21,7 @@ import {
   MonitorSmartphone, Leaf, Truck, PartyPopper, Shield, MapPin, Lightbulb, Car, TrendingUp, Crown, Lock, Eye, X,
   Flower2, Cookie, Baby, Sun, Printer, Users, PawPrint, Church, BedDouble, Shirt,
   Camera, Scissors, Heart, Hammer, Pill, ChefHat, Navigation, Pickaxe, FileCheck, Search,
-  Settings2, Globe,
+  Settings2, Globe, CheckCircle2, XCircle, Copy, ExternalLink, Clock, Loader2,
 } from "lucide-react";
 import { WebsiteBuilderTour, TourRestartButton } from "@/components/website/WebsiteBuilderTour";
 
@@ -355,7 +355,34 @@ export default function WebsiteBuilder() {
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "design" | "media" | "sections">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "design" | "media" | "sections" | "domains">("settings");
+
+  // Domain search state
+  const [domainQuery, setDomainQuery] = useState("");
+  const [domainLoading, setDomainLoading] = useState(false);
+  const [domainSearchedName, setDomainSearchedName] = useState("");
+  const [domainResults, setDomainResults] = useState<Array<{ domain: string; tld: string; label: string; available: boolean | null; expiry?: string; registerUrl: string }>>([]);
+
+  const handleDomainSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = domainQuery.trim();
+    if (!q) return;
+    setDomainLoading(true);
+    setDomainResults([]);
+    try {
+      const res = await fetch(`/api/domains/search?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Search failed"); return; }
+      setDomainSearchedName(data.name);
+      const TLD_ORDER = ["co.za", "com", "org.za", "net.za", "net", "org", "africa"];
+      const sorted = [...data.results].sort((a: any, b: any) => {
+        const ai = TLD_ORDER.indexOf(a.tld); const bi = TLD_ORDER.indexOf(b.tld);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      setDomainResults(sorted);
+    } catch { toast.error("Network error"); }
+    finally { setDomainLoading(false); }
+  };
   const [publishing, setPublishing] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
@@ -722,6 +749,7 @@ export default function WebsiteBuilder() {
             { id: "design",   icon: Palette,   label: "Design",   glow: "rgba(139,92,246,0.35)", activeClass: "bg-violet-500/20 text-violet-300 border-l-2 border-violet-400" },
             { id: "media",    icon: ImageIcon,  label: "Media",    glow: "rgba(14,165,233,0.35)", activeClass: "bg-sky-500/20 text-sky-300 border-l-2 border-sky-400" },
             { id: "sections", icon: Layout,     label: "Sections", glow: "rgba(251,146,60,0.35)", activeClass: "bg-orange-500/20 text-orange-300 border-l-2 border-orange-400" },
+            { id: "domains",  icon: Globe,      label: "Domains",  glow: "rgba(14,165,233,0.35)",  activeClass: "bg-sky-500/20 text-sky-300 border-l-2 border-sky-400" },
           ] as const).map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -761,18 +789,21 @@ export default function WebsiteBuilder() {
             activeTab === "settings" ? "bg-gradient-to-r from-emerald-50 via-white to-white border-emerald-100/60" :
             activeTab === "design"   ? "bg-gradient-to-r from-violet-50 via-white to-white border-violet-100/60" :
             activeTab === "media"    ? "bg-gradient-to-r from-sky-50 via-white to-white border-sky-100/60" :
+            activeTab === "domains"  ? "bg-gradient-to-r from-sky-50 via-white to-white border-sky-100/60" :
                                        "bg-gradient-to-r from-orange-50 via-white to-white border-orange-100/60"
           }`}>
             <p className="text-sm font-bold text-slate-800 leading-tight">
               {activeTab === "settings" ? "⚙️ Site Settings"
-               : activeTab === "design" ? "🎨 Design"
-               : activeTab === "media"  ? "📸 Media"
-               :                          "📐 Sections"}
+               : activeTab === "design"  ? "🎨 Design"
+               : activeTab === "media"   ? "📸 Media"
+               : activeTab === "domains" ? "🌐 Domain Search"
+               :                           "📐 Sections"}
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5">
               {activeTab === "settings" ? "Business name and public URL"
-               : activeTab === "design" ? "Colours and visual style"
-               : activeTab === "media"  ? "Logo and hero image"
+               : activeTab === "design"  ? "Colours and visual style"
+               : activeTab === "media"   ? "Logo and hero image"
+               : activeTab === "domains" ? "Check availability across .co.za, .com and more"
                : `${site.sections.length} section${site.sections.length !== 1 ? "s" : ""} on your page`}
             </p>
           </div>
@@ -1057,6 +1088,173 @@ export default function WebsiteBuilder() {
               </div>
             </div>
           )}
+
+          {/* ── DOMAINS panel ── */}
+          {activeTab === "domains" && (
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4">
+
+                {/* Search bar */}
+                <form onSubmit={handleDomainSearch} className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      value={domainQuery}
+                      onChange={e => setDomainQuery(e.target.value)}
+                      placeholder="mybusiness"
+                      className="w-full h-9 pl-8 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={domainLoading || !domainQuery.trim()}
+                    className="h-9 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold gap-1.5 shrink-0"
+                  >
+                    {domainLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                    Search
+                  </Button>
+                </form>
+
+                {/* TLD badges */}
+                {domainResults.length === 0 && !domainLoading && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {[".co.za", ".com", ".org.za", ".net.za", ".net", ".org", ".africa"].map(tld => (
+                        <span key={tld} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">{tld}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400">Powered by RDAP • Register via <a href="https://www.xneelo.co.za/domain-names/" target="_blank" rel="noopener noreferrer" className="underline hover:text-sky-600">Xneelo</a></p>
+                  </div>
+                )}
+
+                {/* Loading skeletons */}
+                {domainLoading && (
+                  <div className="space-y-2">
+                    {[...Array(7)].map((_, i) => (
+                      <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
+                    ))}
+                  </div>
+                )}
+
+                {/* Results */}
+                {!domainLoading && domainResults.length > 0 && (() => {
+                  const available = domainResults.filter(r => r.available === true);
+                  const taken     = domainResults.filter(r => r.available === false);
+                  const unknown   = domainResults.filter(r => r.available === null);
+                  const tldColor: Record<string, string> = {
+                    "co.za": "bg-emerald-100 text-emerald-700 border-emerald-200",
+                    "org.za": "bg-sky-100 text-sky-700 border-sky-200",
+                    "net.za": "bg-violet-100 text-violet-700 border-violet-200",
+                    "com": "bg-blue-100 text-blue-700 border-blue-200",
+                    "net": "bg-indigo-100 text-indigo-700 border-indigo-200",
+                    "org": "bg-teal-100 text-teal-700 border-teal-200",
+                    "africa": "bg-amber-100 text-amber-700 border-amber-200",
+                  };
+                  return (
+                    <div className="space-y-4">
+                      {/* Summary */}
+                      <div className="flex flex-wrap gap-2 text-[11px] font-medium">
+                        <span className="text-slate-500">Results for <strong className="text-slate-800">{domainSearchedName}</strong></span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{available.length} available</span>
+                        <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">{taken.length} taken</span>
+                      </div>
+
+                      {/* Available */}
+                      {available.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Available</p>
+                          {available.map(r => (
+                            <div key={r.domain} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 border border-emerald-100 shadow-sm">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm font-semibold text-slate-900 truncate">{r.domain}</span>
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${tldColor[r.tld] || "bg-gray-100 text-gray-600 border-gray-200"}`}>{r.label}</span>
+                                </div>
+                                <p className="text-[10px] text-emerald-600 font-medium">Available</p>
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <button
+                                  title="Copy"
+                                  onClick={() => navigator.clipboard.writeText(r.domain).then(() => toast.success("Copied!"))}
+                                  className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </button>
+                                <a href={r.registerUrl} target="_blank" rel="noopener noreferrer">
+                                  <button className="h-7 px-2 text-[10px] font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1">
+                                    Register <ExternalLink className="h-2.5 w-2.5" />
+                                  </button>
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Taken */}
+                      {taken.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-rose-500">Already Registered</p>
+                          {taken.map(r => (
+                            <div key={r.domain} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 border border-slate-100 shadow-sm opacity-60">
+                              <XCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm font-semibold text-slate-700 truncate">{r.domain}</span>
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${tldColor[r.tld] || "bg-gray-100 text-gray-600 border-gray-200"}`}>{r.label}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-rose-500 font-medium">
+                                  Taken
+                                  {r.expiry && <span className="flex items-center gap-0.5 text-slate-400 ml-1"><Clock className="h-2.5 w-2.5" /> Exp. {new Date(r.expiry).toLocaleDateString("en-ZA", { year: "numeric", month: "short" })}</span>}
+                                </div>
+                              </div>
+                              <button
+                                title="Copy"
+                                onClick={() => navigator.clipboard.writeText(r.domain).then(() => toast.success("Copied!"))}
+                                className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 shrink-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Unknown */}
+                      {unknown.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Could Not Check</p>
+                          {unknown.map(r => (
+                            <div key={r.domain} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-slate-100 opacity-50">
+                              <span className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0" />
+                              <span className="text-sm text-slate-500 truncate">{r.domain}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CTA */}
+                      {available.length > 0 && (
+                        <div className="rounded-xl bg-gradient-to-r from-sky-600 to-emerald-600 text-white p-4 space-y-2">
+                          <p className="text-xs font-semibold">Ready to register?</p>
+                          <p className="text-[11px] text-sky-100">Register with Xneelo, then connect your domain to this site.</p>
+                          <a href="https://www.xneelo.co.za/domain-names/" target="_blank" rel="noopener noreferrer">
+                            <button className="mt-1 w-full h-8 rounded-lg bg-white text-sky-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-sky-50">
+                              Go to Xneelo <ExternalLink className="h-3 w-3" />
+                            </button>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* ── Drag splitter ── */}
