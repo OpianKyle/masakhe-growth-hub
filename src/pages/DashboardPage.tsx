@@ -28,6 +28,7 @@ import LeadsPage from "./LeadsPage";
 import InventoryPage from "./InventoryPage";
 import PayrollPage from "./PayrollPage";
 import LeavePage from "./LeavePage";
+import EmployeesPage from "./EmployeesPage";
 import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
@@ -143,6 +144,7 @@ const baseNavItems: NavItem[] = [
     requiresModule: "people_hr",
     perms: ["payroll", "leave"],
     children: [
+      { icon: Users, label: "Employees", path: "/dashboard/employees", requiresModule: "people_hr", perm: "payroll" },
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresModule: "people_hr", perm: "payroll" },
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
     ],
@@ -754,6 +756,9 @@ export default function DashboardPage() {
             } />
             <Route path="automations" element={
               hasModule("transactions_ops") ? <AutomationsPage /> : <ModuleGate moduleCode="transactions_ops" onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="employees" element={
+              hasModule("people_hr") ? <EmployeesPage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />
             } />
             <Route path="payroll" element={
               hasModule("people_hr") ? <PayrollPage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />

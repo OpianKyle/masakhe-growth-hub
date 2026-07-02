@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
-  Users, Plus, Pencil, Trash2, ChevronRight, Search, Download,
+  ChevronRight, Download,
   Printer, Calculator, CheckCircle, X, Briefcase, Banknote,
-  AlertCircle, ArrowLeft, Building2, ChevronsUpDown, Info
+  AlertCircle, ArrowLeft, Building2, ChevronsUpDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// Dialog kept for payrun delete confirmation
 import { useToast } from "@/components/ui/use-toast";
 
 const R = (cents: number) =>
@@ -79,19 +80,14 @@ const emptyEmployee = {
   phone: "", email: "", address: "", bank_name: "", account_type: "cheque", account_number: "", branch_code: "", status: "active"
 };
 
-type Tab = "employees" | "run" | "history";
+type Tab = "run" | "history";
 
 export default function PayrollPage() {
   const { toast } = useToast();
-  const [tab, setTab] = useState<Tab>("employees");
+  const [tab, setTab] = useState<Tab>("run");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [search, setSearch] = useState("");
   const [histSearch, setHistSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<any>(emptyEmployee);
-  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -105,8 +101,6 @@ export default function PayrollPage() {
   const [calc, setCalc] = useState<any>(null);
   const [runSaving, setRunSaving] = useState(false);
   const [printSlip, setPrintSlip] = useState<PayrollRun | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
   useEffect(() => {
     loadEmployees();
     loadRuns();
@@ -137,44 +131,6 @@ export default function PayrollPage() {
       body: JSON.stringify({ employee_id: runEmployeeId, allowances: runAllowances, deductions: runDeductions }),
     });
     if (res.ok) setCalc(await res.json());
-  };
-
-  const openAdd = () => {
-    setEditingId(null); setForm(emptyEmployee); setDialogOpen(true);
-  };
-
-  const openEdit = (e: Employee) => {
-    setEditingId(e.id);
-    setForm({
-      first_name: e.first_name, last_name: e.last_name, id_number: e.id_number || "",
-      tax_number: e.tax_number || "", position: e.position || "", department: e.department || "",
-      start_date: e.start_date ? e.start_date.split("T")[0] : "",
-      employment_type: e.employment_type, basic_salary: String(Math.round(e.basic_salary / 100)),
-      age: String(e.age), uif_exempt: e.uif_exempt, phone: e.phone || "", email: e.email || "",
-      address: e.address || "", bank_name: e.bank_name || "", account_type: e.account_type || "cheque",
-      account_number: e.account_number || "", branch_code: e.branch_code || "", status: e.status,
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.first_name || !form.last_name || !form.basic_salary) {
-      toast({ title: "Required fields missing", variant: "destructive" }); return;
-    }
-    setSaving(true);
-    const body = { ...form, basic_salary: Math.round(parseFloat(form.basic_salary) * 100), age: Number(form.age) };
-    const url = editingId ? `/api/payroll/employees/${editingId}` : "/api/payroll/employees";
-    const method = editingId ? "PUT" : "POST";
-    const res = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    setSaving(false);
-    if (res.ok) { toast({ title: editingId ? "Employee updated" : "Employee added" }); setDialogOpen(false); loadEmployees(); }
-    else { const d = await res.json(); toast({ title: d.error || "Failed to save", variant: "destructive" }); }
-  };
-
-  const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/payroll/employees/${id}`, { method: "DELETE", credentials: "include" });
-    if (res.ok) { toast({ title: "Employee deleted" }); loadEmployees(); loadRuns(); }
-    setDeleteConfirm(null);
   };
 
   const addLine = (type: "allowance" | "deduction", label: string) => {
@@ -386,10 +342,6 @@ export default function PayrollPage() {
     win.document.close();
   };
 
-  const filteredEmployees = employees.filter(e =>
-    `${e.first_name} ${e.last_name} ${e.position || ""} ${e.department || ""}`.toLowerCase().includes(search.toLowerCase())
-  );
-
   const filteredRuns = runs.filter(r =>
     `${r.employee_name} ${r.pay_period}`.toLowerCase().includes(histSearch.toLowerCase())
   );
@@ -573,12 +525,9 @@ export default function PayrollPage() {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             className="flex items-center justify-center gap-3 flex-wrap">
-            <Button onClick={openAdd} className="bg-sky-700 hover:bg-sky-800 text-white shadow-md gap-2 rounded-xl">
-              <Plus className="h-4 w-4" /> Add Employee
-            </Button>
             {tab === "run" && (
               <Button onClick={handleRunPayroll} disabled={!calc || runSaving}
-                variant="outline" className="bg-white/80 border-white shadow-sm gap-2 text-sky-900 hover:bg-white rounded-xl">
+                className="bg-sky-700 hover:bg-sky-800 text-white shadow-md gap-2 rounded-xl">
                 <CheckCircle className="h-4 w-4" /> {runSaving ? "Processing..." : "Generate Payslip"}
               </Button>
             )}
@@ -589,24 +538,18 @@ export default function PayrollPage() {
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
         <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
-          {(["employees","run","history"] as const).map((t, i) => (
+          {(["run","history"] as const).map((t, i) => (
             <motion.button key={t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={() => setTab(t)}
               className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${tab === t ? "bg-sky-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all ${tab === t ? "bg-gradient-to-br from-sky-500 to-blue-600 scale-110" : "bg-gradient-to-br from-sky-400 to-blue-500"}`}>
-                {t === "employees" ? <Users className="h-4 w-4 text-white" /> : t === "run" ? <Calculator className="h-4 w-4 text-white" /> : <Printer className="h-4 w-4 text-white" />}
+                {t === "run" ? <Calculator className="h-4 w-4 text-white" /> : <Printer className="h-4 w-4 text-white" />}
               </div>
               <span className={`text-[11px] font-medium whitespace-nowrap ${tab === t ? "text-sky-700" : "text-gray-600 dark:text-gray-400"}`}>
-                {t === "employees" ? "Employees" : t === "run" ? "Run Payroll" : "History"}
+                {t === "run" ? "Run Payroll" : "History"}
               </span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            onClick={openAdd}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-sky-700 hover:to-blue-700 transition-all shrink-0">
-            <Plus className="h-4 w-4" /> Add Employee
-          </motion.button>
         </div>
       </div>
 
@@ -631,80 +574,13 @@ export default function PayrollPage() {
       </div>
 
       <div className="flex gap-1 border-b">
-        {([["employees","Employees"],["run","Run Payroll"],["history","History"]] as [Tab,string][]).map(([t, label]) => (
+        {([["run","Run Payroll"],["history","History"]] as [Tab,string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {label}
           </button>
         ))}
       </div>
-
-      {tab === "employees" && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search employees..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-          </div>
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[500px]">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left p-4 font-semibold">Employee</th>
-                  <th className="text-left p-4 font-semibold hidden sm:table-cell">Position</th>
-                  <th className="text-left p-4 font-semibold">Basic Salary</th>
-                  <th className="text-left p-4 font-semibold hidden md:table-cell">Employment</th>
-                  <th className="text-left p-4 font-semibold">Status</th>
-                  <th className="text-right p-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees.length === 0 && (
-                  <tr><td colSpan={6} className="p-12 text-center text-muted-foreground">
-                    <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No employees yet</p>
-                    <p className="text-xs mt-1">Add your first employee to get started.</p>
-                  </td></tr>
-                )}
-                {filteredEmployees.map(emp => (
-                  <tr key={emp.id} className="border-b hover:bg-muted/30 transition-colors">
-                    <td className="p-4">
-                      <div className="font-medium">{emp.first_name} {emp.last_name}</div>
-                      {emp.email && <div className="text-xs text-muted-foreground">{emp.email}</div>}
-                    </td>
-                    <td className="p-4 hidden sm:table-cell">
-                      <div>{emp.position || <span className="text-muted-foreground italic">—</span>}</div>
-                      {emp.department && <div className="text-xs text-muted-foreground">{emp.department}</div>}
-                    </td>
-                    <td className="p-4 font-medium">{R(emp.basic_salary)}/mo</td>
-                    <td className="p-4 hidden md:table-cell">
-                      <span className="text-xs bg-muted px-2 py-1 rounded capitalize">{emp.employment_type.replace("_", " ")}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium ${emp.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${emp.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`} />
-                        {emp.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Run payroll" onClick={() => { setRunEmployeeId(emp.id); setTab("run"); }}>
-                          <Calculator className="h-4 w-4 text-blue-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(emp)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(emp.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-        </div>
-      )}
 
       {tab === "run" && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -906,99 +782,6 @@ export default function PayrollPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Employee" : "Add Employee"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 pt-2">
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Personal Details</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-sm font-medium block mb-1">First Name *</label><Input value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">Last Name *</label><Input value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">SA ID Number</label><Input value={form.id_number} onChange={e => setForm({...form, id_number: e.target.value})} placeholder="13-digit SA ID" /></div>
-                <div><label className="text-sm font-medium block mb-1">SARS Tax Number</label><Input value={form.tax_number} onChange={e => setForm({...form, tax_number: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">Age</label><Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">Phone</label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
-                <div className="col-span-2"><label className="text-sm font-medium block mb-1">Email</label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
-                <div className="col-span-2"><label className="text-sm font-medium block mb-1">Address</label><Input value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Employment Details</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-sm font-medium block mb-1">Job Title / Position</label><Input value={form.position} onChange={e => setForm({...form, position: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">Department</label><Input value={form.department} onChange={e => setForm({...form, department: e.target.value})} /></div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Employment Type</label>
-                  <select value={form.employment_type} onChange={e => setForm({...form, employment_type: e.target.value})} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="full_time">Full Time</option>
-                    <option value="part_time">Part Time</option>
-                    <option value="contract">Contract</option>
-                  </select>
-                </div>
-                <div><label className="text-sm font-medium block mb-1">Start Date</label><Input type="date" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})} /></div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Salary & Tax</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-sm font-medium block mb-1">Basic Monthly Salary (R) *</label><Input type="number" value={form.basic_salary} onChange={e => setForm({...form, basic_salary: e.target.value})} placeholder="e.g. 20000" /></div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.uif_exempt} onChange={e => setForm({...form, uif_exempt: e.target.checked})} className="rounded" />
-                    <span className="text-sm">UIF Exempt</span>
-                  </label>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Info className="h-3 w-3" />PAYE calculated automatically using SARS 2025/2026 tax tables. UIF capped at R177.12/month.</p>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Banking Details</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-sm font-medium block mb-1">Bank Name</label><Input value={form.bank_name} onChange={e => setForm({...form, bank_name: e.target.value})} placeholder="e.g. FNB, ABSA, Standard Bank" /></div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Account Type</label>
-                  <select value={form.account_type} onChange={e => setForm({...form, account_type: e.target.value})} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="cheque">Cheque / Current</option>
-                    <option value="savings">Savings</option>
-                    <option value="transmission">Transmission</option>
-                  </select>
-                </div>
-                <div><label className="text-sm font-medium block mb-1">Account Number</label><Input value={form.account_number} onChange={e => setForm({...form, account_number: e.target.value})} /></div>
-                <div><label className="text-sm font-medium block mb-1">Branch Code</label><Input value={form.branch_code} onChange={e => setForm({...form, branch_code: e.target.value})} /></div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : editingId ? "Save Changes" : "Add Employee"}</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Delete Employee?</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">This will permanently delete the employee and all their payslip records. This cannot be undone.</p>
-          <div className="flex justify-end gap-3 mt-4">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>Delete</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
       </div>
     </div>
   );
