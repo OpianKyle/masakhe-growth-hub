@@ -22,6 +22,7 @@ import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
 import { startInvoiceScheduler } from "./invoice-scheduler";
+import { startPayslipScheduler } from "./payslip-scheduler";
 import { leaveRouter, runLeaveMigrations } from "./leave";
 import { resellerRouter, runResellerMigrations } from "./reseller";
 import { franchiseRouter, runFranchiseMigrations } from "./franchise";
@@ -175,6 +176,7 @@ async function main() {
     startScheduler();
     startBillingScheduler();
     startInvoiceScheduler();
+    startPayslipScheduler();
     startAutomationsScheduler();
     startDripScheduler();
     startCampaignScheduler();

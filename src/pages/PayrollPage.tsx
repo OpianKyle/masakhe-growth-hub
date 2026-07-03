@@ -4,7 +4,7 @@ import {
   ChevronRight, Download,
   Printer, Calculator, CheckCircle, X, Briefcase, Banknote,
   AlertCircle, ArrowLeft, Building2, ChevronsUpDown, Users,
-  Trash2, Info, Search
+  Trash2, Info, Search, Send, Receipt, Clock, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,27 @@ const emptyEmployee = {
   phone: "", email: "", address: "", bank_name: "", account_type: "cheque", account_number: "", branch_code: "", status: "active"
 };
 
-type Tab = "run" | "history";
+type Tab = "run" | "history" | "schedule" | "paye";
+
+interface PayslipSchedule {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  employee_email?: string;
+  position?: string;
+  frequency: "daily" | "weekly" | "monthly";
+  day_of_week: number | null;
+  day_of_month: number | null;
+  send_time: string;
+  allowances: LineItem[];
+  deductions: LineItem[];
+  notes?: string;
+  active: boolean;
+  last_sent_at?: string | null;
+  next_send_at?: string | null;
+}
+
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
 export default function PayrollPage() {
   const { toast } = useToast();
@@ -102,9 +122,23 @@ export default function PayrollPage() {
   const [calc, setCalc] = useState<any>(null);
   const [runSaving, setRunSaving] = useState(false);
   const [printSlip, setPrintSlip] = useState<PayrollRun | null>(null);
+
+  const [schedules, setSchedules] = useState<PayslipSchedule[]>([]);
+  const [schedEmployeeId, setSchedEmployeeId] = useState("");
+  const [schedFrequency, setSchedFrequency] = useState<"daily" | "weekly" | "monthly">("monthly");
+  const [schedDayOfWeek, setSchedDayOfWeek] = useState("5");
+  const [schedDayOfMonth, setSchedDayOfMonth] = useState("25");
+  const [schedSendTime, setSchedSendTime] = useState("08:00");
+  const [schedAllowances, setSchedAllowances] = useState<LineItem[]>([]);
+  const [schedDeductions, setSchedDeductions] = useState<LineItem[]>([]);
+  const [schedNotes, setSchedNotes] = useState("");
+  const [schedActive, setSchedActive] = useState(true);
+  const [schedSaving, setSchedSaving] = useState(false);
+
   useEffect(() => {
     loadEmployees();
     loadRuns();
+    loadSchedules();
     fetch("/api/profile", { credentials: "include" })
       .then(r => r.json()).then(d => setProfile({ ...d.user, ...d.profile })).catch(() => {});
   }, []);
@@ -122,6 +156,72 @@ export default function PayrollPage() {
   const loadRuns = () => {
     fetch("/api/payroll/runs", { credentials: "include" })
       .then(r => r.json()).then(setRuns).catch(() => {});
+  };
+
+  const loadSchedules = () => {
+    fetch("/api/payroll/schedules", { credentials: "include" })
+      .then(r => r.json()).then(setSchedules).catch(() => {});
+  };
+
+  const resetSchedForm = () => {
+    setSchedEmployeeId(""); setSchedFrequency("monthly"); setSchedDayOfWeek("5");
+    setSchedDayOfMonth("25"); setSchedSendTime("08:00"); setSchedAllowances([]);
+    setSchedDeductions([]); setSchedNotes(""); setSchedActive(true);
+  };
+
+  const loadScheduleIntoForm = (s: PayslipSchedule) => {
+    setSchedEmployeeId(s.employee_id);
+    setSchedFrequency(s.frequency);
+    setSchedDayOfWeek(String(s.day_of_week ?? 5));
+    setSchedDayOfMonth(String(s.day_of_month ?? 25));
+    setSchedSendTime(s.send_time || "08:00");
+    setSchedAllowances(s.allowances || []);
+    setSchedDeductions(s.deductions || []);
+    setSchedNotes(s.notes || "");
+    setSchedActive(s.active);
+  };
+
+  const addSchedLine = (type: "allowance" | "deduction", label: string) => {
+    const item: LineItem = { label, amount_cents: 0 };
+    if (type === "allowance") setSchedAllowances(prev => [...prev, item]);
+    else setSchedDeductions(prev => [...prev, item]);
+  };
+
+  const updateSchedLine = (type: "allowance" | "deduction", idx: number, field: "label" | "amount_cents", val: string) => {
+    const updater = (prev: LineItem[]) => prev.map((l, i) => i !== idx ? l : { ...l, [field]: field === "amount_cents" ? Math.round(parseFloat(val || "0") * 100) : val });
+    if (type === "allowance") setSchedAllowances(updater);
+    else setSchedDeductions(updater);
+  };
+
+  const removeSchedLine = (type: "allowance" | "deduction", idx: number) => {
+    if (type === "allowance") setSchedAllowances(prev => prev.filter((_, i) => i !== idx));
+    else setSchedDeductions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!schedEmployeeId) { toast({ title: "Please select an employee", variant: "destructive" }); return; }
+    setSchedSaving(true);
+    const res = await fetch("/api/payroll/schedules", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employee_id: schedEmployeeId, frequency: schedFrequency,
+        day_of_week: Number(schedDayOfWeek), day_of_month: Number(schedDayOfMonth),
+        send_time: schedSendTime, allowances: schedAllowances, deductions: schedDeductions,
+        notes: schedNotes, active: schedActive,
+      }),
+    });
+    setSchedSaving(false);
+    if (res.ok) {
+      toast({ title: "Auto-send schedule saved" });
+      loadSchedules();
+      resetSchedForm();
+    } else { const d = await res.json(); toast({ title: d.error || "Failed to save schedule", variant: "destructive" }); }
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    const res = await fetch(`/api/payroll/schedules/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) { toast({ title: "Schedule removed" }); loadSchedules(); }
   };
 
   const recalculate = async () => {
@@ -539,15 +639,15 @@ export default function PayrollPage() {
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
         <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
-          {(["run","history"] as const).map((t, i) => (
+          {(["run","history","schedule","paye"] as const).map((t, i) => (
             <motion.button key={t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={() => setTab(t)}
               className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${tab === t ? "bg-sky-50" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all ${tab === t ? "bg-gradient-to-br from-sky-500 to-blue-600 scale-110" : "bg-gradient-to-br from-sky-400 to-blue-500"}`}>
-                {t === "run" ? <Calculator className="h-4 w-4 text-white" /> : <Printer className="h-4 w-4 text-white" />}
+                {t === "run" ? <Calculator className="h-4 w-4 text-white" /> : t === "history" ? <Printer className="h-4 w-4 text-white" /> : t === "schedule" ? <Send className="h-4 w-4 text-white" /> : <Receipt className="h-4 w-4 text-white" />}
               </div>
               <span className={`text-[11px] font-medium whitespace-nowrap ${tab === t ? "text-sky-700" : "text-gray-600 dark:text-gray-400"}`}>
-                {t === "run" ? "Run Payroll" : "History"}
+                {t === "run" ? "Run Payroll" : t === "history" ? "History" : t === "schedule" ? "Auto-Send" : "PAYE Tracking"}
               </span>
             </motion.button>
           ))}
@@ -574,10 +674,10 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b">
-        {([["run","Run Payroll"],["history","History"]] as [Tab,string][]).map(([t, label]) => (
+      <div className="flex gap-1 border-b overflow-x-auto">
+        {([["run","Run Payroll"],["history","History"],["schedule","Auto-Send Payslips"],["paye","PAYE Tracking"]] as [Tab,string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {label}
           </button>
         ))}
@@ -780,6 +880,243 @@ export default function PayrollPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {tab === "schedule" && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 space-y-5">
+            <div className="rounded-xl border bg-card p-5 space-y-4">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Send className="h-4 w-4" /> Configure Auto-Send
+              </h3>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Set up a payslip to be generated and emailed automatically to an employee on a recurring schedule.
+              </p>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Employee *</label>
+                <select value={schedEmployeeId} onChange={e => {
+                    const id = e.target.value;
+                    setSchedEmployeeId(id);
+                    const existing = schedules.find(s => s.employee_id === id);
+                    if (existing) loadScheduleIntoForm(existing);
+                  }}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <option value="">Select an employee...</option>
+                  {employees.filter(e => e.status === "active").map(e => (
+                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name}{e.position ? ` — ${e.position}` : ""}{!e.email ? " (no email on file)" : ""}</option>
+                  ))}
+                </select>
+                {schedEmployeeId && !employees.find(e => e.id === schedEmployeeId)?.email && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> This employee has no email address — add one on their profile so payslips can be delivered.</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Frequency *</label>
+                  <select value={schedFrequency} onChange={e => setSchedFrequency(e.target.value as any)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Send Time *</label>
+                  <Input type="time" value={schedSendTime} onChange={e => setSchedSendTime(e.target.value)} />
+                </div>
+              </div>
+
+              {schedFrequency === "weekly" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Day of Week *</label>
+                  <select value={schedDayOfWeek} onChange={e => setSchedDayOfWeek(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    {WEEKDAYS.map((d, i) => <option key={i} value={String(i)}>{d}</option>)}
+                  </select>
+                </div>
+              )}
+              {schedFrequency === "monthly" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Day of Month *</label>
+                  <Input type="number" min={1} max={31} value={schedDayOfMonth} onChange={e => setSchedDayOfMonth(e.target.value)} />
+                  <p className="text-xs text-muted-foreground mt-1">If the month is shorter, the last day of that month will be used.</p>
+                </div>
+              )}
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={schedActive} onChange={e => setSchedActive(e.target.checked)} className="h-4 w-4 rounded border-input" />
+                Active — automatically generate and email this payslip
+              </label>
+            </div>
+
+            <div className="rounded-xl border bg-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Default Allowances</h3>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  {ALLOWANCE_PRESETS.map(p => (
+                    <button key={p} onClick={() => addSchedLine("allowance", p)}
+                      className="text-xs px-2 py-1 rounded border border-dashed border-green-300 text-green-700 hover:bg-green-50">+ {p}</button>
+                  ))}
+                </div>
+              </div>
+              {schedAllowances.length === 0 && <p className="text-xs text-muted-foreground italic">No default allowances</p>}
+              {schedAllowances.map((a, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Input value={a.label} onChange={e => updateSchedLine("allowance", i, "label", e.target.value)} placeholder="Label" className="flex-1 h-8 text-sm" />
+                  <Input type="number" value={a.amount_cents / 100} onChange={e => updateSchedLine("allowance", i, "amount_cents", e.target.value)}
+                    placeholder="Amount (R)" className="w-32 h-8 text-sm" />
+                  <button onClick={() => removeSchedLine("allowance", i)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border bg-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Default Deductions</h3>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  {DEDUCTION_PRESETS.map(p => (
+                    <button key={p} onClick={() => addSchedLine("deduction", p)}
+                      className="text-xs px-2 py-1 rounded border border-dashed border-red-300 text-red-700 hover:bg-red-50">+ {p}</button>
+                  ))}
+                </div>
+              </div>
+              {schedDeductions.length === 0 && <p className="text-xs text-muted-foreground italic">No default deductions</p>}
+              {schedDeductions.map((d, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Input value={d.label} onChange={e => updateSchedLine("deduction", i, "label", e.target.value)} placeholder="Label" className="flex-1 h-8 text-sm" />
+                  <Input type="number" value={d.amount_cents / 100} onChange={e => updateSchedLine("deduction", i, "amount_cents", e.target.value)}
+                    placeholder="Amount (R)" className="w-32 h-8 text-sm" />
+                  <button onClick={() => removeSchedLine("deduction", i)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border bg-card p-5">
+              <label className="text-sm font-medium block mb-1.5">Notes (optional)</label>
+              <textarea value={schedNotes} onChange={e => setSchedNotes(e.target.value)} rows={2}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none" placeholder="Notes to include on each generated payslip..." />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSaveSchedule} disabled={!schedEmployeeId || schedSaving}
+                className="bg-sky-700 hover:bg-sky-800 text-white gap-2">
+                <CheckCircle className="h-4 w-4" /> {schedSaving ? "Saving..." : "Save Schedule"}
+              </Button>
+              {schedEmployeeId && <Button variant="outline" onClick={resetSchedForm}>Clear</Button>}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 space-y-3">
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Configured Schedules
+            </h3>
+            {schedules.length === 0 && (
+              <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground text-sm">
+                <Mail className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                No auto-send schedules configured yet
+              </div>
+            )}
+            {schedules.map(s => (
+              <div key={s.id} className="rounded-xl border bg-card p-4 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-sm">{s.employee_name}</p>
+                    <p className="text-xs text-muted-foreground">{s.employee_email || "No email on file"}</p>
+                  </div>
+                  <Badge variant={s.active ? "default" : "secondary"} className={s.active ? "bg-green-100 text-green-700 hover:bg-green-100" : ""}>
+                    {s.active ? "Active" : "Paused"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {s.frequency}
+                  {s.frequency === "weekly" && ` — ${WEEKDAYS[s.day_of_week ?? 0]}`}
+                  {s.frequency === "monthly" && ` — day ${s.day_of_month}`}
+                  {" "}at {s.send_time}
+                </p>
+                {s.next_send_at && (
+                  <p className="text-xs text-muted-foreground">Next send: {new Date(s.next_send_at).toLocaleString("en-ZA")}</p>
+                )}
+                {s.last_sent_at && (
+                  <p className="text-xs text-muted-foreground">Last sent: {new Date(s.last_sent_at).toLocaleString("en-ZA")}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setSchedEmployeeId(s.employee_id); loadScheduleIntoForm(s); }}>Edit</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleDeleteSchedule(s.id)}>Remove</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === "paye" && (
+        <div className="space-y-4">
+          {(() => {
+            const byEmployee: Record<string, { name: string; position?: string; months: Record<string, number>; total: number }> = {};
+            for (const r of runs) {
+              if (!byEmployee[r.employee_id]) byEmployee[r.employee_id] = { name: r.employee_name, position: r.position, months: {}, total: 0 };
+              byEmployee[r.employee_id].months[r.pay_period] = (byEmployee[r.employee_id].months[r.pay_period] || 0) + r.paye_cents;
+              byEmployee[r.employee_id].total += r.paye_cents;
+            }
+            const allPeriods = Array.from(new Set(runs.map(r => r.pay_period))).sort();
+            const grandTotal = Object.values(byEmployee).reduce((s, e) => s + e.total, 0);
+
+            if (allPeriods.length === 0) {
+              return (
+                <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
+                  <Receipt className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No PAYE data yet</p>
+                  <p className="text-xs mt-1">Run payroll for employees to start tracking PAYE contributions here.</p>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                <div className="rounded-xl border bg-card p-4 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Total PAYE Withheld (All Time)</p>
+                    <p className="text-2xl font-bold text-red-600">{R(grandTotal)}</p>
+                  </div>
+                  <Receipt className="h-8 w-8 text-red-300" />
+                </div>
+                <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left p-3 font-semibold sticky left-0 bg-muted/50">Employee</th>
+                        {allPeriods.map(p => (
+                          <th key={p} className="text-right p-3 font-semibold whitespace-nowrap">{periodLabel(p)}</th>
+                        ))}
+                        <th className="text-right p-3 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(byEmployee).map(([empId, data]) => (
+                        <tr key={empId} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="p-3 sticky left-0 bg-card">
+                            <div className="font-medium">{data.name}</div>
+                            {data.position && <div className="text-xs text-muted-foreground">{data.position}</div>}
+                          </td>
+                          {allPeriods.map(p => (
+                            <td key={p} className="p-3 text-right text-red-600">
+                              {data.months[p] !== undefined ? R(data.months[p]) : <span className="text-muted-foreground">—</span>}
+                            </td>
+                          ))}
+                          <td className="p-3 text-right font-bold text-red-700">{R(data.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  These figures reflect PAYE (income tax) withheld from each employee's pay, useful for SARS EMP201/EMP501 reconciliation. Consult your accountant or tax practitioner for official submissions.
+                </p>
+              </>
+            );
+          })()}
         </div>
       )}
 

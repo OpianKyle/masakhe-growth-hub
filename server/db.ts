@@ -744,6 +744,31 @@ export async function runMigrations() {
     await createIndex("idx_pr_period", "payroll_runs", "pay_period");
 
     await conn.query(`
+      CREATE TABLE IF NOT EXISTS payslip_schedules (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        employee_id VARCHAR(36) NOT NULL,
+        frequency ENUM('daily','weekly','monthly') NOT NULL DEFAULT 'monthly',
+        day_of_week INT NULL,
+        day_of_month INT NULL,
+        send_time VARCHAR(5) NOT NULL DEFAULT '08:00',
+        allowances_json TEXT NOT NULL DEFAULT '[]',
+        deductions_json TEXT NOT NULL DEFAULT '[]',
+        notes TEXT,
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        last_sent_at DATETIME NULL,
+        next_send_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_ps_employee (employee_id),
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(employee_id) REFERENCES employees(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_ps_user", "payslip_schedules", "user_id");
+    await createIndex("idx_ps_next_send", "payslip_schedules", "next_send_at");
+
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS broker_clients (
         id VARCHAR(36) PRIMARY KEY,
         user_id VARCHAR(36) NOT NULL,
