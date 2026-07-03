@@ -22,6 +22,7 @@ import {
   Send,
   CheckCircle2,
   AlertCircle,
+  Palette,
 } from "lucide-react";
 
 export default function SettingsPage() {
