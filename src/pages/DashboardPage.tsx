@@ -147,7 +147,6 @@ const baseNavItems: NavItem[] = [
       { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
     ],
   },
-  { icon: Building2, label: "Municipality Support", path: "/dashboard/municipality-support", perm: "overview" },
   { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
   { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
   { icon: Users, label: "User Accounts", path: "/dashboard/team", ownerOnly: true },
