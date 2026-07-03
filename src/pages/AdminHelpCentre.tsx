@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Plus, Edit, Trash2, X, Loader2, Video, HelpCircle, FileText,
-  Pin, Eye, Search, Save, ArrowUpDown
+  Pin, Eye, Search, Save, ArrowUpDown, Upload, Film
 } from "lucide-react";
 
 interface HelpCategory {
@@ -373,6 +373,8 @@ function ArticleModal({ article, categories, onClose, onSaved }: {
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: article?.title || "",
     category_id: article?.category_id || "",
@@ -453,9 +455,66 @@ function ArticleModal({ article, categories, onClose, onSaved }: {
           </div>
           {form.content_type === "video" && (
             <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Video URL</Label>
-              <Input className="mt-1.5 rounded-sm" placeholder="YouTube or Vimeo URL" value={form.video_url} onChange={e => set("video_url", e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">Supports YouTube and Vimeo</p>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Video</Label>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska,.mp4,.mov,.webm,.avi,.mkv,.m4v"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 500 * 1024 * 1024) {
+                    toast.error("Video must be under 500MB");
+                    if (videoInputRef.current) videoInputRef.current.value = "";
+                    return;
+                  }
+                  setUploadingVideo(true);
+                  try {
+                    const fd = new FormData();
+                    fd.append("video", file);
+                    const res = await fetch("/api/help/admin/upload-video", { method: "POST", credentials: "include", body: fd });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    set("video_url", data.url);
+                    toast.success("Video uploaded");
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to upload video");
+                  } finally {
+                    setUploadingVideo(false);
+                    if (videoInputRef.current) videoInputRef.current.value = "";
+                  }
+                }}
+              />
+              {form.video_url ? (
+                <div className="mt-1.5 border rounded-sm overflow-hidden bg-black">
+                  <video src={form.video_url} controls className="w-full max-h-56" />
+                  <div className="flex items-center justify-between px-3 py-2 bg-muted/50">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+                      <Film className="h-3.5 w-3.5 shrink-0" /> {form.video_url.split("/").pop()}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button type="button" variant="outline" size="sm" className="h-7 rounded-sm text-xs" disabled={uploadingVideo} onClick={() => videoInputRef.current?.click()}>
+                        {uploadingVideo ? <Loader2 className="h-3 w-3 animate-spin" /> : "Replace"}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 rounded-sm text-xs text-red-500 hover:text-red-600" onClick={() => set("video_url", "")}>
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={uploadingVideo}
+                  className="mt-1.5 w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-sm py-8 text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-60"
+                >
+                  {uploadingVideo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                  <span className="text-sm font-medium">{uploadingVideo ? "Uploading…" : "Click to upload a video file"}</span>
+                  <span className="text-xs">MP4, MOV, WebM, AVI, MKV — up to 500MB</span>
+                </button>
+              )}
             </div>
           )}
           <div>

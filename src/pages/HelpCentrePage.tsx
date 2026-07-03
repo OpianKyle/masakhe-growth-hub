@@ -78,6 +78,9 @@ function buildEmbedUrl(url: string): string | null {
   if (vmId) return `https://player.vimeo.com/video/${vmId}`;
   return null;
 }
+function isUploadedVideo(url: string): boolean {
+  return /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url) || url.includes("/uploads/help-videos/");
+}
 
 export default function HelpCentrePage() {
   const [categories, setCategories] = useState<HelpCategory[]>([]);
@@ -125,7 +128,8 @@ export default function HelpCentrePage() {
 
   // ── Article detail ──────────────────────────────────────────────────────────
   if (selectedArticle) {
-    const embedUrl = selectedArticle.video_url ? buildEmbedUrl(selectedArticle.video_url) : null;
+    const uploadedVideo = selectedArticle.video_url && isUploadedVideo(selectedArticle.video_url) ? selectedArticle.video_url : null;
+    const embedUrl = !uploadedVideo && selectedArticle.video_url ? buildEmbedUrl(selectedArticle.video_url) : null;
     const TypeIcon = TYPE_ICON[selectedArticle.content_type] || FileText;
     const stripe = COLOR_STRIPE[selectedArticle.category_color || "blue"] || COLOR_STRIPE.blue;
     return (
@@ -179,6 +183,11 @@ export default function HelpCentrePage() {
           </div>
 
           {/* Video */}
+          {uploadedVideo && (
+            <div className="aspect-video w-full overflow-hidden mb-8 bg-black">
+              <video src={uploadedVideo} controls className="w-full h-full" />
+            </div>
+          )}
           {embedUrl && (
             <div className="aspect-video w-full overflow-hidden mb-8 bg-black">
               <iframe src={embedUrl} className="w-full h-full" allowFullScreen frameBorder="0"

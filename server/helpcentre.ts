@@ -2,12 +2,47 @@ import { Router } from "express";
 import { queryAll, queryOne, execute } from "./db";
 import { requireAuth, requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 export const helpRouter = Router();
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+const videoUploadDir = path.join(process.cwd(), "public", "uploads", "help-videos");
+
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(mp4|mov|webm|avi|mkv|m4v)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Allowed video formats: mp4, mov, webm, avi, mkv, m4v"));
+    }
+  },
+});
+
+helpRouter.post("/admin/upload-video", requireAdmin, (req, res) => {
+  videoUpload.single("video")(req, res, (err: any) => {
+    if (err) return res.status(400).json({ error: err.message || "Video upload failed" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    try {
+      if (!fs.existsSync(videoUploadDir)) fs.mkdirSync(videoUploadDir, { recursive: true });
+      const ext = path.extname(req.file.originalname).toLowerCase() || ".mp4";
+      const fileName = `${randomUUID()}${ext}`;
+      const filePath = path.join(videoUploadDir, fileName);
+      fs.writeFileSync(filePath, req.file.buffer);
+      res.json({ ok: true, url: `/uploads/help-videos/${fileName}` });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || "Failed to save video" });
+    }
+  });
+});
 
 // ── Public / User routes ─────────────────────────────────────────────────────
 
