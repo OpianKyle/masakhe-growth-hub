@@ -144,7 +144,7 @@ const baseNavItems: NavItem[] = [
     children: [
       { icon: Users, label: "Employees", path: "/dashboard/employees", requiresModule: "people_hr", perm: "payroll" },
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresModule: "people_hr", perm: "payroll" },
-      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
+      { icon: CalendarDays, label: "Leave Processing", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
     ],
   },
   { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
