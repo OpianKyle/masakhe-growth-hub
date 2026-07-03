@@ -224,15 +224,28 @@ payrollRouter.post("/runs", async (req, res) => {
     const netCents = grossCents - payeCents - uif.employee - deductionsTotal;
 
     const id = randomUUID();
+    const totalCostCents = grossCents + uif.employer;
+    const expenseId = randomUUID();
+    const nowIso = new Date().toISOString();
+    const employeeName = `${emp.first_name} ${emp.last_name}`.trim();
+
     await execute(
       `INSERT INTO payroll_runs (id, user_id, employee_id, pay_period, pay_date, basic_salary_cents,
         allowances_json, deductions_json, paye_cents, uif_employee_cents, uif_employer_cents,
-        gross_pay_cents, net_pay_cents, notes)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        gross_pay_cents, net_pay_cents, notes, expense_entry_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [id, userId, employee_id, pay_period, pay_date, emp.basic_salary,
        JSON.stringify(allowances), JSON.stringify(deductions),
-       payeCents, uif.employee, uif.employer, grossCents, netCents, notes || null]
+       payeCents, uif.employee, uif.employer, grossCents, netCents, notes || null, expenseId]
     );
+
+    await execute(
+      `INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [expenseId, userId, "EXPENSE", totalCostCents, "Salaries",
+       `Payroll — ${employeeName} (${pay_period})`, pay_date, nowIso]
+    );
+
     res.json({ ok: true, id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -241,8 +254,11 @@ payrollRouter.post("/runs", async (req, res) => {
 
 payrollRouter.delete("/runs/:id", async (req, res) => {
   try {
-    const existing = await queryOne("SELECT id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
+    const existing = await queryOne("SELECT id, expense_entry_id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!existing) return res.status(404).json({ error: "Run not found" });
+    if (existing.expense_entry_id) {
+      await execute("DELETE FROM ledger_entries WHERE id = ?", [existing.expense_entry_id]);
+    }
     await execute("DELETE FROM payroll_runs WHERE id = ?", [req.params.id]);
     res.json({ ok: true });
   } catch (err: any) {
