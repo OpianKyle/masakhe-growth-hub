@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "email">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "invoice" | "email">("profile");
 
   const buildForm = (u: typeof user) => ({
     fullName: u?.full_name || "",
@@ -54,6 +54,7 @@ export default function SettingsPage() {
     cipcNumber: u?.cipc_number || "",
     registrationNumber: u?.registration_number || "",
     vatNumber: u?.vat_number || "",
+    invoiceColor: u?.invoice_color || "",
   });
 
   const [form, setForm] = useState(buildForm(user));
@@ -253,6 +254,7 @@ export default function SettingsPage() {
     { key: "profile" as const, label: "Personal & Business", icon: User },
     { key: "business" as const, label: "Business Details", icon: Building2 },
     { key: "banking" as const, label: "Banking", icon: CreditCard },
+    { key: "invoice" as const, label: "Invoice Branding", icon: Palette },
     { key: "email" as const, label: "Email Sending", icon: ServerCog },
   ];
 
@@ -539,6 +541,73 @@ export default function SettingsPage() {
               <FieldGroup icon={CreditCard} label="VAT Number">
                 <Input value={form.vatNumber} onChange={e => handleChange("vatNumber", e.target.value)} placeholder="e.g. 4123456789" />
               </FieldGroup>
+            </div>
+          </>
+        )}
+
+        {activeTab === "invoice" && (
+          <>
+            <div className="mb-5">
+              <h3 className="text-base font-semibold text-foreground flex items-center gap-2 mb-1">
+                <Palette className="h-4 w-4 text-primary" />
+                Invoice Colour
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Pick an accent colour for your invoices and quotes. It's applied to headers, totals and accents across all templates.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              {[
+                { label: "Emerald", hex: "#156C41" },
+                { label: "Navy", hex: "#173872" },
+                { label: "Royal Blue", hex: "#1E59B8" },
+                { label: "Charcoal", hex: "#1E1E1E" },
+                { label: "Burgundy", hex: "#841212" },
+                { label: "Purple", hex: "#6B21B0" },
+                { label: "Teal", hex: "#0F766E" },
+              ].map(swatch => (
+                <button
+                  key={swatch.hex}
+                  type="button"
+                  title={swatch.label}
+                  onClick={() => handleChange("invoiceColor", swatch.hex)}
+                  className={`h-9 w-9 rounded-full border-2 transition-transform ${form.invoiceColor?.toLowerCase() === swatch.hex.toLowerCase() ? "border-foreground scale-110" : "border-transparent hover:scale-105"}`}
+                  style={{ backgroundColor: swatch.hex }}
+                />
+              ))}
+
+              <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border">
+                <input
+                  type="color"
+                  value={form.invoiceColor || "#156C41"}
+                  onChange={e => handleChange("invoiceColor", e.target.value)}
+                  className="h-9 w-9 rounded-md border border-input cursor-pointer bg-transparent p-0.5"
+                />
+                <Input
+                  value={form.invoiceColor}
+                  onChange={e => handleChange("invoiceColor", e.target.value)}
+                  placeholder="#156C41"
+                  className="w-28 font-mono text-sm"
+                />
+                {form.invoiceColor && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange("invoiceColor", "")}
+                    className="text-xs text-muted-foreground hover:text-destructive underline"
+                  >
+                    Reset to default
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div
+              className="rounded-lg border border-border p-4 flex items-center justify-between"
+              style={{ backgroundColor: form.invoiceColor || "#156C41" }}
+            >
+              <span className="text-white font-semibold text-sm">TAX INVOICE</span>
+              <span className="text-white/80 text-xs">Preview of your invoice accent colour</span>
             </div>
           </>
         )}

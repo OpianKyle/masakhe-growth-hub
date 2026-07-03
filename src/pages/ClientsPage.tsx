@@ -352,6 +352,46 @@ export default function ClientsPage() {
     }
   };
 
+  const downloadTemplate = (type: "individual" | "business") => {
+    const escape = (v: string) => (v.includes(",") ? `"${v}"` : v);
+    let headers: string[];
+    let sample: string[];
+    if (type === "business") {
+      headers = [
+        "Full Name", "Client Type", "Business Name", "Business Type", "Business Registration",
+        "VAT Number", "Business Email", "Business Phone", "Business WhatsApp", "Website",
+        "Business Address", "Status", "Notes",
+      ];
+      sample = [
+        "Thabo Nkosi", "business", "Nkosi Trading Pty Ltd", "Private Company (Pty Ltd)", "2023/123456/07",
+        "4123456789", "info@nkositrading.co.za", "+27 11 000 0000", "+27 82 000 0000", "https://www.nkositrading.co.za",
+        "12 Main Street, Sandton, Johannesburg, 2196", "active", "Preferred supplier contact",
+      ];
+    } else {
+      headers = [
+        "Full Name", "Client Type", "ID Number", "Date of Birth", "Gender", "Marital Status",
+        "Email", "Phone", "WhatsApp", "Physical Address", "Postal Address", "Employment Status",
+        "Employer", "Occupation", "Monthly Income (ZAR)", "Dependants", "Risk Profile",
+        "Credit Score", "Policy Number", "Property Interest", "Status", "Notes",
+      ];
+      sample = [
+        "Jane Dlamini", "individual", "8501015800083", "1985-01-01", "Female", "Single",
+        "jane.dlamini@example.com", "+27 82 123 4567", "+27 82 123 4567", "45 Oak Avenue, Pretoria, 0181",
+        "", "Employed (Permanent)", "ABC Corporation", "Accountant", "25000.00", "1", "medium",
+        "720", "", "", "prospect", "Referred by existing client",
+      ];
+    }
+    const csv = [headers.join(","), sample.map(escape).join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `client-import-template-${type}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `${type === "business" ? "Business" : "Personal"} client template downloaded` });
+  };
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -560,6 +600,17 @@ export default function ClientsPage() {
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
             </Button>
           </motion.div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+            className="flex items-center justify-center gap-4 mt-3 text-xs">
+            <span className="text-violet-800/60">Need the right format?</span>
+            <button onClick={() => downloadTemplate("individual")} className="underline text-violet-900 hover:text-violet-700 font-medium">
+              Personal client template
+            </button>
+            <span className="text-violet-800/40">·</span>
+            <button onClick={() => downloadTemplate("business")} className="underline text-violet-900 hover:text-violet-700 font-medium">
+              Business client template
+            </button>
+          </motion.div>
         </div>
       </div>
 
@@ -569,6 +620,8 @@ export default function ClientsPage() {
           {[
             { label: "Import CSV", icon: Upload,   action: () => importRef.current?.click(), grad: "from-sky-500 to-blue-500" },
             { label: "Export CSV", icon: Download, action: handleExport,                     grad: "from-teal-500 to-emerald-500" },
+            { label: "Personal Template", icon: User, action: () => downloadTemplate("individual"), grad: "from-violet-500 to-purple-500" },
+            { label: "Business Template", icon: Building2, action: () => downloadTemplate("business"), grad: "from-amber-500 to-orange-500" },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
@@ -1029,6 +1082,32 @@ export default function ClientsPage() {
               </div>
 
               <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+
+                {/* Client Type Toggle */}
+                <div className="flex items-center gap-2 p-1 rounded-xl bg-muted">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((p: any) => ({ ...p, client_type: "individual" }))}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                      formData.client_type !== "business"
+                        ? "bg-white dark:bg-gray-800 text-violet-700 dark:text-violet-300 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <User className="h-4 w-4" /> Personal Client
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((p: any) => ({ ...p, client_type: "business" }))}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                      formData.client_type === "business"
+                        ? "bg-white dark:bg-gray-800 text-violet-700 dark:text-violet-300 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4" /> Business Client
+                  </button>
+                </div>
 
                 {/* Personal */}
                 <section className="rounded-xl bg-violet-50/60 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 p-4">

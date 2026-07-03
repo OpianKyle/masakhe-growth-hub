@@ -120,7 +120,9 @@ clientsRouter.get("/export", requireAuth, async (req, res) => {
       `SELECT full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
               physical_address, postal_address, employment_status, employer_name, occupation,
               monthly_income_cents, dependants, risk_profile, credit_score, policy_number,
-              property_interest, status, notes
+              property_interest, status, notes, client_type,
+              business_name, business_registration, vat_number, business_type,
+              business_website, business_email, business_phone, business_whatsapp, business_address
        FROM broker_clients WHERE user_id = ? ORDER BY full_name ASC`,
       [userId]
     );
@@ -132,20 +134,24 @@ clientsRouter.get("/export", requireAuth, async (req, res) => {
     };
 
     const headers = [
-      "Full Name","ID Number","Date of Birth","Gender","Marital Status","Email","Phone","WhatsApp",
+      "Full Name","Client Type","ID Number","Date of Birth","Gender","Marital Status","Email","Phone","WhatsApp",
       "Physical Address","Postal Address","Employment Status","Employer","Occupation",
       "Monthly Income (ZAR)","Dependants","Risk Profile","Credit Score","Policy Number",
-      "Property Interest","Status","Notes"
+      "Property Interest","Status","Notes","Business Name","Business Type","Business Registration",
+      "VAT Number","Business Email","Business Phone","Business WhatsApp","Website","Business Address"
     ];
 
     const rows = clients.map((c: any) => [
-      escape(c.full_name), escape(c.id_number), escape(c.date_of_birth), escape(c.gender),
+      escape(c.full_name), escape(c.client_type || "individual"), escape(c.id_number), escape(c.date_of_birth), escape(c.gender),
       escape(c.marital_status), escape(c.email), escape(c.phone), escape(c.whatsapp),
       escape(c.physical_address), escape(c.postal_address), escape(c.employment_status),
       escape(c.employer_name), escape(c.occupation),
       escape(c.monthly_income_cents ? (c.monthly_income_cents / 100).toFixed(2) : ""),
       escape(c.dependants), escape(c.risk_profile), escape(c.credit_score),
       escape(c.policy_number), escape(c.property_interest), escape(c.status), escape(c.notes),
+      escape(c.business_name), escape(c.business_type), escape(c.business_registration),
+      escape(c.vat_number), escape(c.business_email), escape(c.business_phone),
+      escape(c.business_whatsapp), escape(c.business_website), escape(c.business_address),
     ].join(","));
 
     const csv = [headers.join(","), ...rows].join("\n");
@@ -172,12 +178,15 @@ clientsRouter.post("/import", requireAuth, async (req, res) => {
       const id = randomUUID();
       const rawIncome = row["Monthly Income (ZAR)"] || row["monthly_income"] || "";
       const incomeCents = rawIncome ? Math.round(parseFloat(rawIncome) * 100) : 0;
+      const clientType = (row["Client Type"] || row["client_type"] || "individual").trim().toLowerCase();
       await execute(
         `INSERT INTO broker_clients
          (id, user_id, full_name, id_number, date_of_birth, gender, marital_status, email, phone, whatsapp,
           physical_address, postal_address, employment_status, employer_name, occupation,
-          monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          monthly_income_cents, dependants, risk_profile, credit_score, policy_number, property_interest, status, notes,
+          client_type, business_name, business_registration, vat_number, business_type,
+          business_website, business_email, business_phone, business_whatsapp, business_address)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           id, userId, name,
           row["ID Number"] || row["id_number"] || null,
@@ -200,6 +209,16 @@ clientsRouter.post("/import", requireAuth, async (req, res) => {
           row["Property Interest"] || row["property_interest"] || null,
           (row["Status"] || row["status"] || "prospect").toLowerCase(),
           row["Notes"] || row["notes"] || null,
+          clientType === "business" ? "business" : "individual",
+          row["Business Name"] || row["business_name"] || null,
+          row["Business Registration"] || row["business_registration"] || null,
+          row["VAT Number"] || row["vat_number"] || null,
+          row["Business Type"] || row["business_type"] || null,
+          row["Website"] || row["business_website"] || null,
+          row["Business Email"] || row["business_email"] || null,
+          row["Business Phone"] || row["business_phone"] || null,
+          row["Business WhatsApp"] || row["business_whatsapp"] || null,
+          row["Business Address"] || row["business_address"] || null,
         ]
       );
       imported++;
