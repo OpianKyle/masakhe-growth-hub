@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Sparkles, Receipt, FileSearch, AlertTriangle, ShieldAlert,
   Mail, Send, UserMinus, Cake, PartyPopper, RefreshCw, Plus,
-  Trash2, Save, Loader2, ChevronDown, ChevronRight, Activity, X, Palette,
+  Trash2, Save, Loader2, ChevronDown, ChevronRight, Activity, X, Palette, Package,
 } from "lucide-react";
 import { TEMPLATES, InvoicePreview } from "@/components/InvoiceTemplates";
 import { hasSavedTemplateConfig, getSavedTemplateName, loadTemplateConfig } from "@/components/InvoiceTemplateDesigner";
@@ -82,6 +82,14 @@ type LogEntry = {
 };
 
 type Item = { name: string; qty: number; unitPrice: number };
+
+interface InventoryProduct {
+  id: string;
+  name: string;
+  sku?: string;
+  price_cents: number;
+  unit?: string;
+}
 
 const TYPE_LABELS: Record<string, string> = {
   recurring_invoice: "Recurring invoice",
@@ -857,11 +865,20 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
   const [selectedTemplate, setSelectedTemplate] = useState(existing?.template || 1);
   const [customTemplateName, setCustomTemplateName] = useState<string>(() => getSavedTemplateName() || "Custom");
   const [hasCustomTemplate, setHasCustomTemplate] = useState<boolean>(() => hasSavedTemplateConfig());
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
+  const [openItemDropdownIndex, setOpenItemDropdownIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/clients/for-invoice", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setClients(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/inventory/products", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setInventoryProducts(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
 
@@ -879,9 +896,19 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
   const vatCents = vatEnabled ? Math.round(subtotal * 100 * 0.15) : 0;
   const totalCents = Math.round(subtotal * 100) + vatCents;
 
-  function setItem(i: number, patch: Partial<Item>) {
-    setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
-  }
+  const addItem = () => setItems([...items, { name: "", qty: 1, unitPrice: 0 }]);
+  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+  const updateItem = (i: number, key: keyof Item, val: any) => {
+    const updated = [...items];
+    (updated[i] as any)[key] = val;
+    setItems(updated);
+  };
+  const selectInventoryProduct = (itemIndex: number, prod: InventoryProduct) => {
+    const updated = [...items];
+    updated[itemIndex] = { ...updated[itemIndex], name: prod.name, unitPrice: prod.price_cents / 100 };
+    setItems(updated);
+    setOpenItemDropdownIndex(null);
+  };
 
   async function save() {
     if (!name.trim() || !customerName.trim()) {
@@ -1032,42 +1059,68 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
           </div>
 
           <div>
-            <Label className="mb-2 block">Line items</Label>
+            <Label className="text-xs mb-2 block font-semibold">Line Items</Label>
             <div className="space-y-2">
-              {items.map((it, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-6">
-                    <Input
-                      placeholder="Item description"
-                      value={it.name}
-                      onChange={(e) => setItem(i, { name: e.target.value })}
-                    />
+              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
+                <div className="col-span-5">Item</div>
+                <div className="col-span-2">Qty</div>
+                <div className="col-span-2">Unit Price</div>
+                <div className="col-span-2 text-right">Amount</div>
+                <div className="col-span-1" />
+              </div>
+              {items.map((item, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center py-1.5 border-b border-dashed border-muted last:border-0">
+                  <div className="col-span-5 relative">
+                    <div className="flex gap-1">
+                      <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-8 text-sm flex-1" placeholder="Description" />
+                      {inventoryProducts.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 flex-shrink-0"
+                          title="Pick from inventory"
+                          onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
+                        >
+                          <Package className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                    {openItemDropdownIndex === i && (
+                      <div className="absolute top-full left-0 right-0 z-[60] mt-1 bg-background border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                        {inventoryProducts.map((prod) => (
+                          <button
+                            key={prod.id}
+                            type="button"
+                            className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
+                            onClick={() => selectInventoryProduct(i, prod)}
+                          >
+                            <span className="truncate">{prod.name}{prod.sku ? <span className="text-muted-foreground ml-1 text-xs">({prod.sku})</span> : null}</span>
+                            <span className="text-primary font-medium flex-shrink-0">R{(prod.price_cents / 100).toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number" min={1}
-                      value={it.qty}
-                      onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
-                    />
+                    <Input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 1)} className="h-8 text-sm" />
                   </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number" min={0} step={0.01}
-                      placeholder="Unit price"
-                      value={it.unitPrice}
-                      onChange={(e) => setItem(i, { unitPrice: Number(e.target.value) })}
-                    />
+                  <div className="col-span-2">
+                    <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0.00" />
                   </div>
-                  <div className="col-span-1">
-                    <Button variant="ghost" size="sm" onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                  <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
+                  <div className="col-span-1 text-right">
+                    {items.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => removeItem(i)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => setItems((p) => [...p, { name: "", qty: 1, unitPrice: 0 }])}>
-              <Plus className="h-4 w-4 mr-1" /> Add line
+            <Button variant="outline" size="sm" onClick={addItem} className="mt-3">
+              <Plus className="h-3 w-3 mr-1" /> Add Item
             </Button>
           </div>
 
