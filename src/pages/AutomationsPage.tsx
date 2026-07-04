@@ -30,6 +30,18 @@ type Settings = {
 
 type DripEmail = { delay_days: number; subject: string; body: string };
 
+type ClientOption = {
+  id: string;
+  full_name: string;
+  business_name?: string;
+  email?: string;
+  business_email?: string;
+  phone?: string;
+  business_phone?: string;
+  physical_address?: string;
+  business_address?: string;
+};
+
 type Recurring = {
   id: string;
   name: string;
@@ -838,6 +850,25 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
   const [endDate, setEndDate] = useState(existing?.end_date?.slice(0, 10) || "");
   const [autoSend, setAutoSend] = useState(existing ? !!existing.auto_send : true);
   const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+
+  useEffect(() => {
+    fetch("/api/clients/for-invoice", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setClients(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  function applyClient(id: string) {
+    setSelectedClientId(id);
+    const c = clients.find((cl) => cl.id === id);
+    if (!c) return;
+    setCustomerName(c.business_name || c.full_name);
+    setCustomerEmail(c.business_email || c.email || "");
+    setCustomerPhone(c.business_phone || c.phone || "");
+    setCustomerAddress(c.business_address || c.physical_address || "");
+  }
 
   const subtotal = items.reduce((s, it) => s + (it.qty || 1) * (it.unitPrice || 0), 0);
   const vatCents = vatEnabled ? Math.round(subtotal * 100 * 0.15) : 0;
@@ -911,6 +942,26 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
             <Label>Template name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly retainer — Acme Pty Ltd" />
           </div>
+
+          {clients.length > 0 && (
+            <div>
+              <Label>Select client (optional)</Label>
+              <select
+                className="w-full border rounded-md h-10 px-3"
+                value={selectedClientId}
+                onChange={(e) => applyClient(e.target.value)}
+              >
+                <option value="">— Choose a client to auto-fill —</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.business_name || c.full_name}
+                    {c.business_name && c.business_name !== c.full_name ? ` (${c.full_name})` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">Or fill in the customer details manually below.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
