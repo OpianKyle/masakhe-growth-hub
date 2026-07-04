@@ -337,6 +337,47 @@ export default function InvoicesPage() {
     }
   };
 
+  const [makingRecurringId, setMakingRecurringId] = useState<string | null>(null);
+
+  const handleMakeRecurring = async (inv: Invoice) => {
+    setMakingRecurringId(inv.id);
+    try {
+      const res = await fetch("/api/automations/recurring", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${inv.customer_name} — Invoice #${inv.invoice_number}`,
+          customer_name: inv.customer_name,
+          customer_email: inv.customer_email || null,
+          customer_address: inv.customer_address || null,
+          customer_phone: inv.customer_phone || null,
+          reference: inv.reference || null,
+          payment_terms: inv.payment_terms || null,
+          notes: inv.notes || null,
+          items: inv.items,
+          vat_enabled: inv.vat_enabled,
+          vat_cents: inv.vat_cents,
+          total_cents: inv.total_cents,
+          template: inv.template || 1,
+          template_config: inv.template === 8 ? loadTemplateConfig() : null,
+          frequency: "monthly",
+          start_date: new Date().toISOString().slice(0, 10),
+          auto_send: false,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create recurring invoice");
+      }
+      toast.success("Recurring invoice created — review it under Automations → Recurring invoices");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create recurring invoice");
+    } finally {
+      setMakingRecurringId(null);
+    }
+  };
+
   const handleEdit = (inv: Invoice) => {
     setEditingId(inv.id);
     setDocType(inv.type as "invoice" | "quote");
@@ -1075,6 +1116,20 @@ export default function InvoicesPage() {
                       <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
                         <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                       </Button>
+                      {inv.type === "invoice" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={makingRecurringId === inv.id}
+                          onClick={() => handleMakeRecurring(inv)}
+                          title="Turn this invoice into a recurring template"
+                        >
+                          {makingRecurringId === inv.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                          Make Recurring
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
                         <Download className="h-3.5 w-3.5 mr-1" /> PDF
                       </Button>
