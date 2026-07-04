@@ -338,6 +338,23 @@ export default function InvoicesPage() {
   };
 
   const [makingRecurringId, setMakingRecurringId] = useState<string | null>(null);
+  const [recurringSourceIds, setRecurringSourceIds] = useState<Set<string>>(new Set());
+
+  const refreshRecurringSourceIds = () => {
+    fetch("/api/automations/recurring", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: any[]) => {
+        const ids = (Array.isArray(data) ? data : [])
+          .map((r) => r.source_invoice_id)
+          .filter(Boolean);
+        setRecurringSourceIds(new Set(ids));
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshRecurringSourceIds();
+  }, []);
 
   const handleMakeRecurring = async (inv: Invoice) => {
     setMakingRecurringId(inv.id);
@@ -364,6 +381,7 @@ export default function InvoicesPage() {
           frequency: "monthly",
           start_date: new Date().toISOString().slice(0, 10),
           auto_send: false,
+          source_invoice_id: inv.id,
         }),
       });
       if (!res.ok) {
@@ -371,6 +389,7 @@ export default function InvoicesPage() {
         throw new Error(err.error || "Failed to create recurring invoice");
       }
       toast.success("Recurring invoice created — review it under Automations → Recurring invoices");
+      setRecurringSourceIds((prev) => new Set(prev).add(inv.id));
     } catch (e: any) {
       toast.error(e.message || "Failed to create recurring invoice");
     } finally {
@@ -1117,18 +1136,27 @@ export default function InvoicesPage() {
                         <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                       </Button>
                       {inv.type === "invoice" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={makingRecurringId === inv.id}
-                          onClick={() => handleMakeRecurring(inv)}
-                          title="Turn this invoice into a recurring template"
-                        >
-                          {makingRecurringId === inv.id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                            : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-                          Make Recurring
-                        </Button>
+                        recurringSourceIds.has(inv.id) ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-md"
+                            title="A recurring template was created from this invoice"
+                          >
+                            <RefreshCw className="h-3 w-3" /> Recurring
+                          </span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={makingRecurringId === inv.id}
+                            onClick={() => handleMakeRecurring(inv)}
+                            title="Turn this invoice into a recurring template"
+                          >
+                            {makingRecurringId === inv.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                              : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                            Make Recurring
+                          </Button>
+                        )
                       )}
                       <Button variant="outline" size="sm" onClick={() => downloadPdf(inv.id, inv.invoice_number)}>
                         <Download className="h-3.5 w-3.5 mr-1" /> PDF

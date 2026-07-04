@@ -330,6 +330,7 @@ export async function runMigrations() {
       }
     };
 
+    await addColumnIfMissing("recurring_invoices", "source_invoice_id", "VARCHAR(36) NULL");
     await addColumnIfMissing("social_post_targets", "created_at", "VARCHAR(30)");
     await addColumnIfMissing("social_post_targets", "updated_at", "VARCHAR(30)");
     await addColumnIfMissing("business_profiles", "logo_url", "LONGTEXT");
@@ -1055,11 +1056,13 @@ export async function runMigrations() {
         invoices_generated INT NOT NULL DEFAULT 0,
         active TINYINT(1) NOT NULL DEFAULT 1,
         auto_send TINYINT(1) NOT NULL DEFAULT 1,
+        source_invoice_id VARCHAR(36) NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
         KEY idx_ri_user (user_id),
-        KEY idx_ri_next_run (next_run_at, active)
+        KEY idx_ri_next_run (next_run_at, active),
+        KEY idx_ri_source_invoice (source_invoice_id)
       ) ENGINE=InnoDB
     `);
 
