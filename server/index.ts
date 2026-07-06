@@ -45,6 +45,7 @@ import { startDripScheduler } from "./drip-scheduler";
 import { startCampaignScheduler } from "./campaigns";
 import { subscriptionApiRouter } from "./subscription-api";
 import { domainsRouter } from "./domains";
+import { shiftsRouter } from "./shifts";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -150,6 +151,7 @@ async function main() {
   app.use("/api/leads", leadsRouter);
   app.use("/api/inventory", inventoryRouter);
   app.use("/api/payroll", payrollRouter);
+  app.use("/api/shifts", shiftsRouter);
   app.use("/api/clients", clientsRouter);
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);

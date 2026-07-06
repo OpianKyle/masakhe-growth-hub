@@ -770,6 +770,25 @@ export async function runMigrations() {
     await createIndex("idx_ps_next_send", "payslip_schedules", "next_send_at");
 
     await conn.query(`
+      CREATE TABLE IF NOT EXISTS shifts (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        employee_id VARCHAR(36) NOT NULL,
+        shift_date DATE NOT NULL,
+        start_time VARCHAR(5) NOT NULL,
+        end_time VARCHAR(5) NOT NULL,
+        title VARCHAR(100),
+        notes TEXT,
+        color VARCHAR(20) NOT NULL DEFAULT 'teal',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_shifts_user_date", "shifts", "user_id, shift_date");
+
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS broker_clients (
         id VARCHAR(36) PRIMARY KEY,
         user_id VARCHAR(36) NOT NULL,

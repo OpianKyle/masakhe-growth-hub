@@ -35,6 +35,7 @@ import CampaignsPage from "./CampaignsPage";
 import AutomationsPage from "./AutomationsPage";
 import WhatsAppSupportPage from "./WhatsAppSupportPage";
 import MunicipalitySupportPage from "./MunicipalitySupportPage";
+import StaffRosterPage from "./StaffRosterPage";
 import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
@@ -145,6 +146,7 @@ const baseNavItems: NavItem[] = [
       { icon: Users, label: "Employees", path: "/dashboard/employees", requiresModule: "people_hr", perm: "payroll" },
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresModule: "people_hr", perm: "payroll" },
       { icon: CalendarDays, label: "Leave Processing", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
+      { icon: CalendarDays, label: "Staff Roster", path: "/dashboard/roster", requiresModule: "people_hr", perm: "payroll" },
     ],
   },
   { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
@@ -767,6 +769,9 @@ export default function DashboardPage() {
             } />
             <Route path="leave" element={
               hasModule("people_hr") ? <LeavePage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
+            <Route path="roster" element={
+              hasModule("people_hr") ? <StaffRosterPage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />
             } />
             <Route path="team" element={<TeamMembersPage />} />
             <Route path="funding" element={<Navigate to="/dashboard" replace />} />
