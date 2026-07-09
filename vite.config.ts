@@ -1,6 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
+
+const excludeUploadsPlugin = {
+  name: "exclude-uploads-from-build",
+  apply: "build" as const,
+  buildStart() {
+    const src = path.resolve(__dirname, "public/uploads");
+    const temp = path.resolve(__dirname, "public/.uploads-build-temp");
+    if (fs.existsSync(src)) {
+      fs.renameSync(src, temp);
+    }
+  },
+  closeBundle() {
+    const src = path.resolve(__dirname, "public/uploads");
+    const temp = path.resolve(__dirname, "public/.uploads-build-temp");
+    if (fs.existsSync(temp)) {
+      fs.renameSync(temp, src);
+    }
+  },
+};
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -23,7 +43,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   appType: "spa",
-  plugins: [react()].filter(Boolean),
+  plugins: [react(), excludeUploadsPlugin].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

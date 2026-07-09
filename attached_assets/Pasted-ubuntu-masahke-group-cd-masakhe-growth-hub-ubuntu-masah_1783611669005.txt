@@ -1,0 +1,38 @@
+ubuntu@masahke-group:~$ cd ~/masakhe-growth-hub                                 ubuntu@masahke-group:~/masakhe-growth-hub$ git stash && git pull && NODE_OPTIONS="--max-old-space-size=1024" npm run build && pm2 restart masakhe --update-env
+No local changes to save
+remote: Enumerating objects: 14, done.
+remote: Counting objects: 100% (14/14), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 9 (delta 7), reused 9 (delta 7), pack-reused 0 (from 0)
+Unpacking objects: 100% (9/9), 1.25 KiB | 98.00 KiB/s, done.
+From https://github.com/OpianKyle/masakhe-growth-hub
+   8af9c3c..3b7dd2a  main       -> origin/main
+Updating 8af9c3c..3b7dd2a
+Fast-forward
+ index.html                  | 1 +
+ src/pages/DashboardPage.tsx | 3 ---
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+> vite_react_shadcn_ts@0.0.0 build
+> npx vite build
+
+vite v5.4.21 building for production...
+<script src="jarvis-widget.js"> in "/index.html" can't be bundled without type="module" attribute
+
+/noise.png referenced in /noise.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
+✓ 3430 modules transformed.
+x Build failed in 25.43s
+error during build:
+ENOSPC: no space left on device, copyfile '/home/ubuntu/masakhe-growth-hub/public/uploads/help-videos/48c5d20f-5f72-41c4-bacd-7fddd368c3e8.mp4' -> '/home/ubuntu/masakhe-growth-hub/dist/uploads/help-videos/48c5d20f-5f72-41c4-bacd-7fddd368c3e8.mp4'
+    at Object.copyFileSync (node:fs:3047:11)
+    at copyDir (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:17098:19)
+    at copyDir (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:17096:7)
+    at copyDir (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:17096:7)
+    at prepareOutDir (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:65764:7)
+    at build (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:65711:7)
+    at async CAC.<anonymous> (file:///home/ubuntu/masakhe-growth-hub/node_modules/vite/dist/node/cli.js:829:5)
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.0
+npm notice To update run: npm install -g npm@12.0.0
+npm notice
