@@ -9,6 +9,14 @@ const excludeUploadsPlugin = {
   buildStart() {
     const src = path.resolve(__dirname, "public/uploads");
     const temp = path.resolve(__dirname, "public/.uploads-build-temp");
+    // If a stale temp exists from a previous failed build, clean it up first
+    if (fs.existsSync(temp)) {
+      if (fs.existsSync(src)) {
+        fs.rmSync(src, { recursive: true, force: true });
+      }
+      fs.renameSync(temp, src);
+    }
+    // Now move uploads out of the way so Vite doesn't copy it
     if (fs.existsSync(src)) {
       fs.renameSync(src, temp);
     }
@@ -17,6 +25,10 @@ const excludeUploadsPlugin = {
     const src = path.resolve(__dirname, "public/uploads");
     const temp = path.resolve(__dirname, "public/.uploads-build-temp");
     if (fs.existsSync(temp)) {
+      // Remove any empty uploads dir that may have been recreated during build
+      if (fs.existsSync(src)) {
+        fs.rmSync(src, { recursive: true, force: true });
+      }
       fs.renameSync(temp, src);
     }
   },
