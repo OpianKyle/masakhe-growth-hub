@@ -38,7 +38,6 @@ import MunicipalitySupportPage from "./MunicipalitySupportPage";
 import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
-import AIChatBot from "@/components/AIChatBot";
 import OnboardingTour from "@/components/OnboardingTour";
 
 type ModuleCode = "web_builder" | "social_biz" | "transactions_ops" | "people_hr";
@@ -783,8 +782,6 @@ export default function DashboardPage() {
           </Routes>
         </div>
       </main>
-      <AIChatBot />
-
       {upgradeModalModule && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
