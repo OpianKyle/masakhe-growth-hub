@@ -41,6 +41,10 @@ profileRouter.put("/", requireOwner, async (req, res) => {
             bankName, accountName, accountType, accountNumber, branchCode, saId, cipcNumber,
             registrationNumber, vatNumber, invoiceColor } = req.body;
 
+    // Never allow the profile form to set business_status to 'reseller' —
+    // partner status is managed exclusively via the reseller join flow.
+    const safeBusinessStatus = businessStatus === 'reseller' ? null : (businessStatus || null);
+
     const now = new Date().toISOString();
 
     if (fullName) {
@@ -63,7 +67,7 @@ profileRouter.put("/", requireOwner, async (req, res) => {
           vat_number = ?, invoice_color = ?, updated_at = ?
          WHERE user_id = ?`,
         [
-          businessName || null, tradingName || null, businessStatus || null, businessType || null,
+          businessName || null, tradingName || null, safeBusinessStatus, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
           bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
@@ -81,7 +85,7 @@ profileRouter.put("/", requireOwner, async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
         [
           randomUUID(), userId,
-          businessName || null, tradingName || null, businessStatus || null, businessType || null,
+          businessName || null, tradingName || null, safeBusinessStatus, businessType || null,
           industrySector || null, yearsOperating || null, employeeCount || null,
           phone || null, whatsapp || null, email || null, physicalAddress || null,
           bankName || null, accountName || null, accountType || null, accountNumber || null, branchCode || null,
