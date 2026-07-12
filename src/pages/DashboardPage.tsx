@@ -38,6 +38,7 @@ import MunicipalitySupportPage from "./MunicipalitySupportPage";
 import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
+import TrialExpiredModal from "@/components/TrialExpiredModal";
 import OnboardingTour from "@/components/OnboardingTour";
 
 type ModuleCode = "web_builder" | "social_biz" | "transactions_ops" | "people_hr";
@@ -196,6 +197,8 @@ export default function DashboardPage() {
   const [hasBrokerageSite, setHasBrokerageSite] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const [activeModules, setActiveModules] = useState<string[]>([]);
+  const [trialExpired, setTrialExpired] = useState(false);
+  const [trialEndedAt, setTrialEndedAt] = useState<string | null>(null);
   const [upgradeModalModule, setUpgradeModalModule] = useState<ModuleCode | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -221,6 +224,9 @@ export default function DashboardPage() {
       .then(d => {
         setSubscriptionActive(!!d.active);
         setActiveModules(Array.isArray(d.modules) ? d.modules : []);
+        const expired = !!d.trialExpired;
+        setTrialExpired(expired);
+        setTrialEndedAt(d.trialEndedAt || null);
         if (!d.active && !user?.teamMember && user?.role !== "admin") {
           const path = window.location.pathname;
           if (!path.endsWith("/billing") && !path.endsWith("/settings")) {
@@ -782,6 +788,11 @@ export default function DashboardPage() {
           </Routes>
         </div>
       </main>
+      <TrialExpiredModal
+        open={trialExpired && user?.role !== "admin" && !user?.teamMember}
+        trialEndedAt={trialEndedAt}
+      />
+
       {upgradeModalModule && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"

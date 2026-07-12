@@ -371,6 +371,19 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     );
 
     if (!subscription) {
+      // Check if there was a trial that has since expired
+      const expiredTrial = await queryOne(
+        `SELECT trial_end_at FROM billing_subscriptions
+         WHERE workspace_id = ? AND status = 'TRIAL' AND trial_end_at <= NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [workspace.id]
+      );
+      if (expiredTrial) {
+        return res.json({
+          active: false, status: 'TRIAL', plan: null, modules: [], maxUsers: 0,
+          trialExpired: true, trialEndedAt: expiredTrial.trial_end_at,
+        });
+      }
       return res.json({ active: false, status: null, plan: null, modules: [], maxUsers: 0 });
     }
 

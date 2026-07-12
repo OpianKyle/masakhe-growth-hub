@@ -49,9 +49,12 @@ interface Client {
   website_count: number;
   subscription_status?: string | null;
   trial_end_at?: string | null;
+  trial_start_at?: string | null;
+  next_billing_at?: string | null;
   plan_code?: string | null;
   plan_name?: string | null;
   plan_price_cents?: number | null;
+  pending_amount_cents?: number | null;
   subscription_exempt?: number | boolean;
   admin_notes?: string | null;
   admin_tags?: string[] | null;
@@ -622,12 +625,14 @@ function ClientList() {
 
   const matchesStatus = (c: Client) => {
     const trialActive = c.subscription_status === "TRIAL" &&
-      (!c.trial_end_at || new Date(c.trial_end_at).getTime() > Date.now());
-    if (statusFilter === "trial") return trialActive;
+      c.trial_end_at && new Date(c.trial_end_at).getTime() > Date.now();
+    const trialExpired = c.subscription_status === "TRIAL" &&
+      c.trial_end_at && new Date(c.trial_end_at).getTime() <= Date.now();
+    if (statusFilter === "trial") return !!trialActive;
     if (statusFilter === "active") return c.subscription_status === "ACTIVE";
     if (statusFilter === "free") return !!c.subscription_exempt;
-    if (statusFilter === "none") return c.role !== "admin" && !c.subscription_exempt && !trialActive && c.subscription_status !== "ACTIVE";
-    if (statusFilter === "past-due") return c.subscription_status === "PAST_DUE";
+    if (statusFilter === "none") return c.role !== "admin" && !c.subscription_exempt && !trialActive && !trialExpired && c.subscription_status !== "ACTIVE";
+    if (statusFilter === "past-due") return c.subscription_status === "PAST_DUE" || !!trialExpired;
     return true;
   };
 
@@ -780,6 +785,7 @@ function ClientList() {
               <th className="text-left p-4 font-semibold">Sites</th>
               <th className="text-left p-4 font-semibold">Role</th>
               <th className="text-left p-4 font-semibold">Subscription</th>
+              <th className="text-left p-4 font-semibold">Plan & Payment</th>
               <th className="text-left p-4 font-semibold">Joined</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
@@ -867,11 +873,11 @@ function ClientList() {
                         Remove
                       </Button>
                     </div>
-                  ) : client.subscription_status === "TRIAL" ? (
+                  ) : client.subscription_status === "TRIAL" && client.trial_end_at && new Date(client.trial_end_at).getTime() > Date.now() ? (
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800">
                         <Clock className="h-3 w-3" />
-                        Trial · {client.trial_end_at ? Math.max(0, Math.ceil((new Date(client.trial_end_at).getTime() - Date.now()) / 86400000)) : "?"} days left
+                        Trial · {Math.max(0, Math.ceil((new Date(client.trial_end_at!).getTime() - Date.now()) / 86400000))} days left
                       </span>
                       <Button
                         variant="ghost"
@@ -881,6 +887,16 @@ function ClientList() {
                       >
                         Revoke
                       </Button>
+                    </div>
+                  ) : client.subscription_status === "TRIAL" && client.trial_end_at && new Date(client.trial_end_at).getTime() <= Date.now() ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-red-100 text-red-800 w-fit">
+                        <XCircle className="h-3 w-3" />
+                        Trial Expired
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        Ended {new Date(client.trial_end_at!).toLocaleDateString()}
+                      </span>
                     </div>
                   ) : client.subscription_status === "ACTIVE" ? (
                     <div className="flex items-center gap-2">
@@ -957,6 +973,35 @@ function ClientList() {
                         <Star className="h-3 w-3" /> Free Access
                       </Button>
                     </div>
+                  )}
+                </td>
+                <td className="p-4 min-w-[160px]">
+                  {client.plan_name ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-foreground">{client.plan_name}</span>
+                      {client.plan_price_cents != null && (
+                        <span className="text-[11px] text-muted-foreground">
+                          R{(client.plan_price_cents / 100).toFixed(0)}/mo
+                        </span>
+                      )}
+                      {client.subscription_status === "ACTIVE" && client.next_billing_at && (
+                        <span className="text-[10px] text-blue-600">
+                          Next bill: {new Date(client.next_billing_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {client.subscription_status === "TRIAL" && client.trial_end_at && (
+                        <span className={`text-[10px] ${new Date(client.trial_end_at).getTime() > Date.now() ? "text-amber-600" : "text-red-600"}`}>
+                          Trial {new Date(client.trial_end_at).getTime() > Date.now() ? "ends" : "ended"}: {new Date(client.trial_end_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {client.pending_amount_cents != null && client.pending_amount_cents > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 px-1.5 py-0.5 rounded">
+                          Due: R{(client.pending_amount_cents / 100).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
                 <td className="p-4 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString()}</td>
