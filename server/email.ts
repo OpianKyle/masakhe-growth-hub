@@ -979,6 +979,78 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
   },
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   TRIAL EXPIRY REMINDER
+   ───────────────────────────────────────────────────────────────────────────── */
+
+export async function sendTrialExpiredEmail(
+  toEmail: string,
+  fullName: string,
+  trialEndedAt: Date,
+  baseUrl?: string
+): Promise<void> {
+  const t = await getTransporter();
+  if (!t) return;
+
+  const firstName = fullName.split(" ")[0];
+  const appUrl = baseUrl || getBaseUrl();
+  const endDate = trialEndedAt.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+
+  const body = `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Your free trial has ended</h2>
+    <p style="margin:0 0 24px;color:#6B7280;font-size:14px;">Hi ${firstName},</p>
+
+    <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.7;">
+      Your free trial of Masakhe ended on <strong>${endDate}</strong>. To continue using all the tools that help run your business — invoicing, payroll, social media, client management, and more — please subscribe to a plan.
+    </p>
+
+    <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.7;">
+      Choose the plan that fits your business and get back up and running in minutes:
+    </p>
+
+    <div style="margin-bottom:32px;">
+      ${ctaButton("Subscribe Now — View Plans", `${appUrl}/dashboard/billing`)}
+    </div>
+
+    ${infoBox(`
+      <p style="margin:0 0 10px;color:#065F46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Why upgrade?</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Invoicing & billing</strong> — get paid faster</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Payroll</strong> — run payslips in minutes</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Social media</strong> — schedule posts, grow your brand</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Website builder</strong> — 44 industry templates</p>
+      <p style="margin:0;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Client management, compliance & more</strong></p>
+    `)}
+
+    <div style="height:28px;"></div>
+
+    <p style="margin:0;color:#374151;font-size:14px;line-height:1.8;">
+      Questions? Reply to this email — we're happy to help.<br><br>
+      <strong style="color:#111827;">The Masakhe Team</strong>
+    </p>
+  `;
+
+  const html = emailShell({
+    preheader: `${firstName}, your Masakhe trial ended — subscribe to keep going`,
+    subtitle: "Your Free Trial Has Ended",
+    body,
+    footerNote: `You received this email because you had a free trial at Masakhe Portal. <a href="${appUrl}/dashboard/settings" style="color:#007749;text-decoration:none;">Manage email preferences</a>`,
+  });
+
+  try {
+    await t.sendMail({
+      from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
+      replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
+      to: toEmail,
+      subject: `Your Masakhe free trial has ended — subscribe to continue`,
+      html,
+      headers: { "X-Priority": "1", "X-Mailer": "Masakhe Platform" },
+    });
+    console.log(`[Email] Trial expiry reminder sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error(`[Email] FAILED trial expiry reminder to ${toEmail}:`, err.message);
+  }
+}
+
 export async function sendDripEmail(
   day: number,
   toEmail: string,

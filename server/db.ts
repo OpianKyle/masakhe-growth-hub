@@ -1192,6 +1192,9 @@ export async function runMigrations() {
     await addColumnIfMissing("billing_plans", "max_users", "INT NOT NULL DEFAULT 2");
     await addColumnIfMissing("billing_subscriptions", "modules", "TEXT NULL");
 
+    // Trial expiry email tracking
+    await addColumnIfMissing("billing_subscriptions", "trial_expiry_email_sent_at", "DATETIME NULL");
+
     // Seed module-based plans
     await conn.query(`
       INSERT IGNORE INTO billing_plans (code, name, price_cents, currency, bill_interval, max_users)
