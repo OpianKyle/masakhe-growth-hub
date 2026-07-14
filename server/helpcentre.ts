@@ -14,8 +14,16 @@ function slugify(text: string): string {
 
 const videoUploadDir = path.join(process.cwd(), "public", "uploads", "help-videos");
 
+if (!fs.existsSync(videoUploadDir)) fs.mkdirSync(videoUploadDir, { recursive: true });
+
 const videoUpload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, videoUploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".mp4";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
   limits: { fileSize: 500 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /\.(mp4|mov|webm|avi|mkv|m4v)$/i;
@@ -31,16 +39,7 @@ helpRouter.post("/admin/upload-video", requireAdmin, (req, res) => {
   videoUpload.single("video")(req, res, (err: any) => {
     if (err) return res.status(400).json({ error: err.message || "Video upload failed" });
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-    try {
-      if (!fs.existsSync(videoUploadDir)) fs.mkdirSync(videoUploadDir, { recursive: true });
-      const ext = path.extname(req.file.originalname).toLowerCase() || ".mp4";
-      const fileName = `${randomUUID()}${ext}`;
-      const filePath = path.join(videoUploadDir, fileName);
-      fs.writeFileSync(filePath, req.file.buffer);
-      res.json({ ok: true, url: `/uploads/help-videos/${fileName}` });
-    } catch (e: any) {
-      res.status(500).json({ error: e.message || "Failed to save video" });
-    }
+    res.json({ ok: true, url: `/uploads/help-videos/${req.file.filename}` });
   });
 });
 
