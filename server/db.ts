@@ -1207,6 +1207,9 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Help centre image support
+    await addColumnIfMissing("help_categories", "image_url", "VARCHAR(1000) NULL");
+
     // Modular pricing migration
     await addColumnIfMissing("billing_plans", "max_users", "INT NOT NULL DEFAULT 2");
     await addColumnIfMissing("billing_subscriptions", "modules", "TEXT NULL");

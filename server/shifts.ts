@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "./auth";
 import { queryAll as query, queryOne } from "./db";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID as uuidv4 } from "crypto";
 
 export const shiftsRouter = Router();
 shiftsRouter.use(requireAuth);

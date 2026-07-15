@@ -7,6 +7,7 @@ interface HelpCategory {
   description?: string;
   icon: string;
   color: string;
+  image_url?: string;
   order_index: number;
 }
 
@@ -370,8 +371,22 @@ export default function HelpCentrePage() {
                           onClick={() => filterByCategory(cat)}
                           className="group text-left rounded-md overflow-hidden border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-white"
                         >
-                          <div className={`w-full aspect-video bg-gradient-to-br ${grad} flex items-center justify-center text-4xl`}>
-                            {cat.icon}
+                          <div className="relative w-full aspect-video overflow-hidden">
+                            {cat.image_url ? (
+                              <img
+                                src={cat.image_url}
+                                alt={cat.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={e => {
+                                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                                  const p = e.currentTarget.parentElement;
+                                  if (p) p.classList.add("show-fallback");
+                                }}
+                              />
+                            ) : null}
+                            <div className={`absolute inset-0 bg-gradient-to-br ${grad} flex items-center justify-center text-4xl ${cat.image_url ? "opacity-0 group-[.show-fallback]:opacity-100" : ""}`}>
+                              {cat.icon}
+                            </div>
                           </div>
                           <div className="px-3 py-2.5">
                             <p className="font-semibold text-sm text-gray-800 group-hover:text-sky-600 transition-colors">{cat.name}</p>

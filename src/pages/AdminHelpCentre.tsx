@@ -16,6 +16,7 @@ interface HelpCategory {
   description?: string;
   icon: string;
   color: string;
+  image_url?: string;
   order_index: number;
   article_count?: number;
 }
@@ -374,7 +375,9 @@ function ArticleModal({ article, categories, onClose, onSaved }: {
 }) {
   const [saving, setSaving] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: article?.title || "",
     category_id: article?.category_id || "",
@@ -518,6 +521,62 @@ function ArticleModal({ article, categories, onClose, onSaved }: {
             </div>
           )}
           <div>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thumbnail Image</Label>
+            <input
+              ref={thumbInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10MB"); return; }
+                setUploadingThumb(true);
+                try {
+                  const fd = new FormData();
+                  fd.append("image", file);
+                  const res = await fetch("/api/help/admin/upload-image", { method: "POST", credentials: "include", body: fd });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error);
+                  set("thumbnail_url", data.url);
+                  toast.success("Image uploaded");
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to upload image");
+                } finally {
+                  setUploadingThumb(false);
+                  if (thumbInputRef.current) thumbInputRef.current.value = "";
+                }
+              }}
+            />
+            {form.thumbnail_url ? (
+              <div className="mt-1.5 border rounded-sm overflow-hidden">
+                <img src={form.thumbnail_url} alt="Thumbnail" className="w-full max-h-40 object-cover" />
+                <div className="flex items-center justify-between px-3 py-2 bg-muted/50">
+                  <span className="text-xs text-muted-foreground truncate">{form.thumbnail_url.split("/").pop()}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button type="button" variant="outline" size="sm" className="h-7 rounded-sm text-xs" disabled={uploadingThumb} onClick={() => thumbInputRef.current?.click()}>
+                      {uploadingThumb ? <Loader2 className="h-3 w-3 animate-spin" /> : "Replace"}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 rounded-sm text-xs text-red-500 hover:text-red-600" onClick={() => set("thumbnail_url", "")}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => thumbInputRef.current?.click()}
+                disabled={uploadingThumb}
+                className="mt-1.5 w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-sm py-6 text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-60"
+              >
+                {uploadingThumb ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                <span className="text-sm font-medium">{uploadingThumb ? "Uploading…" : "Click to upload a thumbnail"}</span>
+                <span className="text-xs">JPG, PNG, WebP — up to 10MB</span>
+              </button>
+            )}
+          </div>
+          <div>
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Body <span className="normal-case font-normal tracking-normal text-muted-foreground/60">(HTML supported)</span></Label>
             <Textarea
               className="mt-1.5 min-h-[200px] resize-y font-mono text-sm rounded-sm"
@@ -580,11 +639,14 @@ function CategoryModal({ category, onClose, onSaved }: {
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: category?.name || "",
     description: category?.description || "",
     icon: category?.icon || "💡",
     color: category?.color || "blue",
+    image_url: category?.image_url || "",
     order_index: String(category?.order_index ?? 0),
   });
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
@@ -598,7 +660,7 @@ function CategoryModal({ category, onClose, onSaved }: {
       const res = await fetch(url, {
         method, credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, order_index: parseInt(form.order_index) || 0 }),
+        body: JSON.stringify({ ...form, order_index: parseInt(form.order_index) || 0, image_url: form.image_url || null }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -629,7 +691,63 @@ function CategoryModal({ category, onClose, onSaved }: {
             <Textarea className="mt-1.5 min-h-[60px] resize-none rounded-sm text-sm" placeholder="Brief description…" value={form.description} onChange={e => set("description", e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Icon</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category Image</Label>
+            <input
+              ref={imgInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10MB"); return; }
+                setUploadingImg(true);
+                try {
+                  const fd = new FormData();
+                  fd.append("image", file);
+                  const res = await fetch("/api/help/admin/upload-image", { method: "POST", credentials: "include", body: fd });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error);
+                  set("image_url", data.url);
+                  toast.success("Image uploaded");
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to upload image");
+                } finally {
+                  setUploadingImg(false);
+                  if (imgInputRef.current) imgInputRef.current.value = "";
+                }
+              }}
+            />
+            {form.image_url ? (
+              <div className="mt-1.5 border rounded-sm overflow-hidden">
+                <img src={form.image_url} alt="Category" className="w-full max-h-32 object-cover" />
+                <div className="flex items-center justify-between px-3 py-2 bg-muted/50">
+                  <span className="text-xs text-muted-foreground truncate">{form.image_url.split("/").pop()}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button type="button" variant="outline" size="sm" className="h-7 rounded-sm text-xs" disabled={uploadingImg} onClick={() => imgInputRef.current?.click()}>
+                      {uploadingImg ? <Loader2 className="h-3 w-3 animate-spin" /> : "Replace"}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 rounded-sm text-xs text-red-500 hover:text-red-600" onClick={() => set("image_url", "")}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => imgInputRef.current?.click()}
+                disabled={uploadingImg}
+                className="mt-1.5 w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-sm py-6 text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-60"
+              >
+                {uploadingImg ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                <span className="text-sm font-medium">{uploadingImg ? "Uploading…" : "Click to upload a cover image"}</span>
+                <span className="text-xs">JPG, PNG, WebP — up to 10MB</span>
+              </button>
+            )}
+          </div>
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Icon <span className="normal-case font-normal tracking-normal text-muted-foreground/60">(fallback if no image)</span></Label>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {ICON_OPTIONS.map(icon => (
                 <button key={icon} onClick={() => set("icon", icon)}
