@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Loader2, Search, ArrowLeft, Eye, Pin, ArrowRight,
-  Video, HelpCircle, FileText, X, BookOpen, Sparkles,
-} from "lucide-react";
+import { Loader2, Search, ArrowLeft, Eye, Pin, X, FileText, Video, HelpCircle } from "lucide-react";
 
 interface HelpCategory {
   id: string;
@@ -41,43 +38,13 @@ const CAT_GRADIENT: Record<string, string> = {
   red:    "from-rose-500 to-rose-600",
   cyan:   "from-cyan-500 to-cyan-600",
   indigo: "from-indigo-500 to-indigo-600",
-  slate:  "from-slate-500 to-slate-600",
-};
-const CAT_BG: Record<string, string> = {
-  blue:   "bg-blue-50 dark:bg-blue-950/30",
-  green:  "bg-emerald-50 dark:bg-emerald-950/30",
-  purple: "bg-violet-50 dark:bg-violet-950/30",
-  amber:  "bg-amber-50 dark:bg-amber-950/30",
-  red:    "bg-rose-50 dark:bg-rose-950/30",
-  cyan:   "bg-cyan-50 dark:bg-cyan-950/30",
-  indigo: "bg-indigo-50 dark:bg-indigo-950/30",
-  slate:  "bg-slate-50 dark:bg-slate-900/30",
-};
-const CAT_BORDER: Record<string, string> = {
-  blue:   "border-blue-200 dark:border-blue-800",
-  green:  "border-emerald-200 dark:border-emerald-800",
-  purple: "border-violet-200 dark:border-violet-800",
-  amber:  "border-amber-200 dark:border-amber-800",
-  red:    "border-rose-200 dark:border-rose-800",
-  cyan:   "border-cyan-200 dark:border-cyan-800",
-  indigo: "border-indigo-200 dark:border-indigo-800",
-  slate:  "border-slate-200 dark:border-slate-800",
-};
-const CAT_TEXT: Record<string, string> = {
-  blue:   "text-blue-700 dark:text-blue-300",
-  green:  "text-emerald-700 dark:text-emerald-300",
-  purple: "text-violet-700 dark:text-violet-300",
-  amber:  "text-amber-700 dark:text-amber-300",
-  red:    "text-rose-700 dark:text-rose-300",
-  cyan:   "text-cyan-700 dark:text-cyan-300",
-  indigo: "text-indigo-700 dark:text-indigo-300",
-  slate:  "text-slate-700 dark:text-slate-300",
+  slate:  "from-slate-400 to-slate-500",
 };
 
 const TYPE_CONFIG = {
-  article: { label: "Article",     icon: FileText,   bg: "bg-blue-100 dark:bg-blue-900/40",   text: "text-blue-700 dark:text-blue-300"   },
-  video:   { label: "Video guide", icon: Video,       bg: "bg-violet-100 dark:bg-violet-900/40",text: "text-violet-700 dark:text-violet-300"},
-  faq:     { label: "FAQ",         icon: HelpCircle, bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-700 dark:text-amber-300" },
+  article: { label: "Article",     icon: FileText,   bg: "bg-blue-100",   text: "text-blue-700"   },
+  video:   { label: "Video",       icon: Video,       bg: "bg-violet-100", text: "text-violet-700" },
+  faq:     { label: "FAQ",         icon: HelpCircle, bg: "bg-amber-100",  text: "text-amber-700"  },
 };
 
 function getYouTubeId(url: string) {
@@ -98,12 +65,23 @@ function buildEmbedUrl(url: string): string | null {
 function isUploadedVideo(url: string): boolean {
   return /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url) || url.includes("/uploads/help-videos/");
 }
+function getArticleThumbnail(article: HelpArticle): { kind: "img"; src: string } | { kind: "gradient" } {
+  if (article.thumbnail_url) return { kind: "img", src: article.thumbnail_url };
+  if (article.video_url) {
+    const ytId = getYouTubeId(article.video_url);
+    if (ytId) return { kind: "img", src: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
+    const vmId = getVimeoId(article.video_url);
+    if (vmId) return { kind: "img", src: `https://vumbnail.com/${vmId}.jpg` };
+  }
+  return { kind: "gradient" };
+}
 
 export default function HelpCentrePage() {
   const [categories, setCategories] = useState<HelpCategory[]>([]);
   const [articles, setArticles] = useState<HelpArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<HelpCategory | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
   const [articleLoading, setArticleLoading] = useState(false);
@@ -127,11 +105,10 @@ export default function HelpCentrePage() {
     finally   { setArticleLoading(false); }
   }
 
-  async function searchArticles(q: string) {
+  async function doSearch(q: string) {
     setSearch(q);
-    const url = q.trim()
-      ? `/api/help/articles?q=${encodeURIComponent(q)}`
-      : "/api/help/articles";
+    setSelectedCategory(null);
+    const url = q.trim() ? `/api/help/articles?q=${encodeURIComponent(q)}` : "/api/help/articles";
     const res = await fetch(url, { credentials: "include" });
     if (res.ok) setArticles(await res.json());
   }
@@ -140,12 +117,18 @@ export default function HelpCentrePage() {
     setSelectedCategory(cat);
     setSelectedArticle(null);
     setSearch("");
+    setSearchInput("");
     const url = cat ? `/api/help/articles?category=${cat.id}` : "/api/help/articles";
     const res = await fetch(url, { credentials: "include" });
     if (res.ok) setArticles(await res.json());
   }
 
-  // ── Article detail view ──────────────────────────────────────────────────────
+  function clearSearch() {
+    setSearchInput("");
+    doSearch("");
+  }
+
+  // ── Article detail view ─────────────────────────────────────────────────────
   if (selectedArticle) {
     const uploadedVideo = selectedArticle.video_url && isUploadedVideo(selectedArticle.video_url)
       ? selectedArticle.video_url : null;
@@ -156,59 +139,41 @@ export default function HelpCentrePage() {
     const grad = CAT_GRADIENT[selectedArticle.category_color || "blue"] || CAT_GRADIENT.blue;
 
     return (
-      <div className="min-h-full bg-background">
-        {/* Accent top bar */}
+      <div className="min-h-full bg-white">
         <div className={`h-1 w-full bg-gradient-to-r ${grad}`} />
-
         <div className="max-w-2xl mx-auto px-6 py-8">
-          {/* Breadcrumb */}
           <button
             onClick={() => setSelectedArticle(null)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground mb-8 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-800 mb-8 transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Help Centre
             {selectedArticle.category_name && (
-              <>
-                <span className="opacity-40 mx-0.5">/</span>
-                <span>{selectedArticle.category_icon} {selectedArticle.category_name}</span>
-              </>
+              <><span className="opacity-40 mx-0.5">/</span><span>{selectedArticle.category_icon} {selectedArticle.category_name}</span></>
             )}
           </button>
 
-          {/* Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.text}`}>
-              <TypeIcon className="h-3.5 w-3.5" />
-              {tc.label}
+              <TypeIcon className="h-3.5 w-3.5" />{tc.label}
             </span>
             {!!selectedArticle.pinned && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
                 <Pin className="h-3 w-3" /> Featured
               </span>
             )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-3xl font-bold leading-tight text-foreground mb-3">
-            {selectedArticle.title}
-          </h1>
+          <h1 className="text-3xl font-bold leading-tight text-gray-900 mb-3">{selectedArticle.title}</h1>
           {selectedArticle.summary && (
-            <p className="text-muted-foreground text-base leading-relaxed mb-2">
-              {selectedArticle.summary}
-            </p>
+            <p className="text-gray-500 text-base leading-relaxed mb-2">{selectedArticle.summary}</p>
           )}
 
-          {/* Meta */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground mb-8 pb-8 border-b border-border">
-            <span className="flex items-center gap-1.5">
-              <Eye className="h-3 w-3" />
-              {selectedArticle.view_count} views
-            </span>
+          <div className="flex items-center gap-4 text-xs text-gray-400 mb-8 pb-8 border-b border-gray-100">
+            <span className="flex items-center gap-1.5"><Eye className="h-3 w-3" />{selectedArticle.view_count} views</span>
             <span>{new Date(selectedArticle.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}</span>
           </div>
 
-          {/* Video */}
           {uploadedVideo && (
             <div className="aspect-video w-full overflow-hidden rounded-xl mb-8 bg-black shadow-lg">
               <video src={uploadedVideo} controls className="w-full h-full" />
@@ -221,20 +186,15 @@ export default function HelpCentrePage() {
             </div>
           )}
 
-          {/* Body */}
           {selectedArticle.body && (
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed"
-              style={{ lineHeight: "1.8" }}
-              dangerouslySetInnerHTML={{ __html: selectedArticle.body }}
-            />
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" style={{ lineHeight: "1.8" }}
+              dangerouslySetInnerHTML={{ __html: selectedArticle.body }} />
           )}
 
-          {/* Tags */}
           {selectedArticle.tags && (
-            <div className="mt-10 pt-6 border-t border-border flex flex-wrap gap-2">
+            <div className="mt-10 pt-6 border-t border-gray-100 flex flex-wrap gap-2">
               {selectedArticle.tags.split(",").map(t => (
-                <span key={t} className="text-xs text-muted-foreground border border-border px-2.5 py-1 rounded-full hover:border-foreground/30 transition-colors">
+                <span key={t} className="text-xs text-gray-400 border border-gray-200 px-2.5 py-1 rounded-full hover:border-gray-400 transition-colors">
                   {t.trim()}
                 </span>
               ))}
@@ -245,331 +205,270 @@ export default function HelpCentrePage() {
     );
   }
 
-  const pinnedArticles  = articles.filter(a =>  a.pinned);
-  const regularArticles = articles.filter(a => !a.pinned);
-
-  // article count per category
-  const articleCountMap = articles.reduce<Record<string, number>>((acc, a) => {
+  const pinnedArticles   = articles.filter(a =>  a.pinned);
+  const regularArticles  = articles.filter(a => !a.pinned);
+  const popularArticles  = [...articles].sort((a, b) => b.view_count - a.view_count).slice(0, 6);
+  const articleCountMap  = articles.reduce<Record<string, number>>((acc, a) => {
     if (a.category_id) acc[a.category_id] = (acc[a.category_id] || 0) + 1;
     return acc;
   }, {});
 
-  // ── Main listing ─────────────────────────────────────────────────────────────
+  // ── Main listing ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-full bg-background">
+    <div className="min-h-full bg-white">
 
-      {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-14 text-center">
-        {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -top-20 -left-20 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" />
+      {/* ── Hero ── */}
+      <div className="relative overflow-hidden bg-white border-b border-gray-100">
+        {/* Decorative petals */}
+        <svg className="pointer-events-none absolute top-0 left-0 w-48 h-48 opacity-10" viewBox="0 0 200 200" fill="none">
+          <circle cx="30" cy="30" r="18" fill="#f43f5e" />
+          <circle cx="70" cy="15" r="12" fill="#f43f5e" />
+          <circle cx="10" cy="70" r="14" fill="#f43f5e" />
+          <circle cx="50" cy="55" r="10" fill="#fda4af" />
+          <circle cx="100" cy="20" r="8"  fill="#fda4af" />
+        </svg>
+        <svg className="pointer-events-none absolute top-0 right-0 w-48 h-48 opacity-10" viewBox="0 0 200 200" fill="none">
+          <circle cx="170" cy="30" r="18" fill="#f43f5e" />
+          <circle cx="130" cy="15" r="12" fill="#f43f5e" />
+          <circle cx="190" cy="70" r="14" fill="#f43f5e" />
+          <circle cx="150" cy="55" r="10" fill="#fda4af" />
+          <circle cx="100" cy="20" r="8"  fill="#fda4af" />
+        </svg>
 
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-4 py-1.5 mb-5">
-            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">Help Centre</span>
-          </div>
-          <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">How can we help?</h1>
-          <p className="text-slate-400 text-sm mb-8 max-w-md mx-auto">
-            Guides, tutorials and answers for South African businesses using Masakhe
-          </p>
+        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-7" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            Welcome to our Help Centre
+          </h1>
 
           {/* Search bar */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <div className="flex items-center max-w-lg mx-auto shadow-sm border border-gray-200 rounded-md overflow-hidden bg-white">
+            <div className="pl-3 pr-2 flex items-center text-gray-400">
+              <Search className="h-4 w-4" />
+            </div>
             <input
               type="text"
-              placeholder="Search articles, guides, FAQs…"
-              className="w-full bg-white/10 backdrop-blur-sm text-white placeholder:text-slate-400 border border-white/20 rounded-2xl px-4 pl-11 pr-10 h-12 text-sm focus:outline-none focus:border-amber-400/60 focus:bg-white/15 transition-all"
-              value={search}
-              onChange={e => searchArticles(e.target.value)}
+              placeholder="Search for articles, guides, FAQs…"
+              className="flex-1 h-11 px-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none bg-white"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doSearch(searchInput)}
             />
-            {search && (
-              <button onClick={() => searchArticles("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+            {searchInput && (
+              <button onClick={clearSearch} className="px-2 text-gray-400 hover:text-gray-600">
                 <X className="h-4 w-4" />
               </button>
             )}
+            <button
+              onClick={() => doSearch(searchInput)}
+              className="h-11 px-5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold transition-colors"
+            >
+              Search
+            </button>
           </div>
+
+          {/* Category quick-links */}
+          {categories.length > 0 && !search && (
+            <div className="flex items-center justify-center gap-4 mt-5 flex-wrap">
+              <button
+                onClick={() => filterByCategory(null)}
+                className={`text-sm transition-colors ${!selectedCategory ? "text-sky-600 font-semibold" : "text-gray-500 hover:text-sky-600"}`}
+              >
+                All topics
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => filterByCategory(cat)}
+                  className={`text-sm transition-colors ${selectedCategory?.id === cat.id ? "text-sky-600 font-semibold" : "text-gray-500 hover:text-sky-600"}`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Category tab strip */}
-      {categories.length > 0 && !search && (
-        <div className="border-b border-border bg-background">
-          <div className="max-w-5xl mx-auto px-6 flex gap-0 overflow-x-auto scrollbar-none">
-            <button
-              onClick={() => filterByCategory(null)}
-              className={`shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                ${!selectedCategory ? "border-amber-500 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            >
-              All topics
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => filterByCategory(cat)}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                  ${selectedCategory?.id === cat.id ? "border-amber-500 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >
-                <span>{cat.icon}</span>{cat.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
         </div>
       ) : (
-        <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+        <div className="max-w-5xl mx-auto px-6 py-10 space-y-12">
 
           {/* Empty state */}
           {articles.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center text-3xl">📭</div>
-              <p className="font-bold text-foreground text-lg">{search ? "No results found" : "Nothing here yet"}</p>
-              <p className="text-sm text-muted-foreground">
-                {search ? `Try a different search term` : "Check back soon — guides are coming."}
-              </p>
+              <div className="h-16 w-16 rounded-2xl bg-gray-100 flex items-center justify-center text-3xl">📭</div>
+              <p className="font-bold text-gray-800 text-lg">{search ? "No results found" : "Nothing here yet"}</p>
+              <p className="text-sm text-gray-400">{search ? "Try a different search term" : "Check back soon — guides are coming."}</p>
             </div>
           )}
 
-          {/* Search results header */}
+          {/* Search results */}
           {search && articles.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">{articles.length}</strong> result{articles.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
-            </p>
-          )}
-
-          {/* Category cards — shown when no filter, no search */}
-          {!search && !selectedCategory && categories.length > 0 && (
             <div>
-              <SectionHeading icon={BookOpen} label="Browse by topic" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                {categories.map(cat => {
-                  const grad   = CAT_GRADIENT[cat.color] || CAT_GRADIENT.slate;
-                  const bg     = CAT_BG[cat.color]       || CAT_BG.slate;
-                  const border = CAT_BORDER[cat.color]   || CAT_BORDER.slate;
-                  const text   = CAT_TEXT[cat.color]     || CAT_TEXT.slate;
-                  const count  = articleCountMap[cat.id] || 0;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => filterByCategory(cat)}
-                      className={`group text-left rounded-2xl border ${border} ${bg} p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex flex-col gap-3`}
-                    >
-                      {/* Icon circle */}
-                      <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center text-xl shadow-sm`}>
-                        {cat.icon}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-bold text-sm ${text} group-hover:underline underline-offset-2 mb-1`}>{cat.name}</p>
-                        {cat.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{cat.description}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {count} article{count !== 1 ? "s" : ""}
-                        </span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Pinned / featured articles */}
-          {pinnedArticles.length > 0 && !search && (
-            <div>
-              <SectionHeading icon={Pin} label="Featured" accent="amber" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
-                {pinnedArticles.map(article => (
-                  <ArticleCard key={article.id} article={article} onClick={() => openArticle(article)} featured />
+              <p className="text-sm text-gray-500 mb-5">
+                <strong className="text-gray-800">{articles.length}</strong> result{articles.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {articles.map(article => (
+                  <TopicCard key={article.id} article={article} articleCount={0} onClick={() => openArticle(article)} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Regular / search articles */}
-          {(search ? articles : regularArticles).length > 0 && (
-            <div>
-              {!search && (
-                <SectionHeading
-                  icon={BookOpen}
-                  label={selectedCategory ? `${selectedCategory.icon} ${selectedCategory.name}` : "All Articles"}
-                />
+          {!search && (
+            <>
+              {/* Featured Topics */}
+              {(pinnedArticles.length > 0 || categories.length > 0) && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-7">
+                    {selectedCategory ? `${selectedCategory.icon} ${selectedCategory.name}` : "Featured Topics"}
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {(selectedCategory
+                      ? regularArticles.slice(0, 8)
+                      : pinnedArticles.length > 0 ? pinnedArticles.slice(0, 4) : articles.slice(0, 4)
+                    ).map(article => (
+                      <TopicCard key={article.id} article={article} articleCount={0} onClick={() => openArticle(article)} featured={!!article.pinned} />
+                    ))}
+                  </div>
+                </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
-                {(search ? articles : regularArticles).map(article => (
-                  <ArticleCard key={article.id} article={article} onClick={() => openArticle(article)} />
-                ))}
-              </div>
-            </div>
+
+              {/* Popular Articles — two-column link list */}
+              {!selectedCategory && popularArticles.length > 0 && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-7">Popular Articles</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-3 max-w-3xl mx-auto">
+                    {popularArticles.map(article => (
+                      <button
+                        key={article.id}
+                        onClick={() => openArticle(article)}
+                        className="text-left text-sm text-sky-600 hover:text-sky-800 hover:underline underline-offset-2 transition-colors py-0.5 leading-snug"
+                      >
+                        {article.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Browse by Category */}
+              {!selectedCategory && categories.length > 0 && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-7">Browse Products and Services</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {categories.map(cat => {
+                      const count = articleCountMap[cat.id] || 0;
+                      const grad  = CAT_GRADIENT[cat.color] || CAT_GRADIENT.slate;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => filterByCategory(cat)}
+                          className="group text-left rounded-md overflow-hidden border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-white"
+                        >
+                          <div className={`w-full aspect-video bg-gradient-to-br ${grad} flex items-center justify-center text-4xl`}>
+                            {cat.icon}
+                          </div>
+                          <div className="px-3 py-2.5">
+                            <p className="font-semibold text-sm text-gray-800 group-hover:text-sky-600 transition-colors">{cat.name}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{count} article{count !== 1 ? "s" : ""}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Regular articles under a selected category */}
+              {selectedCategory && regularArticles.length > 0 && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-7">All Articles</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {regularArticles.map(article => (
+                      <TopicCard key={article.id} article={article} articleCount={0} onClick={() => openArticle(article)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
         </div>
       )}
 
-      {/* Article loading overlay */}
       {articleLoading && (
-        <div className="fixed inset-0 bg-background/70 flex items-center justify-center z-50 backdrop-blur-sm">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        <div className="fixed inset-0 bg-white/70 flex items-center justify-center z-50 backdrop-blur-sm">
+          <Loader2 className="h-7 w-7 animate-spin text-sky-600" />
         </div>
       )}
     </div>
   );
 }
 
-function SectionHeading({
-  icon: Icon,
-  label,
-  accent,
-}: {
-  icon: React.ElementType;
-  label: string;
-  accent?: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${accent === "amber" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-muted"}`}>
-        <Icon className={`h-3.5 w-3.5 ${accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`} />
-      </div>
-      <span className="font-bold text-sm text-foreground uppercase tracking-wide">{label}</span>
-      <div className="flex-1 h-px bg-border" />
-    </div>
-  );
-}
-
-function getArticleThumbnail(article: HelpArticle): { kind: "img"; src: string } | { kind: "gradient" } {
-  if (article.thumbnail_url) return { kind: "img", src: article.thumbnail_url };
-  if (article.video_url) {
-    const ytId = getYouTubeId(article.video_url);
-    if (ytId) return { kind: "img", src: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
-    const vmId = getVimeoId(article.video_url);
-    if (vmId) return { kind: "img", src: `https://vumbnail.com/${vmId}.jpg` };
-  }
-  return { kind: "gradient" };
-}
-
-const TYPE_EMOJI: Record<string, string> = {
-  article: "📄",
-  video:   "🎬",
-  faq:     "💡",
-};
-
-function ArticleCard({
+function TopicCard({
   article,
   onClick,
   featured = false,
 }: {
   article: HelpArticle;
+  articleCount: number;
   onClick: () => void;
   featured?: boolean;
 }) {
-  const tc      = TYPE_CONFIG[article.content_type] || TYPE_CONFIG.article;
-  const TypeIcon = tc.icon;
-  const grad    = CAT_GRADIENT[article.category_color || "slate"] || CAT_GRADIENT.slate;
-  const border  = CAT_BORDER[article.category_color || "slate"]   || CAT_BORDER.slate;
-  const thumb   = getArticleThumbnail(article);
+  const grad  = CAT_GRADIENT[article.category_color || "slate"] || CAT_GRADIENT.slate;
+  const thumb = getArticleThumbnail(article);
 
   return (
-    <button
-      onClick={onClick}
-      className={`group text-left rounded-2xl border bg-card hover:shadow-xl transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col
-        ${featured ? border : "border-border"}`}
-    >
-      {/* ── Thumbnail ── */}
-      <div className="relative w-full overflow-hidden bg-muted" style={{ aspectRatio: "16/9" }}>
+    <button onClick={onClick} className="group text-left rounded-md overflow-hidden border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-white">
+      {/* Thumbnail */}
+      <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: "16/9" }}>
         {thumb.kind === "img" ? (
-          <img
-            src={thumb.src}
-            alt={article.title}
+          <img src={thumb.src} alt={article.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={e => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
-              const parent = e.currentTarget.parentElement;
-              if (parent) parent.classList.add("show-fallback");
+              const p = e.currentTarget.parentElement;
+              if (p) p.classList.add("show-fallback");
             }}
           />
         ) : null}
-
-        {/* Gradient fallback (always rendered behind image as CSS layer) */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${grad} flex flex-col items-center justify-center gap-2 ${thumb.kind === "img" ? "opacity-0 group-[.show-fallback]:opacity-100" : ""}`}
-        >
-          <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-white/10 -translate-y-8 translate-x-8" />
-          <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-white/10 translate-y-10 -translate-x-10" />
-          <div className="relative z-10 flex flex-col items-center gap-2 px-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm text-2xl">
-              {TYPE_EMOJI[article.content_type] || "📄"}
-            </div>
-            <p className="text-white/90 text-xs font-semibold text-center line-clamp-2 leading-snug">
-              {article.title}
-            </p>
-          </div>
+        <div className={`absolute inset-0 bg-gradient-to-br ${grad} flex items-center justify-center ${thumb.kind === "img" ? "opacity-0 group-[.show-fallback]:opacity-100" : ""}`}>
+          <span className="text-3xl">{article.category_icon || "📄"}</span>
         </div>
 
-        {/* Play button overlay for videos */}
+        {/* Video play button */}
         {article.content_type === "video" && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-11 h-11 rounded-full bg-black/55 flex items-center justify-center backdrop-blur-sm shadow-lg group-hover:scale-110 group-hover:bg-black/70 transition-all duration-200">
-              <div className="w-0 h-0 border-y-[8px] border-y-transparent border-l-[14px] border-l-white ml-1" />
+            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-0 h-0 border-y-[7px] border-y-transparent border-l-[12px] border-l-white ml-0.5" />
             </div>
           </div>
         )}
 
-        {/* Type badge — bottom-left */}
-        <div className="absolute bottom-2.5 left-2.5">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm backdrop-blur-sm ${tc.bg} ${tc.text}`}>
-            <TypeIcon className="h-2.5 w-2.5" />
-            {tc.label}
-          </span>
-        </div>
-
-        {/* Pinned badge — bottom-right */}
-        {!!article.pinned && (
-          <div className="absolute bottom-2.5 right-2.5">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/90 text-amber-900 shadow-sm backdrop-blur-sm">
-              <Pin className="h-2.5 w-2.5" /> Featured
-            </span>
+        {/* Badges */}
+        {featured && (
+          <div className="absolute top-2 right-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-sm">Featured</span>
+          </div>
+        )}
+        {article.view_count > 100 && !featured && (
+          <div className="absolute top-2 right-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500 text-white shadow-sm">Popular</span>
           </div>
         )}
       </div>
 
-      {/* ── Card body ── */}
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        {/* Category label */}
+      {/* Info */}
+      <div className="px-3 py-2.5">
+        <p className="font-semibold text-sm text-gray-800 group-hover:text-sky-600 transition-colors leading-snug line-clamp-2">{article.title}</p>
         {article.category_name && (
-          <span className="text-[11px] text-muted-foreground font-medium tracking-wide">
-            {article.category_icon} {article.category_name}
-          </span>
+          <p className="text-xs text-gray-400 mt-0.5">{article.category_name}</p>
         )}
-
-        {/* Title */}
-        <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
-          {article.title}
-        </h3>
-
-        {/* Summary */}
-        {article.summary && (
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-            {article.summary}
-          </p>
-        )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/60 mt-auto">
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Eye className="h-3 w-3" />
-            {article.view_count} views
-          </span>
-          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-        </div>
       </div>
     </button>
   );
