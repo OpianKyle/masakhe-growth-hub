@@ -1,0 +1,107 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ pm2 logs masakhe --lines 50 --nostream
+[TAILING] Tailing last 50 lines for [masakhe] process (change the value with --lines option)
+/home/ubuntu/.pm2/logs/masakhe-out.log last 50 lines:
+0|masakhe  | [Drip] Day 7 email sent to actrknicains@gmail.com
+0|masakhe  | [Drip] Day 1 email sent to merrington.tech@gmail.com
+0|masakhe  | [Drip] Day 3 email sent to cimolli.jozi@gmail.com
+0|masakhe  | [Drip] Day 30 email sent to hornwkeziah@gmail.com
+0|masakhe  | [Drip] Day 30 email sent to sisusasinovuyo421@gmail.com
+0|masakhe  | [Drip] Day 3 email sent to merrington.tech@gmail.com
+0|masakhe  | [Drip] Day 30 email sent to selekosolomonkhaya@gmail.com
+0|masakhe  | [Drip] Day 7 email sent to abtauto135@gmail.com
+0|masakhe  | [Drip] Day 14 email sent to maliziafortuin@mjcleaningservice.co.za
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [PayslipScheduler] Auto-send payslip scheduler started (runs every 15 min)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Municipality] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [Drip] Day 14 email sent to zedhandyman99@gmail.com
+0|masakhe  | [Drip] Day 14 email sent to jarvis@masakhegroup.co.za
+0|masakhe  | [Drip] Day 7 email sent to cimolli.jozi@gmail.com
+0|masakhe  | [SMS] AFRICASTALKING_USERNAME / AFRICASTALKING_API_KEY not set — SMS sending disabled (console-only mode)
+0|masakhe  | [Billing] ADUMO_ENV=production → endpoint: https://apiv3.adumoonline.com/product/payment/v1/initialisevirtual
+0|masakhe  | [Billing] APP_URL (redirect base): https://masakheportal.co.za
+0|masakhe  | API running on 0.0.0.0:5000
+0|masakhe  | Social media scheduler started (runs every 60s)
+0|masakhe  | [Billing] Billing scheduler started (runs every hour)
+0|masakhe  | [PayslipScheduler] Auto-send payslip scheduler started (runs every 15 min)
+0|masakhe  | [Automations] Scheduler started (runs every 30 min)
+0|masakhe  | [Drip] Drip email scheduler started (runs every hour)
+0|masakhe  | [CampaignScheduler] Scheduled campaign sender started (checks every 2 minutes)
+0|masakhe  | [Inventory] Migrations complete
+0|masakhe  | [InvoiceScheduler] Payment reminder scheduler started (runs every 6 hours)
+0|masakhe  | [Franchise] Migrations complete
+0|masakhe  | [Municipality] Migrations complete
+0|masakhe  | [Reseller] Migrations complete
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | MySQL migrations completed successfully
+0|masakhe  | [Startup] All migrations and seed complete
+0|masakhe  | [Drip] Day 14 email sent to michael.hamnca@gmail.com
+0|masakhe  | [Billing] Trial expiry email sent to michael.hamnca@gmail.com (workspace 6b85c3d8-3ec7-4a45-94cf-463d7a7bb89a)
+
+/home/ubuntu/.pm2/logs/masakhe-error.log last 50 lines:
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:8498)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:9584)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11114)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:12288)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+0|masakhe  |
+0|masakhe  | node:internal/modules/run_main:123
+0|masakhe  |     triggerUncaughtException(
+0|masakhe  |     ^
+0|masakhe  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'uuid' imported from /home/ubuntu/masakhe-growth-hub/server/shifts.ts
+0|masakhe  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|masakhe  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:8498)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:9584)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11114)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:12288)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+0|masakhe  |
+0|masakhe  | node:internal/modules/run_main:123
+0|masakhe  |     triggerUncaughtException(
+0|masakhe  |     ^
+0|masakhe  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'uuid' imported from /home/ubuntu/masakhe-growth-hub/server/shifts.ts
+0|masakhe  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|masakhe  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|masakhe  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|masakhe  |     at nextResolve (node:internal/modules/esm/hooks:864:28)
+0|masakhe  |     at resolveBase (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:8498)
+0|masakhe  |     at resolveDirectory (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:9584)
+0|masakhe  |     at resolveTsPaths (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11114)
+0|masakhe  |     at async resolve (file:///home/ubuntu/masakhe-growth-hub/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:12288)
+0|masakhe  |     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+0|masakhe  |     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+0|masakhe  |   code: 'ERR_MODULE_NOT_FOUND'
+0|masakhe  | }
+0|masakhe  |
+0|masakhe  | Node.js v20.20.1
+
+ubuntu@masahke-group:~/masakhe-growth-hub$
