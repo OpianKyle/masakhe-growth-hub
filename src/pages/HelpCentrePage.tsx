@@ -219,22 +219,16 @@ export default function HelpCentrePage() {
     <div className="min-h-full bg-white">
 
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden bg-white border-b border-gray-100">
-        {/* Decorative petals */}
-        <svg className="pointer-events-none absolute top-0 left-0 w-48 h-48 opacity-10" viewBox="0 0 200 200" fill="none">
-          <circle cx="30" cy="30" r="18" fill="#f43f5e" />
-          <circle cx="70" cy="15" r="12" fill="#f43f5e" />
-          <circle cx="10" cy="70" r="14" fill="#f43f5e" />
-          <circle cx="50" cy="55" r="10" fill="#fda4af" />
-          <circle cx="100" cy="20" r="8"  fill="#fda4af" />
-        </svg>
-        <svg className="pointer-events-none absolute top-0 right-0 w-48 h-48 opacity-10" viewBox="0 0 200 200" fill="none">
-          <circle cx="170" cy="30" r="18" fill="#f43f5e" />
-          <circle cx="130" cy="15" r="12" fill="#f43f5e" />
-          <circle cx="190" cy="70" r="14" fill="#f43f5e" />
-          <circle cx="150" cy="55" r="10" fill="#fda4af" />
-          <circle cx="100" cy="20" r="8"  fill="#fda4af" />
-        </svg>
+      <div className="relative overflow-hidden border-b border-gray-100" style={{ minHeight: "220px" }}>
+        {/* Banner image */}
+        <img
+          src="/uploads/help-images/help-centre-banner.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          aria-hidden="true"
+        />
+        {/* Overlay so text stays legible */}
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]" />
 
         <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-7" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
