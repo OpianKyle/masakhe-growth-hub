@@ -387,7 +387,7 @@ export default function HelpCentrePage() {
           {pinnedArticles.length > 0 && !search && (
             <div>
               <SectionHeading icon={Pin} label="Featured" accent="amber" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
                 {pinnedArticles.map(article => (
                   <ArticleCard key={article.id} article={article} onClick={() => openArticle(article)} featured />
                 ))}
@@ -404,7 +404,7 @@ export default function HelpCentrePage() {
                   label={selectedCategory ? `${selectedCategory.icon} ${selectedCategory.name}` : "All Articles"}
                 />
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
                 {(search ? articles : regularArticles).map(article => (
                   <ArticleCard key={article.id} article={article} onClick={() => openArticle(article)} />
                 ))}
@@ -445,6 +445,23 @@ function SectionHeading({
   );
 }
 
+function getArticleThumbnail(article: HelpArticle): { kind: "img"; src: string } | { kind: "gradient" } {
+  if (article.thumbnail_url) return { kind: "img", src: article.thumbnail_url };
+  if (article.video_url) {
+    const ytId = getYouTubeId(article.video_url);
+    if (ytId) return { kind: "img", src: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
+    const vmId = getVimeoId(article.video_url);
+    if (vmId) return { kind: "img", src: `https://vumbnail.com/${vmId}.jpg` };
+  }
+  return { kind: "gradient" };
+}
+
+const TYPE_EMOJI: Record<string, string> = {
+  article: "📄",
+  video:   "🎬",
+  faq:     "💡",
+};
+
 function ArticleCard({
   article,
   onClick,
@@ -454,39 +471,87 @@ function ArticleCard({
   onClick: () => void;
   featured?: boolean;
 }) {
-  const tc = TYPE_CONFIG[article.content_type] || TYPE_CONFIG.article;
+  const tc      = TYPE_CONFIG[article.content_type] || TYPE_CONFIG.article;
   const TypeIcon = tc.icon;
-  const grad   = CAT_GRADIENT[article.category_color || "slate"] || CAT_GRADIENT.slate;
-  const border = CAT_BORDER[article.category_color || "slate"]   || CAT_BORDER.slate;
+  const grad    = CAT_GRADIENT[article.category_color || "slate"] || CAT_GRADIENT.slate;
+  const border  = CAT_BORDER[article.category_color || "slate"]   || CAT_BORDER.slate;
+  const thumb   = getArticleThumbnail(article);
 
   return (
     <button
       onClick={onClick}
-      className={`group text-left rounded-2xl border bg-card hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 overflow-hidden
+      className={`group text-left rounded-2xl border bg-card hover:shadow-xl transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col
         ${featured ? border : "border-border"}`}
     >
-      {/* Top gradient accent line */}
-      <div className={`h-1 w-full bg-gradient-to-r ${grad}`} />
+      {/* ── Thumbnail ── */}
+      <div className="relative w-full overflow-hidden bg-muted" style={{ aspectRatio: "16/9" }}>
+        {thumb.kind === "img" ? (
+          <img
+            src={thumb.src}
+            alt={article.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={e => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+              const parent = e.currentTarget.parentElement;
+              if (parent) parent.classList.add("show-fallback");
+            }}
+          />
+        ) : null}
 
-      <div className="p-5 flex flex-col gap-3">
-        {/* Type + pinned badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${tc.bg} ${tc.text}`}>
-            <TypeIcon className="h-3 w-3" />
-            {tc.label}
-          </span>
-          {article.category_name && (
-            <span className="text-[11px] text-muted-foreground font-medium">
-              {article.category_icon} {article.category_name}
-            </span>
-          )}
-          {!!article.pinned && (
-            <Pin className="h-3 w-3 text-amber-400 ml-auto" />
-          )}
+        {/* Gradient fallback (always rendered behind image as CSS layer) */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${grad} flex flex-col items-center justify-center gap-2 ${thumb.kind === "img" ? "opacity-0 group-[.show-fallback]:opacity-100" : ""}`}
+        >
+          <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-white/10 -translate-y-8 translate-x-8" />
+          <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-white/10 translate-y-10 -translate-x-10" />
+          <div className="relative z-10 flex flex-col items-center gap-2 px-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm text-2xl">
+              {TYPE_EMOJI[article.content_type] || "📄"}
+            </div>
+            <p className="text-white/90 text-xs font-semibold text-center line-clamp-2 leading-snug">
+              {article.title}
+            </p>
+          </div>
         </div>
 
+        {/* Play button overlay for videos */}
+        {article.content_type === "video" && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-11 h-11 rounded-full bg-black/55 flex items-center justify-center backdrop-blur-sm shadow-lg group-hover:scale-110 group-hover:bg-black/70 transition-all duration-200">
+              <div className="w-0 h-0 border-y-[8px] border-y-transparent border-l-[14px] border-l-white ml-1" />
+            </div>
+          </div>
+        )}
+
+        {/* Type badge — bottom-left */}
+        <div className="absolute bottom-2.5 left-2.5">
+          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm backdrop-blur-sm ${tc.bg} ${tc.text}`}>
+            <TypeIcon className="h-2.5 w-2.5" />
+            {tc.label}
+          </span>
+        </div>
+
+        {/* Pinned badge — bottom-right */}
+        {!!article.pinned && (
+          <div className="absolute bottom-2.5 right-2.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/90 text-amber-900 shadow-sm backdrop-blur-sm">
+              <Pin className="h-2.5 w-2.5" /> Featured
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Card body ── */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        {/* Category label */}
+        {article.category_name && (
+          <span className="text-[11px] text-muted-foreground font-medium tracking-wide">
+            {article.category_icon} {article.category_name}
+          </span>
+        )}
+
         {/* Title */}
-        <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+        <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
           {article.title}
         </h3>
 
@@ -498,7 +563,7 @@ function ArticleCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/60 mt-auto">
+        <div className="flex items-center justify-between pt-2 border-t border-border/60 mt-auto">
           <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Eye className="h-3 w-3" />
             {article.view_count} views
