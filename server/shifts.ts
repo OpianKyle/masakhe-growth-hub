@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "./auth";
-import { query, queryOne } from "./db";
+import { queryAll as query, queryOne } from "./db";
 import { v4 as uuidv4 } from "uuid";
 
 export const shiftsRouter = Router();
