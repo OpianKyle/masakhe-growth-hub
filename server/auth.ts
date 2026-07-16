@@ -196,10 +196,14 @@ authRouter.post("/register", async (req, res) => {
                   bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
                   bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
                   bp.vat_number, bp.invoice_color, bp.popia_consent,
-                  IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
+                  IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller,
+                  IF(mtnfc.id IS NOT NULL, 1, 0) as is_mtn_client,
+                  mtnf.code as mtn_franchise_code
            FROM users u
            LEFT JOIN business_profiles bp ON bp.user_id = u.id
            LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
+           LEFT JOIN franchise_clients mtnfc ON mtnfc.client_user_id = u.id AND mtnfc.status = 'active'
+           LEFT JOIN franchises mtnf ON mtnf.id = mtnfc.franchise_id AND LOWER(mtnf.code) LIKE 'mtn%'
            WHERE u.id = ?`,
           [userId]
         );
