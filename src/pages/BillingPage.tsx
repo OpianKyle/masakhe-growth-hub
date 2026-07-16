@@ -71,10 +71,107 @@ function fmt(cents: number) {
 
 type View = "modules" | "checkout" | "active";
 
+function MtnBillingPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (d.active) setStarted(true); })
+      .catch(() => {});
+  }, []);
+
+  async function handleMtnTrial() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/billing/start-trial", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modules: ALL_CODES }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start trial");
+      setStarted(true);
+      window.dispatchEvent(new Event("billing:updated"));
+      toast({ title: "7-day free trial started!", description: "You now have full access to all Masakhe modules." });
+    } catch (err: any) {
+      toast({ title: "Could not start trial", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const MTN_YELLOW = "#FFCC00";
+  const MTN_DARK = "#1a1a1a";
+
+  return (
+    <div className="min-h-full" style={{ backgroundColor: "#f9f9f9" }}>
+      {/* Hero */}
+      <div className="relative overflow-hidden py-14 px-6 text-center" style={{ background: `linear-gradient(135deg, ${MTN_DARK} 0%, #2a2a2a 100%)` }}>
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-black shadow-lg" style={{ backgroundColor: MTN_YELLOW, color: MTN_DARK }}>
+          MTN
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: MTN_YELLOW }}>
+          MTN Business Suite
+        </h1>
+        <p className="text-gray-400 max-w-md mx-auto text-sm">
+          As an MTN Business partner you get complimentary access to the full Masakhe platform. Activate your free trial below — no credit card needed.
+        </p>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+        {/* Feature list */}
+        <div className="rounded-2xl border-2 p-6 bg-white" style={{ borderColor: MTN_YELLOW }}>
+          <h2 className="font-bold text-lg mb-4" style={{ color: MTN_DARK }}>What's included</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {MODULES.map(m => (
+              <div key={m.code} className="flex items-start gap-3 rounded-xl border p-3 bg-gray-50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: MTN_YELLOW }}>
+                  <m.icon className="h-5 w-5" style={{ color: MTN_DARK }} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-800">{m.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{m.features[0]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA */}
+        {started ? (
+          <div className="rounded-2xl border-2 p-6 text-center bg-white" style={{ borderColor: MTN_YELLOW }}>
+            <CheckCircle2 className="h-10 w-10 mx-auto mb-3" style={{ color: MTN_YELLOW }} />
+            <h3 className="font-bold text-lg text-gray-900 mb-1">Trial Active</h3>
+            <p className="text-sm text-gray-500">Your MTN Business Suite is active. Enjoy full access to all modules.</p>
+          </div>
+        ) : (
+          <button
+            onClick={handleMtnTrial}
+            disabled={loading}
+            className="w-full rounded-2xl py-4 text-lg font-extrabold flex items-center justify-center gap-3 transition-opacity hover:opacity-90 disabled:opacity-60 shadow-lg"
+            style={{ backgroundColor: MTN_YELLOW, color: MTN_DARK }}
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Gift className="h-5 w-5" />}
+            {loading ? "Activating…" : "Start Free Trial Now"}
+          </button>
+        )}
+
+        <p className="text-center text-xs text-gray-400">No payment required · Full access for 7 days · Powered by Masakhe</p>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  if (user?.is_mtn_client) return <MtnBillingPage />;
 
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [subscription, setSubscription] = useState<any>(null);

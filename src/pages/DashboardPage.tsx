@@ -731,7 +731,10 @@ export default function DashboardPage() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-y-hidden">
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-emerald-100 bg-white/95 backdrop-blur-md px-4 md:px-6">
+        <header
+          className={`sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b backdrop-blur-md px-4 md:px-6 ${isMtnClient ? "" : "border-emerald-100 bg-white/95"}`}
+          style={isMtnClient ? { backgroundColor: "#141414", borderColor: "#2a2a2a" } : undefined}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -741,7 +744,12 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold font-heading text-emerald-900 truncate">{getPageTitle()}</h1>
+            <h1
+              className={`text-xl font-bold font-heading truncate ${isMtnClient ? "" : "text-emerald-900"}`}
+              style={isMtnClient ? { color: "#FFCC00" } : undefined}
+            >
+              {getPageTitle()}
+            </h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative hidden md:block">
@@ -752,6 +760,10 @@ export default function DashboardPage() {
             <Link to="/dashboard/settings" className="shrink-0">
               {user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-9 w-9 rounded-full object-contain" />
+              ) : isMtnClient ? (
+                <div className="h-9 w-9 rounded-full flex items-center justify-center font-black text-xs" style={{ backgroundColor: "#FFCC00", color: "#1a1a1a" }}>
+                  {initials}
+                </div>
               ) : (
                 <div className="h-9 w-9 rounded-full gradient-hero flex items-center justify-center">
                   <span className="text-sm font-bold text-primary-foreground">{initials}</span>
