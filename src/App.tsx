@@ -27,6 +27,7 @@ import PayInvoice from "./pages/PayInvoice";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
 import MTNPortalPage from "./pages/MTNPortalPage";
+import MTNDashboard from "./pages/MTNDashboard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />
+              <Route path="/mtn/dashboard" element={<FranchiseRoute><MTNDashboard /></FranchiseRoute>} />
               <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
               <Route path="/site/:slug" element={<PublishedSite />} />

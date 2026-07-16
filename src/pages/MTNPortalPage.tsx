@@ -195,7 +195,7 @@ function MTNLogin() {
     if (result.ok) {
       toast.success("Welcome back!");
       if (result.isAdmin) navigate("/admin", { replace: true });
-      else if (result.isFranchise) navigate("/franchise", { replace: true });
+      else if (result.isFranchise) navigate("/mtn/dashboard", { replace: true });
       else navigate("/dashboard", { replace: true });
     } else {
       toast.error(result.error || "Login failed. Please check your credentials.");
