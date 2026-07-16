@@ -302,7 +302,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/");
+    navigate(isMtnClient ? "/mtn" : "/");
   };
 
   const initials = user?.full_name?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U";
@@ -325,6 +325,15 @@ export default function DashboardPage() {
 
   const sidebarWide = mobileMenuOpen || !collapsed;
 
+  const isMtnClient = !!user?.is_mtn_client;
+  const mtnSidebarStyle = isMtnClient ? { backgroundColor: "#1a1a1a", borderColor: "#2a2a2a" } : {};
+  const activeNavCls = isMtnClient
+    ? "bg-yellow-500/20 text-yellow-400 font-semibold"
+    : "bg-sidebar-accent text-sidebar-accent-foreground font-semibold";
+  const inactiveNavCls = isMtnClient
+    ? "text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-300"
+    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground";
+
   const showOnboarding = new URLSearchParams(location.search).get("onboarding") === "1";
 
   return (
@@ -338,15 +347,28 @@ export default function DashboardPage() {
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto
+        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r transition-all duration-300 md:relative md:z-auto
+          ${isMtnClient ? "border-[#2a2a2a]" : "border-sidebar-border bg-sidebar"}
           ${sidebarWide ? "w-64" : "w-16"}
           ${mobileMenuOpen ? "flex" : "hidden md:flex"}
         `}
+        style={mtnSidebarStyle}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-sidebar-border">
+        <div
+          className={`flex h-16 shrink-0 items-center justify-between px-4 border-b ${isMtnClient ? "border-[#2a2a2a]" : "border-sidebar-border"}`}
+        >
           {sidebarWide && (
             <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-              {user?.logo_url ? (
+              {isMtnClient ? (
+                <>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "#FFCC00" }}>
+                    <span className="text-xs font-black text-black">MTN</span>
+                  </div>
+                  <span className="text-lg font-bold font-heading truncate" style={{ color: "#FFCC00" }}>
+                    {user?.business_name || "MTN Business"}
+                  </span>
+                </>
+              ) : user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain shrink-0" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero shrink-0">
@@ -355,14 +377,20 @@ export default function DashboardPage() {
                   </span>
                 </div>
               )}
-              <span className="text-lg font-bold font-heading text-sidebar-foreground truncate">
-                {user?.business_name || "Masakhe"}
-              </span>
+              {!isMtnClient && (
+                <span className="text-lg font-bold font-heading text-sidebar-foreground truncate">
+                  {user?.business_name || "Masakhe"}
+                </span>
+              )}
             </Link>
           )}
           {!sidebarWide && (
             <Link to="/dashboard" className="mx-auto">
-              {user?.logo_url ? (
+              {isMtnClient ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: "#FFCC00" }}>
+                  <span className="text-xs font-black text-black">MTN</span>
+                </div>
+              ) : user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero">
@@ -401,8 +429,8 @@ export default function DashboardPage() {
                       groupLocked
                         ? "text-sidebar-foreground/45 hover:bg-sidebar-accent/30"
                         : active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                          ? activeNavCls
+                          : inactiveNavCls
                     }`}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
@@ -464,8 +492,8 @@ export default function DashboardPage() {
                             to={child.path}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                               childActive
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                                ? activeNavCls
+                                : inactiveNavCls
                             }`}
                           >
                             <child.icon className="h-4 w-4 shrink-0" />
@@ -558,9 +586,7 @@ export default function DashboardPage() {
                 key={item.path}
                 to={item.path}
                 className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  active ? activeNavCls : inactiveNavCls
                 }`}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
@@ -579,17 +605,22 @@ export default function DashboardPage() {
           const isAdmin = user.role === "admin";
           const isTeam = !!user.teamMember;
           const isPartner = !!user.is_reseller && !isAdmin;
-          let roleLabel = "Business Owner";
-          let roleColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
-          if (isAdmin) {
-            roleLabel = "Super Admin";
-            roleColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-          } else if (isTeam) {
-            roleLabel = "Team Member";
-            roleColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
-          } else if (isPartner) {
-            roleLabel = "Partner";
-            roleColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+          let roleLabel = isMtnClient ? "MTN Client" : "Business Owner";
+          let roleColor = isMtnClient
+            ? "border-yellow-500/30"
+            : "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
+          const roleLabelStyle = isMtnClient ? { backgroundColor: "#FFCC0020", color: "#FFCC00" } : {};
+          if (!isMtnClient) {
+            if (isAdmin) {
+              roleLabel = "Super Admin";
+              roleColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+            } else if (isTeam) {
+              roleLabel = "Team Member";
+              roleColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
+            } else if (isPartner) {
+              roleLabel = "Partner";
+              roleColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+            }
           }
           const initials2 = (user.full_name || user.email || "?")
             .split(/\s+/)
@@ -599,25 +630,35 @@ export default function DashboardPage() {
             .join("")
             .toUpperCase();
           return (
-            <div className="shrink-0 mx-2 mb-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5">
+            <div
+              className={`shrink-0 mx-2 mb-2 rounded-lg border px-3 py-2.5 ${isMtnClient ? "" : "border-sidebar-border bg-sidebar-accent/30"}`}
+              style={isMtnClient ? { backgroundColor: "#252525", borderColor: "#2a2a2a" } : undefined}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isMtnClient ? "" : "bg-gradient-to-br from-emerald-500 to-teal-600 text-white"}`}
+                  style={isMtnClient ? { backgroundColor: "#FFCC00", color: "#000" } : undefined}
+                >
                   {initials2 || "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-sidebar-foreground">
+                  <div className={`truncate text-sm font-medium ${isMtnClient ? "" : "text-sidebar-foreground"}`} style={isMtnClient ? { color: "#e5e5e5" } : undefined}>
                     {user.full_name || user.email}
                   </div>
-                  <div className="truncate text-[11px] text-sidebar-foreground/55">
+                  <div className={`truncate text-[11px] ${isMtnClient ? "" : "text-sidebar-foreground/55"}`} style={isMtnClient ? { color: "#888" } : undefined}>
                     {user.email}
                   </div>
                 </div>
               </div>
-              <div className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleColor}`}>
-                {isAdmin && <Shield className="h-3 w-3" />}
-                {isTeam && <Users className="h-3 w-3" />}
-                {isPartner && <Award className="h-3 w-3" />}
-                {!isAdmin && !isTeam && !isPartner && <Building2 className="h-3 w-3" />}
+              <div
+                className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleColor}`}
+                style={roleLabelStyle}
+              >
+                {isMtnClient && <Building2 className="h-3 w-3" />}
+                {!isMtnClient && isAdmin && <Shield className="h-3 w-3" />}
+                {!isMtnClient && isTeam && <Users className="h-3 w-3" />}
+                {!isMtnClient && isPartner && <Award className="h-3 w-3" />}
+                {!isMtnClient && !isAdmin && !isTeam && !isPartner && <Building2 className="h-3 w-3" />}
                 {roleLabel}
               </div>
               {isTeam && user.teamMember?.owner_business_name && (
@@ -672,12 +713,21 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="flex h-1 shrink-0">
-          <div className="flex-1 bg-sa-green" />
-          <div className="flex-1 bg-sa-gold" />
-          <div className="flex-1 bg-sa-red" />
-          <div className="flex-1 bg-sa-blue" />
-        </div>
+        {isMtnClient ? (
+          <div className="flex h-1 shrink-0">
+            <div className="flex-1" style={{ backgroundColor: "#FFCC00" }} />
+            <div className="flex-1" style={{ backgroundColor: "#000000" }} />
+            <div className="flex-1" style={{ backgroundColor: "#FFCC00" }} />
+            <div className="flex-1" style={{ backgroundColor: "#000000" }} />
+          </div>
+        ) : (
+          <div className="flex h-1 shrink-0">
+            <div className="flex-1 bg-sa-green" />
+            <div className="flex-1 bg-sa-gold" />
+            <div className="flex-1 bg-sa-red" />
+            <div className="flex-1 bg-sa-blue" />
+          </div>
+        )}
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-y-hidden">

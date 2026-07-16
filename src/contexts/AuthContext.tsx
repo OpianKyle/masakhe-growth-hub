@@ -10,6 +10,8 @@ interface User {
   trading_name?: string;
   business_status?: string;
   is_reseller?: boolean;
+  is_mtn_client?: boolean;
+  mtn_franchise_code?: string | null;
   business_type?: string;
   industry_sector?: string;
   years_operating?: number;

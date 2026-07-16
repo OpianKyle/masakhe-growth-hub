@@ -539,7 +539,19 @@ authRouter.get("/me", async (req, res) => {
     originalAdminName = adminUser?.full_name || null;
   }
 
-  res.json({ user, isImpersonating, originalAdminName, teamMember });
+  // Detect if this user is a client under an MTN franchise
+  const mtnFranchise = await queryOne(
+    `SELECT f.code as franchise_code
+     FROM franchise_clients fc
+     JOIN franchises f ON f.id = fc.franchise_id
+     WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'mtn%'
+     LIMIT 1`,
+    [req.session.userId]
+  );
+  const is_mtn_client = !!mtnFranchise;
+  const mtn_franchise_code = mtnFranchise?.franchise_code || null;
+
+  res.json({ user: { ...user, is_mtn_client, mtn_franchise_code }, isImpersonating, originalAdminName, teamMember });
 });
 
 // ---- Team-member password setup ----
