@@ -1058,6 +1058,10 @@ adminRouter.post("/franchises", async (req, res) => {
       [id, name, code.toUpperCase(), owner_user_id]
     );
     await execute("UPDATE users SET role = 'franchise' WHERE id = ?", [owner_user_id]);
+    await logAudit(req, "franchise.created", {
+      targetType: "user", targetId: owner_user_id, targetLabel: owner.email || owner_user_id,
+      details: { franchise_name: name, franchise_code: code.toUpperCase(), role_changed_to: "franchise" },
+    });
 
     res.json({ ok: true, id });
   } catch (err: any) {
