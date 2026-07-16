@@ -78,13 +78,24 @@ export default function MTNPortalPage() {
           </p>
           <div className="grid grid-cols-2 gap-3">
             {features.map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex items-start gap-3 rounded-xl p-3" style={{ backgroundColor: "rgba(0,0,0,0.08)" }}>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: MTN_DARK }}>
-                  <Icon className="h-4 w-4" style={{ color: MTN_YELLOW }} />
+              <div
+                key={label}
+                className="flex items-start gap-3 rounded-xl p-3.5 border transition-transform hover:scale-[1.02]"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  borderColor: "rgba(255,255,255,0.6)",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12)",
+                }}
+              >
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: MTN_YELLOW, boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}
+                >
+                  <Icon className="h-4 w-4" style={{ color: MTN_DARK }} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold leading-tight" style={{ color: MTN_DARK }}>{label}</p>
-                  <p className="text-xs mt-0.5" style={{ color: MTN_DARK, opacity: 0.6 }}>{desc}</p>
+                  <p className="text-sm font-bold leading-tight" style={{ color: MTN_DARK }}>{label}</p>
+                  <p className="text-xs mt-0.5 leading-snug" style={{ color: "#555" }}>{desc}</p>
                 </div>
               </div>
             ))}
@@ -100,19 +111,40 @@ export default function MTNPortalPage() {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-white min-h-screen lg:min-h-0">
+      <div
+        className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 min-h-screen lg:min-h-0 relative overflow-hidden"
+      >
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&q=80&w=1400')" }}
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(10,10,10,0.78) 0%, rgba(26,26,26,0.72) 50%, rgba(0,0,0,0.82) 100%)" }} />
 
         {/* Mobile logo */}
-        <div className="flex lg:hidden items-center gap-3 mb-8">
-          <img src="/mtn-logo.png" alt="MTN" className="h-10 w-auto object-contain" />
-          <div className="h-6 w-px bg-gray-300" />
+        <div className="relative z-10 flex lg:hidden items-center gap-3 mb-8">
+          <svg width="60" height="38" viewBox="0 0 90 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="MTN">
+            <ellipse cx="45" cy="28" rx="43" ry="26" stroke={MTN_YELLOW} strokeWidth="4" fill="none"/>
+            <text x="45" y="36" textAnchor="middle" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="22" fill={MTN_YELLOW} letterSpacing="1">MTN</text>
+          </svg>
+          <div className="h-6 w-px bg-white/30" />
           <img src="/masakhe-logo.png" alt="Masakhe" className="h-7 w-7 object-contain" />
-          <span className="text-lg font-bold text-gray-800">Masakhe</span>
+          <span className="text-lg font-bold text-white">Masakhe</span>
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="relative z-10 w-full max-w-md">
+          {/* Glassmorphic card wrapper */}
+          <div
+            className="rounded-2xl p-8"
+            style={{
+              background: "rgba(255,255,255,0.97)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.25)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
           {/* Tab switcher */}
-          <div className="flex rounded-xl border border-gray-200 p-1 mb-8 gap-1">
+          <div className="flex rounded-xl border border-gray-200 p-1 mb-7 gap-1">
             <button
               onClick={() => setTab("login")}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === "login" ? "text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
@@ -132,14 +164,15 @@ export default function MTNPortalPage() {
           {tab === "login" ? <MTNLogin /> : <MTNRegister />}
 
           {/* Back link */}
-          <p className="text-center text-xs text-gray-400 mt-8">
+          <p className="text-center text-xs text-gray-400 mt-6">
             Not an MTN business partner?{" "}
             <Link to="/login" className="font-semibold hover:underline" style={{ color: MTN_DARK }}>
               Go to main portal →
             </Link>
           </p>
-        </div>
-      </div>
+          </div>{/* end glassmorphic card */}
+        </div>{/* end max-w-md */}
+      </div>{/* end right panel */}
     </div>
   );
 }
