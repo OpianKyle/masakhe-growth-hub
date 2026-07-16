@@ -50,6 +50,7 @@ export default function MTNDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
 
@@ -60,11 +61,20 @@ export default function MTNDashboard() {
 
   async function fetchMe() {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch("/api/franchise/me", { credentials: "include" });
-      if (!res.ok) { navigate("/mtn"); return; }
+      if (res.status === 401) { navigate("/mtn"); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setFetchError(d.error || "Could not load your MTN portal data.");
+        setLoading(false);
+        return;
+      }
       setData(await res.json());
-    } catch { navigate("/mtn"); }
+    } catch {
+      setFetchError("Network error — please refresh the page.");
+    }
     setLoading(false);
   }
 
@@ -94,6 +104,38 @@ export default function MTNDashboard() {
           </svg>
         </div>
         <p className="text-muted-foreground text-sm">Loading MTN Business Portal…</p>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+          style={{ backgroundColor: MTN_YELLOW }}>
+          <svg width="40" height="25" viewBox="0 0 90 56" fill="none">
+            <ellipse cx="45" cy="28" rx="43" ry="26" stroke={MTN_DARK} strokeWidth="5" fill="none"/>
+            <text x="45" y="36" textAnchor="middle" fontFamily="Arial Black,Arial,sans-serif" fontWeight="900" fontSize="22" fill={MTN_DARK}>MTN</text>
+          </svg>
+        </div>
+        <div className="text-center max-w-sm">
+          <p className="text-lg font-bold text-foreground mb-2">Portal Not Ready</p>
+          <p className="text-sm text-muted-foreground mb-1">{fetchError}</p>
+          <p className="text-xs text-muted-foreground">
+            Your MTN franchise account may not be fully set up yet. Please ask the Masakhe admin to verify your franchise record, or try signing in again.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={fetchMe}
+            className="px-5 py-2 rounded-lg text-sm font-semibold text-black"
+            style={{ backgroundColor: MTN_YELLOW }}>
+            Retry
+          </button>
+          <button onClick={() => { authLogout(); navigate("/mtn"); }}
+            className="px-5 py-2 rounded-lg text-sm font-semibold border border-border text-foreground hover:bg-muted">
+            Sign Out
+          </button>
+        </div>
       </div>
     );
   }
