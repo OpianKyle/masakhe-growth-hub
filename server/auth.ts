@@ -160,11 +160,16 @@ authRouter.post("/register", async (req, res) => {
       await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});
     }
 
-    if (franchiseCode) {
+    // Resolve which franchise code to use: explicit franchiseCode takes priority,
+    // otherwise fall back to an MTN auto-link when referralCode is MTN-prefixed.
+    const resolvedFranchiseCode = franchiseCode ||
+      (referralCode && referralCode.toUpperCase().startsWith("MTN") ? "MTN001" : null);
+
+    if (resolvedFranchiseCode) {
       try {
         const franchise = await queryOne(
           "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
-          [franchiseCode]
+          [resolvedFranchiseCode]
         );
         if (franchise) {
           const { randomUUID: uuid } = await import("crypto");
@@ -674,6 +679,22 @@ authRouter.get("/google/callback", async (req, res) => {
       );
       sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
       if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
+      // Auto-link to MTN franchise if the referral/state code is MTN-prefixed
+      if (referralCode && referralCode.toUpperCase().startsWith("MTN")) {
+        try {
+          const mtnFranchise = await queryOne(
+            "SELECT id FROM franchises WHERE code = 'MTN001' AND status = 'active'"
+          );
+          if (mtnFranchise) {
+            await execute(
+              "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+              [randomUUID(), mtnFranchise.id, userId]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] Google OAuth MTN franchise auto-link error:", e.message);
+        }
+      }
       user = { id: userId, _isNew: true };
     }
 

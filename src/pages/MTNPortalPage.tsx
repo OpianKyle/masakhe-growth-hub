@@ -286,10 +286,10 @@ function MTNRegister() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Pre-fill franchise code from URL if provided (?franchise=MTN_CODE)
+  // Always pre-fill with MTN001 as the base franchise; override with URL param if provided
   useEffect(() => {
-    const code = searchParams.get("franchise");
-    if (code) setFranchiseCode(code);
+    const code = searchParams.get("franchise") || searchParams.get("ref");
+    setFranchiseCode(code || "MTN001");
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -303,7 +303,7 @@ function MTNRegister() {
         fullName,
         email,
         password,
-        franchiseCode: franchiseCode || undefined,
+        franchiseCode: franchiseCode || "MTN001",
         businessData: { businessName: businessName || fullName, phone: phone || undefined, industrySector: "telecommunications" },
       });
       setLoading(false);
