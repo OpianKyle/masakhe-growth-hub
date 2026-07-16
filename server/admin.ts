@@ -1514,7 +1514,7 @@ adminRouter.post("/system-settings/test", requireAdmin, async (req, res) => {
     try {
       await freshTransporter.verify();
     } catch (verifyErr: any) {
-      return res.status(502).json({ error: `SMTP connection failed: ${verifyErr.message}` });
+      return res.status(422).json({ error: `SMTP connection failed: ${verifyErr.message}` });
     }
     const adminUser = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [(req.session as any).userId]);
     const toAddress: string = req.body?.to || adminUser?.email;
