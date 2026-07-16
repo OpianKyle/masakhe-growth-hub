@@ -695,6 +695,20 @@ export default function FranchiseDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { user, logout, isImpersonating, stopImpersonating } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect MTN franchise owners to their branded portal
+  useEffect(() => {
+    fetch("/api/franchise/me", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        const code: string = d?.franchise?.code || "";
+        if (code.toUpperCase().startsWith("MTN")) {
+          navigate("/mtn/dashboard", { replace: true });
+        }
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   const pageTitle = navItems.find(i => location.pathname === i.path)?.label ?? "Franchise";
 
