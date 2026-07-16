@@ -17,6 +17,7 @@ export default function SetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
+  const portal = searchParams.get("portal");
 
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [verifying, setVerifying] = useState(true);
@@ -70,8 +71,9 @@ export default function SetPasswordPage() {
       const data = await res.json();
       if (data.ok) {
         setSuccess(true);
+        const redirectTo = portal ? `/${portal}` : "/dashboard";
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = redirectTo;
         }, 1500);
       } else {
         toast.error(data.error || "Failed to set password");

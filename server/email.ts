@@ -530,7 +530,10 @@ export async function sendFranchiseOwnerInviteEmail(
   if (!t) return false;
   const firstName = (inviteeName || toEmail).split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
-  const setupUrl = `${appUrl}/set-password?token=${setupToken}`;
+  const portalSlug = franchiseCode.toLowerCase().startsWith("mtn") ? "mtn" : null;
+  const setupUrl = portalSlug
+    ? `${appUrl}/set-password?token=${setupToken}&portal=${portalSlug}`
+    : `${appUrl}/set-password?token=${setupToken}`;
 
   const body = `
     <h2 style="margin:0 0 8px;color:#111827;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Welcome, ${firstName}!</h2>
