@@ -32,6 +32,40 @@ export async function runFranchiseMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Patch: add missing columns to existing franchises tables created before migrations were updated
+    const patchCols: Array<[string, string]> = [
+      ["code",       "ALTER TABLE franchises ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '' AFTER name"],
+      ["created_at", "ALTER TABLE franchises ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP AFTER status"],
+      ["updated_at", "ALTER TABLE franchises ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at"],
+    ];
+    for (const [col, sql] of patchCols) {
+      try {
+        const [cols] = await conn.query(
+          "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'franchises' AND COLUMN_NAME = ?",
+          [col]
+        );
+        if ((cols as any[]).length === 0) {
+          await conn.query(sql);
+          console.log(`[Franchise] Added missing column: ${col}`);
+        }
+      } catch (e: any) {
+        console.error(`[Franchise] patch column ${col}:`, e.message);
+      }
+    }
+
+    // Patch: add UNIQUE index on code if missing (for tables that had code added without the index)
+    try {
+      const [idxRows] = await conn.query(
+        "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'franchises' AND COLUMN_NAME = 'code' AND NON_UNIQUE = 0"
+      );
+      if ((idxRows as any[]).length === 0) {
+        await conn.query("ALTER TABLE franchises ADD UNIQUE INDEX idx_franchises_code (code)");
+        console.log("[Franchise] Added UNIQUE index on code");
+      }
+    } catch (e: any) {
+      console.error("[Franchise] patch code index:", e.message);
+    }
+
     await conn.query(`
       CREATE TABLE IF NOT EXISTS franchise_clients (
         id VARCHAR(36) PRIMARY KEY,
