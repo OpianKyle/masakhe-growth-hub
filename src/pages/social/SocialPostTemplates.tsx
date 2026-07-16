@@ -522,6 +522,92 @@ function generateStaticAdTemplates(biz: string): PostTemplate[] {
     templateImageName: "template-client-success.jpg",
   });
 
+  // ─── OUR STORY (static fallbacks — site-specific ones added by generateSiteTemplates) ───
+  const storyCat = getCategory("Our Story");
+
+  templates.push({
+    id: "story-origin",
+    category: "Our Story",
+    categoryIcon: Users,
+    categoryColor: storyCat.color,
+    categoryBg: storyCat.bg,
+    categoryBgRGB: storyCat.rgb,
+    title: "How We Started",
+    description: "Share the origin story of your business",
+    content: `📖 THE STORY BEHIND ${biz.toUpperCase()}\n\nEvery great business starts with a moment — a spark, a problem worth solving, a dream worth chasing.\n\nOurs started with [your founding story: e.g. "a simple belief that local businesses deserved better tools and support."].\n\nWe've grown from [humble beginning] to [where you are today], and every step of that journey has been shaped by the people we serve — our incredible customers and community.\n\nWe're not just a business. We're part of YOUR story. 🙏\n\n💬 Tell us — what made you first discover ${biz}? We'd love to know!\n\n#OurStory #BehindTheBusiness #${biz.replace(/\s+/g, "")} #SouthAfrica #Entrepreneur #SmallBusiness`,
+    tags: ["#OurStory", "#BehindTheBusiness", "#Entrepreneur", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-our-story-origin.jpg",
+  });
+
+  templates.push({
+    id: "story-values",
+    category: "Our Story",
+    categoryIcon: Users,
+    categoryColor: storyCat.color,
+    categoryBg: storyCat.bg,
+    categoryBgRGB: storyCat.rgb,
+    title: "Our Values & Vision",
+    description: "Share what your business stands for",
+    content: `💜 WHAT WE BELIEVE IN — The Heart of ${biz}\n\nBehind every product and service we offer, there are values that guide everything we do:\n\n🤝 People First — Our customers are never just transactions. You matter to us.\n✅ Quality Without Compromise — We refuse to cut corners. Ever.\n🌍 Community Over Competition — We believe a rising tide lifts all boats.\n💡 Constant Growth — We never stop learning, improving, and innovating.\n🇿🇦 Proudly South African — Built here. For here.\n\nThese aren't just words on a wall. They're decisions we make every single day.\n\nWe're proud of what ${biz} stands for — and we're grateful you're part of our journey. 🙏\n\n💬 Which value resonates most with you? Comment below!\n\n#OurValues #BusinessVision #WhyWeDoIt #${biz.replace(/\s+/g, "")} #SouthAfrica #PurposeDriven`,
+    tags: ["#OurValues", "#BusinessVision", "#SouthAfrica", "#PurposeDriven"],
+    mockImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-our-values.jpg",
+  });
+
+  templates.push({
+    id: "story-team",
+    category: "Our Story",
+    categoryIcon: Users,
+    categoryColor: storyCat.color,
+    categoryBg: storyCat.bg,
+    categoryBgRGB: storyCat.rgb,
+    title: "Meet the Team",
+    description: "Put a human face on your business",
+    content: `👋 MEET THE PEOPLE BEHIND ${biz.toUpperCase()}!\n\nWe believe in the power of people — and we want you to know WHO is working hard for you every day.\n\n[Team Member 1 — Name, Role]: "[Short quote about what they love about their work]"\n[Team Member 2 — Name, Role]: "[Short quote]"\n[Team Member 3 — Name, Role]: "[Short quote]"\n\nThis team is the reason ${biz} delivers the way it does. Every win, every 5-star review, every happy customer — it belongs to them. 💪\n\nWe're more than a company. We're a family — and that family includes YOU, our customers. 🏡\n\n💬 Tag a teammate or business partner who inspires you!\n\n#MeetTheTeam #OurPeople #BehindTheBusiness #${biz.replace(/\s+/g, "")} #SmallBusiness #SouthAfrica`,
+    tags: ["#MeetTheTeam", "#OurPeople", "#BehindTheBusiness", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-meet-team.jpg",
+  });
+
+  // ─── MILESTONES (static fallbacks) ────────────────────────────────────────────
+  const milestoneCat = getCategory("Milestones");
+
+  templates.push({
+    id: "milestone-anniversary",
+    category: "Milestones",
+    categoryIcon: Star,
+    categoryColor: milestoneCat.color,
+    categoryBg: milestoneCat.bg,
+    categoryBgRGB: milestoneCat.rgb,
+    title: "Business Anniversary",
+    description: "Celebrate a business birthday or founding anniversary",
+    content: `🎂 WE'RE CELEBRATING — AND YOU'RE INVITED!\n\n${biz} is turning [X] years old — and honestly, we're a little emotional about it. 🥲\n\nWhen we started, we had a simple dream: [your founding vision]. Today, [X] years later, that dream has grown into something far bigger than we ever imagined — thanks entirely to YOU.\n\nIn [X] years, we've:\n🏆 Served [X]+ incredible clients\n💼 Built a team of passionate people\n📦 Delivered [X]+ products/projects\n🌍 Grown from [starting point] to [where you are now]\n\n🎁 To say THANK YOU, we're celebrating with a [special offer/giveaway/anniversary deal] this week only!\n\nTo every single person who has trusted us, recommended us, or simply given us a chance — THANK YOU. You are the reason we do this. 💜\n\n#BusinessAnniversary #Milestone #Celebrating #${biz.replace(/\s+/g, "")} #Grateful #SouthAfrica`,
+    tags: ["#BusinessAnniversary", "#Milestone", "#Celebrating", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-anniversary.jpg",
+  });
+
+  templates.push({
+    id: "milestone-achievement",
+    category: "Milestones",
+    categoryIcon: Award,
+    categoryColor: milestoneCat.color,
+    categoryBg: milestoneCat.bg,
+    categoryBgRGB: milestoneCat.rgb,
+    title: "Big Achievement Unlocked",
+    description: "Announce a major business win or milestone",
+    content: `🏆 WE DID IT — AND WE HAD TO SHARE THIS WITH YOU!\n\n${biz} just hit [major milestone — e.g. 1,000 customers / R1M in revenue / 5-star rating / industry award / new location]!\n\nWhen we started this journey, reaching this point felt like a distant dream. Today, it's our reality — and we owe it entirely to this incredible community.\n\n🎯 What this milestone means:\n→ [What it represents for your business]\n→ [What it means for your customers]\n→ [What's coming next]\n\nThis is just the beginning. The best is still ahead. 🚀\n\nThank you for believing in us before we were big. Thank you for growing with us. Thank you for being YOU. 💜\n\n💬 Drop a 🎉 in the comments to celebrate with us!\n\n#Achievement #MilestoneAlert #${biz.replace(/\s+/g, "")} #Winning #GrowthMindset #SouthAfrica`,
+    tags: ["#Achievement", "#MilestoneAlert", "#GrowthMindset", "#SouthAfrica"],
+    mockImage: "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?auto=format&fit=crop&q=80&w=600",
+    templateImage: "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?auto=format&fit=crop&q=80&w=1200",
+    templateImageName: "template-achievement.jpg",
+  });
+
   return templates;
 }
 

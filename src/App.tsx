@@ -26,6 +26,7 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import PayInvoice from "./pages/PayInvoice";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
+import MTNPortalPage from "./pages/MTNPortalPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -102,6 +103,9 @@ const App = () => (
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/partner/register" element={<ResellerRegisterPage />} />
+              <Route path="/mtn" element={<MTNPortalPage />} />
+              <Route path="/mtn/login" element={<MTNPortalPage />} />
+              <Route path="/mtn/register" element={<MTNPortalPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
