@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => ({
         target: "http://localhost:3001",
         changeOrigin: true,
         cookieDomainRewrite: { "*": "" },
+        proxyTimeout: 180000,
+        timeout: 180000,
       },
       "/uploads": {
         target: "http://localhost:3001",

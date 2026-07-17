@@ -838,7 +838,9 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
           size: "1024x1024",
         }),
       });
-      const d = await res.json();
+      const rawGen = await res.text();
+      let d: any = {};
+      try { d = JSON.parse(rawGen); } catch { d = { error: `Server error ${res.status}` }; }
       if (!res.ok) { toast.error(d.error || "Image generation failed"); setAiGenerating(false); return; }
       const imageUrl = d.b64_json
         ? `data:image/png;base64,${d.b64_json}`
@@ -885,7 +887,9 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
       fd.append("image", pngBlob, "image.png");
       fd.append("prompt", editAiPrompt.trim());
       const res = await fetch("/api/edit-image", { method: "POST", body: fd, credentials: "include" });
-      const d = await res.json();
+      const rawEdit = await res.text();
+      let d: any = {};
+      try { d = JSON.parse(rawEdit); } catch { d = { error: `Server error ${res.status} — the AI edit may have timed out. Please try again.` }; }
       if (!res.ok) { toast.error(d.error || "AI edit failed"); setEditAiLoading(false); return; }
       const imageUrl = d.b64_json ? `data:image/png;base64,${d.b64_json}` : d.url;
       if (imageUrl) {
