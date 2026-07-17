@@ -746,6 +746,9 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [showAiInput, setShowAiInput] = useState(false);
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -791,13 +794,45 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
       const url = editingId ? `/api/franchise/promotions/${editingId}` : "/api/franchise/promotions";
       const method = editingId ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
-      const d = await res.json();
-      if (!res.ok) { toast.error(d.error || "Save failed"); return; }
+      const text = await res.text();
+      let d: any = {};
+      try { d = JSON.parse(text); } catch { d = { error: text || `Server error ${res.status}` }; }
+      if (!res.ok) { toast.error(d.error || "Save failed"); setSaving(false); return; }
       toast.success(editingId ? "Promotion updated!" : "Promotion created!");
       await onRefresh();
       setView("list");
-    } catch { toast.error("Something went wrong"); }
+    } catch (err: any) { toast.error(err?.message || "Network error — please try again"); }
     setSaving(false);
+  }
+
+  async function handleAiGenerate() {
+    if (!aiPrompt.trim()) { toast.error("Please enter a description for the image"); return; }
+    setAiGenerating(true);
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          size: "1024x1024",
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || "Image generation failed"); setAiGenerating(false); return; }
+      const imageUrl = d.b64_json
+        ? `data:image/png;base64,${d.b64_json}`
+        : d.url;
+      if (imageUrl) {
+        setForm(f => ({ ...f, image_url: imageUrl }));
+        setShowAiInput(false);
+        setAiPrompt("");
+        toast.success("AI image generated!");
+      } else {
+        toast.error("No image returned from AI");
+      }
+    } catch (err: any) { toast.error(err?.message || "Image generation failed"); }
+    setAiGenerating(false);
   }
 
   async function handleDelete(id: string) {
@@ -874,35 +909,83 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
 
-              {/* Image upload */}
+              {/* Image upload / AI generate */}
               <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {form.promo_type === "phone_ad" ? "Phone / Product Image" : "Promotion Image"}
-                </Label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {form.promo_type === "phone_ad" ? "Phone / Product Image" : "Promotion Image"}
+                  </Label>
+                  {!form.image_url && !showAiInput && (
+                    <button onClick={() => setShowAiInput(true)}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-yellow-600 dark:text-yellow-400 hover:underline">
+                      <Sparkles className="h-3 w-3" /> Generate with AI
+                    </button>
+                  )}
+                </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+                {/* AI prompt input */}
+                {showAiInput && !form.image_url && (
+                  <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="h-4 w-4 text-yellow-500" />
+                      <p className="text-sm font-semibold text-foreground">AI Image Generator</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Describe the image you want. Be specific — e.g. "MTN-branded Samsung Galaxy phone on a yellow background, product shot, professional studio lighting"
+                    </p>
+                    <Textarea
+                      className="min-h-[80px] resize-none text-sm"
+                      placeholder={
+                        form.promo_type === "phone_ad"
+                          ? "e.g. A modern smartphone with MTN branding on a bright yellow background, product photography, studio lighting, clean white surface"
+                          : "e.g. MTN yellow branded banner with South African cityscape, vibrant colours, bold text space on left"
+                      }
+                      value={aiPrompt}
+                      onChange={e => setAiPrompt(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={handleAiGenerate} disabled={aiGenerating || !aiPrompt.trim()}
+                        className="flex-1 gap-2 h-9 text-sm font-semibold"
+                        style={{ backgroundColor: MTN_YELLOW, color: MTN_DARK, border: "none" }}>
+                        {aiGenerating
+                          ? <><Loader2 className="h-4 w-4 animate-spin" />Generating… (30–60s)</>
+                          : <><Sparkles className="h-4 w-4" />Generate Image</>}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => { setShowAiInput(false); setAiPrompt(""); }} className="h-9 px-4">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {form.image_url ? (
                   <div className="mt-1.5 relative rounded-xl overflow-hidden border border-border bg-muted/30">
                     <img src={form.image_url} alt="Preview" className="w-full max-h-52 object-contain" />
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <button onClick={() => fileRef.current?.click()}
-                        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow"
+                      <button onClick={() => { setShowAiInput(true); setForm(f => ({ ...f, image_url: "" })); }}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold shadow flex items-center gap-1"
                         style={{ backgroundColor: MTN_YELLOW, color: MTN_DARK }}>
-                        Change
+                        <Sparkles className="h-3 w-3" /> AI
+                      </button>
+                      <button onClick={() => fileRef.current?.click()}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold bg-black/60 text-white shadow">
+                        Upload
                       </button>
                       <button onClick={() => setForm(f => ({ ...f, image_url: "" }))}
-                        className="rounded-lg px-3 py-1.5 text-xs font-semibold bg-black/60 text-white shadow">
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold bg-red-500/80 text-white shadow">
                         Remove
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : !showAiInput ? (
                   <button onClick={() => fileRef.current?.click()} disabled={imageUploading}
                     className="mt-1.5 w-full border-2 border-dashed border-border hover:border-yellow-400/50 rounded-xl flex flex-col items-center gap-2 py-8 text-muted-foreground hover:text-yellow-500 transition-all">
                     {imageUploading
                       ? <><Loader2 className="h-6 w-6 animate-spin" /><span className="text-xs">Uploading…</span></>
                       : <><Upload className="h-6 w-6" /><span className="text-xs font-medium">Click to upload image</span><span className="text-[10px]">PNG, JPG, WebP up to 10MB</span></>}
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
 

@@ -542,11 +542,12 @@ franchiseRouter.get("/promotions", async (req, res) => {
 
 franchiseRouter.post("/promotions", async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
     if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
     const franchise = await getMyFranchise(userId);
-    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    if (!franchise) return res.status(404).json({ error: "No franchise found for this account" });
     const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
     if (!title) return res.status(400).json({ error: "Title is required" });
     const id = randomUUID();
@@ -559,7 +560,10 @@ franchiseRouter.post("/promotions", async (req, res) => {
     );
     const promo = await queryOne("SELECT * FROM mtn_promotions WHERE id = ?", [id]);
     res.json(promo);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    console.error("[Promotions POST]", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 franchiseRouter.put("/promotions/:id", async (req, res) => {
