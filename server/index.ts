@@ -47,6 +47,7 @@ import { startCampaignScheduler } from "./campaigns";
 import { subscriptionApiRouter } from "./subscription-api";
 import { domainsRouter } from "./domains";
 import { shiftsRouter } from "./shifts";
+import { registerImageRoutes } from "./replit_integrations/image";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -163,6 +164,7 @@ async function main() {
   app.use("/api/external", subscriptionApiRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
+  registerImageRoutes(app);
 
   const distPath = path.join(process.cwd(), "dist");
   const isProduction = process.env.NODE_ENV === "production";
