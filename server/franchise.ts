@@ -78,6 +78,26 @@ export async function runFranchiseMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // mtn_promotions table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS mtn_promotions (
+        id VARCHAR(36) PRIMARY KEY,
+        franchise_id VARCHAR(36) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        promo_type ENUM('phone_ad','social_post','campaign','offer') NOT NULL DEFAULT 'campaign',
+        image_url LONGTEXT,
+        cta_text VARCHAR(100),
+        cta_url TEXT,
+        status ENUM('draft','active','scheduled','ended') NOT NULL DEFAULT 'draft',
+        target_audience ENUM('all','active','trial') NOT NULL DEFAULT 'all',
+        scheduled_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(franchise_id) REFERENCES franchises(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
     console.log("[Franchise] Migrations complete");
   } finally {
     conn.release();
@@ -504,6 +524,78 @@ franchiseRouter.post("/apply", async (req, res) => {
     console.error("Franchise apply error:", err.message);
     res.status(500).json({ error: "Failed to submit application" });
   }
+});
+
+// ─── Promotions ───────────────────────────────────────────────────────────────
+
+franchiseRouter.get("/promotions", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    const rows = await queryAll("SELECT * FROM mtn_promotions WHERE franchise_id = ? ORDER BY created_at DESC", [franchise.id]);
+    res.json(rows);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+franchiseRouter.post("/promotions", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
+    if (!title) return res.status(400).json({ error: "Title is required" });
+    const id = randomUUID();
+    await execute(
+      `INSERT INTO mtn_promotions (id, franchise_id, title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, franchise.id, title, description || null, promo_type || "campaign", image_url || null,
+       cta_text || null, cta_url || null, status || "draft", target_audience || "all",
+       scheduled_at || null]
+    );
+    const promo = await queryOne("SELECT * FROM mtn_promotions WHERE id = ?", [id]);
+    res.json(promo);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+franchiseRouter.put("/promotions/:id", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    const existing = await queryOne("SELECT id FROM mtn_promotions WHERE id = ? AND franchise_id = ?", [req.params.id, franchise.id]);
+    if (!existing) return res.status(404).json({ error: "Promotion not found" });
+    const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
+    await execute(
+      `UPDATE mtn_promotions SET title=?, description=?, promo_type=?, image_url=?, cta_text=?, cta_url=?, status=?, target_audience=?, scheduled_at=?, updated_at=NOW()
+       WHERE id = ?`,
+      [title, description || null, promo_type || "campaign", image_url || null,
+       cta_text || null, cta_url || null, status || "draft", target_audience || "all",
+       scheduled_at || null, req.params.id]
+    );
+    const promo = await queryOne("SELECT * FROM mtn_promotions WHERE id = ?", [req.params.id]);
+    res.json(promo);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+franchiseRouter.delete("/promotions/:id", async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
+    if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
+    const franchise = await getMyFranchise(userId);
+    if (!franchise) return res.status(404).json({ error: "No franchise found" });
+    const existing = await queryOne("SELECT id FROM mtn_promotions WHERE id = ? AND franchise_id = ?", [req.params.id, franchise.id]);
+    if (!existing) return res.status(404).json({ error: "Promotion not found" });
+    await execute("DELETE FROM mtn_promotions WHERE id = ?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── Unlink Client ────────────────────────────────────────────────────────────
