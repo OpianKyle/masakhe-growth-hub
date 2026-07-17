@@ -1,9 +1,12 @@
 import { Router } from "express";
+import multer from "multer";
 import { queryOne, queryAll, execute, queryRaw, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import { sendFranchiseApplicationEmail, sendFranchiseClientInviteEmail } from "./email";
 import bcrypt from "bcryptjs";
+
+const promoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 export const franchiseRouter = Router();
 
@@ -540,7 +543,7 @@ franchiseRouter.get("/promotions", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-franchiseRouter.post("/promotions", async (req, res) => {
+franchiseRouter.post("/promotions", promoUpload.single("image"), async (req, res) => {
   try {
     const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -548,13 +551,18 @@ franchiseRouter.post("/promotions", async (req, res) => {
     if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
     const franchise = await getMyFranchise(userId);
     if (!franchise) return res.status(404).json({ error: "No franchise found for this account" });
-    const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
+    const { title, description, promo_type, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
     if (!title) return res.status(400).json({ error: "Title is required" });
+    let image_url: string | null = req.body.image_url || null;
+    if (req.file) {
+      const mime = req.file.mimetype || "image/png";
+      image_url = `data:${mime};base64,${req.file.buffer.toString("base64")}`;
+    }
     const id = randomUUID();
     await queryRaw(
       `INSERT INTO mtn_promotions (id, franchise_id, title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, franchise.id, title, description || null, promo_type || "campaign", image_url || null,
+      [id, franchise.id, title, description || null, promo_type || "campaign", image_url,
        cta_text || null, cta_url || null, status || "draft", target_audience || "all",
        scheduled_at || null]
     );
@@ -566,26 +574,35 @@ franchiseRouter.post("/promotions", async (req, res) => {
   }
 });
 
-franchiseRouter.put("/promotions/:id", async (req, res) => {
+franchiseRouter.put("/promotions/:id", promoUpload.single("image"), async (req, res) => {
   try {
-    const userId = req.session.userId!;
+    const userId = req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
     if (!user || (user.role !== "franchise" && user.role !== "admin")) return res.status(403).json({ error: "Franchise access required" });
     const franchise = await getMyFranchise(userId);
     if (!franchise) return res.status(404).json({ error: "No franchise found" });
-    const existing = await queryOne("SELECT id FROM mtn_promotions WHERE id = ? AND franchise_id = ?", [req.params.id, franchise.id]);
+    const existing = await queryOne("SELECT id, image_url FROM mtn_promotions WHERE id = ? AND franchise_id = ?", [req.params.id, franchise.id]);
     if (!existing) return res.status(404).json({ error: "Promotion not found" });
-    const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
+    const { title, description, promo_type, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
+    let image_url: string | null = req.body.image_url ?? existing.image_url ?? null;
+    if (req.file) {
+      const mime = req.file.mimetype || "image/png";
+      image_url = `data:${mime};base64,${req.file.buffer.toString("base64")}`;
+    }
     await queryRaw(
       `UPDATE mtn_promotions SET title=?, description=?, promo_type=?, image_url=?, cta_text=?, cta_url=?, status=?, target_audience=?, scheduled_at=?, updated_at=NOW()
        WHERE id = ?`,
-      [title, description || null, promo_type || "campaign", image_url || null,
+      [title, description || null, promo_type || "campaign", image_url,
        cta_text || null, cta_url || null, status || "draft", target_audience || "all",
        scheduled_at || null, req.params.id]
     );
     const promo = await queryOne("SELECT * FROM mtn_promotions WHERE id = ?", [req.params.id]);
     res.json(promo);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    console.error("[Promotions PUT]", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 franchiseRouter.delete("/promotions/:id", async (req, res) => {

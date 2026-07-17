@@ -794,10 +794,26 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
     if (!form.title.trim()) { toast.error("Title is required"); return; }
     setSaving(true);
     try {
-      const body = { ...form, scheduled_at: form.scheduled_at || null };
+      const fd = new FormData();
+      fd.append("title", form.title.trim());
+      fd.append("description", form.description || "");
+      fd.append("promo_type", form.promo_type);
+      fd.append("cta_text", form.cta_text || "");
+      fd.append("cta_url", form.cta_url || "");
+      fd.append("status", form.status);
+      fd.append("target_audience", form.target_audience);
+      fd.append("scheduled_at", form.scheduled_at || "");
+      if (form.image_url) {
+        if (form.image_url.startsWith("data:")) {
+          const pngBlob = await toPngBlob(form.image_url);
+          fd.append("image", pngBlob, "promo.png");
+        } else {
+          fd.append("image_url", form.image_url);
+        }
+      }
       const url = editingId ? `/api/franchise/promotions/${editingId}` : "/api/franchise/promotions";
       const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+      const res = await fetch(url, { method, credentials: "include", body: fd });
       const text = await res.text();
       let d: any = {};
       try { d = JSON.parse(text); } catch { d = { error: text || `Server error ${res.status}` }; }
