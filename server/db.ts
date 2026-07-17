@@ -45,6 +45,17 @@ export async function execute(sql: string, params: any[] = []): Promise<any> {
   }
 }
 
+// Use pool.query (not prepared statements) for rows with LONGTEXT/BLOB columns
+export async function queryRaw(sql: string, params: any[] = []): Promise<any> {
+  try {
+    const [result] = await pool.query(sql, params);
+    return result;
+  } catch (err: any) {
+    console.error(`DB queryRaw error [${sql.slice(0, 80)}]:`, err.message);
+    throw err;
+  }
+}
+
 export async function runMigrations() {
   const conn = await pool.getConnection();
   try {

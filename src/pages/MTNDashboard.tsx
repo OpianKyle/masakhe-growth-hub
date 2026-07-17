@@ -839,15 +839,30 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
     setAiGenerating(false);
   }
 
+  async function toPngBlob(imageUrl: string): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Canvas conversion failed")), "image/png");
+      };
+      img.onerror = () => reject(new Error("Image load failed"));
+      img.src = imageUrl;
+    });
+  }
+
   async function handleAiEdit() {
     if (!editAiPrompt.trim()) { toast.error("Describe how you want to edit the image"); return; }
     if (!form.image_url) { toast.error("Please upload an image first"); return; }
     setEditAiLoading(true);
     try {
+      const pngBlob = await toPngBlob(form.image_url);
       const fd = new FormData();
-      const res0 = await fetch(form.image_url);
-      const blob = await res0.blob();
-      fd.append("image", blob, "image.png");
+      fd.append("image", pngBlob, "image.png");
       fd.append("prompt", editAiPrompt.trim());
       const res = await fetch("/api/edit-image", { method: "POST", body: fd, credentials: "include" });
       const d = await res.json();

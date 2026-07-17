@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { queryOne, queryAll, execute, pool } from "./db";
+import { queryOne, queryAll, execute, queryRaw, pool } from "./db";
 import { requireAuth } from "./auth";
 import { randomUUID } from "crypto";
 import { sendFranchiseApplicationEmail, sendFranchiseClientInviteEmail } from "./email";
@@ -551,7 +551,7 @@ franchiseRouter.post("/promotions", async (req, res) => {
     const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
     if (!title) return res.status(400).json({ error: "Title is required" });
     const id = randomUUID();
-    await execute(
+    await queryRaw(
       `INSERT INTO mtn_promotions (id, franchise_id, title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, franchise.id, title, description || null, promo_type || "campaign", image_url || null,
@@ -576,7 +576,7 @@ franchiseRouter.put("/promotions/:id", async (req, res) => {
     const existing = await queryOne("SELECT id FROM mtn_promotions WHERE id = ? AND franchise_id = ?", [req.params.id, franchise.id]);
     if (!existing) return res.status(404).json({ error: "Promotion not found" });
     const { title, description, promo_type, image_url, cta_text, cta_url, status, target_audience, scheduled_at } = req.body;
-    await execute(
+    await queryRaw(
       `UPDATE mtn_promotions SET title=?, description=?, promo_type=?, image_url=?, cta_text=?, cta_url=?, status=?, target_audience=?, scheduled_at=?, updated_at=NOW()
        WHERE id = ?`,
       [title, description || null, promo_type || "campaign", image_url || null,
