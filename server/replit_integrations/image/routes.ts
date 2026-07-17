@@ -3,7 +3,7 @@ import multer from "multer";
 import { toFile } from "openai";
 import { openai, getOpenAI } from "./client";
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
@@ -55,8 +55,9 @@ export function registerImageRoutes(app: Express): void {
         url: imageData.url,
       });
     } catch (error: any) {
-      console.error("Error editing image:", error?.message || error);
-      res.status(500).json({ error: error?.message || "Failed to edit image" });
+      const msg = error?.error?.message || error?.message || "Failed to edit image";
+      console.error("[edit-image] error:", msg, error?.status, error?.error);
+      res.status(500).json({ error: msg });
     }
   });
 }

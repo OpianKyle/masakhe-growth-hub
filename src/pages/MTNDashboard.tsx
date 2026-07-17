@@ -858,15 +858,19 @@ function PromotionsTab({ promotions, loading, onRefresh, franchise }: any) {
   async function toPngBlob(imageUrl: string): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
+      if (!imageUrl.startsWith("data:")) img.crossOrigin = "anonymous";
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        const w = img.naturalWidth || img.width || 1024;
+        const h = img.naturalHeight || img.height || 1024;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, w, h);
         canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Canvas conversion failed")), "image/png");
       };
-      img.onerror = () => reject(new Error("Image load failed"));
+      img.onerror = () => reject(new Error("Failed to load image for AI edit"));
       img.src = imageUrl;
     });
   }
