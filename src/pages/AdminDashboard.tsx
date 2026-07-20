@@ -6,7 +6,7 @@ import {
   Plus, Edit, X, MapPin, Calendar, DollarSign, Briefcase, ArrowLeft, CheckCircle2, Clock, XCircle, Star, LogIn,
   CreditCard, BadgeCheck, BanknoteIcon, Mail, Loader2, Award, ChevronDown, ChevronUp, UserCheck, UserX, Ban,
   Crown, Handshake, History, StickyNote, Tag as TagIcon, ArrowUpDown, TrendingDown, Wallet, Activity, Filter,
-  Store, RefreshCw, UserPlus, Link2, Unlink, Send, ToggleLeft, ToggleRight, FlaskConical, Save, BookOpen
+  Store, RefreshCw, UserPlus, Link2, Unlink, Send, ToggleLeft, ToggleRight, FlaskConical, Save, BookOpen, Download
 } from "lucide-react";
 import AdminHelpCentre from "./AdminHelpCentre";
 import {
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface Stats {
   totalUsers: number;
@@ -657,22 +658,30 @@ function ClientList() {
       return (a.business_name || "").localeCompare(b.business_name || "");
     });
 
-  const exportCsv = () => {
-    const header = ["Name", "Email", "Business", "Industry", "Plan", "Status", "Tags", "Joined"];
-    const rows = filtered.map(c => [
-      c.full_name, c.email, c.business_name || "", c.industry_sector || "",
-      c.plan_name || "", c.subscription_status || (c.subscription_exempt ? "FREE_ACCESS" : "NONE"),
-      (c.admin_tags || []).join(" | "),
-      new Date(c.created_at).toLocaleDateString("en-ZA"),
-    ]);
-    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `clients-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const exportExcel = () => {
+    const rows = filtered.map(c => ({
+      "Full Name": c.full_name,
+      "Email": c.email,
+      "Business Name": c.business_name || "",
+      "Trading Name": c.trading_name || "",
+      "Phone": c.phone || "",
+      "Industry": c.industry_sector || "",
+      "Role": c.role,
+      "Plan": c.plan_name || "",
+      "Plan Code": c.plan_code || "",
+      "Subscription Status": c.subscription_status || (c.subscription_exempt ? "FREE_ACCESS" : "NONE"),
+      "Free Access": c.subscription_exempt ? "Yes" : "No",
+      "Trial Ends": c.trial_end_at ? new Date(c.trial_end_at).toLocaleDateString("en-ZA") : "",
+      "Websites": c.website_count ?? 0,
+      "Tags": (c.admin_tags || []).join(", "),
+      "Admin Notes": c.admin_notes || "",
+      "Joined": new Date(c.created_at).toLocaleDateString("en-ZA"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Clients");
+    XLSX.writeFile(wb, `masakhe-clients-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success(`Exported ${rows.length} client${rows.length !== 1 ? "s" : ""} to Excel`);
   };
 
   return (
@@ -683,8 +692,8 @@ function ClientList() {
           <p className="text-muted-foreground">{clients.length} registered · showing {filtered.length}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1">
-            <FileText className="h-4 w-4" /> Export CSV
+          <Button variant="outline" size="sm" onClick={exportExcel} className="gap-1">
+            <Download className="h-4 w-4" /> Export Excel
           </Button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1336,6 +1345,35 @@ function AuditLog() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const currentPage = Math.floor(offset / limit) + 1;
 
+  const exportExcel = async () => {
+    toast.info("Fetching audit log for export…");
+    try {
+      const params = new URLSearchParams();
+      params.set("limit", "5000");
+      params.set("offset", "0");
+      if (search) params.set("q", search);
+      if (actionFilter) params.set("action", actionFilter);
+      const res = await fetch(`/api/admin/audit-log?${params.toString()}`, { credentials: "include" });
+      const d = await res.json();
+      const all: AuditEntry[] = d.entries || [];
+      const rows = all.map(e => ({
+        "When": new Date(e.created_at).toLocaleString("en-ZA"),
+        "Admin": e.admin_name || e.admin_email,
+        "Admin Email": e.admin_email,
+        "Action": AUDIT_ACTION_LABELS[e.action] || e.action,
+        "Target": e.target_label || e.target_email || "",
+        "Target ID": e.target_id || "",
+        "Details": formatAuditDetails(e),
+        "IP Address": e.ip_address || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Audit Log");
+      XLSX.writeFile(wb, `masakhe-audit-log-${new Date().toISOString().slice(0,10)}.xlsx`);
+      toast.success(`Exported ${rows.length} entries to Excel`);
+    } catch { toast.error("Export failed"); }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1346,6 +1384,10 @@ function AuditLog() {
           </h2>
           <p className="text-muted-foreground">{total.toLocaleString()} admin actions recorded</p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+        <Button variant="outline" size="sm" onClick={exportExcel} className="gap-1">
+          <Download className="h-4 w-4" /> Export Excel
+        </Button>
         <form onSubmit={onSearch} className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1798,6 +1840,24 @@ function WebsiteList() {
 
   const siteUrl = (slug: string) => `${window.location.origin}/site/${slug}`;
 
+  const exportExcel = () => {
+    const rows = filtered.map(s => ({
+      "Business Name": s.business_name || s.trading_name || "",
+      "Trading Name": s.trading_name || "",
+      "Slug": s.slug,
+      "Owner Name": s.full_name || "",
+      "Owner Email": s.email || "",
+      "Status": s.status,
+      "URL": s.status === "published" ? siteUrl(s.slug) : "",
+      "Last Updated": new Date(s.updated_at).toLocaleDateString("en-ZA"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Websites");
+    XLSX.writeFile(wb, `masakhe-websites-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success(`Exported ${rows.length} site${rows.length !== 1 ? "s" : ""} to Excel`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -1805,9 +1865,14 @@ function WebsiteList() {
           <h2 className="text-2xl font-bold font-heading">Websites</h2>
           <p className="text-muted-foreground">{sites.length} site{sites.length !== 1 ? "s" : ""} across all businesses</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search sites..." className="pl-9 w-64" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportExcel} className="gap-1">
+            <Download className="h-4 w-4" /> Export Excel
+          </Button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search sites..." className="pl-9 w-64" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
         </div>
       </div>
 
@@ -1990,6 +2055,26 @@ function AdminPartners() {
     return matchSearch && matchStatus;
   });
 
+  const exportExcel = () => {
+    const rows = filtered.map(r => ({
+      "Full Name": r.full_name,
+      "Email": r.email,
+      "Reseller Code": r.reseller_code,
+      "Status": r.status,
+      "Package": r.package_tier ? (PKG_LABELS[r.package_tier]?.label || r.package_tier) : "",
+      "Rank": RANK_LABELS[r.rank_key] || r.rank_key || "",
+      "Total Clients": r.total_clients,
+      "Total Earnings (ZAR)": r.total_earnings ? (r.total_earnings / 100).toFixed(2) : "0.00",
+      "Commission Rate (%)": r.commission_rate ?? "",
+      "Joined": new Date(r.created_at).toLocaleDateString("en-ZA"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Partners");
+    XLSX.writeFile(wb, `masakhe-partners-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success(`Exported ${rows.length} partner${rows.length !== 1 ? "s" : ""} to Excel`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -2042,6 +2127,9 @@ function AdminPartners() {
           <option value="pending">Pending</option>
           <option value="suspended">Suspended</option>
         </select>
+        <Button variant="outline" size="sm" onClick={exportExcel} className="gap-1 self-start sm:self-auto">
+          <Download className="h-4 w-4" /> Export Excel
+        </Button>
       </div>
 
       {/* Table */}
