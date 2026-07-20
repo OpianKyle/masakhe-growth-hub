@@ -402,6 +402,12 @@ authRouter.post("/login", async (req, res) => {
         [user.id]
       );
 
+      // Auto-verify admin accounts — super admins skip email verification
+      if (fullUser?.role === 'admin' && !user.email_verified) {
+        await execute("UPDATE users SET email_verified = 1 WHERE id = ?", [user.id]).catch(() => {});
+        if (fullUser) fullUser.email_verified = 1;
+      }
+
       // Auto-create reseller record if the account is a partner but has no active record
       if (fullUser?.business_status === 'reseller') {
         const existing = await queryOne(
