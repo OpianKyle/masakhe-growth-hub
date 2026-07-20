@@ -1,0 +1,58 @@
+remote: Total 65 (delta 57), reused 65 (delta 57), pack-reused 0 (from 0)
+Unpacking objects: 100% (65/65), 23.20 KiB | 344.00 KiB/s, done.
+From https://github.com/OpianKyle/masakhe-growth-hub
+   733d1db..439b5a3  main       -> origin/main
+Updating 733d1db..439b5a3
+Fast-forward
+ attached_assets/image_1784275396899.png    | Bin 0 -> 3775 bytes
+ server/db.ts                               |  11 +
+ server/franchise.ts                        | 115 ++++-
+ server/index.ts                            |   2 +
+ server/replit_integrations/image/client.ts |   2 +
+ server/replit_integrations/image/routes.ts |  35 +-
+ src/pages/AdminDashboard.tsx               | 132 +++++-
+ src/pages/MTNDashboard.tsx                 | 703 ++++++++++++++++++++++++++++-
+ vite.config.ts                             |   2 +
+ 9 files changed, 971 insertions(+), 31 deletions(-)
+ create mode 100644 attached_assets/image_1784275396899.png
+
+> vite_react_shadcn_ts@0.0.0 build
+> npx vite build
+
+vite v5.4.21 building for production...
+transforming (4) src/App.tsx
+/noise.png referenced in /noise.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
+✓ 14 modules transformed.
+x Build failed in 2.96s
+error during build:
+[vite:esbuild] Transform failed with 2 errors:
+/home/ubuntu/masakhe-growth-hub/src/pages/AdminDashboard.tsx:1496:0: ERROR: The character "}" is not valid inside a JSX element
+/home/ubuntu/masakhe-growth-hub/src/pages/AdminDashboard.tsx:1505:2: ERROR: Unexpected "return"
+file: /home/ubuntu/masakhe-growth-hub/src/pages/AdminDashboard.tsx:1496:0
+
+The character "}" is not valid inside a JSX element
+1494|      </div>
+1495|    );
+1496|  }
+   |  ^
+1497|
+1498|  const CATEGORIES = [
+
+Unexpected "return"
+1503|
+1504|  function formatCurrency(cents: number) {
+1505|    return `R ${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0 })}`;
+   |    ^
+1506|  }
+1507|
+
+    at failureErrorWithLog (/home/ubuntu/masakhe-growth-hub/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+    at /home/ubuntu/masakhe-growth-hub/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/home/ubuntu/masakhe-growth-hub/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/home/ubuntu/masakhe-growth-hub/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/home/ubuntu/masakhe-growth-hub/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)

@@ -1400,6 +1400,7 @@ function AuditLog() {
           </div>
           <Button type="submit" variant="outline" size="sm">Search</Button>
         </form>
+        </div>
       </div>
 
       <div className="rounded-xl border bg-card p-4 shadow-sm">
