@@ -59,6 +59,8 @@ interface Client {
   subscription_exempt?: number | boolean;
   admin_notes?: string | null;
   admin_tags?: string[] | null;
+  is_reseller?: boolean;
+  reseller_tier?: string | null;
 }
 
 interface FinancialStats {
@@ -415,6 +417,26 @@ function ClientList() {
     if (res.ok) {
       toast.success(`Role updated to ${newRole}`);
       loadClients();
+    }
+  };
+
+  const grantPartnerAccess = async (id: string, name: string, currentlyPartner: boolean, tier?: string | null) => {
+    if (currentlyPartner) {
+      if (!confirm(`Revoke partner access for ${name}?`)) return;
+      const res = await fetch(`/api/reseller/admin/revoke-user/${id}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) { toast.success(`Partner access revoked for ${name}`); loadClients(); }
+      else { const d = await res.json(); toast.error(d.error || "Failed to revoke"); }
+    } else {
+      const chosenTier = prompt(`Grant partner access to ${name}.\nEnter tier: affiliate, reseller, or master`, "affiliate");
+      if (!chosenTier) return;
+      const res = await fetch("/api/reseller/admin/grant-user", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: id, tier: chosenTier }),
+      });
+      if (res.ok) { toast.success(`Partner access (${chosenTier}) granted to ${name}`); loadClients(); }
+      else { const d = await res.json(); toast.error(d.error || "Failed to grant"); }
     }
   };
 
@@ -980,6 +1002,16 @@ function ClientList() {
                         title="Grant free access — no subscription required"
                       >
                         <Star className="h-3 w-3" /> Free Access
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-7 px-2 text-[10px] gap-1 ${client.is_reseller ? "border-green-400 text-green-700 bg-green-50 hover:bg-green-100" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}
+                        onClick={() => grantPartnerAccess(client.id, client.full_name, !!client.is_reseller, client.reseller_tier)}
+                        title={client.is_reseller ? `Partner: ${client.reseller_tier || "affiliate"} — click to revoke` : "Grant partner programme access"}
+                      >
+                        <Handshake className="h-3 w-3" />
+                        {client.is_reseller ? `Partner (${client.reseller_tier || "affiliate"})` : "Partner Access"}
                       </Button>
                     </div>
                   )}

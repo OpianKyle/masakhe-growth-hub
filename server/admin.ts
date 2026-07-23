@@ -376,7 +376,8 @@ adminRouter.get("/clients", async (req, res) => {
               bs.status as subscription_status, bs.trial_end_at, bs.trial_start_at, bs.next_billing_at,
               bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents,
               (SELECT SUM(amount_cents) FROM billing_invoices
-               WHERE workspace_id = wm.workspace_id AND status = 'PENDING') as pending_amount_cents
+               WHERE workspace_id = wm.workspace_id AND status = 'PENDING') as pending_amount_cents,
+              r.status as reseller_status, r.package_tier as reseller_tier
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
        LEFT JOIN workspace_members wm ON wm.user_id = u.id
@@ -388,12 +389,15 @@ adminRouter.get("/clients", async (req, res) => {
          ) bs2 ON bs1.workspace_id = bs2.workspace_id AND bs1.created_at = bs2.max_created
        ) bs ON bs.workspace_id = wm.workspace_id
        LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
+       LEFT JOIN resellers r ON r.user_id = u.id
        ORDER BY u.created_at DESC`
     );
     // admin_tags is stored as JSON; mysql2 can return it as string or already-parsed.
     const normalised = clients.map((c: any) => ({
       ...c,
       admin_tags: typeof c.admin_tags === "string" ? safeParse(c.admin_tags) : (c.admin_tags || []),
+      is_reseller: c.reseller_status === "active",
+      reseller_tier: c.reseller_tier || null,
     }));
     res.json(normalised);
   } catch (err) {
