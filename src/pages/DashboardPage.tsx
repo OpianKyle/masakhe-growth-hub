@@ -149,12 +149,7 @@ const baseNavItems: NavItem[] = [
       { icon: CalendarDays, label: "Staff Roster", path: "/dashboard/roster", requiresModule: "people_hr", perm: "payroll" },
     ],
   },
-  { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
-  { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
-  { icon: Users, label: "User Accounts", path: "/dashboard/team", ownerOnly: true },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
-  { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
-  { icon: Settings, label: "Settings", path: "/dashboard/settings", ownerOnly: true },
 ];
 
 function ModuleGate({ moduleCode, onUpgrade }: { moduleCode: ModuleCode; onUpgrade: () => void }) {
@@ -757,6 +752,31 @@ export default function DashboardPage() {
               <Input placeholder="Search..." className="pl-9 w-64" />
             </div>
             <NotificationDropdown />
+            <Link
+              to="/dashboard/help"
+              title="Help Centre"
+              className={`shrink-0 p-1.5 rounded-lg transition-colors ${isMtnClient ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+            >
+              <BookOpen className="h-5 w-5" />
+            </Link>
+            {!user?.teamMember && (
+              <Link
+                to="/dashboard/team"
+                title="User Accounts"
+                className={`shrink-0 p-1.5 rounded-lg transition-colors ${isMtnClient ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+              >
+                <Users className="h-5 w-5" />
+              </Link>
+            )}
+            {!user?.teamMember && (
+              <Link
+                to="/dashboard/billing"
+                title="Billing"
+                className={`shrink-0 p-1.5 rounded-lg transition-colors ${isMtnClient ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+              >
+                <CreditCard className="h-5 w-5" />
+              </Link>
+            )}
             <Link to="/dashboard/settings" className="shrink-0">
               {user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-9 w-9 rounded-full object-contain" />
