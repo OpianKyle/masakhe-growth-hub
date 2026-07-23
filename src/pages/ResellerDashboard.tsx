@@ -254,6 +254,18 @@ export default function ResellerDashboard({ activeTab, onTabChange }: Props = {}
             Pick the package that matches your ambition. Earn commissions, build your network, and grow with Masakhe.
           </p>
 
+          {/* Contact banner */}
+          <div className="flex items-center justify-center gap-3 mt-5 mx-auto max-w-md rounded-xl border border-green-200 bg-green-50 px-5 py-3.5">
+            <Mail className="h-5 w-5 text-green-600 shrink-0" />
+            <p className="text-sm text-slate-700 text-left">
+              Want to join? Email us at{" "}
+              <a href="mailto:admin@masakhegroup.co.za" className="font-semibold text-green-700 hover:underline">
+                admin@masakhegroup.co.za
+              </a>{" "}
+              to get access.
+            </p>
+          </div>
+
           {/* Key stats */}
           <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-6">
             {[
