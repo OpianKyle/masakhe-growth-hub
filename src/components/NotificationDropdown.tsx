@@ -91,7 +91,7 @@ export default function NotificationDropdown() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => { setOpen(!open); if (!open) fetchNotifications(); }}
-        className="relative text-muted-foreground hover:text-foreground transition-colors"
+        className="relative p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
