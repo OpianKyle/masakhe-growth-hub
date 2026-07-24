@@ -54,7 +54,7 @@ export default function NexoPortalPage() {
         {/* Top: Logo + branding */}
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-8">
-            <img src="/nexo-logo.png" alt="Nexo" className="h-12 object-contain" style={{ filter: "brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(190deg)" }} />
+            <img src="/nexo-logo.png" alt="Nexo" className="h-20 object-contain" style={{ filter: "brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(190deg)" }} />
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-white/40">Powered by</div>
               <div className="flex items-center gap-2 mt-0.5">
@@ -119,15 +119,17 @@ export default function NexoPortalPage() {
 
       {/* ── RIGHT PANEL ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 min-h-screen lg:min-h-0 relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${NEXO_DARK} 0%, ${NEXO_SLATE} 50%, ${NEXO_DARK} 100%)` }} />
-        {/* Subtle glow */}
-        <div className="absolute inset-0 opacity-20"
+        {/* Background image */}
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/nexo-bg.png')" }} />
+        {/* Dark overlay so form stays readable */}
+        <div className="absolute inset-0" style={{ background: "rgba(15,23,42,0.82)" }} />
+        {/* Blue glow */}
+        <div className="absolute inset-0 opacity-25"
           style={{ backgroundImage: `radial-gradient(ellipse at 50% 0%, ${NEXO_BLUE} 0%, transparent 70%)` }} />
 
         {/* Mobile logo */}
         <div className="relative z-10 flex lg:hidden items-center gap-3 mb-8">
-          <img src="/nexo-logo.png" alt="Nexo" className="h-10 object-contain"
+          <img src="/nexo-logo.png" alt="Nexo" className="h-14 object-contain"
             style={{ filter: "brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(190deg)" }} />
           <div className="h-6 w-px bg-white/30" />
           <img src="/masakhe-logo.png" alt="Masakhe" className="h-7 w-7 object-contain" />
