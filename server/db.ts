@@ -634,6 +634,10 @@ export async function runMigrations() {
     await createIndex("idx_users_parent_owner", "users", "parent_owner_id");
 
     try {
+      await conn.query(`ALTER TABLE users ADD COLUMN nexo_code VARCHAR(50) NULL DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
+    try {
       await conn.query(`ALTER TABLE workspace_members ADD COLUMN permissions TEXT NULL DEFAULT NULL`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 

@@ -330,16 +330,17 @@ authRouter.post("/register", async (req, res) => {
         })();
       }
 
-      // Detect Nexo/MTN client flags for immediate use post-registration
+      // Detect Nexo client flag directly from nexo_code stamped on the user record
+      // (avoids dependency on nexo_partners/nexo_clients rows which may not exist yet)
       let is_nexo_client = false;
       let nexo_franchise_code: string | null = null;
       if (resolvedFranchiseCode && resolvedFranchiseCode.toUpperCase().startsWith("NEXO")) {
-        const nc = await queryOne(
-          `SELECT np.partner_code FROM nexo_clients nc JOIN nexo_partners np ON np.id = nc.partner_id WHERE nc.client_user_id = ? AND nc.status = 'active' LIMIT 1`,
+        const nu = await queryOne(
+          `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
           [userId]
         ).catch(() => null);
-        is_nexo_client = !!nc;
-        nexo_franchise_code = nc?.partner_code || null;
+        is_nexo_client = !!nu?.nexo_code;
+        nexo_franchise_code = nu?.nexo_code || null;
       }
 
       try {
