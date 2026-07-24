@@ -1,16 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { format, addDays, startOfWeek, addWeeks, subWeeks, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, X, Clock, Pencil, Trash2, CalendarDays, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,18 +52,20 @@ function ShiftPill({
   colorStyle,
   onEdit,
   onDelete,
+  onDragStart,
+  isDragging,
 }: {
   shift: Shift;
   colorStyle: typeof COLORS[0];
   onEdit: () => void;
   onDelete: () => void;
+  onDragStart: (e: React.DragEvent) => void;
+  isDragging: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: shift.id });
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      draggable
+      onDragStart={onDragStart}
       className={`group relative rounded-md border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none transition-opacity
         ${colorStyle.bg} ${colorStyle.text} ${colorStyle.border}
         ${isDragging ? "opacity-30" : "opacity-100"}`}
@@ -85,14 +77,14 @@ function ShiftPill({
       </div>
       <div className="absolute top-0.5 right-0.5 hidden group-hover:flex gap-0.5">
         <button
-          onPointerDown={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
           onClick={e => { e.stopPropagation(); onEdit(); }}
           className="h-4 w-4 rounded flex items-center justify-center bg-white/80 hover:bg-white transition-colors"
         >
           <Pencil className="h-2.5 w-2.5" />
         </button>
         <button
-          onPointerDown={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
           onClick={e => { e.stopPropagation(); onDelete(); }}
           className="h-4 w-4 rounded flex items-center justify-center bg-white/80 hover:bg-white transition-colors text-red-500"
         >
@@ -108,17 +100,26 @@ function DroppableCell({
   date,
   children,
   onClick,
+  isOver,
+  onDragOver,
+  onDrop,
+  onDragLeave,
 }: {
   employeeId: string;
   date: string;
   children: React.ReactNode;
   onClick: () => void;
+  isOver: boolean;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragLeave: () => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `${employeeId}__${date}` });
   return (
     <div
-      ref={setNodeRef}
       onClick={onClick}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragLeave={onDragLeave}
       className={`min-h-[72px] p-1 space-y-1 border-r border-b border-gray-100 transition-colors cursor-pointer group
         ${isOver ? "bg-teal-50" : "hover:bg-gray-50/60"}`}
     >
@@ -156,12 +157,11 @@ export default function StaffRosterPage() {
   );
   const [modal, setModal] = useState<{ mode: "add" | "edit"; shift?: Shift; prefill?: Partial<ShiftForm> } | null>(null);
   const [form, setForm] = useState<ShiftForm>(EMPTY_FORM);
-  const [activeShift, setActiveShift] = useState<Shift | null>(null);
+  const [draggingShiftId, setDraggingShiftId] = useState<string | null>(null);
+  const [overCellKey, setOverCellKey] = useState<string | null>(null);
 
   const weekKey = format(weekStart, "yyyy-MM-dd");
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["employees-active"],
@@ -249,23 +249,37 @@ export default function StaffRosterPage() {
     }
   }
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const shift = shifts.find(s => s.id === event.active.id);
-    setActiveShift(shift || null);
-  }, [shifts]);
+  function handleDragStart(e: React.DragEvent, shiftId: string) {
+    setDraggingShiftId(shiftId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", shiftId);
+  }
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setActiveShift(null);
-    if (!event.over) return;
-    const [newEmployeeId, newDate] = (event.over.id as string).split("__");
-    const shift = shifts.find(s => s.id === event.active.id);
+  function handleDragEnd() {
+    setDraggingShiftId(null);
+    setOverCellKey(null);
+  }
+
+  function handleDragOver(e: React.DragEvent, cellKey: string) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setOverCellKey(cellKey);
+  }
+
+  function handleDrop(e: React.DragEvent, employeeId: string, date: string) {
+    e.preventDefault();
+    const shiftId = e.dataTransfer.getData("text/plain");
+    setDraggingShiftId(null);
+    setOverCellKey(null);
+    if (!shiftId) return;
+    const shift = shifts.find(s => s.id === shiftId);
     if (!shift) return;
-    if (shift.employee_id === newEmployeeId && shift.shift_date.slice(0, 10) === newDate) return;
+    if (shift.employee_id === employeeId && shift.shift_date.slice(0, 10) === date) return;
     updateShift.mutate({
       id: shift.id,
       data: {
-        employee_id: newEmployeeId,
-        shift_date: newDate,
+        employee_id: employeeId,
+        shift_date: date,
         start_time: shift.start_time,
         end_time: shift.end_time,
         title: shift.title || "",
@@ -273,7 +287,7 @@ export default function StaffRosterPage() {
         color: shift.color,
       },
     });
-  }, [shifts, updateShift]);
+  }
 
   const shiftsMap = shifts.reduce<Record<string, Shift[]>>((acc, s) => {
     const key = `${s.employee_id}__${s.shift_date.slice(0, 10)}`;
@@ -303,7 +317,7 @@ export default function StaffRosterPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Staff Roster</h1>
-            <p className="text-sm text-muted-foreground">Drag shifts to reschedule • Click a cell to add</p>
+            <p className="text-sm text-muted-foreground">Drag shifts to reschedule · Click a cell to add</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -335,97 +349,91 @@ export default function StaffRosterPage() {
 
       {/* Grid */}
       {employees.length > 0 && (
-        <div className="flex-1 overflow-auto">
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <table className="w-full border-collapse text-sm" style={{ minWidth: 800 }}>
-              <thead>
-                <tr className="bg-muted/40">
-                  <th className="w-40 text-left px-4 py-3 border-r border-b border-gray-100 font-semibold text-muted-foreground sticky left-0 bg-muted/40 z-10">
-                    Employee
+        <div className="flex-1 overflow-auto" onDragEnd={handleDragEnd}>
+          <table className="w-full border-collapse text-sm" style={{ minWidth: 800 }}>
+            <thead>
+              <tr className="bg-muted/40">
+                <th className="w-40 text-left px-4 py-3 border-r border-b border-gray-100 font-semibold text-muted-foreground sticky left-0 bg-muted/40 z-10">
+                  Employee
+                </th>
+                {days.map((d, i) => (
+                  <th
+                    key={i}
+                    className={`px-2 py-3 border-r border-b border-gray-100 font-semibold text-center
+                      ${isToday(d) ? "text-teal-600" : "text-muted-foreground"}`}
+                  >
+                    <div className="text-xs">{DAYS[i]}</div>
+                    <div className={`text-base font-bold ${isToday(d) ? "text-teal-600" : "text-foreground"}`}>
+                      {format(d, "d")}
+                    </div>
                   </th>
-                  {days.map((d, i) => (
-                    <th
-                      key={i}
-                      className={`px-2 py-3 border-r border-b border-gray-100 font-semibold text-center
-                        ${isToday(d) ? "text-teal-600" : "text-muted-foreground"}`}
-                    >
-                      <div className="text-xs">{DAYS[i]}</div>
-                      <div className={`text-base font-bold ${isToday(d) ? "text-teal-600" : "text-foreground"}`}>
-                        {format(d, "d")}
-                      </div>
-                    </th>
-                  ))}
-                  <th className="px-3 py-3 border-b border-gray-100 text-center text-xs font-semibold text-muted-foreground w-16">
-                    hrs
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {employees.map((emp, empIdx) => {
-                  const c = colorFor(empIdx);
-                  return (
-                    <tr key={emp.id}>
-                      {/* Employee name cell */}
-                      <td className="px-4 py-2 border-r border-b border-gray-100 sticky left-0 bg-background z-10 align-top">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full ${c.dot} shrink-0`} />
-                          <div>
-                            <div className="font-medium text-foreground text-xs leading-tight">
-                              {emp.first_name} {emp.last_name}
-                            </div>
-                            {emp.position && (
-                              <div className="text-[10px] text-muted-foreground truncate max-w-[110px]">{emp.position}</div>
-                            )}
+                ))}
+                <th className="px-3 py-3 border-b border-gray-100 text-center text-xs font-semibold text-muted-foreground w-16">
+                  hrs
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((emp, empIdx) => {
+                const c = colorFor(empIdx);
+                return (
+                  <tr key={emp.id}>
+                    {/* Employee name cell */}
+                    <td className="px-4 py-2 border-r border-b border-gray-100 sticky left-0 bg-background z-10 align-top">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${c.dot} shrink-0`} />
+                        <div>
+                          <div className="font-medium text-foreground text-xs leading-tight">
+                            {emp.first_name} {emp.last_name}
                           </div>
+                          {emp.position && (
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[110px]">{emp.position}</div>
+                          )}
                         </div>
-                      </td>
-                      {/* Day cells */}
-                      {days.map((d, i) => {
-                        const dateStr = format(d, "yyyy-MM-dd");
-                        const cellKey = `${emp.id}__${dateStr}`;
-                        const cellShifts = shiftsMap[cellKey] || [];
-                        return (
-                          <td key={i} className="p-0 align-top">
-                            <DroppableCell
-                              employeeId={emp.id}
-                              date={dateStr}
-                              onClick={() => openAdd(emp.id, dateStr)}
-                            >
-                              {cellShifts.map(shift => (
-                                <ShiftPill
-                                  key={shift.id}
-                                  shift={shift}
-                                  colorStyle={c}
-                                  onEdit={() => openEdit(shift)}
-                                  onDelete={() => { if (confirm("Delete this shift?")) deleteShift.mutate(shift.id); }}
-                                />
-                              ))}
-                            </DroppableCell>
-                          </td>
-                        );
-                      })}
-                      {/* Weekly hours */}
-                      <td className="px-3 border-b border-gray-100 text-center align-middle">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          {totalHours(emp).toFixed(1)}h
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {/* Drag overlay */}
-            <DragOverlay>
-              {activeShift && (
-                <div className="rounded-md border px-2 py-1 text-xs bg-white shadow-lg opacity-90 pointer-events-none w-28">
-                  <div className="font-semibold">{activeShift.title || activeShift.first_name}</div>
-                  <div className="text-muted-foreground">{activeShift.start_time}–{activeShift.end_time}</div>
-                </div>
-              )}
-            </DragOverlay>
-          </DndContext>
+                      </div>
+                    </td>
+                    {/* Day cells */}
+                    {days.map((d, i) => {
+                      const dateStr = format(d, "yyyy-MM-dd");
+                      const cellKey = `${emp.id}__${dateStr}`;
+                      const cellShifts = shiftsMap[cellKey] || [];
+                      return (
+                        <td key={i} className="p-0 align-top">
+                          <DroppableCell
+                            employeeId={emp.id}
+                            date={dateStr}
+                            isOver={overCellKey === cellKey}
+                            onClick={() => openAdd(emp.id, dateStr)}
+                            onDragOver={e => handleDragOver(e, cellKey)}
+                            onDrop={e => handleDrop(e, emp.id, dateStr)}
+                            onDragLeave={() => setOverCellKey(prev => prev === cellKey ? null : prev)}
+                          >
+                            {cellShifts.map(shift => (
+                              <ShiftPill
+                                key={shift.id}
+                                shift={shift}
+                                colorStyle={c}
+                                isDragging={draggingShiftId === shift.id}
+                                onDragStart={e => handleDragStart(e, shift.id)}
+                                onEdit={() => openEdit(shift)}
+                                onDelete={() => { if (confirm("Delete this shift?")) deleteShift.mutate(shift.id); }}
+                              />
+                            ))}
+                          </DroppableCell>
+                        </td>
+                      );
+                    })}
+                    {/* Weekly hours */}
+                    <td className="px-3 border-b border-gray-100 text-center align-middle">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {totalHours(emp).toFixed(1)}h
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
           {isLoading && (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
