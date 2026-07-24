@@ -188,6 +188,9 @@ authRouter.post("/register", async (req, res) => {
       }
 
       if (isNexoCode) {
+        // Stamp nexo_code directly on the user record for reliable is_nexo_client detection
+        await execute("UPDATE users SET nexo_code = ? WHERE id = ?", [resolvedFranchiseCode, userId]).catch(() => {});
+
         try {
           const nexoPartner = await queryOne(
             "SELECT id FROM nexo_partners WHERE partner_code = ? AND status = 'active'",
@@ -327,8 +330,20 @@ authRouter.post("/register", async (req, res) => {
         })();
       }
 
+      // Detect Nexo/MTN client flags for immediate use post-registration
+      let is_nexo_client = false;
+      let nexo_franchise_code: string | null = null;
+      if (resolvedFranchiseCode && resolvedFranchiseCode.toUpperCase().startsWith("NEXO")) {
+        const nc = await queryOne(
+          `SELECT np.partner_code FROM nexo_clients nc JOIN nexo_partners np ON np.id = nc.partner_id WHERE nc.client_user_id = ? AND nc.status = 'active' LIMIT 1`,
+          [userId]
+        ).catch(() => null);
+        is_nexo_client = !!nc;
+        nexo_franchise_code = nc?.partner_code || null;
+      }
+
       try {
-        res.json({ ok: true, user });
+        res.json({ ok: true, user: { ...(user || {}), is_nexo_client, nexo_franchise_code } });
       } catch (e: any) {
         console.error("[Auth] res.json error:", e.message);
       }
@@ -446,7 +461,24 @@ authRouter.post("/login", async (req, res) => {
         }
       }
 
-      res.json({ ok: true, user: fullUser });
+      // Detect Nexo client from nexo_code column on users table
+      const nexoUser = await queryOne(
+        `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
+        [user.id]
+      ).catch(() => null);
+      const is_nexo_client = !!nexoUser?.nexo_code;
+      const nexo_franchise_code = nexoUser?.nexo_code || null;
+
+      // Detect MTN client status
+      const mtnRow = await queryOne(
+        `SELECT f.code FROM franchise_clients fc JOIN franchises f ON f.id = fc.franchise_id
+         WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'mtn%' LIMIT 1`,
+        [user.id]
+      ).catch(() => null);
+      const is_mtn_client = !!mtnRow;
+      const mtn_franchise_code = mtnRow?.code || null;
+
+      res.json({ ok: true, user: { ...fullUser, is_nexo_client, nexo_franchise_code, is_mtn_client, mtn_franchise_code } });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Login failed" });
@@ -594,17 +626,13 @@ authRouter.get("/me", async (req, res) => {
   const is_mtn_client = !!mtnFranchise;
   const mtn_franchise_code = mtnFranchise?.franchise_code || null;
 
-  // Detect if this user is a client under a Nexo franchise
-  const nexoFranchise = await queryOne(
-    `SELECT f.code as franchise_code
-     FROM franchise_clients fc
-     JOIN franchises f ON f.id = fc.franchise_id
-     WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'nexo%'
-     LIMIT 1`,
+  // Detect Nexo client: uses nexo_code stamped on user record at registration (most reliable)
+  const nexoUserRow = await queryOne(
+    `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
     [req.session.userId]
-  );
-  const is_nexo_client = !!nexoFranchise;
-  const nexo_franchise_code = nexoFranchise?.franchise_code || null;
+  ).catch(() => null);
+  const is_nexo_client = !!nexoUserRow?.nexo_code;
+  const nexo_franchise_code = nexoUserRow?.nexo_code || null;
 
   res.json({ user: { ...user, is_mtn_client, mtn_franchise_code, is_nexo_client, nexo_franchise_code }, isImpersonating, originalAdminName, teamMember });
 });

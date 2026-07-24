@@ -38,6 +38,9 @@ export async function runNexoMigrations() {
     )
   `, []).catch(() => {});
 
+  // Add nexo_code column to users so Nexo client detection works independently of partner lookup
+  await execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS nexo_code VARCHAR(50) NULL`, []).catch(() => {});
+
   console.log("[Nexo] Migrations complete");
 }
 
