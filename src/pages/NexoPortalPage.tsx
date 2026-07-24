@@ -307,7 +307,7 @@ function NexoRegister() {
   const [franchiseCode, setFranchiseCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -330,12 +330,19 @@ function NexoRegister() {
         franchiseCode: franchiseCode || "NEXO001",
         businessData: { businessName: businessName || fullName, phone: phone || undefined },
       });
-      setLoading(false);
-      if (result.ok) {
-        toast.success("Account created! Sign in to access your Nexo Business Portal.");
-        navigate("/nexo?registered=1", { replace: true });
-      } else {
+      if (!result.ok) {
+        setLoading(false);
         toast.error(result.error || "Registration failed. Please try again.");
+        return;
+      }
+      const loginResult = await login(email, password);
+      setLoading(false);
+      if (loginResult.ok) {
+        toast.success("Welcome to Nexo! Your account is ready.");
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast.success("Account created! Please sign in.");
+        navigate("/nexo?registered=1", { replace: true });
       }
     } catch {
       setLoading(false);

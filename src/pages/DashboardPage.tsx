@@ -374,8 +374,9 @@ export default function DashboardPage() {
                 </>
               ) : isNexoClient ? (
                 <>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden" style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
-                    <img src="/nexo-logo.png" alt="Nexo" className="h-6 w-6 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-black text-white leading-none select-none"
+                    style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", fontSize: 18, letterSpacing: "-0.03em" }}>
+                    nx
                   </div>
                   <span className="text-lg font-bold font-heading truncate" style={{ color: "#93c5fd" }}>
                     {user?.business_name || "Nexo Business"}
@@ -404,8 +405,9 @@ export default function DashboardPage() {
                   <span className="text-xs font-black text-black">MTN</span>
                 </div>
               ) : isNexoClient ? (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg overflow-hidden" style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
-                  <img src="/nexo-logo.png" alt="Nexo" className="h-6 w-6 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg font-black text-white leading-none select-none"
+                  style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", fontSize: 18, letterSpacing: "-0.03em" }}>
+                  nx
                 </div>
               ) : user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
