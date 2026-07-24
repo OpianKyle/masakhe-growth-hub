@@ -275,6 +275,9 @@ export default function DashboardPage() {
     });
   };
 
+  const isMtnClient = !!user?.is_mtn_client;
+  const isNexoClient = !!user?.is_nexo_client;
+
   const NEXO_HIDDEN_LABELS = ["Website Builder", "Social Media", "Biz Connect"];
   const navItems: NavItem[] = filterForTeamMember([
     ...baseNavItems.slice(0, 5),
@@ -321,8 +324,6 @@ export default function DashboardPage() {
 
   const sidebarWide = mobileMenuOpen || !collapsed;
 
-  const isMtnClient = !!user?.is_mtn_client;
-  const isNexoClient = !!user?.is_nexo_client;
   const mtnSidebarStyle = isMtnClient ? { backgroundColor: "#1a1a1a", borderColor: "#2a2a2a" } : {};
   const activeNavCls = isMtnClient
     ? "bg-yellow-500/20 text-yellow-400 font-semibold"
