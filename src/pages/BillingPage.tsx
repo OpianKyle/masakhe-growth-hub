@@ -166,12 +166,128 @@ function MtnBillingPage() {
   );
 }
 
+function NexoBillingPage() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false);
+
+  const NEXO_BLUE = "#2563eb";
+  const NEXO_DARK = "#0f172a";
+
+  useEffect(() => {
+    fetch("/api/billing/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (d.active) setStarted(true); })
+      .catch(() => {});
+  }, []);
+
+  async function handleNexoTrial() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/billing/start-trial", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modules: ALL_CODES }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start trial");
+      setStarted(true);
+      window.dispatchEvent(new Event("billing:updated"));
+      toast({ title: "7-day free trial started!", description: "You now have full access to all Masakhe modules." });
+    } catch (err: any) {
+      toast({ title: "Could not start trial", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-full" style={{ backgroundColor: "#f8fafc" }}>
+      {/* Hero */}
+      <div
+        className="relative overflow-hidden py-14 px-6 text-center"
+        style={{ background: `linear-gradient(135deg, ${NEXO_DARK} 0%, #1e293b 100%)` }}
+      >
+        {/* Background glow blobs */}
+        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full blur-3xl opacity-20"
+          style={{ backgroundColor: NEXO_BLUE }} />
+
+        {/* Nexo logo — matches the login page exactly */}
+        <div className="relative z-10 mb-4">
+          <div
+            className="font-black tracking-tight leading-none select-none mx-auto"
+            style={{
+              fontSize: 56,
+              color: "#ffffff",
+              textShadow: `0 0 40px ${NEXO_BLUE}99, 0 0 80px ${NEXO_BLUE}44`,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            nexo
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-white/40">Powered by</span>
+            <img src="/masakhe-logo.png" alt="Masakhe" className="h-4 w-4 object-contain" />
+            <span className="text-sm font-semibold text-white/50">Masakhe</span>
+          </div>
+        </div>
+
+        <h1 className="relative z-10 text-2xl md:text-3xl font-extrabold mb-2 text-white">
+          Nexo Business Suite
+        </h1>
+        <p className="relative z-10 text-sm max-w-md mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+          As a Nexo Business partner you get complimentary access to the full Masakhe platform. Activate your free trial below — no credit card needed.
+        </p>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+        {/* Feature list */}
+        <div className="rounded-2xl border-2 p-6 bg-white" style={{ borderColor: NEXO_BLUE }}>
+          <h2 className="font-bold text-lg mb-4" style={{ color: NEXO_DARK }}>What's included</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {MODULES.map(m => (
+              <div key={m.code} className="flex items-start gap-3 rounded-xl border p-3 bg-gray-50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: NEXO_BLUE }}>
+                  <m.icon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-800">{m.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{m.features[0]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA */}
+        {started ? (
+          <div className="rounded-2xl border-2 p-6 text-center bg-white" style={{ borderColor: NEXO_BLUE }}>
+            <CheckCircle2 className="h-10 w-10 mx-auto mb-3" style={{ color: NEXO_BLUE }} />
+            <h3 className="font-bold text-lg text-gray-900 mb-1">Trial Active</h3>
+            <p className="text-sm text-gray-500">Your Nexo Business Suite is active. Enjoy full access to all modules.</p>
+          </div>
+        ) : (
+          <button
+            onClick={handleNexoTrial}
+            disabled={loading}
+            className="w-full rounded-2xl py-4 text-lg font-extrabold text-white flex items-center justify-center gap-3 transition-opacity hover:opacity-90 disabled:opacity-60 shadow-lg"
+            style={{ backgroundColor: NEXO_BLUE }}
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Gift className="h-5 w-5" />}
+            {loading ? "Activating…" : "Start Free Trial Now"}
+          </button>
+        )}
+
+        <p className="text-center text-xs text-gray-400">No payment required · Full access for 7 days · Powered by Masakhe</p>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-
-  if (user?.is_mtn_client) return <MtnBillingPage />;
 
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
@@ -182,7 +298,6 @@ export default function BillingPage() {
   const [trialEligible, setTrialEligible] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [adumoForm, setAdumoForm] = useState<{ action: string; fields: Record<string, string> } | null>(null);
-
   const [form, setForm] = useState({
     recipientName: user?.full_name || "",
     email: user?.email || "",
@@ -192,7 +307,6 @@ export default function BillingPage() {
     promoCode: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const adumoRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -212,6 +326,9 @@ export default function BillingPage() {
       adumoRef.current.submit();
     }
   }, [adumoForm]);
+
+  if (user?.is_mtn_client)  return <MtnBillingPage />;
+  if (user?.is_nexo_client) return <NexoBillingPage />;
 
   async function fetchBilling() {
     try {
