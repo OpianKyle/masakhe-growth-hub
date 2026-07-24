@@ -88,7 +88,7 @@ export async function runFranchiseMigrations() {
         franchise_id VARCHAR(36) NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT,
-        promo_type ENUM('phone_ad','social_post','campaign','offer') NOT NULL DEFAULT 'campaign',
+        promo_type ENUM('phone_ad','social_post','campaign','offer','general') NOT NULL DEFAULT 'campaign',
         image_url LONGTEXT,
         cta_text VARCHAR(100),
         cta_url TEXT,

@@ -174,12 +174,36 @@ authRouter.post("/register", async (req, res) => {
         if (franchise) {
           const { randomUUID: uuid } = await import("crypto");
           await execute(
-            "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+            "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
             [uuid(), franchise.id, userId]
           );
         }
       } catch (e: any) {
         console.error("[Auth] franchise auto-link error:", e.message);
+      }
+
+      // Also link into nexo_clients if this is a Nexo partner code
+      if (resolvedFranchiseCode.toUpperCase().startsWith("NEXO")) {
+        try {
+          const nexoPartner = await queryOne(
+            "SELECT id FROM nexo_partners WHERE partner_code = ? AND status = 'active'",
+            [resolvedFranchiseCode]
+          );
+          if (nexoPartner) {
+            const bName = businessData?.businessName || fullName;
+            await execute(
+              `INSERT IGNORE INTO nexo_clients (id, partner_id, client_user_id, business_name, status, registered_at)
+               VALUES (?, ?, ?, ?, 'active', NOW())`,
+              [randomUUID(), nexoPartner.id, userId, bName || null]
+            );
+            await execute(
+              "UPDATE nexo_partners SET total_clients = total_clients + 1 WHERE id = ?",
+              [nexoPartner.id]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] nexo client link error:", e.message);
+        }
       }
     }
 

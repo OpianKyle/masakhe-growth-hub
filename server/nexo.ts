@@ -81,6 +81,16 @@ nexoRouter.post("/join", requireAuth, async (req, res) => {
       [id, userId, partner_name, code, region || null, branch || null, contact_person || null, contact_email || null, contact_phone || null]
     );
 
+    // Mirror into franchises table so /api/franchise/me and promotions endpoints work
+    await execute(
+      `INSERT IGNORE INTO franchises (id, name, code, owner_user_id, status, created_at)
+       VALUES (?, ?, ?, ?, 'active', NOW())`,
+      [randomUUID(), partner_name, code, userId]
+    );
+
+    // Upgrade user role to franchise so requireFranchise middleware passes
+    await execute(`UPDATE users SET role = 'franchise' WHERE id = ?`, [userId]);
+
     res.json({ ok: true, code, id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -109,10 +119,22 @@ nexoRouter.patch("/admin/:id/status", requireAuth, requireAdmin, async (req, res
     const { status } = req.body;
     const validStatuses = ["pending", "active", "suspended"];
     if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
+
     await execute(
       `UPDATE nexo_partners SET status = ?, approved_at = ? WHERE id = ?`,
       [status, status === "active" ? new Date().toISOString() : null, req.params.id]
     );
+
+    // Keep franchises table in sync so /api/franchise/me reflects the latest status
+    const partner = await queryOne("SELECT user_id FROM nexo_partners WHERE id = ?", [req.params.id]);
+    if (partner) {
+      const franchiseStatus = status === "active" ? "active" : "suspended";
+      await execute(
+        `UPDATE franchises SET status = ? WHERE owner_user_id = ?`,
+        [franchiseStatus, partner.user_id]
+      );
+    }
+
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
