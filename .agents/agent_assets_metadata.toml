@@ -6,6 +6,18 @@ uri = "file://public/uploads/help-images/help-centre-banner.png"
 type = "image"
 title = "help centre banner"
 
+[[generated]]
+id = "W8X_djkFGOBWMFaQb3HUe"
+uri = "file://public/nexo-bg.png"
+type = "image"
+title = "nexo-dark-city-bg"
+
+[[generated]]
+id = "cowxcuxZ7YzeLemt0PeY7"
+uri = "file://public/nexo-wordmark.png"
+type = "image"
+title = "nexo-wordmark-wide"
+
 [[outputs]]
 id = "0LnzGpGsFGqh0KB0Henza"
 uri = "file://public/uploads/help-images/help-centre-banner.png"

@@ -53,14 +53,22 @@ export default function NexoPortalPage() {
 
         {/* Top: Logo + branding */}
         <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-8">
-            <img src="/nexo-logo.png" alt="Nexo" className="h-20 object-contain" style={{ filter: "brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(190deg)" }} />
-            <div>
+          <div className="mb-6">
+            <div
+              className="font-black tracking-tight leading-none select-none"
+              style={{
+                fontSize: 72,
+                color: "#ffffff",
+                textShadow: `0 0 40px ${NEXO_BLUE}99, 0 0 80px ${NEXO_BLUE}44`,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              nexo
+            </div>
+            <div className="flex items-center gap-2 mt-2">
               <div className="text-xs font-bold uppercase tracking-widest text-white/40">Powered by</div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <img src="/masakhe-logo.png" alt="Masakhe" className="h-7 w-7 object-contain" />
-                <span className="text-xl font-bold text-white">Masakhe</span>
-              </div>
+              <img src="/masakhe-logo.png" alt="Masakhe" className="h-5 w-5 object-contain" />
+              <span className="text-sm font-semibold text-white/60">Masakhe</span>
             </div>
           </div>
 
