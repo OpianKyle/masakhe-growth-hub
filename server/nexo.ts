@@ -141,6 +141,58 @@ nexoRouter.patch("/admin/:id/status", requireAuth, requireAdmin, async (req, res
   }
 });
 
+// ─── GET /api/nexo/my/clients — clients from nexo_clients (no franchise table) ─
+nexoRouter.get("/my/clients", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const partner = await queryOne("SELECT id FROM nexo_partners WHERE user_id = ?", [userId]);
+    if (!partner) return res.status(403).json({ error: "Not a Nexo partner" });
+
+    const clients = await queryAll(
+      `SELECT nc.id, nc.client_user_id, nc.business_name, nc.sector, nc.status, nc.registered_at,
+              u.full_name, u.email, u.phone,
+              bp.business_name as profile_business_name, bp.business_type, bp.industry_sector
+       FROM nexo_clients nc
+       JOIN users u ON u.id = nc.client_user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = nc.client_user_id
+       WHERE nc.partner_id = ?
+       ORDER BY nc.registered_at DESC`,
+      [partner.id]
+    );
+    res.json(clients);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/nexo/my/clients/:clientUserId/impersonate ──────────────────────
+nexoRouter.post("/my/clients/:clientUserId/impersonate", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const { clientUserId } = req.params;
+
+    const partner = await queryOne("SELECT id FROM nexo_partners WHERE user_id = ?", [userId]);
+    if (!partner) return res.status(403).json({ error: "Not a Nexo partner" });
+
+    const client = await queryOne(
+      "SELECT id FROM nexo_clients WHERE partner_id = ? AND client_user_id = ?",
+      [partner.id, clientUserId]
+    );
+    if (!client) return res.status(404).json({ error: "Client not found in your Nexo account" });
+
+    const targetUser = await queryOne("SELECT id, full_name FROM users WHERE id = ?", [clientUserId]);
+    if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+    req.session!.actingAsOwnerId = userId;
+    req.session!.userId = clientUserId;
+    await new Promise<void>((resolve, reject) => req.session!.save((e) => e ? reject(e) : resolve()));
+
+    res.json({ ok: true, name: targetUser.full_name });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Link SMME to Nexo partner when they register with a code ─────────────────
 export async function linkClientToNexo(clientUserId: string, partnerCode: string, businessName?: string): Promise<void> {
   try {

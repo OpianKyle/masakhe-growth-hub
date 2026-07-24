@@ -166,24 +166,28 @@ authRouter.post("/register", async (req, res) => {
       (referralCode && referralCode.toUpperCase().startsWith("MTN") ? "MTN001" : null);
 
     if (resolvedFranchiseCode) {
-      try {
-        const franchise = await queryOne(
-          "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
-          [resolvedFranchiseCode]
-        );
-        if (franchise) {
-          const { randomUUID: uuid } = await import("crypto");
-          await execute(
-            "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
-            [uuid(), franchise.id, userId]
+      // Nexo codes go ONLY into nexo_clients — never into franchise_clients
+      const isNexoCode = resolvedFranchiseCode.toUpperCase().startsWith("NEXO");
+
+      if (!isNexoCode) {
+        try {
+          const franchise = await queryOne(
+            "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
+            [resolvedFranchiseCode]
           );
+          if (franchise) {
+            const { randomUUID: uuid } = await import("crypto");
+            await execute(
+              "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+              [uuid(), franchise.id, userId]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] franchise auto-link error:", e.message);
         }
-      } catch (e: any) {
-        console.error("[Auth] franchise auto-link error:", e.message);
       }
 
-      // Also link into nexo_clients if this is a Nexo partner code
-      if (resolvedFranchiseCode.toUpperCase().startsWith("NEXO")) {
+      if (isNexoCode) {
         try {
           const nexoPartner = await queryOne(
             "SELECT id FROM nexo_partners WHERE partner_code = ? AND status = 'active'",
