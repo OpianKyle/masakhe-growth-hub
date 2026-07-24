@@ -27,7 +27,9 @@ const features = [
 ];
 
 export default function NexoPortalPage() {
-  const [tab, setTab] = useState<"login" | "register">("login");
+  const [searchParams] = useSearchParams();
+  const registered = searchParams.get("registered") === "1";
+  const [tab, setTab] = useState<"login" | "register">(registered ? "login" : "login");
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -153,6 +155,18 @@ export default function NexoPortalPage() {
               backdropFilter: "blur(20px)",
             }}
           >
+            {/* Registration success banner */}
+            {registered && (
+              <div className="mb-5 rounded-xl p-4 flex items-start gap-3"
+                style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-green-600" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Account created!</p>
+                  <p className="text-xs text-green-700 mt-0.5">Sign in below to access your Nexo Business Portal.</p>
+                </div>
+              </div>
+            )}
+
             {/* Tab switcher */}
             <div className="flex rounded-xl border border-gray-200 p-1 mb-7 gap-1">
               <button
@@ -318,8 +332,8 @@ function NexoRegister() {
       });
       setLoading(false);
       if (result.ok) {
-        toast.success("Account created! Welcome to the Nexo Business Portal.");
-        navigate("/dashboard", { replace: true });
+        toast.success("Account created! Sign in to access your Nexo Business Portal.");
+        navigate("/nexo?registered=1", { replace: true });
       } else {
         toast.error(result.error || "Registration failed. Please try again.");
       }
