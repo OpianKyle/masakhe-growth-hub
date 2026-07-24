@@ -275,12 +275,13 @@ export default function DashboardPage() {
     });
   };
 
+  const NEXO_HIDDEN_LABELS = ["Website Builder", "Social Media", "Biz Connect"];
   const navItems: NavItem[] = filterForTeamMember([
     ...baseNavItems.slice(0, 5),
     ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles", perm: "website" } as NavSingle] : []),
     ...(hasBrokerageSite ? [{ icon: Users, label: "Leads", path: "/dashboard/leads", perm: "website" } as NavSingle] : []),
     ...baseNavItems.slice(5),
-  ]);
+  ]).filter(item => !isNexoClient || !(!isGroup(item) && NEXO_HIDDEN_LABELS.includes((item as NavSingle).label)));
 
   const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
     isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]
@@ -297,7 +298,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await logout();
-    navigate(isMtnClient ? "/mtn" : "/");
+    navigate(isMtnClient ? "/mtn" : isNexoClient ? "/nexo" : "/");
   };
 
   const initials = user?.full_name?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U";
@@ -321,6 +322,7 @@ export default function DashboardPage() {
   const sidebarWide = mobileMenuOpen || !collapsed;
 
   const isMtnClient = !!user?.is_mtn_client;
+  const isNexoClient = !!user?.is_nexo_client;
   const mtnSidebarStyle = isMtnClient ? { backgroundColor: "#1a1a1a", borderColor: "#2a2a2a" } : {};
   const activeNavCls = isMtnClient
     ? "bg-yellow-500/20 text-yellow-400 font-semibold"

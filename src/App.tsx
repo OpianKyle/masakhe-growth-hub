@@ -28,6 +28,8 @@ import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
 import MTNPortalPage from "./pages/MTNPortalPage";
 import MTNDashboard from "./pages/MTNDashboard";
+import NexoPortalPage from "./pages/NexoPortalPage";
+import NexoDashboard from "./pages/NexoDashboard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -123,6 +125,10 @@ const App = () => (
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />
               <Route path="/mtn/dashboard" element={<FranchiseRoute><MTNDashboard /></FranchiseRoute>} />
+              <Route path="/nexo" element={<NexoPortalPage />} />
+              <Route path="/nexo/login" element={<NexoPortalPage />} />
+              <Route path="/nexo/register" element={<NexoPortalPage />} />
+              <Route path="/nexo/dashboard" element={<FranchiseRoute><NexoDashboard /></FranchiseRoute>} />
               <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
               <Route path="/site/:slug" element={<PublishedSite />} />

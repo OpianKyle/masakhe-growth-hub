@@ -28,6 +28,7 @@ import { resellerRouter, runResellerMigrations } from "./reseller";
 import { franchiseRouter, runFranchiseMigrations } from "./franchise";
 import { municipalityRouter, runMunicipalityMigrations } from "./municipality";
 import { mtnRouter, runMtnMigrations } from "./mtn";
+import { nexoRouter, runNexoMigrations } from "./nexo";
 import { documentsRouter } from "./documents";
 import { invoicePaymentsRouter } from "./invoice-payments";
 import { docPdfRouter } from "./doc-pdf";
@@ -146,6 +147,7 @@ async function main() {
   app.use("/api/franchise", franchiseRouter);
   app.use("/api/municipality", municipalityRouter);
   app.use("/api/mtn", mtnRouter);
+  app.use("/api/nexo", nexoRouter);
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
@@ -200,6 +202,7 @@ async function main() {
     runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));
     runMunicipalityMigrations().catch(e => console.error("[Municipality] Migration error:", e.message));
     runMtnMigrations().catch(e => console.error("[MTN] Migration error:", e.message));
+    runNexoMigrations().catch(e => console.error("[Nexo] Migration error:", e.message));
 
     // Seed after a short delay to let migrations finish
     setTimeout(() => {

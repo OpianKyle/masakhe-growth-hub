@@ -12,6 +12,8 @@ interface User {
   is_reseller?: boolean;
   is_mtn_client?: boolean;
   mtn_franchise_code?: string | null;
+  is_nexo_client?: boolean;
+  nexo_franchise_code?: string | null;
   business_type?: string;
   industry_sector?: string;
   years_operating?: number;

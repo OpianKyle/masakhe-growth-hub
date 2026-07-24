@@ -566,7 +566,19 @@ authRouter.get("/me", async (req, res) => {
   const is_mtn_client = !!mtnFranchise;
   const mtn_franchise_code = mtnFranchise?.franchise_code || null;
 
-  res.json({ user: { ...user, is_mtn_client, mtn_franchise_code }, isImpersonating, originalAdminName, teamMember });
+  // Detect if this user is a client under a Nexo franchise
+  const nexoFranchise = await queryOne(
+    `SELECT f.code as franchise_code
+     FROM franchise_clients fc
+     JOIN franchises f ON f.id = fc.franchise_id
+     WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'nexo%'
+     LIMIT 1`,
+    [req.session.userId]
+  );
+  const is_nexo_client = !!nexoFranchise;
+  const nexo_franchise_code = nexoFranchise?.franchise_code || null;
+
+  res.json({ user: { ...user, is_mtn_client, mtn_franchise_code, is_nexo_client, nexo_franchise_code }, isImpersonating, originalAdminName, teamMember });
 });
 
 // ---- Team-member password setup ----
