@@ -784,21 +784,16 @@ export default function BillingPage() {
           )}
 
           {selectedModules.length === 0 && !trialEligible && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-5 text-center">
-              <p className="text-sm text-muted-foreground mb-1 font-medium">
-                Select one or more modules above to subscribe.
+            <div className="rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/10 dark:border-emerald-700 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
+                <ArrowRight className="h-5 w-5 text-emerald-600 -rotate-90" />
+              </div>
+              <p className="font-semibold text-emerald-800 dark:text-emerald-200 mb-1">
+                Select your modules above to continue
               </p>
-              <p className="text-xs text-muted-foreground mb-4">
-                Or subscribe to the complete suite for the best value.
+              <p className="text-sm text-muted-foreground">
+                Choose one or more modules to see pricing and subscribe.
               </p>
-              <Button
-                onClick={() => { selectBundle(); }}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
-                size="lg"
-              >
-                <Crown className="mr-2 h-4 w-4" />
-                Subscribe to complete suite
-              </Button>
             </div>
           )}
         </div>
