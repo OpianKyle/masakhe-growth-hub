@@ -348,14 +348,17 @@ export default function BillingPage() {
       }
 
       const isActive = statusData.active && statusData.status === "ACTIVE";
-      const onTrial = statusData.active && statusData.status === "TRIAL";
       const hadSub = !!subData.subscription;
+      const trialExpiredOnServer = !!statusData.trialExpired;
 
       if (isActive) {
         setView("active");
       } else {
         setView("modules");
-        setTrialEligible(!hadSub);
+        // Not eligible for trial if they have/had a subscription OR the server
+        // reports the trial has already expired (expired trials are excluded from
+        // the subscription query so hadSub would be false otherwise).
+        setTrialEligible(!hadSub && !trialExpiredOnServer);
       }
     } catch {
       setView("modules");
