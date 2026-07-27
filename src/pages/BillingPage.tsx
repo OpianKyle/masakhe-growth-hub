@@ -779,6 +779,25 @@ export default function BillingPage() {
               </Button>
             </div>
           )}
+
+          {selectedModules.length === 0 && !trialEligible && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-5 text-center">
+              <p className="text-sm text-muted-foreground mb-1 font-medium">
+                Select one or more modules above to subscribe.
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Or subscribe to the complete suite for the best value.
+              </p>
+              <Button
+                onClick={() => { selectBundle(); }}
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90"
+                size="lg"
+              >
+                <Crown className="mr-2 h-4 w-4" />
+                Subscribe to complete suite
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

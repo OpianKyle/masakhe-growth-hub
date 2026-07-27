@@ -917,7 +917,12 @@ export default function DashboardPage() {
         </div>
       </main>
       <TrialExpiredModal
-        open={trialExpired && user?.role !== "admin" && !user?.teamMember}
+        open={
+          trialExpired &&
+          user?.role !== "admin" &&
+          !user?.teamMember &&
+          !location.pathname.endsWith("/billing")
+        }
         trialEndedAt={trialEndedAt}
       />
 
