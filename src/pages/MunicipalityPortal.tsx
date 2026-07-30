@@ -75,6 +75,7 @@ export default function MunicipalityPortal() {
     try {
       const res = await fetch("/api/municipality/me", { credentials: "include" });
       if (res.status === 404) { navigate("/municipality/register"); return; }
+      // Unauthenticated users are redirected by MunicipalityRoute
       if (res.ok) {
         const data = await res.json();
         setMun(data);
@@ -213,7 +214,7 @@ export default function MunicipalityPortal() {
           {isPending ? <Clock className="h-3.5 w-3.5 shrink-0" /> : <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
           {isPending ? "Awaiting approval" : "Active municipality"}
         </div>
-        <button onClick={async () => { await authLogout(); navigate("/login"); }}
+        <button onClick={async () => { await authLogout(); navigate("/municipality/login"); }}
           className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors">
           <LogOut className="h-4 w-4 shrink-0" /> Sign Out
         </button>

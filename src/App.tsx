@@ -16,6 +16,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import FranchiseDashboard from "./pages/FranchiseDashboard";
 import MunicipalityPortal from "./pages/MunicipalityPortal";
 import MunicipalityRegisterPage from "./pages/MunicipalityRegisterPage";
+import MunicipalityLandingPage from "./pages/MunicipalityLandingPage";
+import MunicipalityLoginPage from "./pages/MunicipalityLoginPage";
 import PublishedSite from "./pages/PublishedSite";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
 import PricingPage from "./pages/PricingPage";
@@ -118,8 +120,10 @@ const App = () => (
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />
-              <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
+              <Route path="/municipality" element={<MunicipalityLandingPage />} />
+              <Route path="/municipality/login" element={<MunicipalityLoginPage />} />
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
+              <Route path="/municipality/portal" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
               <Route path="/ad-requirements" element={<AdRequirementsPage />} />

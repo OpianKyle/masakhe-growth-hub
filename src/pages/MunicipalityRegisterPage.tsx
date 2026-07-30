@@ -110,7 +110,7 @@ export default function MunicipalityRegisterPage() {
       await doJoin();
 
       toast.success("Registration submitted! Taking you to your portal…");
-      setTimeout(() => navigate("/municipality"), 1200);
+      setTimeout(() => navigate("/municipality/portal"), 1200);
     } catch (err: any) {
       toast.error(err?.message || "Something went wrong. Please try again.");
       setSaving(false);
@@ -369,7 +369,7 @@ export default function MunicipalityRegisterPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already registered?{" "}
-            <Link to="/login" className="text-cyan-600 dark:text-cyan-400 font-medium hover:underline">
+            <Link to="/municipality/login" className="text-cyan-600 dark:text-cyan-400 font-medium hover:underline">
               Sign in to your portal
             </Link>
           </p>
