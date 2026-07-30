@@ -1,0 +1,39 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ # 1. Trim journal to last 50MB (frees ~830MB immediately)
+sudo journalctl --vacuum-size=50M
+
+# 2. Clean apt cache (frees ~132MB)
+sudo apt-get clean
+
+# 3. Clear the old failed-logins log (frees ~14MB)
+sudo truncate -s 0 /var/log/btmp.1
+sudo: unable to resolve host masahke-group: Name or service not known
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000000001-00064dd5213727f6.journal (16.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-0000000000000442-00064dd52a0c1399.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000002995-00064dfba5692682.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-00000000000029c2-00064dfbe5cca0ed.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000000cd47-00064e6e54ccbd8e.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000001789b-00064ee275b8af00.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-0000000000021a20-00064f6dac970e98.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-00000000000226c4-00064f782e74cedd.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-000000000002375f-00064f813572c952.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000002ce8e-00064fe92e34e5ca.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-0000000000030688-0006501c9ccbb14e.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000003705e-000650a3e47e737f.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-000000000003a205-000650ffea5624fb.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000004161d-00065197eada908f.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-0000000000042137-000651a2c0e27e75.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000004caa9-0006524175201db9.journal (64.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-000000000004d7f1-0006524e46ce5c73.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000058668-000652d68996ccfb.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@024c2ddfb36c48ec96c7394692eacdec-000000000005e014-0006534211165976.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000063f32-0006539cbf5172d4.journal (64.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000006f7cf-0006543a7f521ccd.journal (64.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@9c5cc6c4386f4d88a885b88f3a5abd8d-0000000000070f40-0006544babbf3220.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-000000000007b319-00065501a3e473cc.journal (56.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000086986-000655d0285cdc55.journal (56.0M).
+Vacuuming done, freed 848.0M of archived journals from /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec.
+sudo: unable to resolve host masahke-group: Name or service not known
+sudo: unable to resolve host masahke-group: Name or service not known
+ubuntu@masahke-group:~/masakhe-growth-hub$

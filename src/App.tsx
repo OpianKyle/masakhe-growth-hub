@@ -28,11 +28,14 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import PayInvoice from "./pages/PayInvoice";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
+import MTNPortalPage from "./pages/MTNPortalPage";
+import MTNDashboard from "./pages/MTNDashboard";
+import NexoPortalPage from "./pages/NexoPortalPage";
+import NexoDashboard from "./pages/NexoDashboard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MetaDeletionStatusPage from "./pages/MetaDeletionStatusPage";
-import AdRequirementsPage from "./pages/AdRequirementsPage";
 import { useEffect, useState } from "react";
 import { MasakheLoader } from "@/components/MasakheLoader";
 
@@ -105,6 +108,9 @@ const App = () => (
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/partner/register" element={<ResellerRegisterPage />} />
+              <Route path="/mtn" element={<MTNPortalPage />} />
+              <Route path="/mtn/login" element={<MTNPortalPage />} />
+              <Route path="/mtn/register" element={<MTNPortalPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -120,13 +126,21 @@ const App = () => (
               <Route path="/partner" element={<ProtectedRoute><ResellerPortal /></ProtectedRoute>} />
               <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/franchise/*" element={<FranchiseRoute><FranchiseDashboard /></FranchiseRoute>} />
+
               <Route path="/municipality" element={<MunicipalityLandingPage />} />
               <Route path="/municipality/login" element={<MunicipalityLoginPage />} />
+
+              <Route path="/mtn/dashboard" element={<FranchiseRoute><MTNDashboard /></FranchiseRoute>} />
+              <Route path="/nexo" element={<NexoPortalPage />} />
+              <Route path="/nexo/login" element={<NexoPortalPage />} />
+              <Route path="/nexo/register" element={<NexoPortalPage />} />
+              <Route path="/nexo/dashboard" element={<FranchiseRoute><NexoDashboard /></FranchiseRoute>} />
+              <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
+
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
               <Route path="/municipality/portal" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />
-              <Route path="/ad-requirements" element={<AdRequirementsPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />

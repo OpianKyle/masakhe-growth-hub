@@ -22,10 +22,13 @@ import { tendersRouter } from "./tenders";
 import { notificationsRouter } from "./notifications";
 import { startBillingScheduler } from "./billing-scheduler";
 import { startInvoiceScheduler } from "./invoice-scheduler";
+import { startPayslipScheduler } from "./payslip-scheduler";
 import { leaveRouter, runLeaveMigrations } from "./leave";
 import { resellerRouter, runResellerMigrations } from "./reseller";
 import { franchiseRouter, runFranchiseMigrations } from "./franchise";
 import { municipalityRouter, runMunicipalityMigrations } from "./municipality";
+import { mtnRouter, runMtnMigrations } from "./mtn";
+import { nexoRouter, runNexoMigrations } from "./nexo";
 import { documentsRouter } from "./documents";
 import { invoicePaymentsRouter } from "./invoice-payments";
 import { docPdfRouter } from "./doc-pdf";
@@ -44,6 +47,8 @@ import { startDripScheduler } from "./drip-scheduler";
 import { startCampaignScheduler } from "./campaigns";
 import { subscriptionApiRouter } from "./subscription-api";
 import { domainsRouter } from "./domains";
+import { shiftsRouter } from "./shifts";
+import { registerImageRoutes } from "./replit_integrations/image";
 import path from "path";
 import { queryOne } from "./db";
 
@@ -68,14 +73,51 @@ async function main() {
 
   const app = express();
   app.set("trust proxy", 1);
-  app.use(cors({ origin: true, credentials: true }));
+  const allowedOrigins = new Set(
+    [
+      process.env.APP_URL,
+      process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : undefined,
+      "http://localhost:5000",
+      "http://127.0.0.1:5000",
+    ].filter(Boolean) as string[]
+  );
+
+  const isAllowedOrigin = (origin: string): boolean => {
+    // Exact match against allowlist (normalized to origin only)
+    try {
+      const normalized = new URL(origin).origin;
+      if (allowedOrigins.has(normalized)) return true;
+    } catch {
+      return false;
+    }
+    // In non-production: allow any *.replit.dev origin (exact hostname suffix check)
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        const { hostname } = new URL(origin);
+        if (hostname === "replit.dev" || hostname.endsWith(".replit.dev")) return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  };
+
+  app.use(cors({
+    origin: (origin, cb) => {
+      // Allow same-origin / server-to-server requests (no Origin header)
+      if (!origin) return cb(null, true);
+      if (isAllowedOrigin(origin)) return cb(null, true);
+      cb(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+  }));
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   const isProxyHttps = process.env.REPLIT_DEV_DOMAIN || process.env.NODE_ENV === "production";
   app.use(session({
     store: sessionStore,
-    secret: process.env.SESSION_SECRET || "masakhe-dev-secret-change-in-prod",
+    secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("SESSION_SECRET must be set in production"); })() : "masakhe-dev-secret-change-in-prod"),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -104,6 +146,8 @@ async function main() {
   app.use("/api/reseller", resellerRouter);
   app.use("/api/franchise", franchiseRouter);
   app.use("/api/municipality", municipalityRouter);
+  app.use("/api/mtn", mtnRouter);
+  app.use("/api/nexo", nexoRouter);
   app.use("/api/tenders", tendersRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/documents", documentsRouter);
@@ -112,6 +156,7 @@ async function main() {
   app.use("/api/leads", leadsRouter);
   app.use("/api/inventory", inventoryRouter);
   app.use("/api/payroll", payrollRouter);
+  app.use("/api/shifts", shiftsRouter);
   app.use("/api/clients", clientsRouter);
   app.use("/api/campaigns", campaignsRouter);
   app.use("/api/email-settings", emailSettingsRouter);
@@ -121,6 +166,7 @@ async function main() {
   app.use("/api/external", subscriptionApiRouter);
   app.use("/api", contactRouter);
   app.use("/api", router);
+  registerImageRoutes(app);
 
   const distPath = path.join(process.cwd(), "dist");
   const isProduction = process.env.NODE_ENV === "production";
@@ -138,6 +184,7 @@ async function main() {
     startScheduler();
     startBillingScheduler();
     startInvoiceScheduler();
+    startPayslipScheduler();
     startAutomationsScheduler();
     startDripScheduler();
     startCampaignScheduler();
@@ -154,6 +201,8 @@ async function main() {
     runResellerMigrations().catch(e => console.error("[Reseller] Migration error:", e.message));
     runFranchiseMigrations().catch(e => console.error("[Franchise] Migration error:", e.message));
     runMunicipalityMigrations().catch(e => console.error("[Municipality] Migration error:", e.message));
+    runMtnMigrations().catch(e => console.error("[MTN] Migration error:", e.message));
+    runNexoMigrations().catch(e => console.error("[Nexo] Migration error:", e.message));
 
     // Seed after a short delay to let migrations finish
     setTimeout(() => {

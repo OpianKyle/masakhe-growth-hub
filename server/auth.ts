@@ -160,21 +160,57 @@ authRouter.post("/register", async (req, res) => {
       await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});
     }
 
-    if (franchiseCode) {
-      try {
-        const franchise = await queryOne(
-          "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
-          [franchiseCode]
-        );
-        if (franchise) {
-          const { randomUUID: uuid } = await import("crypto");
-          await execute(
-            "INSERT INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
-            [uuid(), franchise.id, userId]
+    // Resolve which franchise code to use: explicit franchiseCode takes priority,
+    // otherwise fall back to an MTN auto-link when referralCode is MTN-prefixed.
+    const resolvedFranchiseCode = franchiseCode ||
+      (referralCode && referralCode.toUpperCase().startsWith("MTN") ? "MTN001" : null);
+
+    if (resolvedFranchiseCode) {
+      // Nexo codes go ONLY into nexo_clients — never into franchise_clients
+      const isNexoCode = resolvedFranchiseCode.toUpperCase().startsWith("NEXO");
+
+      if (!isNexoCode) {
+        try {
+          const franchise = await queryOne(
+            "SELECT id FROM franchises WHERE code = ? AND status = 'active'",
+            [resolvedFranchiseCode]
           );
+          if (franchise) {
+            const { randomUUID: uuid } = await import("crypto");
+            await execute(
+              "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+              [uuid(), franchise.id, userId]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] franchise auto-link error:", e.message);
         }
-      } catch (e: any) {
-        console.error("[Auth] franchise auto-link error:", e.message);
+      }
+
+      if (isNexoCode) {
+        // Stamp nexo_code directly on the user record for reliable is_nexo_client detection
+        await execute("UPDATE users SET nexo_code = ? WHERE id = ?", [resolvedFranchiseCode, userId]).catch(() => {});
+
+        try {
+          const nexoPartner = await queryOne(
+            "SELECT id FROM nexo_partners WHERE partner_code = ? AND status = 'active'",
+            [resolvedFranchiseCode]
+          );
+          if (nexoPartner) {
+            const bName = businessData?.businessName || fullName;
+            await execute(
+              `INSERT IGNORE INTO nexo_clients (id, partner_id, client_user_id, business_name, status, registered_at)
+               VALUES (?, ?, ?, ?, 'active', NOW())`,
+              [randomUUID(), nexoPartner.id, userId, bName || null]
+            );
+            await execute(
+              "UPDATE nexo_partners SET total_clients = total_clients + 1 WHERE id = ?",
+              [nexoPartner.id]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] nexo client link error:", e.message);
+        }
       }
     }
 
@@ -191,10 +227,14 @@ authRouter.post("/register", async (req, res) => {
                   bp.email as bp_email, bp.physical_address, bp.bank_name, bp.account_type,
                   bp.account_number, bp.branch_code, bp.sa_id, bp.cipc_number, bp.logo_url,
                   bp.vat_number, bp.invoice_color, bp.popia_consent,
-                  IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller
+                  IF(r.id IS NOT NULL OR bp.business_status = 'reseller', 1, 0) as is_reseller,
+                  IF(mtnfc.id IS NOT NULL, 1, 0) as is_mtn_client,
+                  mtnf.code as mtn_franchise_code
            FROM users u
            LEFT JOIN business_profiles bp ON bp.user_id = u.id
            LEFT JOIN resellers r ON r.user_id = u.id AND r.status = 'active'
+           LEFT JOIN franchise_clients mtnfc ON mtnfc.client_user_id = u.id AND mtnfc.status = 'active'
+           LEFT JOIN franchises mtnf ON mtnf.id = mtnfc.franchise_id AND LOWER(mtnf.code) LIKE 'mtn%'
            WHERE u.id = ?`,
           [userId]
         );
@@ -290,8 +330,21 @@ authRouter.post("/register", async (req, res) => {
         })();
       }
 
+      // Detect Nexo client flag directly from nexo_code stamped on the user record
+      // (avoids dependency on nexo_partners/nexo_clients rows which may not exist yet)
+      let is_nexo_client = false;
+      let nexo_franchise_code: string | null = null;
+      if (resolvedFranchiseCode && resolvedFranchiseCode.toUpperCase().startsWith("NEXO")) {
+        const nu = await queryOne(
+          `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
+          [userId]
+        ).catch(() => null);
+        is_nexo_client = !!nu?.nexo_code;
+        nexo_franchise_code = nu?.nexo_code || null;
+      }
+
       try {
-        res.json({ ok: true, user });
+        res.json({ ok: true, user: { ...(user || {}), is_nexo_client, nexo_franchise_code } });
       } catch (e: any) {
         console.error("[Auth] res.json error:", e.message);
       }
@@ -393,6 +446,12 @@ authRouter.post("/login", async (req, res) => {
         [user.id]
       );
 
+      // Auto-verify admin accounts — super admins skip email verification
+      if (fullUser?.role === 'admin' && !user.email_verified) {
+        await execute("UPDATE users SET email_verified = 1 WHERE id = ?", [user.id]).catch(() => {});
+        if (fullUser) fullUser.email_verified = 1;
+      }
+
       // Auto-create reseller record if the account is a partner but has no active record
       if (fullUser?.business_status === 'reseller') {
         const existing = await queryOne(
@@ -403,7 +462,24 @@ authRouter.post("/login", async (req, res) => {
         }
       }
 
-      res.json({ ok: true, user: fullUser });
+      // Detect Nexo client from nexo_code column on users table
+      const nexoUser = await queryOne(
+        `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
+        [user.id]
+      ).catch(() => null);
+      const is_nexo_client = !!nexoUser?.nexo_code;
+      const nexo_franchise_code = nexoUser?.nexo_code || null;
+
+      // Detect MTN client status
+      const mtnRow = await queryOne(
+        `SELECT f.code FROM franchise_clients fc JOIN franchises f ON f.id = fc.franchise_id
+         WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'mtn%' LIMIT 1`,
+        [user.id]
+      ).catch(() => null);
+      const is_mtn_client = !!mtnRow;
+      const mtn_franchise_code = mtnRow?.code || null;
+
+      res.json({ ok: true, user: { ...fullUser, is_nexo_client, nexo_franchise_code, is_mtn_client, mtn_franchise_code } });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Login failed" });
@@ -539,7 +615,27 @@ authRouter.get("/me", async (req, res) => {
     originalAdminName = adminUser?.full_name || null;
   }
 
-  res.json({ user, isImpersonating, originalAdminName, teamMember });
+  // Detect if this user is a client under an MTN franchise
+  const mtnFranchise = await queryOne(
+    `SELECT f.code as franchise_code
+     FROM franchise_clients fc
+     JOIN franchises f ON f.id = fc.franchise_id
+     WHERE fc.client_user_id = ? AND fc.status = 'active' AND LOWER(f.code) LIKE 'mtn%'
+     LIMIT 1`,
+    [req.session.userId]
+  );
+  const is_mtn_client = !!mtnFranchise;
+  const mtn_franchise_code = mtnFranchise?.franchise_code || null;
+
+  // Detect Nexo client: uses nexo_code stamped on user record at registration (most reliable)
+  const nexoUserRow = await queryOne(
+    `SELECT nexo_code FROM users WHERE id = ? AND nexo_code IS NOT NULL LIMIT 1`,
+    [req.session.userId]
+  ).catch(() => null);
+  const is_nexo_client = !!nexoUserRow?.nexo_code;
+  const nexo_franchise_code = nexoUserRow?.nexo_code || null;
+
+  res.json({ user: { ...user, is_mtn_client, mtn_franchise_code, is_nexo_client, nexo_franchise_code }, isImpersonating, originalAdminName, teamMember });
 });
 
 // ---- Team-member password setup ----
@@ -662,6 +758,22 @@ authRouter.get("/google/callback", async (req, res) => {
       );
       sendWelcomeEmail(email.toLowerCase(), fullName).catch(() => {});
       if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
+      // Auto-link to MTN franchise if the referral/state code is MTN-prefixed
+      if (referralCode && referralCode.toUpperCase().startsWith("MTN")) {
+        try {
+          const mtnFranchise = await queryOne(
+            "SELECT id FROM franchises WHERE code = 'MTN001' AND status = 'active'"
+          );
+          if (mtnFranchise) {
+            await execute(
+              "INSERT IGNORE INTO franchise_clients (id, franchise_id, client_user_id, status) VALUES (?, ?, ?, 'active')",
+              [randomUUID(), mtnFranchise.id, userId]
+            );
+          }
+        } catch (e: any) {
+          console.error("[Auth] Google OAuth MTN franchise auto-link error:", e.message);
+        }
+      }
       user = { id: userId, _isNew: true };
     }
 

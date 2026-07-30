@@ -205,6 +205,48 @@ payrollRouter.get("/runs/:id", async (req, res) => {
   }
 });
 
+export async function createPayrollRun(
+  userId: string,
+  employeeId: string,
+  opts: { pay_period: string; pay_date: string; allowances?: any[]; deductions?: any[]; notes?: string }
+): Promise<string> {
+  const { pay_period, pay_date, allowances = [], deductions = [], notes } = opts;
+  const emp = await queryOne("SELECT * FROM employees WHERE id = ? AND user_id = ?", [employeeId, userId]);
+  if (!emp) throw new Error("Employee not found");
+
+  const allowancesTotal = allowances.reduce((s: number, a: any) => s + (Number(a.amount_cents) || 0), 0);
+  const deductionsTotal = deductions.reduce((s: number, d: any) => s + (Number(d.amount_cents) || 0), 0);
+  const grossCents = emp.basic_salary + allowancesTotal;
+  const payeCents = calculatePAYE(grossCents, emp.age || 30);
+  const uif = calculateUIF(grossCents, !!emp.uif_exempt);
+  const netCents = grossCents - payeCents - uif.employee - deductionsTotal;
+
+  const id = randomUUID();
+  const totalCostCents = grossCents + uif.employer;
+  const expenseId = randomUUID();
+  const nowIso = new Date().toISOString();
+  const employeeName = `${emp.first_name} ${emp.last_name}`.trim();
+
+  await execute(
+    `INSERT INTO payroll_runs (id, user_id, employee_id, pay_period, pay_date, basic_salary_cents,
+      allowances_json, deductions_json, paye_cents, uif_employee_cents, uif_employer_cents,
+      gross_pay_cents, net_pay_cents, notes, expense_entry_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [id, userId, employeeId, pay_period, pay_date, emp.basic_salary,
+     JSON.stringify(allowances), JSON.stringify(deductions),
+     payeCents, uif.employee, uif.employer, grossCents, netCents, notes || null, expenseId]
+  );
+
+  await execute(
+    `INSERT INTO ledger_entries (id, user_id, type, amount_cents, category, description, occurred_at, created_at)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    [expenseId, userId, "EXPENSE", totalCostCents, "Salaries",
+     `Payroll — ${employeeName} (${pay_period})`, pay_date, nowIso]
+  );
+
+  return id;
+}
+
 payrollRouter.post("/runs", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
@@ -213,37 +255,154 @@ payrollRouter.post("/runs", async (req, res) => {
       return res.status(400).json({ error: "employee_id, pay_period and pay_date are required" });
     }
 
-    const emp = await queryOne("SELECT * FROM employees WHERE id = ? AND user_id = ?", [employee_id, userId]);
-    if (!emp) return res.status(404).json({ error: "Employee not found" });
-
-    const allowancesTotal = allowances.reduce((s: number, a: any) => s + (Number(a.amount_cents) || 0), 0);
-    const deductionsTotal = deductions.reduce((s: number, d: any) => s + (Number(d.amount_cents) || 0), 0);
-    const grossCents = emp.basic_salary + allowancesTotal;
-    const payeCents = calculatePAYE(grossCents, emp.age || 30);
-    const uif = calculateUIF(grossCents, !!emp.uif_exempt);
-    const netCents = grossCents - payeCents - uif.employee - deductionsTotal;
-
-    const id = randomUUID();
-    await execute(
-      `INSERT INTO payroll_runs (id, user_id, employee_id, pay_period, pay_date, basic_salary_cents,
-        allowances_json, deductions_json, paye_cents, uif_employee_cents, uif_employer_cents,
-        gross_pay_cents, net_pay_cents, notes)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, userId, employee_id, pay_period, pay_date, emp.basic_salary,
-       JSON.stringify(allowances), JSON.stringify(deductions),
-       payeCents, uif.employee, uif.employer, grossCents, netCents, notes || null]
-    );
+    const id = await createPayrollRun(userId, employee_id, { pay_period, pay_date, allowances, deductions, notes });
     res.json({ ok: true, id });
   } catch (err: any) {
+    if (err.message === "Employee not found") return res.status(404).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
 
 payrollRouter.delete("/runs/:id", async (req, res) => {
   try {
-    const existing = await queryOne("SELECT id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
+    const existing = await queryOne("SELECT id, expense_entry_id FROM payroll_runs WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
     if (!existing) return res.status(404).json({ error: "Run not found" });
+    if (existing.expense_entry_id) {
+      await execute("DELETE FROM ledger_entries WHERE id = ?", [existing.expense_entry_id]);
+    }
     await execute("DELETE FROM payroll_runs WHERE id = ?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ── PAYE monthly summary (per employee, per month) ─────────────────────── */
+payrollRouter.get("/paye-summary", async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT pr.employee_id, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.position,
+              pr.pay_period, pr.paye_cents, pr.gross_pay_cents
+       FROM payroll_runs pr JOIN employees e ON e.id = pr.employee_id
+       WHERE pr.user_id = ?
+       ORDER BY e.first_name ASC, pr.pay_period ASC`,
+      [getDataOwnerId(req)]
+    );
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ── Payslip auto-send schedules ─────────────────────────────────────────── */
+export function computeNextSendAt(
+  frequency: "daily" | "weekly" | "monthly",
+  dayOfWeek: number | null | undefined,
+  dayOfMonth: number | null | undefined,
+  sendTime: string,
+  base: Date
+): Date {
+  const [hh, mm] = (sendTime || "08:00").split(":").map((n) => parseInt(n, 10) || 0);
+  const next = new Date(base);
+  next.setSeconds(0, 0);
+
+  if (frequency === "daily") {
+    next.setHours(hh, mm, 0, 0);
+    if (next <= base) next.setDate(next.getDate() + 1);
+  } else if (frequency === "weekly") {
+    const targetDow = dayOfWeek ?? 1;
+    next.setHours(hh, mm, 0, 0);
+    let diff = (targetDow - next.getDay() + 7) % 7;
+    if (diff === 0 && next <= base) diff = 7;
+    next.setDate(next.getDate() + diff);
+  } else {
+    const targetDom = dayOfMonth ?? 1;
+    next.setHours(hh, mm, 0, 0);
+    next.setDate(1);
+    const daysInMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+    next.setDate(Math.min(targetDom, daysInMonth));
+    if (next <= base) {
+      next.setMonth(next.getMonth() + 1);
+      next.setDate(1);
+      const daysInNextMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(targetDom, daysInNextMonth));
+    }
+  }
+  return next;
+}
+
+payrollRouter.get("/schedules", async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT ps.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.position, e.email as employee_email
+       FROM payslip_schedules ps JOIN employees e ON e.id = ps.employee_id
+       WHERE ps.user_id = ?
+       ORDER BY e.first_name ASC`,
+      [getDataOwnerId(req)]
+    );
+    res.json(rows.map((r: any) => ({
+      ...r,
+      active: !!r.active,
+      allowances: typeof r.allowances_json === "string" ? JSON.parse(r.allowances_json) : r.allowances_json,
+      deductions: typeof r.deductions_json === "string" ? JSON.parse(r.deductions_json) : r.deductions_json,
+    })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+payrollRouter.post("/schedules", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const {
+      employee_id, frequency = "monthly", day_of_week, day_of_month,
+      send_time = "08:00", allowances = [], deductions = [], notes, active = true,
+    } = req.body;
+
+    if (!employee_id) return res.status(400).json({ error: "employee_id is required" });
+    if (!["daily", "weekly", "monthly"].includes(frequency)) {
+      return res.status(400).json({ error: "frequency must be daily, weekly or monthly" });
+    }
+
+    const emp = await queryOne("SELECT id FROM employees WHERE id = ? AND user_id = ?", [employee_id, userId]);
+    if (!emp) return res.status(404).json({ error: "Employee not found" });
+
+    const dow = frequency === "weekly" ? (Number(day_of_week) || 0) : null;
+    const dom = frequency === "monthly" ? (Number(day_of_month) || 1) : null;
+    const nextSendAt = active ? computeNextSendAt(frequency, dow, dom, send_time, new Date()) : null;
+
+    const existing = await queryOne("SELECT id FROM payslip_schedules WHERE employee_id = ? AND user_id = ?", [employee_id, userId]);
+
+    if (existing) {
+      await execute(
+        `UPDATE payslip_schedules SET frequency=?, day_of_week=?, day_of_month=?, send_time=?,
+          allowances_json=?, deductions_json=?, notes=?, active=?, next_send_at=?, updated_at=NOW()
+         WHERE id=?`,
+        [frequency, dow, dom, send_time, JSON.stringify(allowances), JSON.stringify(deductions),
+         notes || null, active ? 1 : 0, nextSendAt, existing.id]
+      );
+      res.json({ ok: true, id: existing.id });
+    } else {
+      const id = randomUUID();
+      await execute(
+        `INSERT INTO payslip_schedules (id, user_id, employee_id, frequency, day_of_week, day_of_month,
+          send_time, allowances_json, deductions_json, notes, active, next_send_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [id, userId, employee_id, frequency, dow, dom, send_time,
+         JSON.stringify(allowances), JSON.stringify(deductions), notes || null, active ? 1 : 0, nextSendAt]
+      );
+      res.json({ ok: true, id });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+payrollRouter.delete("/schedules/:id", async (req, res) => {
+  try {
+    const existing = await queryOne("SELECT id FROM payslip_schedules WHERE id = ? AND user_id = ?", [req.params.id, getDataOwnerId(req)]);
+    if (!existing) return res.status(404).json({ error: "Schedule not found" });
+    await execute("DELETE FROM payslip_schedules WHERE id = ?", [req.params.id]);
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

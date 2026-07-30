@@ -158,7 +158,7 @@ export default function DashboardOverview() {
   // ── Gamification computations ────────────────────────────────────────────
   const ACHIEVEMENTS = [
     { key: "profile",       label: "Open for Business", desc: "Set up your business profile",       icon: ShieldCheck, grad: "from-emerald-500 to-teal-500",   unlocked: !!user?.business_name },
-    { key: "verified",      label: "Verified",          desc: "Verify your email address",          icon: CheckCircle2, grad: "from-blue-500 to-indigo-500",   unlocked: !!user?.email_verified },
+    { key: "verified",      label: "Verified",          desc: "Verify your email address",          icon: CheckCircle2, grad: "from-blue-500 to-indigo-500",   unlocked: !!user?.email_verified || user?.role === 'admin' },
     { key: "finance",       label: "Money Tracker",     desc: "Log your first transaction",         icon: TrendingUp,   grad: "from-green-500 to-emerald-500", unlocked: (k?.ledgerCount || 0) >= 1 },
     { key: "invoice",       label: "Invoice Pioneer",   desc: "Create your first invoice",          icon: Receipt,      grad: "from-blue-500 to-sky-500",      unlocked: (k?.totalInvoices || 0) >= 1 },
     { key: "website",       label: "Website Live",      desc: "Publish your website",               icon: Globe,        grad: "from-sky-500 to-cyan-500",      unlocked: !!k?.websitePublished },
@@ -171,7 +171,7 @@ export default function DashboardOverview() {
 
   const CHECKLIST = [
     { label: "Set up your business profile", done: !!user?.business_name,           path: "/dashboard/settings",  cta: "Complete Profile" },
-    { label: "Verify your email address",    done: !!user?.email_verified,           path: "#",                    cta: "Verify Email" },
+    { label: "Verify your email address",    done: !!user?.email_verified || user?.role === 'admin', path: "#", cta: "Verify Email" },
     { label: "Log your first transaction",   done: (k?.ledgerCount || 0) >= 1,       path: "/dashboard/finance",   cta: "Add Finance Entry" },
     { label: "Create your first invoice",    done: (k?.totalInvoices || 0) >= 1,     path: "/dashboard/invoices",  cta: "Create Invoice" },
     { label: "Publish your website",         done: !!k?.websitePublished,            path: "/website-builder",     cta: "Build Website" },
@@ -373,8 +373,8 @@ export default function DashboardOverview() {
       {/* ── Main content ──────────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Email verification banner */}
-        {user && !user.email_verified && !verifyBannerDismissed && (
+        {/* Email verification banner — hidden for super admins */}
+        {user && !user.email_verified && user.role !== 'admin' && !verifyBannerDismissed && (
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 flex-shrink-0 mt-0.5">
               <Mail className="h-5 w-5 text-amber-600" />

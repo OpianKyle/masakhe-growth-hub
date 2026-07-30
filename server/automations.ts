@@ -243,6 +243,7 @@ automationsRouter.post("/recurring", requireAuth, async (req, res) => {
       start_date,
       end_date,
       auto_send,
+      source_invoice_id,
     } = req.body;
 
     if (!name || !customer_name || !items || !Array.isArray(items) || items.length === 0) {
@@ -258,8 +259,8 @@ automationsRouter.post("/recurring", requireAuth, async (req, res) => {
        (id, user_id, name, customer_name, customer_email, customer_address, customer_phone,
         reference, payment_terms, notes, items_json, vat_enabled, vat_cents, total_cents,
         template, template_config, frequency, custom_days, start_date, end_date, next_run_at,
-        active, auto_send)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)`,
+        active, auto_send, source_invoice_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`,
       [
         id,
         userId,
@@ -283,6 +284,7 @@ automationsRouter.post("/recurring", requireAuth, async (req, res) => {
         end_date || null,
         start_date,
         auto_send === false ? 0 : 1,
+        source_invoice_id || null,
       ]
     );
 

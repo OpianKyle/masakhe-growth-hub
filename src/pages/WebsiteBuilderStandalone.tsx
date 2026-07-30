@@ -218,7 +218,7 @@ function StandaloneHome() {
       fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
     ]).then(([sites, billing]) => {
       if (Array.isArray(sites) && sites.length > 0) setMySite(sites[0]);
-      if (billing.plan === "pro" && (billing.status === "ACTIVE" || billing.status === "TRIAL")) setIsProPlan(true);
+      if ((billing.plan === "pro" || billing.plan === "all_modules") && (billing.status === "ACTIVE" || billing.status === "TRIAL" || billing.status === "EXEMPT")) setIsProPlan(true);
     }).finally(() => setLoadingSite(false));
   }, []);
 

@@ -1279,6 +1279,42 @@ resellerRouter.patch("/admin/commission/:id/pay", requireAdmin, async (req, res)
   }
 });
 
+// Admin: grant partner access to any user
+resellerRouter.post("/admin/grant-user", requireAdmin, async (req, res) => {
+  try {
+    const { userId, tier = "affiliate" } = req.body;
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    if (!["affiliate", "reseller", "master"].includes(tier)) return res.status(400).json({ error: "Invalid tier" });
+    const user = await queryOne("SELECT id, full_name FROM users WHERE id = ?", [userId]);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const existing = await queryOne("SELECT id FROM resellers WHERE user_id = ?", [userId]);
+    if (existing) {
+      await execute(
+        "UPDATE resellers SET status = 'active', package_tier = ?, approved_at = NOW() WHERE user_id = ?",
+        [tier, userId]
+      );
+    } else {
+      await autoRegisterReseller(userId, user.full_name);
+      if (tier !== "affiliate") {
+        await execute("UPDATE resellers SET package_tier = ? WHERE user_id = ?", [tier, userId]);
+      }
+    }
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: revoke partner access from a user
+resellerRouter.delete("/admin/revoke-user/:userId", requireAdmin, async (req, res) => {
+  try {
+    await execute("UPDATE resellers SET status = 'suspended' WHERE user_id = ?", [req.params.userId]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Hook: called from auth.ts after user registers with a ref code ───────────
 export async function linkResellerClient(clientUserId: string, refCode: string) {
   try {

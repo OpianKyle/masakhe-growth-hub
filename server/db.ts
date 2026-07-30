@@ -45,6 +45,17 @@ export async function execute(sql: string, params: any[] = []): Promise<any> {
   }
 }
 
+// Use pool.query (not prepared statements) for rows with LONGTEXT/BLOB columns
+export async function queryRaw(sql: string, params: any[] = []): Promise<any> {
+  try {
+    const [result] = await pool.query(sql, params);
+    return result;
+  } catch (err: any) {
+    console.error(`DB queryRaw error [${sql.slice(0, 80)}]:`, err.message);
+    throw err;
+  }
+}
+
 export async function runMigrations() {
   const conn = await pool.getConnection();
   try {
@@ -330,6 +341,7 @@ export async function runMigrations() {
       }
     };
 
+    await addColumnIfMissing("recurring_invoices", "source_invoice_id", "VARCHAR(36) NULL");
     await addColumnIfMissing("social_post_targets", "created_at", "VARCHAR(30)");
     await addColumnIfMissing("social_post_targets", "updated_at", "VARCHAR(30)");
     await addColumnIfMissing("business_profiles", "logo_url", "LONGTEXT");
@@ -339,12 +351,14 @@ export async function runMigrations() {
     await addColumnIfMissing("business_profiles", "tax_number", "VARCHAR(50) NULL");
     await addColumnIfMissing("business_profiles", "vat_number", "VARCHAR(50) NULL");
     await addColumnIfMissing("business_profiles", "invoice_color", "VARCHAR(20) NULL");
+    await addColumnIfMissing("payroll_runs", "expense_entry_id", "VARCHAR(36) NULL");
     await addColumnIfMissing("billing_subscriptions", "adumo_subscription_id", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_invoices", "plan_id", "INT NULL");
     await addColumnIfMissing("billing_invoices", "promo_code", "VARCHAR(50) NULL");
     await addColumnIfMissing("billing_invoices", "original_amount_cents", "INT NULL");
     await addColumnIfMissing("users", "first_month_promo_used", "TINYINT(1) NOT NULL DEFAULT 0");
     await addColumnIfMissing("users", "first_month_promo_code", "VARCHAR(50) NULL");
+    await addColumnIfMissing("users", "referred_by", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "puid", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "profile_token", "VARCHAR(255) NULL");
     await addColumnIfMissing("billing_payment_methods", "card_token", "VARCHAR(255) NULL");
@@ -620,6 +634,10 @@ export async function runMigrations() {
     await createIndex("idx_users_parent_owner", "users", "parent_owner_id");
 
     try {
+      await conn.query(`ALTER TABLE users ADD COLUMN nexo_code VARCHAR(50) NULL DEFAULT NULL`);
+    } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
+
+    try {
       await conn.query(`ALTER TABLE workspace_members ADD COLUMN permissions TEXT NULL DEFAULT NULL`);
     } catch (e: any) { if (!e.message?.includes("Duplicate column")) throw e; }
 
@@ -740,6 +758,50 @@ export async function runMigrations() {
     await createIndex("idx_pr_user", "payroll_runs", "user_id");
     await createIndex("idx_pr_employee", "payroll_runs", "employee_id");
     await createIndex("idx_pr_period", "payroll_runs", "pay_period");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS payslip_schedules (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        employee_id VARCHAR(36) NOT NULL,
+        frequency ENUM('daily','weekly','monthly') NOT NULL DEFAULT 'monthly',
+        day_of_week INT NULL,
+        day_of_month INT NULL,
+        send_time VARCHAR(5) NOT NULL DEFAULT '08:00',
+        allowances_json TEXT NOT NULL DEFAULT '[]',
+        deductions_json TEXT NOT NULL DEFAULT '[]',
+        notes TEXT,
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        last_sent_at DATETIME NULL,
+        next_send_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_ps_employee (employee_id),
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(employee_id) REFERENCES employees(id)
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_ps_user", "payslip_schedules", "user_id");
+    await createIndex("idx_ps_next_send", "payslip_schedules", "next_send_at");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS shifts (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        employee_id VARCHAR(36) NOT NULL,
+        shift_date DATE NOT NULL,
+        start_time VARCHAR(5) NOT NULL,
+        end_time VARCHAR(5) NOT NULL,
+        title VARCHAR(100),
+        notes TEXT,
+        color VARCHAR(20) NOT NULL DEFAULT 'teal',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+    await createIndex("idx_shifts_user_date", "shifts", "user_id, shift_date");
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS broker_clients (
@@ -1028,11 +1090,13 @@ export async function runMigrations() {
         invoices_generated INT NOT NULL DEFAULT 0,
         active TINYINT(1) NOT NULL DEFAULT 1,
         auto_send TINYINT(1) NOT NULL DEFAULT 1,
+        source_invoice_id VARCHAR(36) NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
         KEY idx_ri_user (user_id),
-        KEY idx_ri_next_run (next_run_at, active)
+        KEY idx_ri_next_run (next_run_at, active),
+        KEY idx_ri_source_invoice (source_invoice_id)
       ) ENGINE=InnoDB
     `);
 
@@ -1158,9 +1222,15 @@ export async function runMigrations() {
       ) ENGINE=InnoDB
     `);
 
+    // Help centre image support
+    await addColumnIfMissing("help_categories", "image_url", "VARCHAR(1000) NULL");
+
     // Modular pricing migration
     await addColumnIfMissing("billing_plans", "max_users", "INT NOT NULL DEFAULT 2");
     await addColumnIfMissing("billing_subscriptions", "modules", "TEXT NULL");
+
+    // Trial expiry email tracking
+    await addColumnIfMissing("billing_subscriptions", "trial_expiry_email_sent_at", "DATETIME NULL");
 
     // Seed module-based plans
     await conn.query(`

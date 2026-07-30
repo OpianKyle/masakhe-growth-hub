@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Globe, Smartphone, Megaphone, Receipt,
   Settings, ChevronLeft, ChevronRight, ChevronDown, Search, LogOut,
   Shield, Wallet, CreditCard, FileText, Lock,
-  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package, Briefcase, Target
+  BookOpen, HandCoins, Building2, Send, Car, Users, UserCheck, ArrowLeftRight, Banknote, CalendarDays, Award, Linkedin, MessageCircle, Crown, Sparkles, Package, Briefcase
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "@/components/NotificationDropdown";
@@ -29,18 +29,17 @@ import InventoryPage from "./InventoryPage";
 import PayrollPage from "./PayrollPage";
 import LeavePage from "./LeavePage";
 import EmployeesPage from "./EmployeesPage";
-import DomainSearchPage from "./DomainSearchPage";
 import ResellerDashboard from "./ResellerDashboard";
 import ClientsPage from "./ClientsPage";
 import CampaignsPage from "./CampaignsPage";
 import AutomationsPage from "./AutomationsPage";
 import WhatsAppSupportPage from "./WhatsAppSupportPage";
 import MunicipalitySupportPage from "./MunicipalitySupportPage";
-import AdRequirementsPage from "./AdRequirementsPage";
+import StaffRosterPage from "./StaffRosterPage";
 import TeamMembersPage from "./TeamMembersPage";
 import HelpCentrePage from "./HelpCentrePage";
 import TrialBanner from "@/components/TrialBanner";
-import AIChatBot from "@/components/AIChatBot";
+import TrialExpiredModal from "@/components/TrialExpiredModal";
 import OnboardingTour from "@/components/OnboardingTour";
 
 type ModuleCode = "web_builder" | "social_biz" | "transactions_ops" | "people_hr";
@@ -111,10 +110,8 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
   { icon: Globe, label: "Website Builder", path: "/website-builder", requiresModule: "web_builder", perm: "website", openNewTab: true },
-  { icon: Search, label: "Domain Search", path: "/dashboard/domain-search", requiresModule: "web_builder", perm: "website" },
   { icon: Smartphone, label: "Social Media", path: "/social-hub", requiresModule: "social_biz", perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", requiresModule: "social_biz", perm: "biz_connect" },
-  { icon: Target, label: "Ad Requirements", path: "/dashboard/ad-requirements", requiresModule: "social_biz", perm: "social" },
   {
     icon: Wallet,
     label: "Transactions",
@@ -148,16 +145,11 @@ const baseNavItems: NavItem[] = [
     children: [
       { icon: Users, label: "Employees", path: "/dashboard/employees", requiresModule: "people_hr", perm: "payroll" },
       { icon: Banknote, label: "Payroll", path: "/dashboard/payroll", requiresModule: "people_hr", perm: "payroll" },
-      { icon: CalendarDays, label: "Leave & HR", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
+      { icon: CalendarDays, label: "Leave Processing", path: "/dashboard/leave", requiresModule: "people_hr", perm: "leave" },
+      { icon: CalendarDays, label: "Staff Roster", path: "/dashboard/roster", requiresModule: "people_hr", perm: "payroll" },
     ],
   },
-  { icon: Building2, label: "Municipality Support", path: "/dashboard/municipality-support", perm: "overview" },
-  { icon: BookOpen, label: "Help Centre", path: "/dashboard/help", perm: "overview" },
-  { icon: MessageCircle, label: "WhatsApp Support", path: "/dashboard/whatsapp-support", perm: "support" },
-  { icon: Users, label: "User Accounts", path: "/dashboard/team", ownerOnly: true },
   { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
-  { icon: CreditCard, label: "Billing", path: "/dashboard/billing", ownerOnly: true },
-  { icon: Settings, label: "Settings", path: "/dashboard/settings", ownerOnly: true },
 ];
 
 function ModuleGate({ moduleCode, onUpgrade }: { moduleCode: ModuleCode; onUpgrade: () => void }) {
@@ -202,6 +194,8 @@ export default function DashboardPage() {
   const [hasBrokerageSite, setHasBrokerageSite] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const [activeModules, setActiveModules] = useState<string[]>([]);
+  const [trialExpired, setTrialExpired] = useState(false);
+  const [trialEndedAt, setTrialEndedAt] = useState<string | null>(null);
   const [upgradeModalModule, setUpgradeModalModule] = useState<ModuleCode | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -227,6 +221,9 @@ export default function DashboardPage() {
       .then(d => {
         setSubscriptionActive(!!d.active);
         setActiveModules(Array.isArray(d.modules) ? d.modules : []);
+        const expired = !!d.trialExpired;
+        setTrialExpired(expired);
+        setTrialEndedAt(d.trialEndedAt || null);
         if (!d.active && !user?.teamMember && user?.role !== "admin") {
           const path = window.location.pathname;
           if (!path.endsWith("/billing") && !path.endsWith("/settings")) {
@@ -278,12 +275,16 @@ export default function DashboardPage() {
     });
   };
 
+  const isMtnClient = !!user?.is_mtn_client;
+  const isNexoClient = !!user?.is_nexo_client;
+
+  const NEXO_HIDDEN_LABELS = ["Website Builder", "Social Media", "Biz Connect"];
   const navItems: NavItem[] = filterForTeamMember([
     ...baseNavItems.slice(0, 5),
     ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles", perm: "website" } as NavSingle] : []),
     ...(hasBrokerageSite ? [{ icon: Users, label: "Leads", path: "/dashboard/leads", perm: "website" } as NavSingle] : []),
     ...baseNavItems.slice(5),
-  ]);
+  ]).filter(item => !isNexoClient || !(!isGroup(item) && NEXO_HIDDEN_LABELS.includes((item as NavSingle).label)));
 
   const allPaths: { label: string; path: string }[] = navItems.flatMap(item =>
     isGroup(item) ? item.children.map(c => ({ label: c.label, path: c.path })) : [{ label: item.label, path: item.path }]
@@ -300,7 +301,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/");
+    navigate(isMtnClient ? "/mtn" : isNexoClient ? "/nexo" : "/");
   };
 
   const initials = user?.full_name?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U";
@@ -323,6 +324,20 @@ export default function DashboardPage() {
 
   const sidebarWide = mobileMenuOpen || !collapsed;
 
+  const mtnSidebarStyle = isMtnClient ? { backgroundColor: "#1a1a1a", borderColor: "#2a2a2a" } : {};
+  const nexoSidebarStyle = isNexoClient ? { backgroundColor: "#0f172a", borderColor: "#1e293b" } : {};
+  const brandedSidebarStyle = isMtnClient ? mtnSidebarStyle : isNexoClient ? nexoSidebarStyle : {};
+  const activeNavCls = isMtnClient
+    ? "bg-yellow-500/20 text-yellow-400 font-semibold"
+    : isNexoClient
+    ? "bg-blue-500/20 text-blue-400 font-semibold"
+    : "bg-sidebar-accent text-sidebar-accent-foreground font-semibold";
+  const inactiveNavCls = isMtnClient
+    ? "text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-300"
+    : isNexoClient
+    ? "text-gray-400 hover:bg-blue-500/10 hover:text-blue-300"
+    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground";
+
   const showOnboarding = new URLSearchParams(location.search).get("onboarding") === "1";
 
   return (
@@ -336,15 +351,38 @@ export default function DashboardPage() {
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:relative md:z-auto
+        className={`fixed left-0 top-0 bottom-0 z-40 flex-col border-r transition-all duration-300 md:relative md:z-auto
+          ${isMtnClient ? "border-[#2a2a2a]" : isNexoClient ? "border-[#1e293b]" : "border-sidebar-border bg-sidebar"}
           ${sidebarWide ? "w-64" : "w-16"}
           ${mobileMenuOpen ? "flex" : "hidden md:flex"}
         `}
+        style={brandedSidebarStyle}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-sidebar-border">
+        <div
+          className={`flex h-16 shrink-0 items-center justify-between px-4 border-b ${isMtnClient ? "border-[#2a2a2a]" : isNexoClient ? "border-[#1e293b]" : "border-sidebar-border"}`}
+        >
           {sidebarWide && (
             <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-              {user?.logo_url ? (
+              {isMtnClient ? (
+                <>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "#FFCC00" }}>
+                    <span className="text-xs font-black text-black">MTN</span>
+                  </div>
+                  <span className="text-lg font-bold font-heading truncate" style={{ color: "#FFCC00" }}>
+                    {user?.business_name || "MTN Business"}
+                  </span>
+                </>
+              ) : isNexoClient ? (
+                <>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-black text-white leading-none select-none"
+                    style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", fontSize: 18, letterSpacing: "-0.03em" }}>
+                    nx
+                  </div>
+                  <span className="text-lg font-bold font-heading truncate" style={{ color: "#93c5fd" }}>
+                    {user?.business_name || "Nexo Business"}
+                  </span>
+                </>
+              ) : user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain shrink-0" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero shrink-0">
@@ -353,14 +391,25 @@ export default function DashboardPage() {
                   </span>
                 </div>
               )}
-              <span className="text-lg font-bold font-heading text-sidebar-foreground truncate">
-                {user?.business_name || "Masakhe"}
-              </span>
+              {!isMtnClient && !isNexoClient && (
+                <span className="text-lg font-bold font-heading text-sidebar-foreground truncate">
+                  {user?.business_name || "Masakhe"}
+                </span>
+              )}
             </Link>
           )}
           {!sidebarWide && (
             <Link to="/dashboard" className="mx-auto">
-              {user?.logo_url ? (
+              {isMtnClient ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: "#FFCC00" }}>
+                  <span className="text-xs font-black text-black">MTN</span>
+                </div>
+              ) : isNexoClient ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg font-black text-white leading-none select-none"
+                  style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", fontSize: 18, letterSpacing: "-0.03em" }}>
+                  nx
+                </div>
+              ) : user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero">
@@ -399,8 +448,8 @@ export default function DashboardPage() {
                       groupLocked
                         ? "text-sidebar-foreground/45 hover:bg-sidebar-accent/30"
                         : active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                          ? activeNavCls
+                          : inactiveNavCls
                     }`}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
@@ -462,8 +511,8 @@ export default function DashboardPage() {
                             to={child.path}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                               childActive
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                                ? activeNavCls
+                                : inactiveNavCls
                             }`}
                           >
                             <child.icon className="h-4 w-4 shrink-0" />
@@ -556,9 +605,7 @@ export default function DashboardPage() {
                 key={item.path}
                 to={item.path}
                 className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  active ? activeNavCls : inactiveNavCls
                 }`}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
@@ -577,17 +624,28 @@ export default function DashboardPage() {
           const isAdmin = user.role === "admin";
           const isTeam = !!user.teamMember;
           const isPartner = !!user.is_reseller && !isAdmin;
-          let roleLabel = "Business Owner";
-          let roleColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
-          if (isAdmin) {
-            roleLabel = "Super Admin";
-            roleColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-          } else if (isTeam) {
-            roleLabel = "Team Member";
-            roleColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
-          } else if (isPartner) {
-            roleLabel = "Partner";
-            roleColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+          let roleLabel = isMtnClient ? "MTN Client" : isNexoClient ? "Nexo Client" : "Business Owner";
+          let roleColor = isMtnClient
+            ? "border-yellow-500/30"
+            : isNexoClient
+            ? "border-blue-500/30"
+            : "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
+          const roleLabelStyle = isMtnClient
+            ? { backgroundColor: "#FFCC0020", color: "#FFCC00" }
+            : isNexoClient
+            ? { backgroundColor: "#2563eb20", color: "#93c5fd" }
+            : {};
+          if (!isMtnClient && !isNexoClient) {
+            if (isAdmin) {
+              roleLabel = "Super Admin";
+              roleColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+            } else if (isTeam) {
+              roleLabel = "Team Member";
+              roleColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
+            } else if (isPartner) {
+              roleLabel = "Partner";
+              roleColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+            }
           }
           const initials2 = (user.full_name || user.email || "?")
             .split(/\s+/)
@@ -597,25 +655,35 @@ export default function DashboardPage() {
             .join("")
             .toUpperCase();
           return (
-            <div className="shrink-0 mx-2 mb-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5">
+            <div
+              className={`shrink-0 mx-2 mb-2 rounded-lg border px-3 py-2.5 ${(isMtnClient || isNexoClient) ? "" : "border-sidebar-border bg-sidebar-accent/30"}`}
+              style={isMtnClient ? { backgroundColor: "#252525", borderColor: "#2a2a2a" } : isNexoClient ? { backgroundColor: "#1e293b", borderColor: "#334155" } : undefined}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${(isMtnClient || isNexoClient) ? "" : "bg-gradient-to-br from-emerald-500 to-teal-600 text-white"}`}
+                  style={isMtnClient ? { backgroundColor: "#FFCC00", color: "#000" } : isNexoClient ? { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff" } : undefined}
+                >
                   {initials2 || "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-sidebar-foreground">
+                  <div className={`truncate text-sm font-medium ${(isMtnClient || isNexoClient) ? "" : "text-sidebar-foreground"}`} style={isMtnClient ? { color: "#e5e5e5" } : isNexoClient ? { color: "#e2e8f0" } : undefined}>
                     {user.full_name || user.email}
                   </div>
-                  <div className="truncate text-[11px] text-sidebar-foreground/55">
+                  <div className={`truncate text-[11px] ${(isMtnClient || isNexoClient) ? "" : "text-sidebar-foreground/55"}`} style={isMtnClient ? { color: "#888" } : isNexoClient ? { color: "#64748b" } : undefined}>
                     {user.email}
                   </div>
                 </div>
               </div>
-              <div className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleColor}`}>
-                {isAdmin && <Shield className="h-3 w-3" />}
-                {isTeam && <Users className="h-3 w-3" />}
-                {isPartner && <Award className="h-3 w-3" />}
-                {!isAdmin && !isTeam && !isPartner && <Building2 className="h-3 w-3" />}
+              <div
+                className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleColor}`}
+                style={roleLabelStyle}
+              >
+                {(isMtnClient || isNexoClient) && <Building2 className="h-3 w-3" />}
+                {!isMtnClient && !isNexoClient && isAdmin && <Shield className="h-3 w-3" />}
+                {!isMtnClient && !isNexoClient && isTeam && <Users className="h-3 w-3" />}
+                {!isMtnClient && !isNexoClient && isPartner && <Award className="h-3 w-3" />}
+                {!isMtnClient && !isNexoClient && !isAdmin && !isTeam && !isPartner && <Building2 className="h-3 w-3" />}
                 {roleLabel}
               </div>
               {isTeam && user.teamMember?.owner_business_name && (
@@ -670,16 +738,35 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="flex h-1 shrink-0">
-          <div className="flex-1 bg-sa-green" />
-          <div className="flex-1 bg-sa-gold" />
-          <div className="flex-1 bg-sa-red" />
-          <div className="flex-1 bg-sa-blue" />
-        </div>
+        {isMtnClient ? (
+          <div className="flex h-1 shrink-0">
+            <div className="flex-1" style={{ backgroundColor: "#FFCC00" }} />
+            <div className="flex-1" style={{ backgroundColor: "#000000" }} />
+            <div className="flex-1" style={{ backgroundColor: "#FFCC00" }} />
+            <div className="flex-1" style={{ backgroundColor: "#000000" }} />
+          </div>
+        ) : isNexoClient ? (
+          <div className="flex h-1 shrink-0">
+            <div className="flex-1" style={{ backgroundColor: "#2563eb" }} />
+            <div className="flex-1" style={{ backgroundColor: "#1d4ed8" }} />
+            <div className="flex-1" style={{ backgroundColor: "#1e40af" }} />
+            <div className="flex-1" style={{ backgroundColor: "#1e3a8a" }} />
+          </div>
+        ) : (
+          <div className="flex h-1 shrink-0">
+            <div className="flex-1 bg-sa-green" />
+            <div className="flex-1 bg-sa-gold" />
+            <div className="flex-1 bg-sa-red" />
+            <div className="flex-1 bg-sa-blue" />
+          </div>
+        )}
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-y-hidden">
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-emerald-100 bg-white/95 backdrop-blur-md px-4 md:px-6">
+        <header
+          className={`sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b backdrop-blur-md px-4 md:px-6 ${isMtnClient ? "" : isNexoClient ? "" : "border-emerald-100 bg-white/95"}`}
+          style={isMtnClient ? { backgroundColor: "#141414", borderColor: "#2a2a2a" } : isNexoClient ? { backgroundColor: "#0f172a", borderColor: "#1e293b" } : undefined}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -689,7 +776,12 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold font-heading text-emerald-900 truncate">{getPageTitle()}</h1>
+            <h1
+              className={`text-xl font-bold font-heading truncate ${isMtnClient ? "" : isNexoClient ? "" : "text-emerald-900"}`}
+              style={isMtnClient ? { color: "#FFCC00" } : isNexoClient ? { color: "#93c5fd" } : undefined}
+            >
+              {getPageTitle()}
+            </h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative hidden md:block">
@@ -697,9 +789,42 @@ export default function DashboardPage() {
               <Input placeholder="Search..." className="pl-9 w-64" />
             </div>
             <NotificationDropdown />
+            <Link
+              to="/dashboard/help"
+              title="Help Centre"
+              className={`shrink-0 p-1.5 rounded-lg transition-colors ${(isMtnClient || isNexoClient) ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+            >
+              <BookOpen className="h-5 w-5" />
+            </Link>
+            {!user?.teamMember && (
+              <Link
+                to="/dashboard/team"
+                title="User Accounts"
+                className={`shrink-0 p-1.5 rounded-lg transition-colors ${(isMtnClient || isNexoClient) ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+              >
+                <Users className="h-5 w-5" />
+              </Link>
+            )}
+            {!user?.teamMember && (
+              <Link
+                to="/dashboard/billing"
+                title="Billing"
+                className={`shrink-0 p-1.5 rounded-lg transition-colors ${(isMtnClient || isNexoClient) ? "text-gray-300 hover:bg-white/10" : "text-emerald-700 hover:bg-emerald-50"}`}
+              >
+                <CreditCard className="h-5 w-5" />
+              </Link>
+            )}
             <Link to="/dashboard/settings" className="shrink-0">
               {user?.logo_url ? (
                 <img src={user.logo_url} alt="Logo" className="h-9 w-9 rounded-full object-contain" />
+              ) : isMtnClient ? (
+                <div className="h-9 w-9 rounded-full flex items-center justify-center font-black text-xs" style={{ backgroundColor: "#FFCC00", color: "#1a1a1a" }}>
+                  {initials}
+                </div>
+              ) : isNexoClient ? (
+                <div className="h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm text-white" style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
+                  {initials}
+                </div>
               ) : (
                 <div className="h-9 w-9 rounded-full gradient-hero flex items-center justify-center">
                   <span className="text-sm font-bold text-primary-foreground">{initials}</span>
@@ -735,9 +860,6 @@ export default function DashboardPage() {
           <Routes>
             <Route index element={<DashboardOverview />} />
             <Route path="website/*" element={<WebsiteHub />} />
-            <Route path="domain-search" element={
-              hasModule("web_builder") ? <DomainSearchPage /> : <ModuleGate moduleCode="web_builder" onUpgrade={() => navigate("/dashboard/billing")} />
-            } />
             <Route path="social/*" element={
               hasModule("social_biz") ? <SocialHub /> : <ModuleGate moduleCode="social_biz" onUpgrade={() => navigate("/dashboard/billing")} />
             } />
@@ -771,6 +893,9 @@ export default function DashboardPage() {
             <Route path="leave" element={
               hasModule("people_hr") ? <LeavePage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />
             } />
+            <Route path="roster" element={
+              hasModule("people_hr") ? <StaffRosterPage /> : <ModuleGate moduleCode="people_hr" onUpgrade={() => navigate("/dashboard/billing")} />
+            } />
             <Route path="team" element={<TeamMembersPage />} />
             <Route path="funding" element={<Navigate to="/dashboard" replace />} />
             <Route path="tenders" element={<TendersPage />} />
@@ -783,7 +908,6 @@ export default function DashboardPage() {
             <Route path="leads" element={<LeadsPage />} />
             <Route path="reseller" element={<ResellerDashboard />} />
             <Route path="help" element={<HelpCentrePage />} />
-            <Route path="ad-requirements" element={<AdRequirementsPage />} />
             <Route path="municipality-support" element={<MunicipalitySupportPage />} />
             <Route path="whatsapp-support" element={<WhatsAppSupportPage />} />
             <Route path="billing" element={<BillingPage />} />
@@ -792,7 +916,15 @@ export default function DashboardPage() {
           </Routes>
         </div>
       </main>
-      <AIChatBot />
+      <TrialExpiredModal
+        open={
+          trialExpired &&
+          user?.role !== "admin" &&
+          !user?.teamMember &&
+          !location.pathname.endsWith("/billing")
+        }
+        trialEndedAt={trialEndedAt}
+      />
 
       {upgradeModalModule && (
         <div

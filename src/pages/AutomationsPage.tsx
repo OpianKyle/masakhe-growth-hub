@@ -10,8 +10,10 @@ import { toast } from "sonner";
 import {
   Sparkles, Receipt, FileSearch, AlertTriangle, ShieldAlert,
   Mail, Send, UserMinus, Cake, PartyPopper, RefreshCw, Plus,
-  Trash2, Save, Loader2, ChevronDown, ChevronRight, Activity, X,
+  Trash2, Save, Loader2, ChevronDown, ChevronRight, Activity, X, Palette, Package,
 } from "lucide-react";
+import { TEMPLATES, InvoicePreview } from "@/components/InvoiceTemplates";
+import { hasSavedTemplateConfig, getSavedTemplateName, loadTemplateConfig } from "@/components/InvoiceTemplateDesigner";
 
 type Settings = {
   thank_you_enabled: number; thank_you_subject: string; thank_you_body: string;
@@ -29,6 +31,18 @@ type Settings = {
 };
 
 type DripEmail = { delay_days: number; subject: string; body: string };
+
+type ClientOption = {
+  id: string;
+  full_name: string;
+  business_name?: string;
+  email?: string;
+  business_email?: string;
+  phone?: string;
+  business_phone?: string;
+  physical_address?: string;
+  business_address?: string;
+};
 
 type Recurring = {
   id: string;
@@ -68,6 +82,14 @@ type LogEntry = {
 };
 
 type Item = { name: string; qty: number; unitPrice: number };
+
+interface InventoryProduct {
+  id: string;
+  name: string;
+  sku?: string;
+  price_cents: number;
+  unit?: string;
+}
 
 const TYPE_LABELS: Record<string, string> = {
   recurring_invoice: "Recurring invoice",
@@ -838,14 +860,55 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
   const [endDate, setEndDate] = useState(existing?.end_date?.slice(0, 10) || "");
   const [autoSend, setAutoSend] = useState(existing ? !!existing.auto_send : true);
   const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState(existing?.template || 1);
+  const [customTemplateName, setCustomTemplateName] = useState<string>(() => getSavedTemplateName() || "Custom");
+  const [hasCustomTemplate, setHasCustomTemplate] = useState<boolean>(() => hasSavedTemplateConfig());
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
+  const [openItemDropdownIndex, setOpenItemDropdownIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/clients/for-invoice", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setClients(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/inventory/products", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setInventoryProducts(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  function applyClient(id: string) {
+    setSelectedClientId(id);
+    const c = clients.find((cl) => cl.id === id);
+    if (!c) return;
+    setCustomerName(c.business_name || c.full_name);
+    setCustomerEmail(c.business_email || c.email || "");
+    setCustomerPhone(c.business_phone || c.phone || "");
+    setCustomerAddress(c.business_address || c.physical_address || "");
+  }
 
   const subtotal = items.reduce((s, it) => s + (it.qty || 1) * (it.unitPrice || 0), 0);
   const vatCents = vatEnabled ? Math.round(subtotal * 100 * 0.15) : 0;
   const totalCents = Math.round(subtotal * 100) + vatCents;
 
-  function setItem(i: number, patch: Partial<Item>) {
-    setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
-  }
+  const addItem = () => setItems([...items, { name: "", qty: 1, unitPrice: 0 }]);
+  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+  const updateItem = (i: number, key: keyof Item, val: any) => {
+    const updated = [...items];
+    (updated[i] as any)[key] = val;
+    setItems(updated);
+  };
+  const selectInventoryProduct = (itemIndex: number, prod: InventoryProduct) => {
+    const updated = [...items];
+    updated[itemIndex] = { ...updated[itemIndex], name: prod.name, unitPrice: prod.price_cents / 100 };
+    setItems(updated);
+    setOpenItemDropdownIndex(null);
+  };
 
   async function save() {
     if (!name.trim() || !customerName.trim()) {
@@ -871,7 +934,8 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
         vat_enabled: vatEnabled,
         vat_cents: vatCents,
         total_cents: totalCents,
-        template: existing?.template || 1,
+        template: selectedTemplate,
+        template_config: selectedTemplate === 8 ? loadTemplateConfig() : null,
         frequency,
         custom_days: frequency === "custom_days" ? customDays : null,
         start_date: startDate,
@@ -901,16 +965,75 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-bold">{existing ? "Edit recurring invoice" : "New recurring invoice"}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}><X className="h-5 w-5" /></Button>
-        </div>
-        <div className="p-6 space-y-5">
+      <Card className="w-full max-w-6xl max-h-[92vh] overflow-hidden flex flex-col md:flex-row">
+        <div className="flex flex-col w-full md:w-[56%] overflow-hidden border-r">
+          <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10 shrink-0">
+            <h2 className="text-xl font-bold">{existing ? "Edit recurring invoice" : "New recurring invoice"}</h2>
+            <Button variant="ghost" size="sm" onClick={onClose}><X className="h-5 w-5" /></Button>
+          </div>
+          <div className="p-6 space-y-5 overflow-y-auto flex-1">
           <div>
             <Label>Template name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly retainer — Acme Pty Ltd" />
           </div>
+
+          <div>
+            <Label className="text-xs mb-2 block font-semibold">Choose Template</Label>
+            <div className="flex gap-2 flex-wrap">
+              {TEMPLATES.map((tpl) => {
+                const isCustom = tpl.id === 8;
+                const displayName = isCustom ? customTemplateName : tpl.name;
+                const handleClick = () => {
+                  if (isCustom && !hasCustomTemplate) {
+                    toast.info("Design your custom template first from Invoices → Template Designer");
+                    return;
+                  }
+                  setSelectedTemplate(tpl.id);
+                };
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={handleClick}
+                    title={isCustom && !hasCustomTemplate ? "Design your custom template first from Invoices → Template Designer" : displayName}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${
+                      selectedTemplate === tpl.id ? "border-primary shadow-md scale-105" : "border-transparent hover:border-muted-foreground/30"
+                    } ${isCustom && !hasCustomTemplate ? "opacity-60" : ""}`}
+                  >
+                    <div className="w-16 h-10 rounded overflow-hidden border border-gray-100 shadow-sm relative">
+                      {tpl.preview}
+                      {isCustom && !hasCustomTemplate && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                          <Palette className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium max-w-[80px] truncate">{displayName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {clients.length > 0 && (
+            <div>
+              <Label>Select client (optional)</Label>
+              <select
+                className="w-full border rounded-md h-10 px-3"
+                value={selectedClientId}
+                onChange={(e) => applyClient(e.target.value)}
+              >
+                <option value="">— Choose a client to auto-fill —</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.business_name || c.full_name}
+                    {c.business_name && c.business_name !== c.full_name ? ` (${c.full_name})` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">Or fill in the customer details manually below.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -936,42 +1059,68 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
           </div>
 
           <div>
-            <Label className="mb-2 block">Line items</Label>
+            <Label className="text-xs mb-2 block font-semibold">Line Items</Label>
             <div className="space-y-2">
-              {items.map((it, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-6">
-                    <Input
-                      placeholder="Item description"
-                      value={it.name}
-                      onChange={(e) => setItem(i, { name: e.target.value })}
-                    />
+              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground px-1 pb-1 border-b">
+                <div className="col-span-5">Item</div>
+                <div className="col-span-2">Qty</div>
+                <div className="col-span-2">Unit Price</div>
+                <div className="col-span-2 text-right">Amount</div>
+                <div className="col-span-1" />
+              </div>
+              {items.map((item, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center py-1.5 border-b border-dashed border-muted last:border-0">
+                  <div className="col-span-5 relative">
+                    <div className="flex gap-1">
+                      <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-8 text-sm flex-1" placeholder="Description" />
+                      {inventoryProducts.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 flex-shrink-0"
+                          title="Pick from inventory"
+                          onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
+                        >
+                          <Package className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                    {openItemDropdownIndex === i && (
+                      <div className="absolute top-full left-0 right-0 z-[60] mt-1 bg-background border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                        {inventoryProducts.map((prod) => (
+                          <button
+                            key={prod.id}
+                            type="button"
+                            className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
+                            onClick={() => selectInventoryProduct(i, prod)}
+                          >
+                            <span className="truncate">{prod.name}{prod.sku ? <span className="text-muted-foreground ml-1 text-xs">({prod.sku})</span> : null}</span>
+                            <span className="text-primary font-medium flex-shrink-0">R{(prod.price_cents / 100).toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number" min={1}
-                      value={it.qty}
-                      onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
-                    />
+                    <Input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", parseInt(e.target.value) || 1)} className="h-8 text-sm" />
                   </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number" min={0} step={0.01}
-                      placeholder="Unit price"
-                      value={it.unitPrice}
-                      onChange={(e) => setItem(i, { unitPrice: Number(e.target.value) })}
-                    />
+                  <div className="col-span-2">
+                    <Input type="number" step="0.01" min="0" value={item.unitPrice || ""} onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0.00" />
                   </div>
-                  <div className="col-span-1">
-                    <Button variant="ghost" size="sm" onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                  <div className="col-span-2 text-right font-semibold text-sm">R{(item.qty * item.unitPrice).toFixed(2)}</div>
+                  <div className="col-span-1 text-right">
+                    {items.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => removeItem(i)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => setItems((p) => [...p, { name: "", qty: 1, unitPrice: 0 }])}>
-              <Plus className="h-4 w-4 mr-1" /> Add line
+            <Button variant="outline" size="sm" onClick={addItem} className="mt-3">
+              <Plus className="h-3 w-3 mr-1" /> Add Item
             </Button>
           </div>
 
@@ -1031,13 +1180,38 @@ function RecurringForm({ existing, onClose, onSaved }: { existing: Recurring | n
               <span className="text-sm">Email each generated invoice automatically (otherwise saved as draft)</span>
             </div>
           </div>
+          </div>
+          <div className="border-t p-4 flex justify-end gap-2 shrink-0 bg-white">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {existing ? "Update template" : "Create recurring"}
+            </Button>
+          </div>
         </div>
-        <div className="sticky bottom-0 bg-white border-t p-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            {existing ? "Update template" : "Create recurring"}
-          </Button>
+
+        {/* Live preview */}
+        <div className="hidden md:flex flex-col w-[44%] bg-muted/20 overflow-y-auto p-6">
+          <p className="text-xs text-muted-foreground mb-3 font-semibold">Preview updates live →</p>
+          <div className="max-w-[420px] mx-auto w-full">
+            <InvoicePreview
+              docType="invoice"
+              selectedTemplate={selectedTemplate}
+              customerName={customerName}
+              customerEmail={customerEmail}
+              customerPhone={customerPhone}
+              customerAddress={customerAddress}
+              customerVat=""
+              paymentTerms={paymentTerms}
+              dueDate=""
+              notes={notes}
+              items={items}
+              vatEnabled={vatEnabled}
+              subtotal={subtotal}
+              vatAmount={vatCents / 100}
+              total={totalCents / 100}
+            />
+          </div>
         </div>
       </Card>
     </div>

@@ -1,1 +1,2 @@
 - [Modular pricing system](modular-pricing.md) — replaced 3-tier plans with 4 pick-and-choose modules; billing/status now returns modules[]; DashboardPage uses hasModule() not meetsPlan()
+- [Invoice template sharing](invoice-template-sharing.md) — 8-template picker + live preview shared via InvoiceTemplates.tsx; invoices API uses templateConfig (camelCase), automations API uses template_config (snake_case)

@@ -45,7 +45,19 @@ export default function LoginPage() {
         navigate("/admin", { replace: true });
       } else if (result.isFranchise) {
         toast.success("Welcome back!");
-        navigate("/franchise", { replace: true });
+        // Check if this is an MTN franchise and redirect accordingly
+        try {
+          const fr = await fetch("/api/franchise/me", { credentials: "include" });
+          const fd = await fr.json();
+          const code: string = fd?.franchise?.code || "";
+          if (code.toUpperCase().startsWith("MTN")) {
+            navigate("/mtn/dashboard", { replace: true });
+          } else {
+            navigate("/franchise", { replace: true });
+          }
+        } catch {
+          navigate("/franchise", { replace: true });
+        }
       } else if (result.isMunicipality) {
         toast.success("Welcome back!");
         navigate("/municipality", { replace: true });

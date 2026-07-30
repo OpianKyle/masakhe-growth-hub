@@ -1,0 +1,32 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ # Free some space (journal has grown back)
+sudo journalctl --vacuum-size=10M
+
+# Clear any leftover npm logs and temp files
+sudo rm -rf ~/.npm/_logs/* /tmp/.npm* /tmp/npm-*
+
+# Now try growpart again
+sudo growpart /dev/vda 1
+sudo resize2fs /dev/vda1
+df -h /
+sudo: unable to resolve host masahke-group: Name or service not known
+Journal file /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system.journal is truncated, ignoring file.
+Vacuuming done, freed 0B of archived journals from /run/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Deleted empty archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@000656a23e0e1ca9-9b0c61aed774420b.journal~ (0B).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/user-1000@9c5cc6c4386f4d88a885b88f3a5abd8d-0000000000086ea9-000655d8b84012ac.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000091f55-0006568e153310ab.journal (8.0M).
+Deleted archived journal /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec/system@00abb1df379844128691a162ac71f0e2-0000000000092e16-0006569aad10d6be.journal (8.0M).
+Vacuuming done, freed 24.0M of archived journals from /var/log/journal/4b40ca59cd0f4dffb8d427c9f2ef58ec.
+sudo: unable to resolve host masahke-group: Name or service not known
+sudo: unable to resolve host masahke-group: Name or service not known
+CHANGED: partition=1 start=227328 old: size=20744159 end=20971487 new: size=41715679 end=41943007
+sudo: unable to resolve host masahke-group: Name or service not known
+resize2fs 1.46.5 (30-Dec-2021)
+Filesystem at /dev/vda1 is mounted on /; on-line resizing required
+old_desc_blocks = 2, new_desc_blocks = 3
+The filesystem on /dev/vda1 is now 5214459 (4k) blocks long.
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda1        20G  9.5G  9.7G  50% /
+ubuntu@masahke-group:~/masakhe-growth-hub$

@@ -1,0 +1,64 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ rm -rf node_modules/date-fns
+npm install date-fns --legacy-peer-deps
+npm run build
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@zxing/library@0.22.0',
+npm warn EBADENGINE   required: { node: '>= 24.0.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.1', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+added 5 packages, and audited 756 packages in 3s
+
+173 packages are looking for funding
+  run `npm fund` for details
+
+7 vulnerabilities (4 moderate, 3 high)
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+> vite_react_shadcn_ts@0.0.0 build
+> npx vite build
+
+vite v5.4.21 building for production...
+transforming (1050) node_modules/lucide-react/dist/esm/icons/list-start.js
+oise.png referenced in /noise.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
+transforming (3539) node_modules/lodash/_baseGet.js
+<--- Last few GCs --->
+
+[992892:0x331ecb70]    18778 ms: Scavenge (reduce) 474.5 (485.6) -> 474.1 (485.8) MB, 3.69 / 0.00 ms  (average mu = 0.109, current mu = 0.034) allocation failure;
+[992892:0x331ecb70]    18786 ms: Scavenge (reduce) 475.3 (486.1) -> 474.9 (486.3) MB, 1.50 / 0.00 ms  (average mu = 0.109, current mu = 0.034) task;
+[992892:0x331ecb70]    18990 ms: Scavenge (reduce) 475.6 (486.3) -> 475.1 (486.8) MB, 15.40 / 0.00 ms  (average mu = 0.109, current mu = 0.034) allocation failure;
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0xb78db1 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]
+ 2: 0xee82f0 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 3: 0xee85d7 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 4: 0x10fa275  [node]
+ 5: 0x10fa804 v8::internal::Heap::RecomputeLimits(v8::internal::GarbageCollector) [node]
+ 6: 0x11116f4 v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::internal::GarbageCollectionReason, char const*) [node]
+ 7: 0x1111f0c v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [node]
+ 8: 0x116accc v8::internal::MinorGCJob::Task::RunInternal() [node]
+ 9: 0xd32cc6  [node]
+10: 0xd3626f node::PerIsolatePlatformData::FlushForegroundTasksInternal() [node]
+11: 0x18a91e3  [node]
+12: 0x18bdc5b  [node]
+13: 0x18a9f07 uv_run [node]
+14: 0xbbbbe6 node::SpinEventLoopInternal(node::Environment*) [node]
+15: 0xd06bd1 node::NodeMainInstance::Run() [node]
+16: 0xc6853f node::Start(int, char**) [node]
+17: 0x7f2aa969fd90  [/lib/x86_64-linux-gnu/libc.so.6]
+18: 0x7f2aa969fe40 __libc_start_main [/lib/x86_64-linux-gnu/libc.so.6]
+19: 0xbb82be _start [node]
+Aborted (core dumped)
+ubuntu@masahke-group:~/masakhe-growth-hub$

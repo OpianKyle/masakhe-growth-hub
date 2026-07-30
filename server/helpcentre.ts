@@ -2,12 +2,75 @@ import { Router } from "express";
 import { queryAll, queryOne, execute } from "./db";
 import { requireAuth, requireAdmin } from "./auth";
 import { randomUUID } from "crypto";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 export const helpRouter = Router();
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+const videoUploadDir = path.join(process.cwd(), "public", "uploads", "help-videos");
+const imageUploadDir = path.join(process.cwd(), "public", "uploads", "help-images");
+
+if (!fs.existsSync(videoUploadDir)) fs.mkdirSync(videoUploadDir, { recursive: true });
+if (!fs.existsSync(imageUploadDir)) fs.mkdirSync(imageUploadDir, { recursive: true });
+
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, imageUploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|webp|gif)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Allowed: JPG, PNG, WebP, GIF"));
+    }
+  },
+});
+
+helpRouter.post("/admin/upload-image", requireAdmin, (req, res) => {
+  imageUpload.single("image")(req, res, (err: any) => {
+    if (err) return res.status(400).json({ error: err.message || "Image upload failed" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    res.json({ ok: true, url: `/uploads/help-images/${req.file.filename}` });
+  });
+});
+
+const videoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, videoUploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".mp4";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(mp4|mov|webm|avi|mkv|m4v)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Allowed video formats: mp4, mov, webm, avi, mkv, m4v"));
+    }
+  },
+});
+
+helpRouter.post("/admin/upload-video", requireAdmin, (req, res) => {
+  videoUpload.single("video")(req, res, (err: any) => {
+    if (err) return res.status(400).json({ error: err.message || "Video upload failed" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    res.json({ ok: true, url: `/uploads/help-videos/${req.file.filename}` });
+  });
+});
 
 // ── Public / User routes ─────────────────────────────────────────────────────
 
@@ -72,13 +135,13 @@ helpRouter.get("/admin/categories", requireAdmin, async (_req, res) => {
 });
 
 helpRouter.post("/admin/categories", requireAdmin, async (req, res) => {
-  const { name, description, icon, color, order_index } = req.body;
+  const { name, description, icon, color, order_index, image_url } = req.body;
   if (!name) return res.status(400).json({ error: "Name is required" });
   try {
     const id = randomUUID();
     await execute(
-      "INSERT INTO help_categories (id, name, description, icon, color, order_index) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, name, description || null, icon || "💡", color || "blue", order_index || 0]
+      "INSERT INTO help_categories (id, name, description, icon, color, order_index, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [id, name, description || null, icon || "💡", color || "blue", order_index || 0, image_url || null]
     );
     res.status(201).json(await queryOne("SELECT * FROM help_categories WHERE id = ?", [id]));
   } catch (err: any) {
@@ -87,11 +150,11 @@ helpRouter.post("/admin/categories", requireAdmin, async (req, res) => {
 });
 
 helpRouter.put("/admin/categories/:id", requireAdmin, async (req, res) => {
-  const { name, description, icon, color, order_index } = req.body;
+  const { name, description, icon, color, order_index, image_url } = req.body;
   try {
     await execute(
-      "UPDATE help_categories SET name=?, description=?, icon=?, color=?, order_index=? WHERE id=?",
-      [name, description || null, icon || "💡", color || "blue", order_index || 0, req.params.id]
+      "UPDATE help_categories SET name=?, description=?, icon=?, color=?, order_index=?, image_url=? WHERE id=?",
+      [name, description || null, icon || "💡", color || "blue", order_index || 0, image_url || null, req.params.id]
     );
     res.json(await queryOne("SELECT * FROM help_categories WHERE id = ?", [req.params.id]));
   } catch (err: any) {

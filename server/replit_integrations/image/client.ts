@@ -8,6 +8,8 @@ export function getOpenAI() {
     baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   });
 }
+
+export const openai = getOpenAI();
 /**
  * Generate an image and return as Buffer.
  * Uses gpt-image-1 model via Replit AI Integrations.

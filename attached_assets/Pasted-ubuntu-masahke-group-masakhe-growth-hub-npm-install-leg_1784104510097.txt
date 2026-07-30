@@ -1,0 +1,97 @@
+ubuntu@masahke-group:~/masakhe-growth-hub$ npm install --legacy-peer-deps
+npm run build
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@zxing/library@0.22.0',
+npm warn EBADENGINE   required: { node: '>= 24.0.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.1', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated recharts@2.15.4: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
+npm error code 1
+npm error path /home/ubuntu/masakhe-growth-hub/node_modules/better-sqlite3
+npm error command failed
+npm error command sh -c prebuild-install || node-gyp rebuild --release
+npm error prebuild-install warn install No prebuilt binaries found (target=20.20.1 runtime=node arch=x64 libc= platform=linux)
+npm error gyp info it worked if it ends with ok
+npm error gyp info using node-gyp@10.1.0
+npm error gyp info using node@20.20.1 | linux | x64
+npm error gyp info find Python using Python version 3.10.12 found at "/usr/bin/python3"
+npm error gyp http GET https://nodejs.org/download/release/v20.20.1/node-v20.20.1-headers.tar.gz
+npm error gyp http 200 https://nodejs.org/download/release/v20.20.1/node-v20.20.1-headers.tar.gz
+npm error gyp http GET https://nodejs.org/download/release/v20.20.1/SHASUMS256.txt
+npm error gyp http 200 https://nodejs.org/download/release/v20.20.1/SHASUMS256.txt
+npm error gyp info spawn /usr/bin/python3
+npm error gyp info spawn args [
+npm error gyp info spawn args '/usr/lib/node_modules/npm/node_modules/node-gyp/gyp/gyp_main.py',
+npm error gyp info spawn args 'binding.gyp',
+npm error gyp info spawn args '-f',
+npm error gyp info spawn args 'make',
+npm error gyp info spawn args '-I',
+npm error gyp info spawn args '/home/ubuntu/masakhe-growth-hub/node_modules/better-sqlite3/build/config.gypi',
+npm error gyp info spawn args '-I',
+npm error gyp info spawn args '/usr/lib/node_modules/npm/node_modules/node-gyp/addon.gypi',
+npm error gyp info spawn args '-I',
+npm error gyp info spawn args '/home/ubuntu/.cache/node-gyp/20.20.1/include/node/common.gypi',
+npm error gyp info spawn args '-Dlibrary=shared_library',
+npm error gyp info spawn args '-Dvisibility=default',
+npm error gyp info spawn args '-Dnode_root_dir=/home/ubuntu/.cache/node-gyp/20.20.1',
+npm error gyp info spawn args '-Dnode_gyp_dir=/usr/lib/node_modules/npm/node_modules/node-gyp',
+npm error gyp info spawn args '-Dnode_lib_file=/home/ubuntu/.cache/node-gyp/20.20.1/<(target_arch)/node.lib',
+npm error gyp info spawn args '-Dmodule_root_dir=/home/ubuntu/masakhe-growth-hub/node_modules/better-sqlite3',
+npm error gyp info spawn args '-Dnode_engine=v8',
+npm error gyp info spawn args '--depth=.',
+npm error gyp info spawn args '--no-parallel',
+npm error gyp info spawn args '--generator-output',
+npm error gyp info spawn args 'build',
+npm error gyp info spawn args '-Goutput_dir=.'
+npm error gyp info spawn args ]
+npm error gyp ERR! build error
+npm error gyp ERR! stack Error: not found: make
+npm error gyp ERR! stack at getNotFoundError (/usr/lib/node_modules/npm/node_modules/which/lib/index.js:16:17)
+npm error gyp ERR! stack at which (/usr/lib/node_modules/npm/node_modules/which/lib/index.js:77:9)
+npm error gyp ERR! stack at async doWhich (/usr/lib/node_modules/npm/node_modules/node-gyp/lib/build.js:112:22)
+npm error gyp ERR! stack at async loadConfigGypi (/usr/lib/node_modules/npm/node_modules/node-gyp/lib/build.js:77:7)
+npm error gyp ERR! stack at async build (/usr/lib/node_modules/npm/node_modules/node-gyp/lib/build.js:35:3)
+npm error gyp ERR! stack at async run (/usr/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js:81:18)
+npm error gyp ERR! System Linux 5.15.0-173-generic
+npm error gyp ERR! command "/usr/bin/node" "/usr/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js" "rebuild" "--release"
+npm error gyp ERR! cwd /home/ubuntu/masakhe-growth-hub/node_modules/better-sqlite3
+npm error gyp ERR! node -v v20.20.1
+npm error gyp ERR! node-gyp -v v10.1.0
+npm error gyp ERR! not ok
+npm error A complete log of this run can be found in: /home/ubuntu/.npm/_logs/2026-07-15T08_32_57_694Z-debug-0.log
+
+> vite_react_shadcn_ts@0.0.0 build
+> npx vite build
+
+vite.config.ts (1:300) [UNRESOLVED_IMPORT] Could not resolve 'vite' in vite.config.ts
+ - Module not found, treating it as an external dependency in vite.config.ts at 300..306
+
+vite.config.ts (2:18) [UNRESOLVED_IMPORT] Could not resolve '@vitejs/plugin-react-swc' in vite.config.ts
+   ╭─[ vite.config.ts:2:19 ]
+   │
+ 2 │ import react from "@vitejs/plugin-react-swc";
+   │                   ─────────────┬────────────
+   │                                ╰────────────── Module not found, treating it as an external dependency
+───╯
+
+failed to load config from /home/ubuntu/masakhe-growth-hub/vite.config.ts
+error during build:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /home/ubuntu/masakhe-growth-hub/vite.config.ts.timestamp-1784104488028-918428fa0b131.mjs
+    at packageResolve (node:internal/modules/esm/resolve:873:9)
+    at moduleResolve (node:internal/modules/esm/resolve:946:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+ubuntu@masahke-group:~/masakhe-growth-hub$

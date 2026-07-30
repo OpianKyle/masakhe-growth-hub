@@ -373,19 +373,31 @@ adminRouter.get("/clients", async (req, res) => {
               bp.industry_sector, COALESCE(u.phone, bp.phone) as phone,
               bp.work_phone, bp.whatsapp, bp.physical_address,
               (SELECT COUNT(*) FROM websites WHERE owner_id = u.id) as website_count,
-              bs.status as subscription_status, bs.trial_end_at,
-              bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents
+              bs.status as subscription_status, bs.trial_end_at, bs.trial_start_at, bs.next_billing_at,
+              bpl.code as plan_code, bpl.name as plan_name, bpl.price_cents as plan_price_cents,
+              (SELECT SUM(amount_cents) FROM billing_invoices
+               WHERE workspace_id = wm.workspace_id AND status = 'PENDING') as pending_amount_cents,
+              r.status as reseller_status, r.package_tier as reseller_tier
        FROM users u
        LEFT JOIN business_profiles bp ON bp.user_id = u.id
        LEFT JOIN workspace_members wm ON wm.user_id = u.id
-       LEFT JOIN billing_subscriptions bs ON bs.workspace_id = wm.workspace_id AND bs.status IN ('ACTIVE','TRIAL') AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
+       LEFT JOIN (
+         SELECT bs1.* FROM billing_subscriptions bs1
+         INNER JOIN (
+           SELECT workspace_id, MAX(created_at) as max_created
+           FROM billing_subscriptions GROUP BY workspace_id
+         ) bs2 ON bs1.workspace_id = bs2.workspace_id AND bs1.created_at = bs2.max_created
+       ) bs ON bs.workspace_id = wm.workspace_id
        LEFT JOIN billing_plans bpl ON bpl.id = bs.plan_id
+       LEFT JOIN resellers r ON r.user_id = u.id
        ORDER BY u.created_at DESC`
     );
     // admin_tags is stored as JSON; mysql2 can return it as string or already-parsed.
     const normalised = clients.map((c: any) => ({
       ...c,
       admin_tags: typeof c.admin_tags === "string" ? safeParse(c.admin_tags) : (c.admin_tags || []),
+      is_reseller: c.reseller_status === "active",
+      reseller_tier: c.reseller_tier || null,
     }));
     res.json(normalised);
   } catch (err) {
@@ -1050,6 +1062,10 @@ adminRouter.post("/franchises", async (req, res) => {
       [id, name, code.toUpperCase(), owner_user_id]
     );
     await execute("UPDATE users SET role = 'franchise' WHERE id = ?", [owner_user_id]);
+    await logAudit(req, "franchise.created", {
+      targetType: "user", targetId: owner_user_id, targetLabel: owner.email || owner_user_id,
+      details: { franchise_name: name, franchise_code: code.toUpperCase(), role_changed_to: "franchise" },
+    });
 
     res.json({ ok: true, id });
   } catch (err: any) {
@@ -1506,7 +1522,7 @@ adminRouter.post("/system-settings/test", requireAdmin, async (req, res) => {
     try {
       await freshTransporter.verify();
     } catch (verifyErr: any) {
-      return res.status(502).json({ error: `SMTP connection failed: ${verifyErr.message}` });
+      return res.status(422).json({ error: `SMTP connection failed: ${verifyErr.message}` });
     }
     const adminUser = await queryOne("SELECT email, full_name FROM users WHERE id = ?", [(req.session as any).userId]);
     const toAddress: string = req.body?.to || adminUser?.email;

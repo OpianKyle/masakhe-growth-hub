@@ -67,6 +67,7 @@ const ALL_PERM_KEYS = PERMISSION_GROUPS.flatMap(g => g.perms.map(p => p.key));
 const DEFAULT_PERMS = ["overview"];
 
 function getMaxSeats(plan: string | null): number {
+  if (plan === "all_modules") return 99;
   if (plan === "premium") return 4;
   if (plan === "pro") return 2;
   if (plan === "starter") return 1;
@@ -74,6 +75,7 @@ function getMaxSeats(plan: string | null): number {
 }
 
 function getPlanLabel(plan: string | null): string {
+  if (plan === "all_modules") return "Admin (All Modules)";
   if (plan === "premium") return "Enterprize Premium";
   if (plan === "pro") return "Enterprize Plus";
   if (plan === "starter") return "Enterprize";
@@ -100,11 +102,12 @@ export default function TeamMembersPage() {
   const [editingEmail, setEditingEmail] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const isAdmin = user?.role === "admin";
   const MAX_SEATS = getMaxSeats(planCode);
   const seatsUsed = members.filter(m => m.role !== "owner").length;
   const seatsRemaining = Math.max(0, MAX_SEATS - seatsUsed);
-  const isPremium = planCode === "premium";
-  const hasTeamAccess = !!(planCode === "starter" || planCode === "pro" || planCode === "premium");
+  const isPremium = planCode === "premium" || planCode === "all_modules";
+  const hasTeamAccess = isAdmin || !!(planCode === "starter" || planCode === "pro" || planCode === "premium" || planCode === "all_modules");
 
   useEffect(() => {
     fetch("/api/billing/status", { credentials: "include" })
