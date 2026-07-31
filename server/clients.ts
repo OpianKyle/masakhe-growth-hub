@@ -80,8 +80,14 @@ clientsRouter.get("/for-invoice", requireAuth, async (req, res) => {
            FROM users u
            LEFT JOIN business_profiles bp ON bp.user_id = u.id
            WHERE u.role = 'user'
-           ORDER BY u.full_name ASC`,
-          []
+           UNION ALL
+           SELECT id, full_name, COALESCE(business_name, '') AS business_name,
+                  email, COALESCE(business_email, email) AS business_email,
+                  phone, business_phone, physical_address, business_address,
+                  vat_number, client_type, NULL AS owner_name
+           FROM broker_clients WHERE user_id = ?
+           ORDER BY full_name ASC`,
+          [userId]
         )
       : await queryAll(
           `SELECT id, full_name, business_name, email, business_email, phone, business_phone,
