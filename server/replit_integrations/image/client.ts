@@ -9,7 +9,14 @@ export function getOpenAI() {
   });
 }
 
-export const openai = getOpenAI();
+// Lazy singleton — only instantiated when actually used, so a missing key won't crash startup
+let _openai: OpenAI | null = null;
+export const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    if (!_openai) _openai = getOpenAI();
+    return (_openai as any)[prop];
+  },
+});
 /**
  * Generate an image and return as Buffer.
  * Uses gpt-image-1 model via Replit AI Integrations.
