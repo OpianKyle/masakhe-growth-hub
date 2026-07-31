@@ -149,7 +149,7 @@ const baseNavItems: NavItem[] = [
       { icon: CalendarDays, label: "Staff Roster", path: "/dashboard/roster", requiresModule: "people_hr", perm: "payroll" },
     ],
   },
-  { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
+  // { icon: Award, label: "Partner Program", path: "/dashboard/reseller", ownerOnly: true },
 ];
 
 function ModuleGate({ moduleCode, onUpgrade }: { moduleCode: ModuleCode; onUpgrade: () => void }) {
