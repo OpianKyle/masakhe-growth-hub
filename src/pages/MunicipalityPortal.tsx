@@ -9,18 +9,19 @@ import {
   Phone, MessageSquare, Zap, Share2, QrCode, ArrowRight,
   ChevronRight, Globe, Star, Activity, Inbox, CheckCheck,
   XCircle, CircleDot, User, Briefcase, CalendarDays, Filter,
-  Sparkles, PenLine, Save,
+  Sparkles, PenLine, Save, Layers, Plus, Trash2, UserPlus, Edit2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 const NAV_ITEMS = [
-  { tab: "overview", label: "Overview",    icon: BarChart2   },
-  { tab: "link",     label: "Reg. Link",   icon: Link2       },
-  { tab: "smmEs",    label: "SMMEs",       icon: Users       },
-  { tab: "tickets",  label: "Support",     icon: TicketCheck },
-  { tab: "profile",  label: "Profile",     icon: Building2   },
+  { tab: "overview",     label: "Overview",    icon: BarChart2   },
+  { tab: "departments",  label: "Departments", icon: Layers      },
+  { tab: "link",         label: "Reg. Link",   icon: Link2       },
+  { tab: "smmEs",        label: "SMMEs",       icon: Users       },
+  { tab: "tickets",      label: "Support",     icon: TicketCheck },
+  { tab: "profile",      label: "Profile",     icon: Building2   },
 ];
 
 const SA_PROVINCES = [
@@ -66,6 +67,18 @@ export default function MunicipalityPortal() {
   const [profileForm, setProfileForm] = useState<any>({});
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Departments
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [deptLoading, setDeptLoading] = useState(false);
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [editingDept, setEditingDept] = useState<any>(null);
+  const [deptForm, setDeptForm] = useState({ name: "", description: "" });
+  const [savingDept, setSavingDept] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState<string | null>(null); // dept id
+  const [adminForm, setAdminForm] = useState({ email: "", full_name: "" });
+  const [savingAdmin, setSavingAdmin] = useState(false);
+  const [copiedDeptCode, setCopiedDeptCode] = useState<string | null>(null);
+
   const regLink = mun ? `${window.location.origin}/register?municipality=${mun.municipality_code}` : "";
 
   useEffect(() => { fetchMun(); }, []);
@@ -103,9 +116,90 @@ export default function MunicipalityPortal() {
     if (res.ok) setTickets(await res.json());
   }
 
+  async function fetchDepartments() {
+    setDeptLoading(true);
+    try {
+      const res = await fetch("/api/municipality/me/departments", { credentials: "include" });
+      if (res.ok) setDepartments(await res.json());
+    } finally {
+      setDeptLoading(false);
+    }
+  }
+
+  async function saveDept() {
+    if (!deptForm.name.trim()) return toast.error("Department name is required");
+    setSavingDept(true);
+    try {
+      const url = editingDept ? `/api/municipality/me/departments/${editingDept.id}` : "/api/municipality/me/departments";
+      const method = editingDept ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method, headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify(deptForm),
+      });
+      if (res.ok) {
+        toast.success(editingDept ? "Department updated" : "Department created");
+        setShowDeptModal(false);
+        setEditingDept(null);
+        setDeptForm({ name: "", description: "" });
+        fetchDepartments();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Failed to save");
+      }
+    } finally {
+      setSavingDept(false);
+    }
+  }
+
+  async function deleteDept(id: string) {
+    if (!confirm("Delete this department? This cannot be undone.")) return;
+    const res = await fetch(`/api/municipality/me/departments/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) { toast.success("Department deleted"); fetchDepartments(); }
+    else toast.error("Failed to delete");
+  }
+
+  async function appointAdmin() {
+    if (!adminForm.email.trim() || !showAdminModal) return toast.error("Email is required");
+    setSavingAdmin(true);
+    try {
+      const res = await fetch(`/api/municipality/me/departments/${showAdminModal}/admins`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify(adminForm),
+      });
+      if (res.ok) {
+        toast.success("Admin appointed");
+        setShowAdminModal(null);
+        setAdminForm({ email: "", full_name: "" });
+        fetchDepartments();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Failed to appoint admin");
+      }
+    } finally {
+      setSavingAdmin(false);
+    }
+  }
+
+  async function removeAdmin(deptId: string, adminId: string) {
+    if (!confirm("Remove this admin?")) return;
+    const res = await fetch(`/api/municipality/me/departments/${deptId}/admins/${adminId}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) { toast.success("Admin removed"); fetchDepartments(); }
+    else toast.error("Failed to remove admin");
+  }
+
+  function copyDeptLink(code: string) {
+    const link = `${window.location.origin}/register?municipality=${code}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedDeptCode(code);
+      toast.success("Signup link copied!");
+      setTimeout(() => setCopiedDeptCode(null), 2500);
+    });
+  }
+
   useEffect(() => {
     if (activeTab === "smmEs") fetchSmmEs();
     if (activeTab === "tickets") fetchTickets();
+    if (activeTab === "departments") fetchDepartments();
   }, [activeTab]);
 
   async function updateTicketStatus(id: string, status: string) {
@@ -931,6 +1025,198 @@ export default function MunicipalityPortal() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════
+              DEPARTMENTS
+          ══════════════════════════════════════ */}
+          {activeTab === "departments" && (
+            <div>
+              {/* Hero */}
+              <div className="relative overflow-hidden px-6 py-10" style={{ background: "linear-gradient(135deg, #0e7490 0%, #1d4ed8 60%, #4f46e5 100%)" }}>
+                <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+                <div className="relative max-w-3xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-sm"><Layers className="h-5 w-5 text-white" /></div>
+                    <span className="text-white/70 text-sm font-medium">Municipal Departments</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Departments</h2>
+                  <p className="text-white/70 text-sm">Create departments, appoint admins, and give each department its own SMME sign-up link.</p>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6 max-w-4xl mx-auto">
+                {/* Header row */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{departments.length} department{departments.length !== 1 ? "s" : ""} created</p>
+                  </div>
+                  <Button onClick={() => { setEditingDept(null); setDeptForm({ name: "", description: "" }); setShowDeptModal(true); }} className="gap-2">
+                    <Plus className="h-4 w-4" /> New Department
+                  </Button>
+                </div>
+
+                {/* Department cards */}
+                {deptLoading ? (
+                  <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                ) : departments.length === 0 ? (
+                  <div className="text-center py-16 border-2 border-dashed border-border rounded-2xl">
+                    <Layers className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                    <p className="font-semibold text-foreground mb-1">No departments yet</p>
+                    <p className="text-sm text-muted-foreground mb-4">Create your first department to assign admins and generate unique sign-up links.</p>
+                    <Button onClick={() => { setEditingDept(null); setDeptForm({ name: "", description: "" }); setShowDeptModal(true); }} variant="outline" className="gap-2">
+                      <Plus className="h-4 w-4" /> Create Department
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {departments.map(dept => {
+                      const deptLink = `${window.location.origin}/register?municipality=${dept.department_code}`;
+                      return (
+                        <div key={dept.id} className="border border-border rounded-2xl bg-card overflow-hidden">
+                          {/* Card header */}
+                          <div className="flex items-start gap-4 p-5 border-b border-border">
+                            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 shrink-0">
+                              <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold text-foreground">{dept.name}</h3>
+                                <span className="text-[10px] font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">{dept.department_code}</span>
+                                <span className="text-xs text-muted-foreground">{dept.smme_count} SMME{dept.smme_count !== 1 ? "s" : ""}</span>
+                              </div>
+                              {dept.description && <p className="text-sm text-muted-foreground mt-0.5">{dept.description}</p>}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button onClick={() => { setEditingDept(dept); setDeptForm({ name: dept.name, description: dept.description || "" }); setShowDeptModal(true); }}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => deleteDept(dept.id)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Sign-up link */}
+                          <div className="px-5 py-3 bg-muted/30 border-b border-border">
+                            <p className="text-xs font-medium text-muted-foreground mb-1.5">Sign-up link for this department</p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 text-xs bg-background border border-border rounded-lg px-3 py-2 truncate text-foreground font-mono">{deptLink}</code>
+                              <button onClick={() => copyDeptLink(dept.department_code)}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
+                                {copiedDeptCode === dept.department_code ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                                {copiedDeptCode === dept.department_code ? "Copied!" : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Admins */}
+                          <div className="p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admins</p>
+                              <button onClick={() => { setShowAdminModal(dept.id); setAdminForm({ email: "", full_name: "" }); }}
+                                className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium">
+                                <UserPlus className="h-3.5 w-3.5" /> Appoint Admin
+                              </button>
+                            </div>
+                            {dept.admins?.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">No admins appointed yet.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {dept.admins.map((admin: any) => (
+                                  <div key={admin.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
+                                      <span className="text-xs font-bold text-white">{(admin.full_name || admin.email)[0].toUpperCase()}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      {admin.full_name && <p className="text-sm font-medium text-foreground leading-none mb-0.5">{admin.full_name}</p>}
+                                      <p className="text-xs text-muted-foreground truncate">{admin.email}</p>
+                                    </div>
+                                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${admin.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                      {admin.status === 'active' ? 'Active' : 'Pending'}
+                                    </span>
+                                    <button onClick={() => removeAdmin(dept.id, admin.id)}
+                                      className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Create / Edit Department Modal */}
+              {showDeptModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                  <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-md">
+                    <div className="flex items-center justify-between p-5 border-b border-border">
+                      <h3 className="font-semibold text-foreground">{editingDept ? "Edit Department" : "New Department"}</h3>
+                      <button onClick={() => setShowDeptModal(false)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+                    </div>
+                    <div className="p-5 space-y-4">
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Department Name *</label>
+                        <Input placeholder="e.g. Health, Education, Water & Sanitation" value={deptForm.name}
+                          onChange={e => setDeptForm(f => ({ ...f, name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Description (optional)</label>
+                        <textarea rows={3} placeholder="Brief description of this department's focus area…"
+                          value={deptForm.description} onChange={e => setDeptForm(f => ({ ...f, description: e.target.value }))}
+                          className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 px-5 pb-5">
+                      <Button variant="outline" onClick={() => setShowDeptModal(false)}>Cancel</Button>
+                      <Button onClick={saveDept} disabled={savingDept} className="gap-2">
+                        {savingDept ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {editingDept ? "Save Changes" : "Create Department"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Appoint Admin Modal */}
+              {showAdminModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                  <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-md">
+                    <div className="flex items-center justify-between p-5 border-b border-border">
+                      <h3 className="font-semibold text-foreground">Appoint Department Admin</h3>
+                      <button onClick={() => setShowAdminModal(null)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+                    </div>
+                    <div className="p-5 space-y-4">
+                      <p className="text-sm text-muted-foreground">Enter the details of the person you want to appoint as admin for this department.</p>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Full Name (optional)</label>
+                        <Input placeholder="e.g. Jane Dlamini" value={adminForm.full_name}
+                          onChange={e => setAdminForm(f => ({ ...f, full_name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Email Address *</label>
+                        <Input type="email" placeholder="admin@municipality.gov.za" value={adminForm.email}
+                          onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 px-5 pb-5">
+                      <Button variant="outline" onClick={() => setShowAdminModal(null)}>Cancel</Button>
+                      <Button onClick={appointAdmin} disabled={savingAdmin} className="gap-2">
+                        {savingAdmin ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                        Appoint Admin
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

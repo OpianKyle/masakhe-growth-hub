@@ -55,6 +55,32 @@ export async function runMunicipalityMigrations() {
 
   await execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS municipality_code VARCHAR(20) NULL`, []).catch(() => {});
 
+  await execute(`
+    CREATE TABLE IF NOT EXISTS municipality_departments (
+      id VARCHAR(36) PRIMARY KEY,
+      municipality_id VARCHAR(36) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT NULL,
+      department_code VARCHAR(40) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (municipality_id) REFERENCES municipalities(id) ON DELETE CASCADE
+    )
+  `, []).catch(() => {});
+
+  await execute(`
+    CREATE TABLE IF NOT EXISTS municipality_department_admins (
+      id VARCHAR(36) PRIMARY KEY,
+      department_id VARCHAR(36) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      full_name VARCHAR(255) NULL,
+      status ENUM('pending','active') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (department_id) REFERENCES municipality_departments(id) ON DELETE CASCADE
+    )
+  `, []).catch(() => {});
+
+  await execute(`ALTER TABLE municipality_smmEs ADD COLUMN IF NOT EXISTS department_id VARCHAR(36) NULL`, []).catch(() => {});
+
   console.log("[Municipality] Migrations complete");
 }
 
@@ -65,17 +91,37 @@ function generateMunicipalityCode(name: string): string {
   return `MUN-${base}${suffix}`;
 }
 
-// ─── Public: validate a municipality code (used during SMME registration) ─────
+// ─── Public: validate a municipality OR department code ───────────────────────
 municipalityRouter.get("/check/:code", async (req, res) => {
   try {
+    // Check municipality code first
     const mun = await queryOne(
       `SELECT m.id, m.municipality_code, m.municipality_name, m.province
        FROM municipalities m
        WHERE m.municipality_code = ? AND m.status = 'active'`,
       [req.params.code]
     );
-    if (!mun) return res.json({ valid: false });
-    res.json({ valid: true, name: mun.municipality_name, province: mun.province, code: mun.municipality_code });
+    if (mun) {
+      return res.json({ valid: true, name: mun.municipality_name, province: mun.province, code: mun.municipality_code });
+    }
+    // Check department code
+    const dept = await queryOne(
+      `SELECT d.id, d.department_code, d.name AS department_name,
+              m.municipality_name, m.province, m.municipality_code
+       FROM municipality_departments d
+       JOIN municipalities m ON m.id = d.municipality_id
+       WHERE d.department_code = ? AND m.status = 'active'`,
+      [req.params.code]
+    );
+    if (!dept) return res.json({ valid: false });
+    res.json({
+      valid: true,
+      name: dept.municipality_name,
+      province: dept.province,
+      code: dept.department_code,
+      department_name: dept.department_name,
+      is_department: true,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -264,20 +310,173 @@ municipalityRouter.put("/me", requireAuth, async (req, res) => {
   }
 });
 
-// ─── Link SMME to municipality when they register with a code ─────────────────
-export async function linkSmmeToMunicipality(smmeUserId: string, municipalityCode: string, businessName?: string): Promise<void> {
+// ─── Link SMME to municipality (or department) when they register with a code ──
+export async function linkSmmeToMunicipality(smmeUserId: string, code: string, businessName?: string): Promise<void> {
   try {
-    const mun = await queryOne("SELECT id FROM municipalities WHERE municipality_code = ? AND status = 'active'", [municipalityCode]);
-    if (!mun) return;
+    // Try municipality code first
+    let mun = await queryOne("SELECT id FROM municipalities WHERE municipality_code = ? AND status = 'active'", [code]);
+    let departmentId: string | null = null;
+
+    if (!mun) {
+      // Try department code
+      const dept = await queryOne(
+        `SELECT d.id AS dept_id, m.id AS mun_id
+         FROM municipality_departments d
+         JOIN municipalities m ON m.id = d.municipality_id
+         WHERE d.department_code = ? AND m.status = 'active'`,
+        [code]
+      );
+      if (!dept) return;
+      mun = { id: dept.mun_id };
+      departmentId = dept.dept_id;
+    }
 
     await execute(
-      `INSERT IGNORE INTO municipality_smmEs (id, municipality_id, smme_user_id, business_name, status, registered_at)
-       VALUES (?, ?, ?, ?, 'active', NOW())`,
-      [randomUUID(), mun.id, smmeUserId, businessName || null]
+      `INSERT IGNORE INTO municipality_smmEs (id, municipality_id, department_id, smme_user_id, business_name, status, registered_at)
+       VALUES (?, ?, ?, ?, ?, 'active', NOW())`,
+      [randomUUID(), mun.id, departmentId, smmeUserId, businessName || null]
     );
     await execute(`UPDATE municipalities SET total_smmEs = total_smmEs + 1 WHERE id = ?`, [mun.id]);
   } catch {}
 }
+
+// ─── Departments ──────────────────────────────────────────────────────────────
+function generateDeptCode(munCode: string, deptName: string): string {
+  const base = deptName.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 6);
+  const suffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${munCode}-${base}${suffix}`;
+}
+
+// List departments (with their admins)
+municipalityRouter.get("/me/departments", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    const depts = await queryAll(
+      `SELECT d.id, d.name, d.description, d.department_code, d.created_at,
+              (SELECT COUNT(*) FROM municipality_smmEs ms WHERE ms.department_id = d.id) AS smme_count
+       FROM municipality_departments d
+       WHERE d.municipality_id = ?
+       ORDER BY d.created_at ASC`,
+      [mun.id]
+    );
+
+    // Attach admins to each department
+    for (const dept of depts) {
+      dept.admins = await queryAll(
+        `SELECT id, email, full_name, status, created_at FROM municipality_department_admins WHERE department_id = ? ORDER BY created_at ASC`,
+        [dept.id]
+      );
+    }
+
+    res.json(depts);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create department
+municipalityRouter.post("/me/departments", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id, municipality_code FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ error: "Department name is required" });
+
+    const id = randomUUID();
+    const department_code = generateDeptCode(mun.municipality_code, name);
+
+    await execute(
+      `INSERT INTO municipality_departments (id, municipality_id, name, description, department_code, created_at)
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [id, mun.id, name, description || null, department_code]
+    );
+    res.json({ ok: true, id, department_code });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update department
+municipalityRouter.put("/me/departments/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    const { name, description } = req.body;
+    await execute(
+      `UPDATE municipality_departments SET name = ?, description = ? WHERE id = ? AND municipality_id = ?`,
+      [name, description || null, req.params.id, mun.id]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete department
+municipalityRouter.delete("/me/departments/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    await execute(`DELETE FROM municipality_departments WHERE id = ? AND municipality_id = ?`, [req.params.id, mun.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Appoint admin to department
+municipalityRouter.post("/me/departments/:id/admins", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    const dept = await queryOne(`SELECT id FROM municipality_departments WHERE id = ? AND municipality_id = ?`, [req.params.id, mun.id]);
+    if (!dept) return res.status(404).json({ error: "Department not found" });
+
+    const { email, full_name } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const existing = await queryOne(`SELECT id FROM municipality_department_admins WHERE department_id = ? AND email = ?`, [dept.id, email]);
+    if (existing) return res.status(400).json({ error: "This person is already an admin of this department" });
+
+    await execute(
+      `INSERT INTO municipality_department_admins (id, department_id, email, full_name, status, created_at) VALUES (?, ?, ?, ?, 'pending', NOW())`,
+      [randomUUID(), dept.id, email, full_name || null]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Remove admin from department
+municipalityRouter.delete("/me/departments/:id/admins/:adminId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session!.userId!;
+    const mun = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
+    if (!mun) return res.status(404).json({ error: "Not found" });
+
+    await execute(
+      `DELETE mda FROM municipality_department_admins mda
+       JOIN municipality_departments d ON d.id = mda.department_id
+       WHERE mda.id = ? AND d.municipality_id = ?`,
+      [req.params.adminId, mun.id]
+    );
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
 municipalityRouter.get("/admin/list", requireAuth, requireAdmin, async (req, res) => {
