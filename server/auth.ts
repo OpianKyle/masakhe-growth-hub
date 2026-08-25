@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, Router } from "express";
 import { queryOne, execute } from "./db";
-import { randomUUID, randomBytes } from "crypto";
+import { randomUUID, randomBytes, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 import {
   sendWelcomeEmail,
@@ -26,6 +26,37 @@ import { fireSignupWebhook } from "./webhooks";
  */
 export function getDataOwnerId(req: Request): string {
   return (req.session as any).actingAsOwnerId || req.session.userId!;
+}
+
+const OTP_EXPIRY_MINUTES = 10;
+const OTP_MAX_ATTEMPTS = 5;
+
+function phoneHint(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length >= 4 ? `•••• ••• ${digits.slice(-4)}` : "your registered phone";
+}
+
+async function beginPhoneVerification(req: Request, user: any) {
+  const phone = user.phone || user.bp_phone;
+  if (!phone) return { ok: false, error: "A phone number is required for 2-step verification. Please contact support to add one to your account." };
+
+  const code = String(randomInt(100000, 1000000));
+  const codeHash = await bcrypt.hash(code, 10);
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  await execute("UPDATE auth_phone_otps SET used = 1 WHERE user_id = ? AND used = 0", [user.id]);
+  await execute(
+    `INSERT INTO auth_phone_otps (id, user_id, code_hash, expires_at, attempts, used, created_at)
+     VALUES (?, ?, ?, ?, 0, 0, NOW())`,
+    [randomUUID(), user.id, codeHash, expiresAt]
+  );
+
+  req.session.userId = undefined;
+  req.session.actingAsOwnerId = undefined;
+  req.session.pending2FAUserId = user.id;
+  req.session.pending2FAIssuedAt = Date.now();
+  await new Promise<void>((resolve, reject) => req.session.save((err) => err ? reject(err) : resolve()));
+  await sendOtpSMS(phone, code);
+  return { ok: false, requiresOtp: true, phoneHint: phoneHint(phone) };
 }
 
 /** True if the logged-in user is acting as a team member of someone else's business. */
@@ -62,6 +93,8 @@ declare module "express-session" {
     userId?: string;
     originalAdminId?: string;
     actingAsOwnerId?: string | null;
+    pending2FAUserId?: string;
+    pending2FAIssuedAt?: number;
   }
 }
 
@@ -87,8 +120,8 @@ authRouter.post("/register", async (req, res) => {
   try {
     const { email, password, fullName, businessData, referralCode, franchiseCode, municipalityCode } = req.body;
 
-    if (!email || !password || !fullName) {
-      return res.status(400).json({ error: "Email, password, and full name are required" });
+    if (!email || !password || !fullName || !businessData?.phone) {
+      return res.status(400).json({ error: "Email, password, full name, and phone number are required" });
     }
 
     const existing = await queryOne("SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
@@ -212,8 +245,10 @@ authRouter.post("/register", async (req, res) => {
       }
     }
 
-    req.session.userId = userId;
-    req.session.actingAsOwnerId = null;
+    // Registration also starts an authenticated session, so it must pass
+    // through the same mandatory phone challenge as a normal login.
+    const verification = await beginPhoneVerification(req, { id: userId, phone });
+    if (!verification.ok) return res.status(400).json({ error: verification.error });
     req.session.save(async () => {
       // Wrap entire callback so a thrown error never leaves res unsent
       let user: any = null;
@@ -340,7 +375,7 @@ authRouter.post("/register", async (req, res) => {
       }
 
       try {
-        res.json({ ok: true, user: { ...(user || {}), is_nexo_client, nexo_franchise_code } });
+        res.json({ ok: true, requiresOtp: true, phoneHint: phoneHint(phone) });
       } catch (e: any) {
         console.error("[Auth] res.json error:", e.message);
       }
@@ -423,6 +458,9 @@ authRouter.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
+    const verification = await beginPhoneVerification(req, user);
+    if (!verification.ok) return res.json(verification);
+
     req.session.userId = user.id;
     const ctx = await loadActingContext(user.id);
     req.session.actingAsOwnerId = ctx.actingAsOwnerId;
@@ -479,6 +517,68 @@ authRouter.post("/login", async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Login failed" });
+  }
+});
+
+authRouter.get("/otp/status", async (req, res) => {
+  if (!req.session.pending2FAUserId) return res.status(400).json({ error: "No verification is in progress" });
+  const user = await queryOne("SELECT phone FROM users WHERE id = ?", [req.session.pending2FAUserId]);
+  if (!user?.phone) return res.status(400).json({ error: "No phone number is registered for this account" });
+  res.json({ ok: true, phoneHint: phoneHint(user.phone), expiresInMinutes: OTP_EXPIRY_MINUTES });
+});
+
+authRouter.post("/otp/verify", async (req, res) => {
+  try {
+    const userId = req.session.pending2FAUserId;
+    const code = String(req.body.code || "").replace(/\D/g, "");
+    if (!userId) return res.status(400).json({ error: "No verification is in progress. Please sign in again." });
+    if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: "Enter the 6-digit verification code." });
+
+    const otp = await queryOne(
+      `SELECT * FROM auth_phone_otps
+       WHERE user_id = ? AND used = 0 AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    if (!otp) return res.status(400).json({ error: "That code has expired. Please request a new one." });
+    if (Number(otp.attempts) >= OTP_MAX_ATTEMPTS) {
+      return res.status(429).json({ error: "Too many incorrect attempts. Please request a new code." });
+    }
+
+    await execute("UPDATE auth_phone_otps SET attempts = attempts + 1 WHERE id = ?", [otp.id]);
+    if (!(await bcrypt.compare(code, otp.code_hash))) {
+      const remaining = OTP_MAX_ATTEMPTS - Number(otp.attempts) - 1;
+      return res.status(401).json({ error: `Incorrect code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.` });
+    }
+
+    await execute("UPDATE auth_phone_otps SET used = 1 WHERE id = ?", [otp.id]);
+    const ctx = await loadActingContext(userId);
+    req.session.userId = userId;
+    req.session.actingAsOwnerId = ctx.actingAsOwnerId;
+    req.session.pending2FAUserId = undefined;
+    req.session.pending2FAIssuedAt = undefined;
+    await new Promise<void>((resolve, reject) => req.session.save((err) => err ? reject(err) : resolve()));
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Verification failed" });
+  }
+});
+
+authRouter.post("/otp/resend", async (req, res) => {
+  try {
+    const userId = req.session.pending2FAUserId;
+    if (!userId) return res.status(400).json({ error: "No verification is in progress. Please sign in again." });
+    const user = await queryOne("SELECT id, phone FROM users WHERE id = ?", [userId]);
+    if (!user?.phone) return res.status(400).json({ error: "No phone number is registered for this account." });
+    const recent = await queryOne(
+      "SELECT id FROM auth_phone_otps WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 60 SECOND) LIMIT 1",
+      [userId]
+    );
+    if (recent) return res.status(429).json({ error: "Please wait a minute before requesting another code." });
+    const result = await beginPhoneVerification(req, user);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: "Could not send a new verification code." });
   }
 });
 
@@ -682,11 +782,12 @@ authRouter.post("/setup-password", async (req, res) => {
     // Mark workspace_members row as no longer pending invite.
     await execute("UPDATE workspace_members SET invite_pending = 0 WHERE user_id = ?", [t.user_id]);
 
-    // Log them in.
-    req.session.userId = t.user_id;
-    const ctx = await loadActingContext(t.user_id);
-    req.session.actingAsOwnerId = ctx.actingAsOwnerId;
-    req.session.save(() => res.json({ ok: true }));
+    // A newly invited member must also complete phone verification before
+    // receiving an authenticated session.
+    const invitedUser = await queryOne("SELECT * FROM users WHERE id = ?", [t.user_id]);
+    const verification = await beginPhoneVerification(req, invitedUser);
+    if (!verification.ok) return res.json(verification);
+    res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to set password" });
   }
@@ -773,8 +874,11 @@ authRouter.get("/google/callback", async (req, res) => {
       user = { id: userId, _isNew: true };
     }
 
-    req.session.userId = user.id;
+    const googleUser = await queryOne("SELECT * FROM users WHERE id = ?", [user.id]);
+    const verification = await beginPhoneVerification(req, googleUser);
+    if (!verification.ok) return res.redirect("/verify-otp");
     const ctx = await loadActingContext(user.id);
+    req.session.userId = user.id;
     req.session.actingAsOwnerId = ctx.actingAsOwnerId;
     const redirectTo = (user as any)._isNew ? "/dashboard/billing?welcome=1" : "/dashboard";
     req.session.save(() => res.redirect(redirectTo));

@@ -1155,6 +1155,20 @@ export async function runMigrations() {
     await addColumnIfMissing("users", "email_verified", "TINYINT(1) NOT NULL DEFAULT 0");
 
     await conn.query(`
+      CREATE TABLE IF NOT EXISTS auth_phone_otps (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        code_hash VARCHAR(255) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        used TINYINT(1) NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_auth_otp_user (user_id),
+        KEY idx_auth_otp_expiry (expires_at)
+      ) ENGINE=InnoDB
+    `);
+
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS email_verifications (
         id VARCHAR(36) PRIMARY KEY,
         user_id VARCHAR(36) NOT NULL,

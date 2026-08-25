@@ -46,6 +46,8 @@ interface AuthContextType {
   isImpersonating: boolean;
   originalAdminName: string | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; isReseller?: boolean; isAdmin?: boolean; isFranchise?: boolean; isMunicipality?: boolean }>;
+  verifyOtp: (code: string) => Promise<{ ok: boolean; error?: string }>;
+  resendOtp: () => Promise<{ ok: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -110,7 +112,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isMunicipality = data.user.business_status === "municipality";
         return { ok: true, isReseller, isAdmin, isFranchise, isMunicipality };
       }
+      if (data.requiresOtp) {
+        window.location.assign("/verify-otp");
+        return { ok: false, error: "Verification code sent to your phone." };
+      }
       return { ok: false, error: data.error || "Login failed" };
+    } catch {
+      return { ok: false, error: "Network error" };
+    }
+  };
+
+  const verifyOtp = async (code: string) => {
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return { ok: false, error: data.error || "Verification failed" };
+      await refreshUser();
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Network error" };
+    }
+  };
+
+  const resendOtp = async () => {
+    try {
+      const res = await fetch("/api/auth/otp/resend", { method: "POST", credentials: "include" });
+      const data = await res.json();
+      return res.ok && data.ok ? { ok: true } : { ok: false, error: data.error || "Could not resend code" };
     } catch {
       return { ok: false, error: "Network error" };
     }
@@ -125,6 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(regData),
       });
       const data = await res.json();
+      if (data.requiresOtp) {
+        window.location.assign("/verify-otp");
+        return { ok: true };
+      }
       if (res.ok && data.ok) {
         setUser(data.user);
         return { ok: true };
@@ -150,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isImpersonating, originalAdminName, login, register, logout, refreshUser, stopImpersonating }}>
+    <AuthContext.Provider value={{ user, loading, isImpersonating, originalAdminName, login, verifyOtp, resendOtp, register, logout, refreshUser, stopImpersonating }}>
       {children}
     </AuthContext.Provider>
   );

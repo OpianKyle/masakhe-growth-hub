@@ -69,6 +69,10 @@ export default function SetPasswordPage() {
         body: JSON.stringify({ token, password }),
       });
       const data = await res.json();
+      if (data.requiresOtp) {
+        window.location.href = "/verify-otp";
+        return;
+      }
       if (data.ok) {
         setSuccess(true);
         const redirectTo = portal ? `/${portal}` : "/dashboard";

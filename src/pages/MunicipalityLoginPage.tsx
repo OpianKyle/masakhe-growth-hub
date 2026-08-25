@@ -36,6 +36,10 @@ export default function MunicipalityLoginPage() {
         body: JSON.stringify({ email: form.email, password: form.password }),
       });
       const data = await res.json().catch(() => ({}));
+      if (data.requiresOtp) {
+        navigate("/verify-otp");
+        return;
+      }
       if (!res.ok) {
         toast.error(data.error || "Invalid email or password");
         setLoading(false);

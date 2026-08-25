@@ -26,6 +26,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SetPasswordPage from "./pages/SetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import VerifyOtpPage from "./pages/VerifyOtpPage";
 import PayInvoice from "./pages/PayInvoice";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
@@ -146,6 +147,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/verify-otp" element={<VerifyOtpPage />} />
               <Route path="/meta-deletion-status" element={<MetaDeletionStatusPage />} />
               <Route path="/pay/:token" element={<PayInvoice />} />
               <Route path="*" element={<NotFound />} />
