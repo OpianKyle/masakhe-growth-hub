@@ -18,6 +18,7 @@ import MunicipalityPortal from "./pages/MunicipalityPortal";
 import MunicipalityRegisterPage from "./pages/MunicipalityRegisterPage";
 import MunicipalityLandingPage from "./pages/MunicipalityLandingPage";
 import MunicipalityLoginPage from "./pages/MunicipalityLoginPage";
+import MunicipalityTrialPage from "./pages/MunicipalityTrialPage";
 import PublishedSite from "./pages/PublishedSite";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
 import PricingPage from "./pages/PricingPage";
@@ -138,6 +139,7 @@ const App = () => (
               <Route path="/municipality" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
 
               <Route path="/municipality/register" element={<MunicipalityRegisterPage />} />
+              <Route path="/municipality/welcome" element={<ProtectedRoute><MunicipalityTrialPage /></ProtectedRoute>} />
               <Route path="/municipality/portal" element={<MunicipalityRoute><MunicipalityPortal /></MunicipalityRoute>} />
               <Route path="/site/:slug" element={<PublishedSite />} />
               <Route path="/site/:slug/vehicle/:vehicleId" element={<VehicleDetailPage />} />

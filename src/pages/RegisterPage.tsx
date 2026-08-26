@@ -119,8 +119,8 @@ export default function RegisterPage() {
 
     if (result.ok) {
       if (municipalityCode) {
-        // Trial already activated by municipality — skip billing, go straight to onboarding
-        navigate(`/dashboard?onboarding=1&municipality=${encodeURIComponent(municipalityCode)}`);
+        // Municipality-linked businesses receive a dedicated welcome screen before entering the workspace.
+        navigate(`/municipality/welcome?municipality=${encodeURIComponent(municipalityCode)}`);
       } else {
         navigate(
           promoCode

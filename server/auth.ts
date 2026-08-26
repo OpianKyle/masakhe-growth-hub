@@ -151,10 +151,8 @@ authRouter.post("/register", async (req, res) => {
       [randomUUID(), wsId, userId, "owner", now]
     );
 
-    // Trial subscription is no longer auto-created on registration.
-    // After signup the user is redirected to /dashboard/billing where they
-    // pick a plan and the trial is started against that plan via
-    // POST /api/billing/start-trial.
+    // Standard signups choose a paid plan or apply for a trial from Billing.
+    // Municipality-linked SMMEs are handled below with their programme trial.
 
     if (businessData?.businessStatus === "reseller") {
       await autoRegisterReseller(userId, fullName, referralCode || undefined).catch(() => {});
@@ -300,34 +298,32 @@ authRouter.post("/register", async (req, res) => {
 
         if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
 
-      // Auto-grant 2-week trial for SMMEs linking via a municipality code
+      // Municipality-linked SMMEs receive a 14-day trial before entering the workspace.
       if (municipalityCode) {
-        (async () => {
-          try {
-            await linkSmmeToMunicipality(userId, municipalityCode, businessData?.businessName || fullName);
-            const plan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium' LIMIT 1", []);
-            if (plan) {
-              const trialEnd = new Date();
-              trialEnd.setDate(trialEnd.getDate() + 14);
-              const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
-              const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");
-              const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [wsId]);
-              if (existing) {
-                await execute(
-                  "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
-                  [plan.id, nowStr, trialEndStr, existing.id]
-                );
-              } else {
-                await execute(
-                  "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
-                  [wsId, plan.id, nowStr, trialEndStr]
-                );
-              }
+        try {
+          await linkSmmeToMunicipality(userId, municipalityCode, businessData?.businessName || fullName);
+          const plan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium' LIMIT 1", []);
+          if (plan) {
+            const trialEnd = new Date();
+            trialEnd.setDate(trialEnd.getDate() + 14);
+            const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
+            const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");
+            const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [wsId]);
+            if (existing) {
+              await execute(
+                "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
+                [plan.id, nowStr, trialEndStr, existing.id]
+              );
+            } else {
+              await execute(
+                "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
+                [wsId, plan.id, nowStr, trialEndStr]
+              );
             }
-          } catch (e: any) {
-            console.error("[Auth] Municipality trial grant error:", e.message);
           }
-        })();
+        } catch (e: any) {
+          console.error("[Auth] Municipality trial grant error:", e.message);
+        }
       }
 
       // Detect Nexo client flag directly from nexo_code stamped on the user record
