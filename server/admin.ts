@@ -148,7 +148,7 @@ export async function runAdminMigrations() {
       INSERT IGNORE INTO system_emails (type, subject, body_text, from_name, enabled) VALUES (
         'welcome',
         'Welcome to Masakhe Portal',
-        'Dear {{firstName}},\n\nWelcome to Masakhe Portal!\n\nIt''s great news that you''ve joined our platform. I would like to connect with you on a call to understand your needs and how we can further assist in growing your business.\n\nPlease book a free 30-minute onboarding call at a time that suits you:\nhttps://calendly.com/masakhesystems\n\nLooking forward to meeting you!\n\nWith Regards,\nLance Heynes\nCEO, Masakhe Technologies',
+        'Dear {{firstName}},\n\nWelcome to Masakhe Portal!\n\nIt''s great news that you''ve joined our platform. I would like to connect with you on a call to understand your needs and how we can further assist in growing your business.\n\nPlease book a free 30-minute onboarding call at a time that suits you:\nhttps://calendly.com/lance-heynes\n\nLooking forward to meeting you!\n\nWith Regards,\nLance Heynes\nCEO, Masakhe Technologies',
         'Lance Heynes - Masakhe',
         1
       )

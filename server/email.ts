@@ -234,7 +234,7 @@ export async function sendWelcomeEmail(toEmail: string, fullName: string, baseUr
       Please book a free 30-minute onboarding call with me at a time that suits you:
     </p>
 
-    ${ctaButton("Schedule My Onboarding Call", "https://calendly.com/masakhesystems")}
+    ${ctaButton("Schedule My Onboarding Call", "https://calendly.com/lance-heynes")}
 
     <div style="height:32px;"></div>
 
