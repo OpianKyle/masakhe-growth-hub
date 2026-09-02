@@ -30,6 +30,9 @@ export function getDataOwnerId(req: Request): string {
 
 const OTP_EXPIRY_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
+// Keep phone 2FA dormant until an SMS provider is configured. Enable later
+// with PHONE_2FA_ENABLED=true without changing the authentication flow.
+const PHONE_2FA_ENABLED = process.env.PHONE_2FA_ENABLED === "true";
 
 function phoneHint(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -37,6 +40,8 @@ function phoneHint(phone: string): string {
 }
 
 async function beginPhoneVerification(req: Request, user: any) {
+  if (!PHONE_2FA_ENABLED) return { ok: true };
+
   const phone = user.phone || user.bp_phone || user.municipality_phone;
   if (!phone) {
     // Legacy municipality accounts need a controlled way to add their missing
@@ -539,6 +544,7 @@ authRouter.post("/login", async (req, res) => {
 });
 
 authRouter.get("/otp/status", async (req, res) => {
+  if (!PHONE_2FA_ENABLED) return res.status(404).json({ error: "Phone verification is not enabled" });
   if (!req.session.pending2FAUserId) return res.status(400).json({ error: "No verification is in progress" });
   const user = await queryOne("SELECT phone FROM users WHERE id = ?", [req.session.pending2FAUserId]);
   if (!user?.phone) return res.status(400).json({ error: "No phone number is registered for this account" });
@@ -547,6 +553,7 @@ authRouter.get("/otp/status", async (req, res) => {
 
 authRouter.post("/otp/verify", async (req, res) => {
   try {
+    if (!PHONE_2FA_ENABLED) return res.status(404).json({ error: "Phone verification is not enabled" });
     const userId = req.session.pending2FAUserId;
     const code = String(req.body.code || "").replace(/\D/g, "");
     if (!userId) return res.status(400).json({ error: "No verification is in progress. Please sign in again." });
@@ -584,6 +591,7 @@ authRouter.post("/otp/verify", async (req, res) => {
 
 authRouter.post("/otp/resend", async (req, res) => {
   try {
+    if (!PHONE_2FA_ENABLED) return res.status(404).json({ error: "Phone verification is not enabled" });
     const userId = req.session.pending2FAUserId;
     if (!userId) return res.status(400).json({ error: "No verification is in progress. Please sign in again." });
     const user = await queryOne("SELECT id, phone FROM users WHERE id = ?", [userId]);
