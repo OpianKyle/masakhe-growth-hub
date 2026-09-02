@@ -37,8 +37,14 @@ function phoneHint(phone: string): string {
 }
 
 async function beginPhoneVerification(req: Request, user: any) {
-  const phone = user.phone || user.bp_phone;
-  if (!phone) return { ok: false, error: "A phone number is required for 2-step verification. Please contact support to add one to your account." };
+  const phone = user.phone || user.bp_phone || user.municipality_phone;
+  if (!phone) {
+    // Legacy municipality accounts need a controlled way to add their missing
+    // contact details before OTP can be delivered. The portal immediately
+    // shows a blocking contact-details form for these accounts.
+    if (user.business_status === "municipality") return { ok: true, contactSetupRequired: true };
+    return { ok: false, error: "A phone number is required for 2-step verification. Please contact support to add one to your account." };
+  }
 
   const code = String(randomInt(100000, 1000000));
   const codeHash = await bcrypt.hash(code, 10);
@@ -56,7 +62,12 @@ async function beginPhoneVerification(req: Request, user: any) {
   req.session.pending2FAIssuedAt = Date.now();
   await new Promise<void>((resolve, reject) => req.session.save((err) => err ? reject(err) : resolve()));
   await sendOtpSMS(phone, code);
-  return { ok: false, requiresOtp: true, phoneHint: phoneHint(phone) };
+  return {
+    ok: false,
+    requiresOtp: true,
+    phoneHint: phoneHint(phone),
+    nextPath: user.business_status === "municipality" ? "/municipality/portal" : "/dashboard",
+  };
 }
 
 /** True if the logged-in user is acting as a team member of someone else's business. */
@@ -120,8 +131,8 @@ authRouter.post("/register", async (req, res) => {
   try {
     const { email, password, fullName, businessData, referralCode, franchiseCode, municipalityCode } = req.body;
 
-    if (!email || !password || !fullName || !businessData?.phone) {
-      return res.status(400).json({ error: "Email, password, full name, and phone number are required" });
+    if (!email || !password || !fullName || !businessData?.phone || !businessData?.whatsapp) {
+      return res.status(400).json({ error: "Email, password, full name, phone number, and WhatsApp number are required" });
     }
 
     const existing = await queryOne("SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
@@ -448,7 +459,14 @@ authRouter.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const user = await queryOne("SELECT * FROM users WHERE email = ?", [email.toLowerCase()]);
+    const user = await queryOne(
+      `SELECT u.*, bp.business_status, m.contact_phone AS municipality_phone
+       FROM users u
+       LEFT JOIN business_profiles bp ON bp.user_id = u.id
+       LEFT JOIN municipalities m ON m.user_id = u.id
+       WHERE u.email = ?`,
+      [email.toLowerCase()]
+    );
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }

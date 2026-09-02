@@ -293,6 +293,10 @@ export default function ClientsPage() {
       toast({ title: formData.client_type === "business" ? "Contact person name is required" : "Full name is required", variant: "destructive" });
       return;
     }
+    if (!formData.phone?.trim() || !formData.whatsapp?.trim()) {
+      toast({ title: "Phone number and WhatsApp number are required", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const payload = { ...formData, monthly_income: formData.monthly_income_cents || formData.monthly_income };
@@ -1175,11 +1179,11 @@ export default function ClientsPage() {
                       <Input type="email" value={formData.email || ""} onChange={(e) => setFormData((p: any) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Phone</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Phone *</label>
                       <Input value={formData.phone || ""} onChange={(e) => setFormData((p: any) => ({ ...p, phone: e.target.value }))} placeholder="+27 82 000 0000" />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">WhatsApp</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">WhatsApp *</label>
                       <Input value={formData.whatsapp || ""} onChange={(e) => setFormData((p: any) => ({ ...p, whatsapp: e.target.value }))} placeholder="+27 82 000 0000" />
                     </div>
                     <div className="sm:col-span-2">
@@ -1275,11 +1279,11 @@ export default function ClientsPage() {
                       <Input type="email" value={formData.business_email || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_email: e.target.value }))} placeholder="info@business.co.za" />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Business Phone</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business Phone *</label>
                       <Input value={formData.business_phone || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_phone: e.target.value }))} placeholder="+27 11 000 0000" />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Business WhatsApp</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Business WhatsApp *</label>
                       <Input value={formData.business_whatsapp || ""} onChange={(e) => setFormData((p: any) => ({ ...p, business_whatsapp: e.target.value }))} placeholder="+27 82 000 0000" />
                     </div>
                     <div>

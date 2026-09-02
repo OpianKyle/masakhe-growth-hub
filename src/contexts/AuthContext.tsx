@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: true, isReseller, isAdmin, isFranchise, isMunicipality };
       }
       if (data.requiresOtp) {
-        window.location.assign("/verify-otp");
+        window.location.assign(`/verify-otp${data.nextPath ? `?next=${encodeURIComponent(data.nextPath)}` : ""}`);
         return { ok: false, error: "Verification code sent to your phone." };
       }
       return { ok: false, error: data.error || "Login failed" };

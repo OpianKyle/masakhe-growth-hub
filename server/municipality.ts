@@ -20,6 +20,7 @@ export async function runMunicipalityMigrations() {
       contact_person VARCHAR(150) NULL,
       contact_email VARCHAR(255) NULL,
       contact_phone VARCHAR(30) NULL,
+      contact_whatsapp VARCHAR(30) NULL,
       status ENUM('pending','active','suspended') DEFAULT 'pending',
       total_smmEs INT DEFAULT 0,
       notes TEXT NULL,
@@ -27,6 +28,8 @@ export async function runMunicipalityMigrations() {
       approved_at TIMESTAMP NULL
     )
   `, []).catch(() => {});
+
+  await execute(`ALTER TABLE municipalities ADD COLUMN IF NOT EXISTS contact_whatsapp VARCHAR(30) NULL`, []).catch(() => {});
 
   await execute(`
     CREATE TABLE IF NOT EXISTS municipality_smmEs (
@@ -128,23 +131,27 @@ municipalityRouter.get("/check/:code", async (req, res) => {
 });
 
 // ─── Register / join ──────────────────────────────────────────────────────────
-municipalityRouter.post("/join", requireAuth, async (req, res) => {
+municipalityRouter.post("/join", async (req, res) => {
   try {
-    const userId = req.session!.userId!;
+    const userId = req.session?.userId || req.session?.pending2FAUserId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const existing = await queryOne("SELECT id FROM municipalities WHERE user_id = ?", [userId]);
     if (existing) return res.status(400).json({ error: "Already registered as a municipality" });
 
-    const { municipality_name, province, district, contact_person, contact_email, contact_phone } = req.body;
+    const { municipality_name, province, district, contact_person, contact_email, contact_phone, contact_whatsapp } = req.body;
     if (!municipality_name) return res.status(400).json({ error: "Municipality name is required" });
+    if (!contact_phone?.trim() || !contact_whatsapp?.trim()) {
+      return res.status(400).json({ error: "Phone number and WhatsApp number are required" });
+    }
 
     const code = generateMunicipalityCode(municipality_name);
     const id = randomUUID();
     const now = new Date().toISOString();
 
     await execute(
-      `INSERT INTO municipalities (id, user_id, municipality_name, municipality_code, province, district, contact_person, contact_email, contact_phone, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-      [id, userId, municipality_name, code, province || null, district || null, contact_person || null, contact_email || null, contact_phone || null, now]
+      `INSERT INTO municipalities (id, user_id, municipality_name, municipality_code, province, district, contact_person, contact_email, contact_phone, contact_whatsapp, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+      [id, userId, municipality_name, code, province || null, district || null, contact_person || null, contact_email || null, contact_phone, contact_whatsapp, now]
     );
 
     res.json({ ok: true, code, id });
@@ -299,11 +306,15 @@ municipalityRouter.get("/my-tickets", requireAuth, async (req, res) => {
 municipalityRouter.put("/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session!.userId!;
-    const { municipality_name, province, district, contact_person, contact_email, contact_phone, notes } = req.body;
+    const { municipality_name, province, district, contact_person, contact_email, contact_phone, contact_whatsapp, notes } = req.body;
+    if (!contact_phone?.trim() || !contact_whatsapp?.trim()) {
+      return res.status(400).json({ error: "Phone number and WhatsApp number are required" });
+    }
     await execute(
-      `UPDATE municipalities SET municipality_name=?, province=?, district=?, contact_person=?, contact_email=?, contact_phone=?, notes=? WHERE user_id=?`,
-      [municipality_name, province || null, district || null, contact_person || null, contact_email || null, contact_phone || null, notes || null, userId]
+      `UPDATE municipalities SET municipality_name=?, province=?, district=?, contact_person=?, contact_email=?, contact_phone=?, contact_whatsapp=?, notes=? WHERE user_id=?`,
+      [municipality_name, province || null, district || null, contact_person || null, contact_email || null, contact_phone, contact_whatsapp, notes || null, userId]
     );
+    await execute("UPDATE users SET phone = ?, updated_at = ? WHERE id = ?", [contact_phone, new Date().toISOString(), userId]);
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

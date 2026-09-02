@@ -323,6 +323,9 @@ clientsRouter.post("/", requireAuth, async (req, res) => {
       business_website, business_email, business_phone, business_whatsapp, business_address,
     } = req.body;
     if (!full_name) return res.status(400).json({ error: client_type === "business" ? "Contact person name is required" : "Full name is required" });
+    if (client_type === "business" ? (!business_phone?.trim() || !business_whatsapp?.trim()) : (!phone?.trim() || !whatsapp?.trim())) {
+      return res.status(400).json({ error: client_type === "business" ? "Business phone and WhatsApp numbers are required" : "Phone number and WhatsApp number are required" });
+    }
 
     const id = randomUUID();
     await execute(
@@ -368,6 +371,9 @@ clientsRouter.put("/:id", requireAuth, async (req, res) => {
       business_name, business_registration, vat_number, business_type,
       business_website, business_email, business_phone, business_whatsapp, business_address,
     } = req.body;
+    if (client_type === "business" ? (!business_phone?.trim() || !business_whatsapp?.trim()) : (!phone?.trim() || !whatsapp?.trim())) {
+      return res.status(400).json({ error: client_type === "business" ? "Business phone and WhatsApp numbers are required" : "Phone number and WhatsApp number are required" });
+    }
 
     await execute(
       `UPDATE broker_clients SET

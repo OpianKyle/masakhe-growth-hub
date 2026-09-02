@@ -416,10 +416,10 @@ export default function SettingsPage() {
               <FieldGroup icon={Building2} label="Trading Name">
                 <Input value={form.tradingName} onChange={e => handleChange("tradingName", e.target.value)} placeholder="Trading as..." />
               </FieldGroup>
-              <FieldGroup icon={Phone} label="Phone">
+              <FieldGroup icon={Phone} label="Phone *">
                 <Input value={form.phone} onChange={e => handleChange("phone", e.target.value)} placeholder="+27..." />
               </FieldGroup>
-              <FieldGroup icon={Phone} label="WhatsApp">
+              <FieldGroup icon={Phone} label="WhatsApp *">
                 <Input value={form.whatsapp} onChange={e => handleChange("whatsapp", e.target.value)} placeholder="+27..." />
               </FieldGroup>
               <FieldGroup icon={Mail} label="Business Email">

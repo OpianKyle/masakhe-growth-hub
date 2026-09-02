@@ -41,11 +41,16 @@ profileRouter.put("/", requireOwner, async (req, res) => {
             bankName, accountName, accountType, accountNumber, branchCode, saId, cipcNumber,
             registrationNumber, vatNumber, invoiceColor } = req.body;
 
+    if (!phone?.trim() || !whatsapp?.trim()) {
+      return res.status(400).json({ error: "Phone number and WhatsApp number are required." });
+    }
+
     // Never allow the profile form to set business_status to 'reseller' —
     // partner status is managed exclusively via the reseller join flow.
     const safeBusinessStatus = businessStatus === 'reseller' ? null : (businessStatus || null);
 
     const now = new Date().toISOString();
+    await execute("UPDATE users SET phone = ?, updated_at = ? WHERE id = ?", [phone.trim(), now, userId]);
 
     if (fullName) {
       await execute("UPDATE users SET full_name = ?, updated_at = ? WHERE id = ?", [fullName, now, userId]);

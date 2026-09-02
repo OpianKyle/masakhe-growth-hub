@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,14 @@ import { toast } from "sonner";
 export default function VerifyOtpPage() {
   const { user, verifyOtp, resendOtp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [code, setCode] = useState("");
   const [phoneHint, setPhoneHint] = useState("your registered phone");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
+    if (user) navigate(searchParams.get("next") || "/dashboard", { replace: true });
     fetch("/api/auth/otp/status", { credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
@@ -27,7 +28,7 @@ export default function VerifyOtpPage() {
         toast.error(err.message || "Please sign in again.");
         navigate("/login", { replace: true });
       });
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -37,7 +38,7 @@ export default function VerifyOtpPage() {
     setLoading(false);
     if (result.ok) {
       toast.success("Phone verified. Welcome back!");
-      navigate("/dashboard", { replace: true });
+      navigate(searchParams.get("next") || "/dashboard", { replace: true });
     } else {
       toast.error(result.error || "Verification failed");
       setCode("");

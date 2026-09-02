@@ -65,6 +65,7 @@ export default function MunicipalityPortal() {
   const [ticketFilter, setTicketFilter] = useState("all");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<any>({});
+  const [showContactRequirement, setShowContactRequirement] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
   // Departments
@@ -99,8 +100,10 @@ export default function MunicipalityPortal() {
           contact_person: data.contact_person || "",
           contact_email: data.contact_email || "",
           contact_phone: data.contact_phone || "",
+          contact_whatsapp: data.contact_whatsapp || "",
           notes: data.notes || "",
         });
+        setShowContactRequirement(!data.contact_phone || !data.contact_whatsapp);
       }
     } catch {}
     setLoading(false);
@@ -212,12 +215,20 @@ export default function MunicipalityPortal() {
   }
 
   async function saveProfile() {
+    if (!profileForm.contact_phone?.trim() || !profileForm.contact_whatsapp?.trim()) {
+      toast.error("Phone number and WhatsApp number are required");
+      return;
+    }
     setSavingProfile(true);
     const res = await fetch("/api/municipality/me", {
       method: "PUT", headers: { "Content-Type": "application/json" },
       credentials: "include", body: JSON.stringify(profileForm),
     });
-    if (res.ok) { toast.success("Profile saved successfully"); fetchMun(); }
+    if (res.ok) {
+      toast.success("Profile saved successfully");
+      setShowContactRequirement(false);
+      fetchMun();
+    }
     else toast.error("Failed to save");
     setSavingProfile(false);
   }
@@ -445,6 +456,7 @@ export default function MunicipalityPortal() {
                         { icon: User,  val: mun?.contact_person || "Not set",  label: "Contact Person" },
                         { icon: Mail,  val: mun?.contact_email  || "Not set",  label: "Email"          },
                         { icon: Phone, val: mun?.contact_phone  || "Not set",  label: "Phone"          },
+                        { icon: MessageSquare, val: mun?.contact_whatsapp || "Not set", label: "WhatsApp" },
                       ].map(row => (
                         <div key={row.label} className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
                           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -939,8 +951,12 @@ export default function MunicipalityPortal() {
                           <Input className="rounded-xl" type="email" placeholder="office@municipality.gov.za" value={profileForm.contact_email || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_email: e.target.value }))} />
                         </div>
                         <div>
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Phone Number</label>
+                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Phone Number *</label>
                           <Input className="rounded-xl" placeholder="+27 xx xxx xxxx" value={profileForm.contact_phone || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_phone: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">WhatsApp Number *</label>
+                          <Input className="rounded-xl" placeholder="+27 xx xxx xxxx" value={profileForm.contact_whatsapp || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_whatsapp: e.target.value }))} />
                         </div>
                         <div>
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Notes</label>
@@ -1153,6 +1169,37 @@ export default function MunicipalityPortal() {
                   </div>
                 )}
               </div>
+
+              {/* Required contact details modal for legacy municipality accounts */}
+              {showContactRequirement && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+                  <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
+                    <div className="p-6 border-b border-border">
+                      <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center mb-4">
+                        <Phone className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-xl font-bold text-foreground">Add your contact details</h3>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                        A phone number and WhatsApp number are required to keep your municipality account secure and to receive important platform updates.
+                      </p>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Phone Number *</label>
+                        <Input autoFocus className="rounded-xl" placeholder="+27 xx xxx xxxx" value={profileForm.contact_phone || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_phone: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">WhatsApp Number *</label>
+                        <Input className="rounded-xl" placeholder="+27 xx xxx xxxx" value={profileForm.contact_whatsapp || ""} onChange={e => setProfileForm((p: any) => ({ ...p, contact_whatsapp: e.target.value }))} />
+                      </div>
+                      <Button className="w-full h-11 rounded-xl gap-2" onClick={saveProfile} disabled={savingProfile}>
+                        {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Save contact details
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Create / Edit Department Modal */}
               {showDeptModal && (

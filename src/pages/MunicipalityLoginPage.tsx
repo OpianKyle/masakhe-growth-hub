@@ -37,7 +37,7 @@ export default function MunicipalityLoginPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (data.requiresOtp) {
-        navigate("/verify-otp");
+        navigate("/verify-otp?next=%2Fmunicipality%2Fportal");
         return;
       }
       if (!res.ok) {

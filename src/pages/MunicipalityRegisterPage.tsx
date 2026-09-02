@@ -37,7 +37,7 @@ export default function MunicipalityRegisterPage() {
   const [form, setForm] = useState({
     full_name: "", email: "", password: "",
     municipality_name: "", province: "", district: "",
-    contact_person: "", contact_email: "", contact_phone: "",
+    contact_person: "", contact_email: "", contact_phone: "", contact_whatsapp: "",
   });
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -54,6 +54,7 @@ export default function MunicipalityRegisterPage() {
         contact_person: form.contact_person || form.full_name,
         contact_email: form.contact_email || form.email,
         contact_phone: form.contact_phone,
+        contact_whatsapp: form.contact_whatsapp,
       }),
     });
     if (!joinRes.ok) {
@@ -63,8 +64,8 @@ export default function MunicipalityRegisterPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.municipality_name || !form.province) {
-      toast.error("Municipality name and province are required");
+    if (!form.municipality_name || !form.province || !form.contact_phone || !form.contact_whatsapp) {
+      toast.error("Municipality name, province, phone number, and WhatsApp number are required");
       return;
     }
     setSaving(true);
@@ -78,12 +79,22 @@ export default function MunicipalityRegisterPage() {
           fullName: form.full_name,
           email: form.email,
           password: form.password,
-          businessData: { businessStatus: "municipality" },
+          businessData: {
+            businessStatus: "municipality",
+            phone: form.contact_phone,
+            whatsapp: form.contact_whatsapp,
+          },
         }),
       });
 
+      const registrationData = await regRes.json().catch(() => ({}));
+      if (registrationData.requiresOtp) {
+        await doJoin();
+        navigate("/verify-otp?next=%2Fmunicipality%2Fportal");
+        return;
+      }
       if (!regRes.ok) {
-        const d = await regRes.json().catch(() => ({}));
+        const d = registrationData;
         const msg: string = d.error || "";
 
         // Account already exists — try logging in so we can still call /join
@@ -94,6 +105,12 @@ export default function MunicipalityRegisterPage() {
             credentials: "include",
             body: JSON.stringify({ email: form.email, password: form.password }),
           });
+          const loginData = await loginRes.json().catch(() => ({}));
+          if (loginData.requiresOtp) {
+            await doJoin();
+            navigate("/verify-otp?next=%2Fmunicipality%2Fportal");
+            return;
+          }
           if (!loginRes.ok) {
             toast.error("An account with this email already exists. Please check your password or sign in separately.");
             setSaving(false);
@@ -335,10 +352,17 @@ export default function MunicipalityRegisterPage() {
                 <Input type="email" placeholder="contact@municipality.gov.za" value={form.contact_email} onChange={e => set("contact_email", e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Contact Phone</Label>
+                <Label className="text-sm font-medium">Contact Phone <span className="text-destructive">*</span></Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input className="pl-9" placeholder="+27 21 000 0000" value={form.contact_phone} onChange={e => set("contact_phone", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">WhatsApp Number <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="+27 82 000 0000" value={form.contact_whatsapp} onChange={e => set("contact_whatsapp", e.target.value)} />
                 </div>
               </div>
 

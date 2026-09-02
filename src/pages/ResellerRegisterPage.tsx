@@ -74,8 +74,8 @@ export default function ResellerRegisterPage() {
         return;
       }
     }
-    if (step === 1 && !form.phone) {
-      toast.error("Please enter your phone number");
+    if (step === 1 && (!form.phone || !form.whatsapp)) {
+      toast.error("Please enter your phone number and WhatsApp number");
       return;
     }
     setStep(s => Math.min(s + 1, STEPS.length - 1));
@@ -101,7 +101,7 @@ export default function ResellerRegisterPage() {
         saId: form.saId,
         cipcNumber: "",
         phone: form.phone,
-        whatsapp: form.whatsapp || form.phone,
+        whatsapp: form.whatsapp,
         email: form.email,
         physicalAddress: form.physicalAddress,
         popiaConsent: false,
@@ -355,7 +355,7 @@ export default function ResellerRegisterPage() {
                           />
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-slate-700">WhatsApp <span className="text-slate-400 font-normal">(optional)</span></Label>
+                          <Label className="text-sm font-medium text-slate-700">WhatsApp <span className="text-red-500">*</span></Label>
                           <Input
                             placeholder="Same as phone?"
                             className="mt-1.5 h-11 bg-slate-50 border-slate-200 focus:bg-white"
