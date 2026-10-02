@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => ({
   appType: "spa",
   plugins: [react(), excludeUploadsPlugin].filter(Boolean),
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@assets": path.resolve(__dirname, "./attached_assets"),
@@ -65,6 +66,11 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/extension-link",
