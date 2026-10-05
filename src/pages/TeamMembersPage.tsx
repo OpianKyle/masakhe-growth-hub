@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Users, UserPlus, Crown, Trash2, Mail, Loader2, AlertCircle, Lock, Sparkles,
+  Users, UserPlus, Trash2, Mail, Loader2,
   Send, Check, ShieldAlert, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -66,26 +65,8 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
 const ALL_PERM_KEYS = PERMISSION_GROUPS.flatMap(g => g.perms.map(p => p.key));
 const DEFAULT_PERMS = ["overview"];
 
-function getMaxSeats(plan: string | null): number {
-  if (plan === "all_modules") return 99;
-  if (plan === "premium") return 4;
-  if (plan === "pro") return 2;
-  if (plan === "starter") return 1;
-  return 0;
-}
-
-function getPlanLabel(plan: string | null): string {
-  if (plan === "all_modules") return "Admin (All Modules)";
-  if (plan === "premium") return "Enterprize Premium";
-  if (plan === "pro") return "Enterprize Plus";
-  if (plan === "starter") return "Enterprize";
-  return "your current plan";
-}
-
 export default function TeamMembersPage() {
   const { user } = useAuth();
-  const [planCode, setPlanCode] = useState<string | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,28 +83,14 @@ export default function TeamMembersPage() {
   const [editingEmail, setEditingEmail] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const isAdmin = user?.role === "admin";
-  const MAX_SEATS = getMaxSeats(planCode);
   const seatsUsed = members.filter(m => m.role !== "owner").length;
-  const seatsRemaining = Math.max(0, MAX_SEATS - seatsUsed);
-  const isPremium = planCode === "premium" || planCode === "all_modules";
-  const hasTeamAccess = isAdmin || !!(planCode === "starter" || planCode === "pro" || planCode === "premium" || planCode === "all_modules");
 
   useEffect(() => {
-    fetch("/api/billing/status", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setPlanCode(d?.plan || null))
-      .catch(() => setPlanCode(null))
-      .finally(() => setPlanLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (!hasTeamAccess) return;
     fetch("/api/social/workspaces/mine", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setWorkspaceId(d.defaultId || null))
       .catch(() => setWorkspaceId(null));
-  }, [hasTeamAccess]);
+  }, []);
 
   const loadMembers = () => {
     if (!workspaceId) { setLoading(false); return; }
@@ -150,7 +117,6 @@ export default function TeamMembersPage() {
     if (!workspaceId) return;
     if (!inviteName.trim()) { toast.error("Please enter the team member's name."); return; }
     if (!inviteEmail.trim()) { toast.error("Please enter an email address."); return; }
-    if (seatsRemaining <= 0) { toast.error(`Your plan supports up to ${MAX_SEATS} team members.`); return; }
     setInviting(true);
     try {
       const res = await fetch(`/api/social/workspaces/${workspaceId}/members`, {
@@ -246,56 +212,11 @@ export default function TeamMembersPage() {
     }
   };
 
-  if (planLoading) {
-    return (
-      <div className="p-8 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!hasTeamAccess) {
-    return (
-      <div className="p-4 md:p-8 max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-gradient-to-br from-amber-500/10 via-card to-card p-8 shadow-card text-center space-y-4"
-        >
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-amber-500/15 flex items-center justify-center">
-            <Lock className="h-8 w-8 text-amber-600" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground">
-            User Accounts requires an active subscription
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-            Subscribe to any Masakhe plan to start adding user accounts.
-            <br />
-            <span className="font-semibold text-foreground">Enterprize</span> — 2 users (incl. owner) &nbsp;·&nbsp;
-            <span className="font-semibold text-foreground">Enterprize Plus</span> — 3 users (incl. owner) &nbsp;·&nbsp;
-            <span className="font-semibold text-foreground">Enterprize Premium</span> — 5 users (incl. owner)
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-            <Link to="/dashboard/billing">
-              <Button className="gradient-gold text-sa-black font-semibold">
-                <Sparkles className="h-4 w-4 mr-2" />
-                View Plans
-              </Button>
-            </Link>
-            <Link to="/pricing">
-              <Button variant="outline">Compare Plans</Button>
-            </Link>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   const renderPermPicker = (perms: string[], setPerms: (p: string[]) => void) => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Tick the dashboard sections this user can access. Billing, Settings and User Accounts stay owner-only.
+          Choose which dashboard sections this user can access. Settings and User Accounts stay owner-only.
         </p>
         <div className="flex gap-1">
           <Button type="button" size="sm" variant="ghost" className="text-xs h-7" onClick={() => setPermsAll(setPerms, true)}>Select all</Button>
@@ -341,17 +262,17 @@ export default function TeamMembersPage() {
             User Accounts
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Add up to {MAX_SEATS} additional user account{MAX_SEATS !== 1 ? "s" : ""} on your {getPlanLabel(planCode)} plan and choose exactly which sections they can access.
+            Add team members at no cost and choose exactly which sections they can access.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="text-xs text-muted-foreground">User accounts</div>
-            <div className="text-lg font-bold font-heading text-foreground">{seatsUsed} / {MAX_SEATS}</div>
+            <div className="text-lg font-bold font-heading text-foreground">{seatsUsed} accounts</div>
           </div>
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
-              <Button disabled={seatsRemaining <= 0}>
+              <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add User Account
               </Button>
@@ -399,13 +320,6 @@ export default function TeamMembersPage() {
           </Dialog>
         </div>
       </motion.div>
-
-      {seatsRemaining === 0 && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2 text-sm text-amber-800">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          You've reached the {MAX_SEATS}-user-account limit on {getPlanLabel(planCode)}. Remove a user to free up a slot.
-        </div>
-      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -548,7 +462,7 @@ export default function TeamMembersPage() {
         <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
           <li>You create the account; they receive an email invite to set their own password (link expires in 7 days).</li>
           <li>Team members log in with their own email and password — they only see the sections you tick for them.</li>
-          <li>Billing, Settings and Team Members are always owner-only and never visible to team members.</li>
+          <li>Settings and Team Members are always owner-only and never visible to team members.</li>
           <li>You can update permissions at any time. Removing a member also deletes their account.</li>
         </ul>
       </motion.div>

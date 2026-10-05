@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowRight, ArrowLeft, LayoutDashboard, Globe, Wallet, Receipt, ClipboardCheck, Smartphone, CreditCard, Settings } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, LayoutDashboard, Globe, Wallet, Receipt, ClipboardCheck, Smartphone, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "masakhe_walkthrough_done";
@@ -49,15 +49,8 @@ const steps = [
     color: "bg-purple-600",
   },
   {
-    title: "Billing & Subscription",
-    description: "Manage your subscription here. Set up your debit order to keep access to all features after your trial ends.",
-    icon: CreditCard,
-    path: "/dashboard/billing",
-    color: "bg-sa-red",
-  },
-  {
     title: "You're all set!",
-    description: "You now know your way around Masakhe. Your trial is active — explore everything at no cost and subscribe to keep access.",
+    description: "You now know your way around Masakhe. All features are free to use — explore the tools and set up your business.",
     icon: Settings,
     path: "/dashboard",
     color: "bg-primary",

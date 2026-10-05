@@ -22,19 +22,10 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get("ref") || undefined;
-  const promoCode = searchParams.get("promo") || undefined;
   const franchiseCode = searchParams.get("franchise") || undefined;
   const municipalityCode = searchParams.get("municipality") || undefined;
   const source = searchParams.get("source") || undefined;
   const fromEmail = source === "email" || source === "masakhemail";
-
-  // Stash a promo code from the URL (e.g. coming from a marketing-site popup)
-  // so we can re-apply it on the billing page after sign-up.
-  React.useEffect(() => {
-    if (promoCode) {
-      try { sessionStorage.setItem("masakhe.promoCode", promoCode); } catch {}
-    }
-  }, [promoCode]);
 
   React.useEffect(() => {
     const err = searchParams.get("error");
@@ -122,11 +113,7 @@ export default function RegisterPage() {
         // Municipality-linked businesses receive a dedicated welcome screen before entering the workspace.
         navigate(`/municipality/welcome?municipality=${encodeURIComponent(municipalityCode)}`);
       } else {
-        navigate(
-          promoCode
-            ? `/dashboard/billing?welcome=1&promo=${encodeURIComponent(promoCode)}`
-            : "/dashboard/billing?welcome=1"
-        );
+        navigate("/dashboard");
       }
     } else {
       toast.error(result.error || "Registration failed");
@@ -135,7 +122,6 @@ export default function RegisterPage() {
 
   const googleQs = [
     referralCode ? `ref=${encodeURIComponent(referralCode)}` : "",
-    promoCode ? `promo=${encodeURIComponent(promoCode)}` : "",
   ].filter(Boolean).join("&");
   const googleHref = `/api/auth/google${googleQs ? `?${googleQs}` : ""}`;
 
@@ -192,9 +178,9 @@ export default function RegisterPage() {
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
             <p className="text-white/80 text-sm leading-relaxed mb-2">
-              Start with a <span className="text-white font-semibold">7-day free trial</span> — no credit card required.
+              Get full access to every Masakhe tool for free.
             </p>
-            <p className="text-white/45 text-xs">Plans from R599/month after your trial.</p>
+            <p className="text-white/45 text-xs">No subscription or payment required.</p>
           </div>
         </div>
 
@@ -247,7 +233,7 @@ export default function RegisterPage() {
                   </p>
                   <p className="text-xs text-cyan-700 mt-0.5 flex items-center gap-1">
                     <MapPin className="h-3 w-3 shrink-0" />
-                    {municipalityInfo.province} · Your 14-day free trial is included — no credit card needed.
+                    {municipalityInfo.province} · Full Masakhe access is free.
                   </p>
                 </div>
               </div>
@@ -290,7 +276,7 @@ export default function RegisterPage() {
 
             <div className="mb-7">
               <h1 className="text-2xl font-bold text-slate-900 font-heading">Create your account</h1>
-              <p className="text-slate-500 mt-1.5 text-sm">Free 7-day trial — no credit card required.</p>
+              <p className="text-slate-500 mt-1.5 text-sm">Free access to all Masakhe features. No payment required.</p>
             </div>
 
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   MessageCircle, Phone, Send, Clock, ShieldCheck, CheckCircle2,
@@ -19,7 +19,7 @@ function buildWaLink(message: string) {
 
 const quickTopics = [
   { label: "I need help getting started",      msg: "Hi Masakhe Support, I just signed up and need help getting started with my dashboard." },
-  { label: "Billing or subscription question", msg: "Hi Masakhe Support, I have a question about my subscription / billing." },
+  { label: "Customer payment question",        msg: "Hi Masakhe Support, I need help with payments from my customers." },
   { label: "Website Builder issue",            msg: "Hi Masakhe Support, I'm having trouble with the Website Builder." },
   { label: "Social Media / Biz Connect issue", msg: "Hi Masakhe Support, I need help with the Social Media Hub / Biz Connect." },
   { label: "Report a bug",                     msg: "Hi Masakhe Support, I'd like to report a bug on the Masakhe Portal." },
@@ -28,24 +28,9 @@ const quickTopics = [
 
 export default function WhatsAppSupportPage() {
   const { user } = useAuth();
-  const [planName, setPlanName] = useState<string>("");
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    fetch("/api/billing/status", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        const map: Record<string, string> = {
-          starter: "Enterprize",
-          pro: "Enterprize Plus",
-          premium: "Enterprize Premium",
-        };
-        setPlanName(d?.plan ? (map[d.plan] || d.plan) : "");
-      })
-      .catch(() => {});
-  }, []);
-
-  const greeting = `Hi Masakhe Support — this is ${user?.full_name || ""} (${user?.email || ""})${planName ? ` on the ${planName} plan` : ""}.`;
+  const greeting = `Hi Masakhe Support — this is ${user?.full_name || ""} (${user?.email || ""}).`;
   const customMessageFull = `${greeting}\n\n${message}`;
   const directLink = buildWaLink(message ? customMessageFull : greeting);
 
@@ -69,11 +54,9 @@ export default function WhatsAppSupportPage() {
               Chat directly with the Masakhe support team on WhatsApp — fast answers, no queues.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {planName && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 text-xs font-semibold px-2.5 py-1 border border-emerald-500/20">
-                  <Sparkles className="h-3 w-3" /> Included on your {planName} plan
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 text-xs font-semibold px-2.5 py-1 border border-emerald-500/20">
+                <Sparkles className="h-3 w-3" /> All features are free
+              </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted text-muted-foreground text-xs font-medium px-2.5 py-1">
                 <Phone className="h-3 w-3" /> {SUPPORT_NUMBER}
               </span>

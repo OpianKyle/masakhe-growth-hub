@@ -210,15 +210,11 @@ function StandaloneHome() {
   const navigate = useNavigate();
   const [mySite, setMySite] = useState<any>(null);
   const [loadingSite, setLoadingSite] = useState(true);
-  const [isProPlan, setIsProPlan] = useState(false);
+  const [isProPlan] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []),
-      fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
-    ]).then(([sites, billing]) => {
+    fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []).then((sites) => {
       if (Array.isArray(sites) && sites.length > 0) setMySite(sites[0]);
-      if ((billing.plan === "pro" || billing.plan === "all_modules") && (billing.status === "ACTIVE" || billing.status === "TRIAL" || billing.status === "EXEMPT")) setIsProPlan(true);
     }).finally(() => setLoadingSite(false));
   }, []);
 
@@ -373,13 +369,7 @@ function TemplatesPage() {
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState("All");
   const [showAll, setShowAll] = useState(false);
-  const [isProPlan, setIsProPlan] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/billing/status", { credentials: "include" }).then(r => r.json())
-      .then(b => { if (b.plan === "pro" && (b.status === "ACTIVE" || b.status === "TRIAL")) setIsProPlan(true); })
-      .catch(() => {});
-  }, []);
+  const [isProPlan] = useState(true);
 
   const filtered = templateList.filter((t) => {
     const cat = CATEGORY_MAP[t.id] ?? "Other";

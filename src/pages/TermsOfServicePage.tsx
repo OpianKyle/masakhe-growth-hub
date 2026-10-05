@@ -36,7 +36,7 @@ export default function TermsOfServicePage() {
             <span className="text-sm font-semibold text-primary uppercase tracking-widest">Legal Agreement</span>
           </div>
           <h1 className="text-4xl font-extrabold font-heading mb-3">Terms of Service</h1>
-          <p className="text-muted-foreground text-base">Last updated: March 2026 · Effective date: 1 January 2025</p>
+          <p className="text-muted-foreground text-base">Last updated: 5 October 2026 · Effective date: 5 October 2026</p>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl">
             Please read these Terms of Service carefully before using the Masakhe platform. By registering or using our services,
             you agree to be bound by these terms.
@@ -118,40 +118,22 @@ export default function TermsOfServicePage() {
           </p>
         </div>
 
-        {/* 4. Subscriptions & Billing */}
+        {/* 4. Free Platform Access */}
         <div>
-          <h2 className="text-2xl font-bold font-heading mb-4">4. Subscriptions & Billing</h2>
+          <h2 className="text-2xl font-bold font-heading mb-4">4. Free Platform Access</h2>
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold text-foreground mb-2">4.1 Subscription Plans</h3>
+              <h3 className="font-semibold text-foreground mb-2">4.1 Masakhe Features</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Masakhe offers subscription-based access to its platform. Plan details, pricing, and included features are
-                published on our pricing page and may be updated from time to time. An active subscription is required to
-                access the platform features after registration.
+                Masakhe's platform features are available at no charge. No subscription, trial, or payment is
+                required to use the platform or access its modules.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-foreground mb-2">4.2 Payment Processing</h3>
+              <h3 className="font-semibold text-foreground mb-2">4.2 Business Transactions</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                All payments are processed securely by Adumo Online, a PCI-DSS-compliant South African payment gateway.
-                By providing payment details, you authorise us to charge your chosen payment method for the applicable
-                subscription fees. All prices are quoted in South African Rand (ZAR) and include VAT where applicable.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">4.3 Renewals & Cancellation</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Subscriptions renew automatically at the end of each billing period unless cancelled before the renewal date.
-                You may cancel your subscription at any time through your account settings. Cancellation takes effect at the
-                end of the current billing period — no pro-rata refunds are issued for unused time within a paid period.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">4.4 Failed Payments</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                If a payment fails, we will notify you and attempt to collect payment again. Continued failure to pay may
-                result in suspension of your account until outstanding amounts are settled. Accounts suspended for non-payment
-                for more than 60 days may be terminated and data deleted.
+                Payments you collect from your own customers through payment providers are separate from Masakhe platform
+                access and remain subject to the terms and fees of those providers.
               </p>
             </div>
           </div>

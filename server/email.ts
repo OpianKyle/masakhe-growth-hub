@@ -950,7 +950,7 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
   14: {
     subject: (n) => `${n}, how is your business growing?`,
     headline: "Two weeks in — let's accelerate your growth",
-    body: `We hope Masakhe is already making a difference for your business. To get even more out of your subscription, here are three power-user tips:
+    body: `We hope Masakhe is already making a difference for your business. Here are three tips to get even more from your free account:
     <br><br>
     <strong style="color:#007749;">Automate your follow-ups</strong> &mdash; Use our Automations feature to automatically send reminders to clients who haven't paid.
     <br><br>
@@ -967,7 +967,7 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
     headline: "30 days in — you're building something great",
     body: `You've been part of the Masakhe community for a month &mdash; that's a big deal! South African SMMEs that use digital tools consistently grow <strong>2.4&times; faster</strong> than those that don't.
     <br><br>
-    To keep that momentum going, make sure you have an active subscription that gives you unlimited access to all features:
+    Your free Masakhe account includes access to all platform features:
     <br><br>
     &#10003;&nbsp; Unlimited invoices, quotes &amp; clients<br>
     &#10003;&nbsp; Full payroll management<br>
@@ -976,9 +976,9 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
     &#10003;&nbsp; Tender finder &amp; compliance tools<br>
     &#10003;&nbsp; Priority support from our SA-based team
     <br><br>
-    Plans start at <strong>R599/month</strong> &mdash; less than a tank of petrol.`,
-    cta: "View My Subscription",
-    ctaPath: "/dashboard/billing",
+    No subscription or payment is required to continue using Masakhe.`,
+    cta: "View My Dashboard",
+    ctaPath: "/dashboard",
   },
 };
 
@@ -989,7 +989,7 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
 export async function sendTrialExpiredEmail(
   toEmail: string,
   fullName: string,
-  trialEndedAt: Date,
+  _trialEndedAt: Date,
   baseUrl?: string
 ): Promise<void> {
   const t = await getTransporter();
@@ -997,31 +997,28 @@ export async function sendTrialExpiredEmail(
 
   const firstName = fullName.split(" ")[0];
   const appUrl = baseUrl || getBaseUrl();
-  const endDate = trialEndedAt.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
-
   const body = `
-    <h2 style="margin:0 0 8px;color:#111827;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Your free trial has ended</h2>
+    <h2 style="margin:0 0 8px;color:#111827;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Your Masakhe access is free</h2>
     <p style="margin:0 0 24px;color:#6B7280;font-size:14px;">Hi ${firstName},</p>
 
     <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.7;">
-      Your free trial of Masakhe ended on <strong>${endDate}</strong>. To continue using all the tools that help run your business — invoicing, payroll, social media, client management, and more — please subscribe to a plan.
+      Masakhe platform access is free, and you can continue using all available features without a subscription or payment.
     </p>
 
     <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.7;">
-      Choose the plan that fits your business and get back up and running in minutes:
+      Your dashboard is ready whenever you need it:
     </p>
 
     <div style="margin-bottom:32px;">
-      ${ctaButton("Subscribe Now — View Plans", `${appUrl}/dashboard/billing`)}
+      ${ctaButton("Open My Dashboard", `${appUrl}/dashboard`)}
     </div>
 
     ${infoBox(`
-      <p style="margin:0 0 10px;color:#065F46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Why upgrade?</p>
-      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Invoicing & billing</strong> — get paid faster</p>
-      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Payroll</strong> — run payslips in minutes</p>
-      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Social media</strong> — schedule posts, grow your brand</p>
-      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Website builder</strong> — 44 industry templates</p>
-      <p style="margin:0;color:#374151;font-size:14px;">&#10003;&nbsp; <strong>Client management, compliance & more</strong></p>
+      <p style="margin:0 0 10px;color:#065F46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Included for free</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; Invoicing, quotes, and client management</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; Payroll and people tools</p>
+      <p style="margin:0 0 6px;color:#374151;font-size:14px;">&#10003;&nbsp; Social media and website tools</p>
+      <p style="margin:0;color:#374151;font-size:14px;">&#10003;&nbsp; Finance, operations, and more</p>
     `)}
 
     <div style="height:28px;"></div>
@@ -1033,8 +1030,8 @@ export async function sendTrialExpiredEmail(
   `;
 
   const html = emailShell({
-    preheader: `${firstName}, your Masakhe trial ended — subscribe to keep going`,
-    subtitle: "Your Free Trial Has Ended",
+    preheader: `${firstName}, your Masakhe platform access is free`,
+    subtitle: "Your Masakhe Access Is Free",
     body,
     footerNote: `You received this email because you had a free trial at Masakhe Portal. <a href="${appUrl}/dashboard/settings" style="color:#007749;text-decoration:none;">Manage email preferences</a>`,
   });
@@ -1044,7 +1041,7 @@ export async function sendTrialExpiredEmail(
       from: `"Masakhe" <${process.env.SMTP_FROM || "admin@masakheportal.co.za"}>`,
       replyTo: process.env.SMTP_FROM || "admin@masakheportal.co.za",
       to: toEmail,
-      subject: `Your Masakhe free trial has ended — subscribe to continue`,
+      subject: `Your Masakhe access is free`,
       html,
       headers: { "X-Priority": "1", "X-Mailer": "Masakhe Platform" },
     });

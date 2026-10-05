@@ -38,13 +38,8 @@ async function ensureDefaultWorkspace(userId: string): Promise<string> {
 }
 
 /**
- * First-3-months promo codes. Each code grants a percentage discount on the
- * customer's first three monthly debits. After the 3-month promo period the
- * subscription naturally ends and the user is prompted to re-subscribe at the
- * full plan price. A user can only redeem ONE promo, ever, and only if they
- * have never started a free trial or had an active subscription.
- *
- * To add a new code, just add another entry. Codes are matched case-insensitively.
+ * Legacy subscription promo configuration. Platform access is free, so these
+ * codes are retained only for old records and are not available for redemption.
  */
 const PROMO_MONTHS = 3;
 const PROMO_CODES: Record<string, { percentOff: number; label: string }> = {
@@ -57,13 +52,7 @@ function normalisePromoCode(code: string | undefined | null): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/**
- * Eligibility for a first-month promo:
- *  - Code exists in PROMO_CODES
- *  - User has never marked first_month_promo_used
- *  - User has no past or present trial / active / past-due subscription on any
- *    of their workspaces (i.e. this is their first paid month)
- */
+/** Legacy promo eligibility for old subscription records. */
 async function checkPromoEligibility(userId: string, rawCode: string): Promise<{
   eligible: boolean;
   reason?: string;
@@ -124,19 +113,9 @@ async function checkPromoEligibility(userId: string, rawCode: string): Promise<{
   };
 }
 
-/**
- * GET /api/billing/promo/:code
- * Quick check the front-end uses to decide whether to show the discounted
- * "Start today" button instead of (or alongside) the free trial.
- */
-billingRouter.get("/promo/:code", requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.userId!;
-    const result = await checkPromoEligibility(userId, req.params.code);
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ eligible: false, reason: err.message });
-  }
+// Subscription discounts are no longer offered; Masakhe platform access is free.
+billingRouter.get("/promo/:code", requireAuth, (_req, res) => {
+  res.json({ eligible: false, isFree: true, reason: "Masakhe access is free; no promo code is needed." });
 });
 
 billingRouter.get("/terms-pdf", async (_req, res) => {
@@ -192,72 +171,48 @@ billingRouter.get("/terms-pdf", async (_req, res) => {
     const spacer = (n = 1) => { y -= lineHeight * n; };
 
     drawText("MASAKHE PLATFORM", { font: fontBold, size: titleSize });
-    drawText("SUBSCRIPTION TERMS AND CONDITIONS", { font: fontBold, size: 14 });
+    drawText("PLATFORM TERMS AND CONDITIONS", { font: fontBold, size: 14 });
     spacer();
     drawText(`Effective Date: ${new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}`);
     spacer();
 
-    drawText("1. SUBSCRIPTION AND RECURRING BILLING", { font: fontBold, size: headingSize });
+    drawText("1. FREE PLATFORM ACCESS", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("1.1 By subscribing to Masakhe, you authorise a recurring debit order to be processed against your nominated bank account or payment method on the selected collection day each month.", { indent: 10 });
+    drawText("1.1 Masakhe platform features are available free of charge. No subscription, trial, or recurring payment is required to access the platform or its modules.", { indent: 10 });
     spacer(0.5);
-    drawText("1.2 Billing will continue automatically each month until you cancel your subscription in accordance with Section 2 below.", { indent: 10 });
-    spacer(0.5);
-    drawText("1.3 The subscription amount corresponds to the plan selected at checkout (Starter or Pro) and is denominated in South African Rand (ZAR).", { indent: 10 });
+    drawText("1.2 All platform modules are included at no charge.", { indent: 10 });
     spacer();
 
-    drawText("2. CANCELLATION POLICY", { font: fontBold, size: headingSize });
+    drawText("2. CUSTOMER PAYMENTS", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("2.1 Your subscription will NOT be suspended or cancelled automatically. It will remain active and you will continue to be billed until a cancellation request is received and processed.", { indent: 10 });
+    drawText("2.1 Payments you collect from your own customers through Masakhe invoice tools are separate from Masakhe platform access.", { indent: 10 });
     spacer(0.5);
-    drawText("2.2 To cancel your subscription, you must send a written cancellation request via email to: support@masakhe.co.za", { indent: 10 });
+    drawText("2.2 Payment-provider fees, settlement timing, disputes, and refunds for those customer transactions are governed by the relevant payment provider's terms.", { indent: 10 });
     spacer(0.5);
-    drawText("2.3 Cancellation requests will be processed within 5 (five) business days of receipt. You will receive an email confirmation once your cancellation has been processed.", { indent: 10 });
-    spacer(0.5);
-    drawText("2.4 You remain responsible for all charges incurred up to and including the date your cancellation is confirmed.", { indent: 10 });
+    drawText("2.3 These customer payments are not subscription charges to Masakhe.", { indent: 10 });
     spacer();
 
-    drawText("3. SUBSCRIPTIONS", { font: fontBold, size: headingSize });
+    drawText("3. ACCOUNT RESPONSIBILITY", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("3.1 Subscriptions are activated immediately upon successful payment processing.", { indent: 10 });
+    drawText("3.1 You are responsible for maintaining the security of your account and for activity carried out through it.", { indent: 10 });
     spacer(0.5);
-    drawText("3.2 There is no free trial period. All plans are billed from the date of subscription.", { indent: 10 });
+    drawText("3.2 You must use the platform in accordance with applicable laws and the Masakhe Terms of Service.", { indent: 10 });
     spacer(0.5);
-    drawText("3.3 Trial access may be granted at the sole discretion of Masakhe on a case-by-case basis.", { indent: 10 });
+    drawText("3.3 You remain responsible for the accuracy and legality of content and documents you create or share.", { indent: 10 });
     spacer();
 
-    drawText("4. REFUND POLICY", { font: fontBold, size: headingSize });
+    drawText("4. THIRD-PARTY SERVICES", { font: fontBold, size: headingSize });
     spacer(0.5);
-    drawText("4.1 Subscription fees are non-refundable once processed.", { indent: 10 });
-    spacer(0.5);
-    drawText("4.2 You may cancel at any time, but no partial or pro-rated refunds will be issued for the remaining billing period.", { indent: 10 });
-    spacer();
-
-    drawText("5. PRICING AND SERVICE CHANGES", { font: fontBold, size: headingSize });
-    spacer(0.5);
-    drawText("5.1 Masakhe reserves the right to update subscription pricing or platform features.", { indent: 10 });
-    spacer(0.5);
-    drawText("5.2 You will be given at least 30 (thirty) days written notice of any pricing changes via email.", { indent: 10 });
-    spacer(0.5);
-    drawText("5.3 Continued use of the platform after receiving such notice constitutes acceptance of the updated terms.", { indent: 10 });
-    spacer();
-
-    drawText("6. PAYMENT PROCESSING", { font: fontBold, size: headingSize });
-    spacer(0.5);
-    drawText("6.1 All payments are processed securely through Adumo Online, a registered South African payment gateway.", { indent: 10 });
-    spacer(0.5);
-    drawText("6.2 Masakhe does not store your banking or card details on its servers.", { indent: 10 });
-    spacer(0.5);
-    drawText("6.3 If a scheduled debit order fails, Masakhe may reattempt collection. Repeated failures may result in service suspension after written notice.", { indent: 10 });
-    spacer();
-
-    drawText("7. CONTACT INFORMATION", { font: fontBold, size: headingSize });
-    spacer(0.5);
-    drawText("For billing enquiries, cancellations, or support:", { indent: 10 });
-    drawText("Email: support@masakhe.co.za", { indent: 10 });
+    drawText("4.1 Integrations and payment services are subject to the relevant third-party terms and privacy policies.", { indent: 10 });
     spacer(2);
 
-    drawText("By checking the acceptance box on the checkout page, you confirm that you have read, understood, and agree to these Terms and Conditions.", { font: fontBold });
+    drawText("5. CONTACT INFORMATION", { font: fontBold, size: headingSize });
+    spacer(0.5);
+    drawText("For support enquiries:", { indent: 10 });
+    drawText("Email: support@masakhe.co.za", { indent: 10 });
+    spacer();
+
+    drawText("By creating an account or using the platform, you confirm that you have read, understood, and agree to these terms.", { font: fontBold });
 
     const pdfBytes = await pdf.save();
     res.setHeader("Content-Type", "application/pdf");
@@ -268,74 +223,37 @@ billingRouter.get("/terms-pdf", async (_req, res) => {
   }
 });
 
-billingRouter.get("/plans", async (_req, res) => {
-  try {
-    const plans = await queryAll(
-      "SELECT * FROM billing_plans WHERE code IN ('web_builder','social_biz','transactions_ops','people_hr','all_modules') ORDER BY price_cents ASC"
-    );
-    res.json({ plans });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+billingRouter.get("/plans", (_req, res) => {
+  res.json({ plans: [], isFree: true });
 });
 
-billingRouter.get("/subscription", requireAuth, async (req, res) => {
-  try {
-    const userId = getDataOwnerId(req);
-    const user = await queryOne("SELECT role FROM users WHERE id = ?", [userId]);
-    
-    // Admin users always have pro access
-    if (user?.role === "admin") {
-      const adminPlan = await queryOne("SELECT * FROM billing_plans WHERE code = 'pro' LIMIT 1");
-      return res.json({
-        subscription: {
-          status: "ACTIVE",
-          plan_code: "pro",
-          plan_name: "Pro",
-          price_cents: adminPlan?.price_cents || 250000,
-          currency: "ZAR",
-          bill_interval: "month"
-        },
-        plan: adminPlan || { code: "pro", name: "Pro" },
-        invoices: []
-      });
-    }
-    
-    const workspace = await queryOne(
-      "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [userId]
-    );
-    if (!workspace) {
-      return res.json({ subscription: null, plan: null, invoices: [] });
-    }
-
-    let subscription = await queryOne(
-      `SELECT bs.*, bp.code as plan_code, bp.name as plan_name, bp.price_cents, bp.currency, bp.bill_interval
-       FROM billing_subscriptions bs
-       JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ?
-         AND bs.status IN ('ACTIVE','PAST_DUE','TRIAL')
-         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
-       ORDER BY bs.created_at DESC LIMIT 1`,
-      [workspace.id]
-    );
-
-    const invoices = await queryAll(
-      "SELECT * FROM billing_invoices WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 20",
-      [workspace.id]
-    );
-
-    res.json({
-      subscription,
-      plan: subscription ? { code: subscription.plan_code, name: subscription.plan_name, price_cents: subscription.price_cents, currency: subscription.currency, bill_interval: subscription.bill_interval } : null,
-      invoices,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+billingRouter.get("/subscription", requireAuth, (_req, res) => {
+  const plan = {
+    code: "all_modules",
+    name: "Free",
+    price_cents: 0,
+    currency: "ZAR",
+    bill_interval: null,
+  };
+  res.json({
+    subscription: { status: "FREE", plan_code: plan.code, plan_name: plan.name, price_cents: 0 },
+    plan,
+    invoices: [],
+  });
 });
 
 billingRouter.get("/status", requireAuth, async (req, res) => {
+  return res.json({
+    active: true,
+    status: "ACTIVE",
+    plan: "all_modules",
+    modules: ["web_builder", "social_biz", "transactions_ops", "people_hr"],
+    maxUsers: 999999,
+    isFree: true,
+    trialExpired: false,
+    trialEndsAt: null,
+  });
+  /* Legacy subscription status lookup retained below; Masakhe access is free. */
   try {
     const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
@@ -405,6 +323,14 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 });
 
 billingRouter.get("/access-status", requireAuth, async (req, res) => {
+  return res.json({
+    blocked: false,
+    showPayNow: false,
+    daysUntilBilling: null,
+    nextBillingDate: null,
+    subscriptionStatus: "FREE",
+  });
+  /* Legacy access calculation retained below; Masakhe access is free. */
   try {
     const userId = getDataOwnerId(req);
     const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
@@ -497,6 +423,13 @@ billingRouter.get("/access-status", requireAuth, async (req, res) => {
 });
 
 billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) => {
+  return res.json({
+    ok: true,
+    planCode: "all_modules",
+    modules: ["web_builder", "social_biz", "transactions_ops", "people_hr"],
+    isFree: true,
+  });
+  /* Legacy trial activation retained below; trials are no longer required. */
   try {
     const userId = req.session.userId!;
     const VALID_MODULES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
@@ -570,6 +503,8 @@ billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) =
 });
 
 billingRouter.post("/checkout-session", requireAuth, requireOwner, async (req, res) => {
+  return res.status(410).json({ error: "Masakhe subscriptions are free; checkout is unavailable." });
+  /* Legacy checkout retained below; new Masakhe subscription charges are disabled. */
   try {
     const userId = req.session.userId!;
     const {
@@ -1065,6 +1000,8 @@ billingRouter.get("/return-redirect", handleReturnRedirect);
 billingRouter.post("/return-redirect", handleReturnRedirect);
 
 billingRouter.post("/change-plan", requireAuth, requireOwner, async (req, res) => {
+  return res.status(410).json({ error: "Masakhe subscriptions are free; plan changes are unavailable." });
+  /* Legacy plan-change flow retained below; plans are no longer sold. */
   try {
     const userId = req.session.userId!;
     const { newPlanCode, recipientName, email, contactNumber, mobileNumber, collectionDay: clientCollectionDay, startDate: clientStartDate, shippingAddress1, shippingAddress2, shippingAddress3 } = req.body;
@@ -1207,6 +1144,8 @@ billingRouter.post("/cancel", requireAuth, requireOwner, async (req, res) => {
 });
 
 billingRouter.get("/feature-gate", requireAuth, async (req, res) => {
+  return res.json({ active: true, status: "FREE", isFree: true });
+  /* Legacy feature-gate lookup retained below; all platform features are free. */
   try {
     const userId = getDataOwnerId(req);
     const workspace = await queryOne(

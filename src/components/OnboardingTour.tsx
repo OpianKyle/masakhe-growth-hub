@@ -163,11 +163,11 @@ export default function OnboardingTour() {
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     You've registered through{" "}
                     <span className="font-semibold text-foreground">{municipalityName}</span>.
-                    Your <strong>14-day free trial</strong> is already active — no credit card needed.
+                    Your Masakhe account is ready to use for free.
                   </p>
                 ) : (
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Your <strong>7-day free trial</strong> is now active. Let's take a quick tour of everything Masakhe has to offer your business.
+                    All Masakhe features are free to use. Let's take a quick tour of the tools available to your business.
                   </p>
                 )}
               </div>
@@ -236,7 +236,7 @@ export default function OnboardingTour() {
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">You're all set!</h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Explore at your own pace. Use the sidebar to navigate between features. Your trial gives you full access to everything.
+                  Explore at your own pace. Use the sidebar to navigate between features. Every Masakhe feature is available at no cost.
                 </p>
               </div>
               {municipalityName && (

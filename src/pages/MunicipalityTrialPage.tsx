@@ -54,7 +54,6 @@ export default function MunicipalityTrialPage() {
   const [searchParams] = useSearchParams();
   const municipalityCode = searchParams.get("municipality") || "";
   const [municipality, setMunicipality] = useState<MunicipalityInfo | null>(null);
-  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,22 +61,14 @@ export default function MunicipalityTrialPage() {
 
     async function loadWelcomeData() {
       try {
-        const requests: Promise<Response>[] = [
-          fetch("/api/billing/status", { credentials: "include", cache: "no-store" }),
-        ];
-        if (municipalityCode) {
-          requests.push(fetch(`/api/municipality/check/${encodeURIComponent(municipalityCode)}`));
-        }
-
-        const responses = await Promise.all(requests);
-        const billing = await responses[0].json();
-        const municipalityData = municipalityCode ? await responses[1].json() : null;
+        const municipalityData = municipalityCode
+          ? await fetch(`/api/municipality/check/${encodeURIComponent(municipalityCode)}`).then(r => r.json())
+          : null;
 
         if (cancelled) return;
         if (municipalityData?.valid) {
           setMunicipality({ name: municipalityData.name, province: municipalityData.province });
         }
-        if (billing?.trialEndsAt) setTrialEndsAt(billing.trialEndsAt);
       } catch {
         // The welcome screen remains useful even if the optional details fail.
       } finally {
@@ -89,14 +80,6 @@ export default function MunicipalityTrialPage() {
     return () => { cancelled = true; };
   }, [municipalityCode]);
 
-  const formattedEnd = trialEndsAt
-    ? new Date(trialEndsAt).toLocaleDateString("en-ZA", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
-
   const continueToWorkspace = () => {
     const query = municipalityCode
       ? `?onboarding=1&municipality=${encodeURIComponent(municipalityCode)}`
@@ -107,10 +90,10 @@ export default function MunicipalityTrialPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Helmet>
-        <title>Welcome to Your Municipality Trial | Masakhe</title>
+        <title>Welcome to Masakhe | Masakhe</title>
         <meta
           name="description"
-          content="Access your 14-day Masakhe business platform trial through your municipality."
+          content="Access Masakhe's free business platform through your municipality."
         />
       </Helmet>
 
@@ -135,7 +118,7 @@ export default function MunicipalityTrialPage() {
                 Your business tools are ready.
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-slate-200 md:text-lg">
-                Welcome{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}. Your municipality has connected you to Masakhe, giving your business full access for 14 days at no cost.
+                Welcome{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}. Your municipality has connected you to Masakhe, where all platform features are available for free.
               </p>
               {municipality && (
                 <div className="mt-6 flex items-center gap-3 text-sm text-cyan-100">
@@ -155,7 +138,7 @@ export default function MunicipalityTrialPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-cyan-200">Included with your registration</p>
-                  <p className="text-2xl font-extrabold">14-day free trial</p>
+                  <p className="text-2xl font-extrabold">Free access</p>
                 </div>
               </div>
               <div className="space-y-3 text-sm text-slate-200">
@@ -169,7 +152,7 @@ export default function MunicipalityTrialPage() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Check className="h-4 w-4 text-emerald-300" />
-                  Trial access ends{formattedEnd ? ` on ${formattedEnd}` : " after 14 days"}
+                  No subscription or payment required
                 </div>
               </div>
             </div>
@@ -206,7 +189,7 @@ export default function MunicipalityTrialPage() {
         <div className="mt-10 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-6 text-center dark:border-cyan-900 dark:from-cyan-950/30 dark:to-blue-950/30 md:p-8">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ready to get started?</h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600 dark:text-slate-300">
-            Your 14-day municipality trial is active. Continue to your workspace to complete your setup and explore Masakhe.
+            Your free Masakhe access is ready. Continue to your workspace to complete your setup and explore the platform.
           </p>
           <Button
             onClick={continueToWorkspace}
@@ -217,7 +200,7 @@ export default function MunicipalityTrialPage() {
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
             Continue to my workspace
           </Button>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">No credit card required · Supported by your municipality</p>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">No payment required · Supported by your municipality</p>
         </div>
       </main>
     </div>

@@ -349,31 +349,12 @@ authRouter.post("/register", async (req, res) => {
 
         if (referralCode) linkResellerClient(userId, referralCode).catch(() => {});
 
-      // Municipality-linked SMMEs receive a 14-day trial before entering the workspace.
+      // Link municipality participants without creating a subscription or trial.
       if (municipalityCode) {
         try {
           await linkSmmeToMunicipality(userId, municipalityCode, businessData?.businessName || fullName);
-          const plan = await queryOne("SELECT id FROM billing_plans WHERE code = 'premium' LIMIT 1", []);
-          if (plan) {
-            const trialEnd = new Date();
-            trialEnd.setDate(trialEnd.getDate() + 14);
-            const trialEndStr = trialEnd.toISOString().slice(0, 19).replace("T", " ");
-            const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");
-            const existing = await queryOne("SELECT id FROM billing_subscriptions WHERE workspace_id = ? LIMIT 1", [wsId]);
-            if (existing) {
-              await execute(
-                "UPDATE billing_subscriptions SET status = 'TRIAL', plan_id = ?, trial_start_at = ?, trial_end_at = ?, updated_at = NOW() WHERE id = ?",
-                [plan.id, nowStr, trialEndStr, existing.id]
-              );
-            } else {
-              await execute(
-                "INSERT INTO billing_subscriptions (workspace_id, plan_id, status, trial_start_at, trial_end_at) VALUES (?, ?, 'TRIAL', ?, ?)",
-                [wsId, plan.id, nowStr, trialEndStr]
-              );
-            }
-          }
         } catch (e: any) {
-          console.error("[Auth] Municipality trial grant error:", e.message);
+          console.error("[Auth] Municipality account link error:", e.message);
         }
       }
 
@@ -906,7 +887,7 @@ authRouter.get("/google/callback", async (req, res) => {
     const ctx = await loadActingContext(user.id);
     req.session.userId = user.id;
     req.session.actingAsOwnerId = ctx.actingAsOwnerId;
-    const redirectTo = (user as any)._isNew ? "/dashboard/billing?welcome=1" : "/dashboard";
+    const redirectTo = "/dashboard";
     req.session.save(() => res.redirect(redirectTo));
   } catch (err: any) {
     console.error("Google OAuth error:", err.message);

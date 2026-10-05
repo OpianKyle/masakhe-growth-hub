@@ -138,11 +138,11 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white font-sans">
       <Helmet>
         <title>Masakhe | South African SMME Business Platform</title>
-        <meta name="description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media management and client tools — all in one platform. From R599/month." />
+        <meta name="description" content="Run your South African SMME smarter with free invoicing, payroll, website building, social media management, and client tools in one platform." />
         <meta name="keywords" content="SMME South Africa, invoicing, payroll, website builder, social media, small business platform, Masakhe" />
         <link rel="canonical" href="https://masakheportal.co.za/" />
         <meta property="og:title" content="Masakhe | South African SMME Business Platform" />
-        <meta property="og:description" content="Run your South African SMME smarter. Invoicing, payroll, AI website builder, social media — all in one." />
+        <meta property="og:description" content="Run your South African SMME smarter with free invoicing, payroll, website building, social media, and client tools." />
         <meta property="og:url" content="https://masakheportal.co.za/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:title" content="Masakhe | South Africa's SMME Business Platform" />
@@ -189,7 +189,10 @@ export default function LandingPage() {
             <motion.p variants={fadeUp} custom={2} className="text-lg md:text-xl text-white/60 max-w-xl leading-relaxed">
               Website builder, invoicing, payroll, social media, and client management — everything your SMME needs to grow, in one place.
             </motion.p>
-            <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 pt-2">
+            <motion.p variants={fadeUp} custom={3} className="text-sm font-semibold text-emerald-300">
+              Every Masakhe feature is free. No trial or subscription required.
+            </motion.p>
+            <motion.div variants={fadeUp} custom={4} className="flex flex-wrap gap-4 pt-2">
               <Link to="/register">
                 <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-base h-12 px-7 shadow-lg shadow-blue-900/30">
                   Get Started <ArrowRight className="ml-2 h-4 w-4" />
@@ -385,8 +388,8 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center text-xs font-bold text-slate-600 mt-12 uppercase tracking-wide">
-            Get started with a 7-day free trial · Plans from R599/month{" "}
-            <span className="font-normal normal-case text-slate-500">· Cancel anytime. Terms and conditions apply.</span>
+            Free access to every Masakhe feature{" "}
+            <span className="font-normal normal-case text-slate-500">· No subscription or payment required.</span>
           </p>
         </div>
       </section>
@@ -499,10 +502,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-blue-300 mb-5">
-              <Shield className="h-3 w-3" /> Secure Monthly Billing — Cancel Anytime
+              <Shield className="h-3 w-3" /> Full platform access — free
             </span>
             <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">Simple, transparent pricing</h2>
-            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Start with a 7-day free trial. Cancel anytime.</p>
+            <p className="text-slate-400 mt-4 text-lg max-w-xl mx-auto">Use every Masakhe feature for free. No trial or subscription required.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -623,7 +626,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Link to="/register">
                 <Button className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-base h-14 px-10 rounded-xl shadow-2xl shadow-blue-600/40 hover:shadow-blue-500/50 transition-all duration-300 group">
-                  Start Free Trial
+                  Create Your Free Account
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Button>
               </Link>
@@ -635,7 +638,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-wrap gap-6 justify-center text-sm text-slate-500">
-              {["7-day free trial", "Cancel anytime", "Secure monthly billing"].map((item) => (
+              {["All features included", "No subscription required", "Free to use"].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-500" /> {item}
                 </span>
@@ -795,7 +798,7 @@ export default function LandingPage() {
             </div>
             {[
               { title: "Platform", links: [{ label: "Website Builder", href: "#" }, { label: "Social Media Hub", href: "#" }, { label: "Invoicing & Quotes", href: "#" }, { label: "Payroll", href: "#" }, { label: "Client Management", href: "#" }] },
-              { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Pricing", href: "#pricing" }, { label: "Support", href: "#" }] },
+              { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Support", href: "#" }] },
               { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#contact" }] },
             ].map((col) => (
               <div key={col.title}>

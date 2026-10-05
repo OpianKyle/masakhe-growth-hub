@@ -84,7 +84,7 @@ export default function PrivacyPolicyPage() {
               },
               {
                 title: "Financial Information",
-                items: ["Billing details processed via Adumo Online (our payment processor)", "Invoice data you create within the platform (client names, amounts, descriptions)", "Subscription status and payment history"],
+                items: ["Customer invoice transaction records and payment status", "Invoice data you create within the platform (client names, amounts, descriptions)", "Business financial records you choose to store"],
               },
               {
                 title: "Usage & Technical Data",
@@ -118,7 +118,7 @@ export default function PrivacyPolicyPage() {
             {[
               "Create and manage your Masakhe account and workspace",
               "Provide, operate, and improve all platform features",
-              "Process subscription payments and generate invoices",
+              "Support customer payments and generate business invoices",
               "Send transactional emails (account confirmations, password resets, payment receipts)",
               "Verify your company registration details through public records and AI-assisted checks",
               "Publish social media content to connected accounts on your instruction",
@@ -168,7 +168,7 @@ export default function PrivacyPolicyPage() {
             {[
               {
                 party: "Adumo Online (Payment Processing)",
-                detail: "Billing and payment card data is handled by Adumo Online, a PCI-DSS-compliant South African payment gateway. We do not store card numbers on our servers.",
+                detail: "Customer payments made through invoice links may be processed by Adumo Online. Payment-provider terms apply, and Masakhe does not store card numbers on its servers.",
               },
               {
                 party: "Meta Platforms (Facebook & Instagram)",

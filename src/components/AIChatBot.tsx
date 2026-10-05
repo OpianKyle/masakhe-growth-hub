@@ -15,7 +15,6 @@ const QUICK_QUESTIONS = [
   "How do I create an invoice?",
   "How do I publish my website?",
   "How do I add employees to payroll?",
-  "What is my billing / subscription?",
   "How do I track income & expenses?",
 ];
 
@@ -25,7 +24,6 @@ const PAGE_LABELS: Record<string, string> = {
   "/dashboard/social": "Social Media Hub",
   "/dashboard/finance": "Income & Expenses",
   "/dashboard/invoices": "Quotes & Invoices",
-  "/dashboard/billing": "Billing & Subscription",
   "/dashboard/payroll": "Payroll",
   "/dashboard/leave": "Leave & HR",
   "/dashboard/clients": "Clients CRM",

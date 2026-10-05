@@ -114,33 +114,6 @@ workspaceRouter.get("/:workspaceId/members", requireWorkspaceRole("owner", "admi
   }
 });
 
-async function assertPremiumOwner(wsId: string): Promise<void> {
-  const owner = await queryOne(
-    "SELECT u.id, u.role, u.subscription_exempt FROM users u JOIN workspaces w ON w.owner_id = u.id WHERE w.id = ? LIMIT 1",
-    [wsId]
-  );
-  let planCode: string | null = null;
-  if (owner?.role === "admin" || owner?.subscription_exempt) {
-    planCode = "premium";
-  } else {
-    const sub = await queryOne(
-      `SELECT bp.code FROM billing_subscriptions bs
-       JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ?
-         AND bs.status IN ('ACTIVE','PAST_DUE','TRIAL')
-         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
-       ORDER BY bs.created_at DESC LIMIT 1`,
-      [wsId]
-    );
-    planCode = sub?.code || null;
-  }
-  if (planCode !== "premium") {
-    const e: any = new Error("Multi-user is an Enterprize Premium feature. Upgrade to invite teammates.");
-    e.status = 403;
-    throw e;
-  }
-}
-
 // Create a new team-member account directly. The owner sets the email,
 // full name and permissions; the system creates a user record (no password)
 // and emails the invitee a "set your password" link.
@@ -149,13 +122,6 @@ workspaceRouter.post("/:workspaceId/members", requireWorkspaceRole("owner", "adm
     const wsId = req.params.workspaceId;
     const { email, full_name, permissions } = req.body || {};
     if (!email || !full_name) return res.status(400).json({ error: "Email and full name are required" });
-
-    await assertPremiumOwner(wsId);
-
-    const seatCount = await queryOne("SELECT COUNT(*) as c FROM workspace_members WHERE workspace_id = ?", [wsId]);
-    if ((seatCount?.c || 0) >= 4) {
-      return res.status(400).json({ error: "Seat limit reached. Enterprize Premium supports up to 4 users." });
-    }
 
     const cleanEmail = String(email).toLowerCase().trim();
     const existingUser = await queryOne("SELECT id, parent_owner_id FROM users WHERE email = ?", [cleanEmail]);

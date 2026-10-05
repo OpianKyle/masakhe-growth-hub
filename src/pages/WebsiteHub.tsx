@@ -160,16 +160,12 @@ function WebsiteHome() {
   const [filterTab, setFilterTab] = useState("All");
   const [mySite, setMySite] = useState<any>(null);
   const [loadingSite, setLoadingSite] = useState(true);
-  const [isProPlan, setIsProPlan] = useState(false);
+  const [isProPlan] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []),
-      fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
-    ]).then(([sites, billing]) => {
+    fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []).then((sites) => {
       if (Array.isArray(sites) && sites.length > 0) setMySite(sites[0]);
-      if ((billing.plan === "pro" || billing.plan === "all_modules") && (billing.status === "ACTIVE" || billing.status === "TRIAL" || billing.status === "EXEMPT")) setIsProPlan(true);
     }).finally(() => setLoadingSite(false));
   }, []);
 

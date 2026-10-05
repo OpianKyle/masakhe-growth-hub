@@ -350,7 +350,7 @@ export default function WebsiteBuilder() {
   const dragStartXRef = useRef(0);
   const dragStartWidthRef = useRef(340);
   const [showAddSection, setShowAddSection] = useState(false);
-  const [isProPlan, setIsProPlan] = useState(false);
+  const [isProPlan] = useState(true);
   const [previewSite, setPreviewSite] = useState<SiteConfig | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
@@ -387,16 +387,7 @@ export default function WebsiteBuilder() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role === "admin") {
-      setIsProPlan(true);
-    }
-    Promise.all([
-      fetch("/api/billing/status", { credentials: "include" }).then(r => r.json()).catch(() => ({})),
-      fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []),
-    ]).then(([billing, sites]) => {
-      if (user?.role === "admin" || (billing.plan === "pro" && (billing.status === "ACTIVE" || billing.status === "TRIAL"))) {
-        setIsProPlan(true);
-      }
+    fetch("/api/websites/mine", { credentials: "include" }).then(r => r.json()).catch(() => []).then((sites) => {
       const list = Array.isArray(sites) ? sites : [];
       if (list.length > 0) {
         const existing = list[0];
@@ -576,13 +567,10 @@ export default function WebsiteBuilder() {
                 <Crown className="h-4 w-4" />
                 <span className="text-sm font-bold">Previewing: {previewTemplateName}</span>
               </div>
-              <p className="text-xs text-white/80">This is a read-only preview. Upgrade to Pro to use this template.</p>
+              <p className="text-xs text-white/80">Previewing your selected template.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" className="h-8 text-xs bg-white text-amber-600 hover:bg-white/90 font-bold" onClick={() => { window.location.href = "/dashboard/billing"; }}>
-              <Crown className="h-3.5 w-3.5 mr-1" /> Upgrade to Pro
-            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => setPreviewSite(null)}>
               <X className="h-4 w-4" />
             </Button>

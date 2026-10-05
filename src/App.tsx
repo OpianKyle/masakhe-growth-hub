@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute, FranchiseRoute, MunicipalityRoute } from "@/components/ProtectedRoute";
@@ -21,7 +21,6 @@ import MunicipalityLoginPage from "./pages/MunicipalityLoginPage";
 import MunicipalityTrialPage from "./pages/MunicipalityTrialPage";
 import PublishedSite from "./pages/PublishedSite";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
-import PricingPage from "./pages/PricingPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SetPasswordPage from "./pages/SetPasswordPage";
@@ -78,23 +77,6 @@ function CustomDomainGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/**
- * Watches every route for a `?promo=` query param and stashes the code in
- * sessionStorage so the billing page can pick it up after sign-up — even if
- * the user lands first on the landing page or the partner portal.
- */
-function PromoCodeCapture() {
-  const location = useLocation();
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const code = params.get("promo");
-    if (code) {
-      try { sessionStorage.setItem("masakhe.promoCode", code.trim().toUpperCase()); } catch {}
-    }
-  }, [location.search]);
-  return null;
-}
-
 const App = () => (
   <HelmetProvider>
   <QueryClientProvider client={queryClient}>
@@ -104,7 +86,6 @@ const App = () => (
       <AuthProvider>
         <CustomDomainGate>
           <BrowserRouter>
-            <PromoCodeCapture />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/landing" element={<LandingPage />} />
@@ -117,7 +98,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/set-password" element={<SetPasswordPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/pricing" element={<Navigate to="/" replace />} />
               <Route path="/dashboard/social" element={<Navigate to="/social-hub" replace />} />
               <Route path="/dashboard/social/*" element={<Navigate to="/social-hub" replace />} />
               <Route path="/dashboard/website" element={<Navigate to="/website-builder" replace />} />

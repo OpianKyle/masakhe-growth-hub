@@ -73,23 +73,8 @@ async function sendTrialExpiryReminders() {
 }
 
 export function startBillingScheduler() {
-  setInterval(async () => {
-    try {
-      await processMonthlyRenewals();
-      await sendTrialExpiryReminders();
-    } catch (err) {
-      console.error("[Billing] Scheduler tick error:", err);
-    }
-  }, 3600000);
-
-  // Also run once shortly after startup so recently-expired trials aren't missed
-  setTimeout(async () => {
-    try {
-      await sendTrialExpiryReminders();
-    } catch (err) {
-      console.error("[Billing] Startup trial expiry check error:", err);
-    }
-  }, 30000);
-
-  console.log("[Billing] Billing scheduler started (runs every hour)");
+  // Masakhe platform subscriptions are free. Do not generate renewal invoices
+  // or send trial-expiry reminders; invoice payments for users' own customers
+  // are handled by a separate flow.
+  console.log("[Billing] Platform renewal scheduler disabled (free access)");
 }
