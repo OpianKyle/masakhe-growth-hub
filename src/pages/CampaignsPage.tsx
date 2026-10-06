@@ -10,6 +10,7 @@ import EmailVisualEditor from "@/components/EmailVisualEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import heroImage from "@/assets/hero-image.jpg";
 import {
   Megaphone, Plus, Users, Mail, TrendingUp, Send, Eye, Trash2, Edit3, X,
   ChevronRight, Upload, Download, Search, RefreshCw, Clock, CheckCircle,
@@ -382,21 +383,24 @@ export default function CampaignsPage() {
   );
 
   return (
-    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50/70 dark:bg-gray-950">
 
       <NeroSectionHeader
         section="Operations"
         title="Email Campaigns"
         description="Create and send targeted email campaigns to your clients and subscribers"
+        backgroundImage={heroImage}
+        backgroundPosition="center 46%"
+        backgroundOverlay="90deg, rgba(93, 19, 49, 0.92) 0%, rgba(151, 45, 85, 0.74) 52%, rgba(54, 24, 53, 0.64) 100%"
         actions={
           <>
-            <Button onClick={() => openBuilder(null)} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
+            <Button onClick={() => openBuilder(null)} className="gap-2 rounded-xl bg-white text-rose-950 shadow-md hover:bg-rose-50">
               <Plus className="h-4 w-4" /> New campaign
             </Button>
             <Button
               onClick={() => { setEditContact(null); setShowContactModal(true); }}
               variant="outline"
-              className="gap-2 rounded-lg border-slate-500/70 bg-slate-800/70 text-slate-100 shadow-sm hover:bg-slate-700 hover:text-white"
+              className="gap-2 rounded-xl border-white/30 bg-white/10 text-white shadow-sm backdrop-blur-sm hover:bg-white/20 hover:text-white"
             >
               <Plus className="h-4 w-4" /> Add contact
             </Button>
@@ -406,33 +410,29 @@ export default function CampaignsPage() {
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-6xl mx-auto flex items-center gap-1 overflow-x-auto scrollbar-none">
+          <p className="mr-auto whitespace-nowrap pr-3 text-xs font-medium text-slate-400">Manage campaigns</p>
           {[
             { label: "Campaigns", icon: Megaphone, tab: "campaigns" as const },
             { label: "Contacts",  icon: Users,     tab: "contacts"  as const },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={() => setTab(a.tab)}
-              className={`group flex min-w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors ${tab === a.tab ? "bg-blue-50" : "hover:bg-blue-50"}`}>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors ${tab === a.tab ? "bg-blue-100" : ""}`}>
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className={`whitespace-nowrap text-[11px] font-medium ${tab === a.tab ? "text-blue-700" : "text-slate-600"}`}>{a.label}</span>
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${tab === a.tab ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
+              <a.icon className={`h-3.5 w-3.5 ${tab === a.tab ? "text-white" : "text-slate-400"}`} />
+              <span className="whitespace-nowrap">{a.label}</span>
             </motion.button>
           ))}
           <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             onClick={loadAll}
-            className="group flex min-w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
-              <RefreshCw className="h-4 w-4" />
-            </div>
-            <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700">Refresh</span>
+            className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900">
+            <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
+            <span className="whitespace-nowrap">Refresh</span>
           </motion.button>
-          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200" />
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -442,7 +442,7 @@ export default function CampaignsPage() {
           { label: "Emails Sent", value: stats.totalSent.toLocaleString(), icon: Send, grad: "from-violet-500 to-purple-600" },
           { label: "Avg Open Rate", value: `${stats.openRate}%`, icon: TrendingUp, grad: "from-orange-500 to-amber-600" },
         ].map(s => (
-          <Card key={s.label} className="p-4 hover:shadow-md transition-shadow">
+          <Card key={s.label} className="rounded-2xl border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/40 hover:shadow-md transition-shadow">
             <div className={`bg-gradient-to-br ${s.grad} w-9 h-9 rounded-lg flex items-center justify-center mb-3 shadow-sm`}>
               <s.icon className="h-5 w-5 text-white" />
             </div>

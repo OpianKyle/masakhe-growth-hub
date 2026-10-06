@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import marketStallImage from "@/assets/market-stall.jpg";
 
 interface Product {
   id: string;
@@ -98,6 +99,8 @@ type Tab = "products" | "stocktake" | "movements" | "lowstock";
 export default function InventoryPage() {
   const [tab, setTab] = useState<Tab>("products");
   const [stats, setStats] = useState<InventoryStats | null>(null);
+  const [requestProductDialog, setRequestProductDialog] = useState(false);
+  const [requestStocktakeDialog, setRequestStocktakeDialog] = useState(false);
 
   const loadStats = useCallback(() => {
     fetch("/api/inventory/stats", { credentials: "include" })
@@ -107,7 +110,7 @@ export default function InventoryPage() {
   useEffect(() => { loadStats(); }, [loadStats]);
 
   return (
-    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50/70 dark:bg-gray-950">
 
       <NeroSectionHeader
         section="Operations"
@@ -115,8 +118,11 @@ export default function InventoryPage() {
         description={stats
           ? `${stats.totalProducts} products · ${stats.lowStockCount > 0 ? `${stats.lowStockCount} low stock · ` : ""}${stats.outOfStockCount > 0 ? `${stats.outOfStockCount} out of stock · ` : ""}Scan barcodes and run stock takes`
           : "Manage products, scan barcodes, and run stock takes"}
+        backgroundImage={marketStallImage}
+        backgroundPosition="center 42%"
+        backgroundOverlay="90deg, rgba(100, 45, 8, 0.92) 0%, rgba(164, 78, 11, 0.74) 52%, rgba(54, 35, 10, 0.65) 100%"
         actions={
-          <Button onClick={() => setShowAddProduct(true)} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
+          <Button onClick={() => { setTab("products"); setRequestProductDialog(true); }} className="gap-2 rounded-xl bg-white text-amber-950 shadow-md hover:bg-amber-50">
             <Plus className="h-4 w-4" /> Add product
           </Button>
         }
@@ -124,25 +130,23 @@ export default function InventoryPage() {
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
-        <div className="max-w-[1400px] mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+          <p className="whitespace-nowrap text-xs font-medium text-slate-400">Manage stock</p>
           {[
-            { label: "Scan Barcode", icon: ScanLine, action: () => setScanMode(scanMode === "barcode" ? null : "barcode") },
-            { label: "Stock Take",   icon: ClipboardCheck, action: () => setShowStockTake(true) },
+            { label: "Scan Barcode", icon: ScanLine, action: () => { setTab("stocktake"); setRequestStocktakeDialog(true); } },
+            { label: "Stock Take",   icon: ClipboardCheck, action: () => setTab("stocktake") },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
-              className="group flex min-w-[80px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700 dark:text-slate-300">{a.label}</span>
+              className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-gray-800">
+              <a.icon className="h-3.5 w-3.5 text-slate-400" />
+              <span className="whitespace-nowrap">{a.label}</span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
 
-      <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -164,8 +168,8 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {tab === "products" && <ProductsTab onChange={loadStats} />}
-      {tab === "stocktake" && <StocktakeTab onChange={loadStats} />}
+      {tab === "products" && <ProductsTab onChange={loadStats} createRequested={requestProductDialog} onCreateRequestHandled={() => setRequestProductDialog(false)} />}
+      {tab === "stocktake" && <StocktakeTab onChange={loadStats} createRequested={requestStocktakeDialog} onCreateRequestHandled={() => setRequestStocktakeDialog(false)} />}
       {tab === "movements" && <MovementsTab />}
       {tab === "lowstock" && <LowStockTab onChange={loadStats} />}
       </div>
@@ -175,7 +179,7 @@ export default function InventoryPage() {
 
 function StatCard({ icon: Icon, label, value, iconBg }: { icon: any; label: string; value: string; iconBg: string }) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/40 transition-shadow hover:shadow-md">
       <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${iconBg} shadow-sm`}>
         <Icon className="h-4 w-4 text-white" />
       </div>
@@ -313,7 +317,7 @@ function CameraScanner({ onResult, onClose }: { onResult: (code: string) => void
 // ─────────────────────────────────────────────────────────────
 // Products Tab
 // ─────────────────────────────────────────────────────────────
-function ProductsTab({ onChange }: { onChange: () => void }) {
+function ProductsTab({ onChange, createRequested, onCreateRequestHandled }: { onChange: () => void; createRequested: boolean; onCreateRequestHandled: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -322,6 +326,12 @@ function ProductsTab({ onChange }: { onChange: () => void }) {
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [moveTarget, setMoveTarget] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (!createRequested) return;
+    setCreating(true);
+    onCreateRequestHandled();
+  }, [createRequested, onCreateRequestHandled]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -711,12 +721,18 @@ function MovementModal({ product, onClose, onSaved }: { product: Product; onClos
 // ─────────────────────────────────────────────────────────────
 // Stock-take Tab
 // ─────────────────────────────────────────────────────────────
-function StocktakeTab({ onChange }: { onChange: () => void }) {
+function StocktakeTab({ onChange, createRequested, onCreateRequestHandled }: { onChange: () => void; createRequested: boolean; onCreateRequestHandled: () => void }) {
   const [sessions, setSessions] = useState<StocktakeSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!createRequested) return;
+    setCreating(true);
+    onCreateRequestHandled();
+  }, [createRequested, onCreateRequestHandled]);
 
   const load = useCallback(() => {
     setLoading(true);

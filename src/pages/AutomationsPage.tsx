@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { TEMPLATES, InvoicePreview } from "@/components/InvoiceTemplates";
 import { hasSavedTemplateConfig, getSavedTemplateName, loadTemplateConfig } from "@/components/InvoiceTemplateDesigner";
+import heroImage from "@/assets/hero-image.jpg";
 
 type Settings = {
   thank_you_enabled: number; thank_you_subject: string; thank_you_body: string;
@@ -213,17 +214,20 @@ export default function AutomationsPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50/70 dark:bg-gray-950">
 
       <NeroSectionHeader
         section="Operations"
         title="Automations"
         description="Set it once. Masakhe handles invoices, follow-ups and customer messages on autopilot."
+        backgroundImage={heroImage}
+        backgroundPosition="center 50%"
+        backgroundOverlay="90deg, rgba(65, 42, 8, 0.92) 0%, rgba(133, 79, 13, 0.76) 52%, rgba(42, 36, 12, 0.64) 100%"
         actions={
           <Button
             onClick={saveSettings}
             disabled={saving}
-            className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500"
+            className="gap-2 rounded-xl bg-white text-amber-950 shadow-md hover:bg-amber-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save settings
@@ -233,28 +237,27 @@ export default function AutomationsPage() {
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <nav aria-label="Automation sections" className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
-        <div className="max-w-6xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-6xl mx-auto flex items-center gap-1 overflow-x-auto scrollbar-none">
+          <p className="mr-auto whitespace-nowrap pr-3 text-xs font-medium text-slate-400">Manage automations</p>
           {[
             { label: "Money In", icon: Receipt, target: "automation-money-in" },
-            { label: "Money Out", icon: FileSearch, target: "automation-stop-credit" },
+            { label: "Money Out", icon: FileSearch, target: "stop_credit" },
             { label: "Client Care", icon: Mail, target: "automation-client-care" },
           ].map((a, i) => (
             <button
               key={a.label}
               type="button"
               onClick={() => document.getElementById(a.target)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className="group flex min-w-[80px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-gray-800"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
-                <a.icon className="h-4 w-4" />
-              </span>
-              <span className="whitespace-nowrap text-[11px] font-medium">{a.label}</span>
+              <a.icon className="h-3.5 w-3.5 text-slate-400" />
+              <span className="whitespace-nowrap">{a.label}</span>
             </button>
           ))}
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
       {/* Stats strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -651,10 +654,10 @@ function StatCard({ label, value, icon, accent }: { label: string; value: string
   );
 }
 
-function SectionGroup({ title, icon, accent, children }: { title: string; icon: React.ReactNode; accent: "emerald" | "blue"; children: React.ReactNode }) {
+function SectionGroup({ id, title, icon, accent, children }: { id: string; title: string; icon: React.ReactNode; accent: "emerald" | "blue"; children: React.ReactNode }) {
   const accentColor = accent === "emerald" ? "text-emerald-700" : "text-blue-700";
   return (
-    <div className="space-y-3">
+    <div id={id} className="space-y-3 scroll-mt-6">
       <h2 className={`text-lg font-semibold flex items-center gap-2 ${accentColor}`}>
         {icon} {title}
       </h2>
@@ -671,7 +674,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card id={id} className="overflow-hidden scroll-mt-6">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-4 hover:bg-muted/30 text-left"

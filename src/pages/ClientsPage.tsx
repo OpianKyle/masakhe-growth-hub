@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import smmeOwnerImage from "@/assets/smme-owner.jpg";
 
 interface Client {
   id: string;
@@ -558,22 +559,25 @@ export default function ClientsPage() {
   ];
 
   return (
-    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50/70 dark:bg-gray-950">
 
       <NeroSectionHeader
         section="Operations"
         title="Your Clients"
         description="Manage your client portfolio, documents and communication in one place"
+        backgroundImage={smmeOwnerImage}
+        backgroundPosition="center 28%"
+        backgroundOverlay="90deg, rgba(48, 12, 76, 0.92) 0%, rgba(91, 33, 116, 0.75) 52%, rgba(20, 20, 47, 0.64) 100%"
         actions={
           <>
-            <Button onClick={openAdd} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
-              <Plus className="h-4 w-4" /> Add client
+            <Button onClick={openAdd} className="gap-2 rounded-xl bg-white text-violet-950 shadow-md hover:bg-violet-50">
+              <Plus className="h-4 w-4" /> Add Client
             </Button>
             <Button
               onClick={() => importRef.current?.click()}
               variant="outline"
               disabled={importing}
-              className="gap-2 rounded-lg border-slate-500/70 bg-slate-800/70 text-slate-100 shadow-sm hover:bg-slate-700 hover:text-white"
+              className="gap-2 rounded-xl border-white/30 bg-white/10 text-white shadow-sm backdrop-blur-sm hover:bg-white/20 hover:text-white"
             >
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import CSV
             </Button>
@@ -583,7 +587,8 @@ export default function ClientsPage() {
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+          <p className="whitespace-nowrap text-xs font-medium text-slate-400">Manage clients</p>
           {[
             { label: "Export CSV", icon: Download, action: handleExport },
             { label: "Personal Template", icon: User, action: () => downloadTemplate("individual") },
@@ -591,26 +596,23 @@ export default function ClientsPage() {
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
-              className="group flex min-w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700 dark:text-slate-300">{a.label}</span>
+              className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-gray-800">
+              <a.icon className="h-3.5 w-3.5 text-slate-400" />
+              <span className="whitespace-nowrap">{a.label}</span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
       <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className={`rounded-xl border border-border bg-card shadow-card p-4 ${s.cardAccent}`}>
+            className={`rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/40 p-4 ${s.cardAccent}`}>
             <div className="flex items-center gap-3 mb-3">
               <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${s.iconBg} shadow-sm`}>
                 <s.icon className="h-4 w-4 text-white" />

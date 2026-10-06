@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2, Eye } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2, Eye, ReceiptText, Clock3, AlertCircle, WalletCards, ArrowUpRight } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 import { TEMPLATES, TEMPLATE_STYLES, InvoicePreview, type InvoiceItem } from "@/components/InvoiceTemplates";
+import heroImage from "@/assets/hero-image.jpg";
+import smmeOwnerImage from "@/assets/smme-owner.jpg";
 
 interface InventoryProduct {
   id: string;
@@ -569,25 +571,39 @@ export default function InvoicesPage() {
   };
 
   const filtered = invoices.filter(inv => (inv.type || "invoice") === (activeTab === "designer" ? "invoice" : activeTab));
+  const invoiceDocs = invoices.filter((inv) => (inv.type || "invoice") === "invoice");
+  const invoicedCents = invoiceDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
+  const paidDocs = invoiceDocs.filter((inv) => inv.paid_at || inv.status === "paid");
+  const paidCents = paidDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
+  const outstandingCents = Math.max(0, invoicedCents - paidCents);
+  const today = new Date().toISOString().slice(0, 10);
+  const overdueDocs = invoiceDocs.filter((inv) =>
+    !inv.paid_at && inv.status !== "paid" && inv.due_date && inv.due_date.slice(0, 10) < today
+  );
+  const overdueCents = overdueDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
+  const collectionRate = invoicedCents > 0 ? Math.min(100, Math.round((paidCents / invoicedCents) * 100)) : 0;
 
   return (
-    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50/70 dark:bg-gray-950">
 
       <NeroSectionHeader
         section="Transactions"
         title="Quotes & Invoices"
         description="Create, send and track professional invoices and quotes for your clients"
+        backgroundImage={heroImage}
+        backgroundPosition="center 43%"
+        backgroundOverlay="90deg, rgba(7, 44, 35, 0.93) 0%, rgba(9, 68, 72, 0.78) 52%, rgba(10, 40, 61, 0.62) 100%"
         actions={
           <>
-            <Button onClick={() => openCreate("invoice")} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
-              <Plus className="h-4 w-4" /> New invoice
-            </Button>
             <Button
               onClick={() => openCreate("quote")}
               variant="outline"
-              className="gap-2 rounded-lg border-slate-500/70 bg-slate-800/70 text-slate-100 shadow-sm hover:bg-slate-700 hover:text-white"
+              className="gap-2 rounded-lg border-white/30 bg-white/10 text-white shadow-sm backdrop-blur-sm hover:bg-white/20 hover:text-white"
             >
               <Plus className="h-4 w-4" /> New quote
+            </Button>
+            <Button onClick={() => openCreate("invoice")} className="gap-2 rounded-lg bg-white text-emerald-900 shadow-lg shadow-black/10 hover:bg-emerald-50">
+              <Plus className="h-4 w-4" /> New invoice
             </Button>
           </>
         }
@@ -595,7 +611,8 @@ export default function InvoicesPage() {
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+          <p className="whitespace-nowrap text-xs font-medium text-slate-400">Manage documents</p>
           {[
             { label: "Export CSV",   icon: Download, action: () => handleExport("csv") },
             { label: "Export Excel", icon: Download, action: () => handleExport("xlsx") },
@@ -603,32 +620,82 @@ export default function InvoicesPage() {
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
-              className="group flex min-w-[80px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700 dark:text-slate-300">{a.label}</span>
+              className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-gray-800">
+              <a.icon className="h-3.5 w-3.5 text-slate-400" />
+              <span className="whitespace-nowrap">{a.label}</span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
       <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+
+      <section
+        className="relative overflow-hidden rounded-3xl bg-slate-950 px-5 py-6 text-white shadow-xl shadow-emerald-950/10 sm:px-7"
+        style={{ backgroundImage: `linear-gradient(90deg, rgba(7, 44, 35, 0.94) 0%, rgba(9, 68, 72, 0.78) 52%, rgba(10, 40, 61, 0.65) 100%), url(${smmeOwnerImage})`, backgroundPosition: "center 32%", backgroundSize: "cover" }}
+      >
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-50">Collection pulse</span>
+            <h2 className="mt-3 max-w-lg text-2xl font-bold leading-tight tracking-tight sm:text-3xl">Turn outstanding invoices into momentum.</h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-emerald-50/80">A clear view of what is owed helps you follow up confidently and keep your cash moving.</p>
+          </div>
+          <div className="flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-white/15 bg-black/10 p-4 backdrop-blur-sm">
+            <div>
+              <p className="text-xs font-medium text-emerald-50/70">Still to collect</p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">R{(outstandingCents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-[11px] text-emerald-50/70">
+                <span>{paidDocs.length} paid of {invoiceDocs.length} invoices</span><span>{collectionRate}% collected</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-yellow-200 transition-all" style={{ width: `${collectionRate}%` }} /></div>
+            </div>
+            <button onClick={() => setActiveTab("invoice")} className="mt-1 inline-flex items-center justify-between rounded-xl bg-white px-3.5 py-2.5 text-left text-xs font-bold text-emerald-900 transition hover:bg-emerald-50">
+              {overdueDocs.length ? `Review ${overdueDocs.length} overdue invoice${overdueDocs.length === 1 ? "" : "s"}` : "Review outstanding invoices"}<ArrowUpRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: "Invoiced", value: invoicedCents, detail: `${invoiceDocs.length} invoices`, icon: ReceiptText, tone: "text-blue-700 bg-blue-50" },
+          { label: "Awaiting payment", value: outstandingCents, detail: `${invoiceDocs.length - paidDocs.length} outstanding`, icon: Clock3, tone: "text-amber-700 bg-amber-50" },
+          { label: "Overdue", value: overdueCents, detail: `${overdueDocs.length} overdue`, icon: AlertCircle, tone: "text-red-700 bg-red-50" },
+          { label: "Paid", value: paidCents, detail: `${paidDocs.length} paid`, icon: WalletCards, tone: "text-emerald-700 bg-emerald-50" },
+        ].map((metric) => (
+          <Card key={metric.label} className="rounded-2xl border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/40">
+            <div className="flex items-start justify-between gap-2"><div><p className="text-xs font-medium text-muted-foreground">{metric.label}</p><p className="mt-1 text-xl font-bold tracking-tight">R{(metric.value / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p><p className="mt-1 text-[11px] text-muted-foreground">{metric.detail}</p></div><div className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-inset ring-black/5 ${metric.tone}`}><metric.icon className="h-4 w-4" /></div></div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          { label: "Win the next job", detail: "Send a polished quote in under a minute.", icon: Plus, style: "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 text-amber-900", action: () => openCreate("quote") },
+          { label: "Get paid faster", detail: "Keep your collection streak going.", icon: ReceiptText, style: "border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 text-sky-900", action: () => openCreate("invoice") },
+          { label: "Make it unmistakably yours", detail: "Create a branded template customers remember.", icon: Palette, style: "border-purple-200 bg-gradient-to-br from-purple-50 to-fuchsia-50 text-purple-900", action: () => setActiveTab("designer") },
+        ].map((action) => (
+          <button key={action.label} onClick={action.action} className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${action.style}`}>
+            <action.icon className="mb-3 h-8 w-8 rounded-xl bg-white/80 p-1.5" /><p className="text-sm font-bold">{action.label}</p><p className="mt-1 text-xs opacity-75">{action.detail}</p>
+          </button>
+        ))}
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
         {(["invoice", "quote"] as const).map((tab) => {
           const count = invoices.filter(i => (i.type || "invoice") === tab).length;
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === tab
-                  ? "border-blue-600 text-blue-700"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
               }`}
             >
               {tab === "invoice" ? "Invoices" : "Quotes"} <span className="ml-1 text-xs opacity-70">({count})</span>
@@ -637,10 +704,10 @@ export default function InvoicesPage() {
         })}
         <button
           onClick={() => setActiveTab("designer")}
-          className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
             activeTab === "designer"
-              ? "border-blue-600 text-blue-700"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
           }`}
         >
           <Palette className="h-3.5 w-3.5" /> Template Designer
