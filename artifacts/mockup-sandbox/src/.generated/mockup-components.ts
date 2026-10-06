@@ -6,5 +6,9 @@ export const modules: ModuleMap = {
   "./components/mockups/dashboard-variants/GradientFlow.tsx": () => import("../components/mockups/dashboard-variants/GradientFlow.tsx"),
   "./components/mockups/masakhe-loaders/FlagStripes.tsx": () => import("../components/mockups/masakhe-loaders/FlagStripes.tsx"),
   "./components/mockups/masakhe-loaders/OrbitDots.tsx": () => import("../components/mockups/masakhe-loaders/OrbitDots.tsx"),
-  "./components/mockups/masakhe-loaders/PulseM.tsx": () => import("../components/mockups/masakhe-loaders/PulseM.tsx")
+  "./components/mockups/masakhe-loaders/PulseM.tsx": () => import("../components/mockups/masakhe-loaders/PulseM.tsx"),
+  "./components/mockups/nero-sections/CurrentOperations.tsx": () => import("../components/mockups/nero-sections/CurrentOperations.tsx"),
+  "./components/mockups/nero-sections/CurrentTransactions.tsx": () => import("../components/mockups/nero-sections/CurrentTransactions.tsx"),
+  "./components/mockups/nero-sections/NeroOperations.tsx": () => import("../components/mockups/nero-sections/NeroOperations.tsx"),
+  "./components/mockups/nero-sections/NeroTransactions.tsx": () => import("../components/mockups/nero-sections/NeroTransactions.tsx")
 };

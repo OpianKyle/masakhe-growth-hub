@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import NeroSectionHeader from "@/components/NeroSectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -570,79 +571,46 @@ export default function InvoicesPage() {
   const filtered = invoices.filter(inv => (inv.type || "invoice") === (activeTab === "designer" ? "invoice" : activeTab));
 
   return (
-    <div className="min-h-full bg-white dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #dbeafe 0%, #c7d2fe 35%, #e0e7ff 70%, #ede9fe 100%)" }}>
-        <div className="pointer-events-none select-none absolute inset-0">
-          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
-            className="absolute -left-4 top-5 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="h-2 w-16 rounded-full bg-blue-200 mb-1.5" />
-            <div className="h-1.5 w-12 rounded-full bg-gray-100 mb-3" />
-            {[["w-full","w-10"],["w-4/5","w-8"],["w-3/4","w-9"]].map(([a,b],i) => (
-              <div key={i} className="flex justify-between mb-1.5"><div className={`h-1.5 ${a} rounded-full bg-blue-100`}/><div className={`h-1.5 ${b} rounded-full bg-indigo-100`}/></div>
-            ))}
-            <div className="h-5 w-full rounded-lg bg-blue-500/15 mt-2" />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
-            className="absolute -right-3 top-4 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="h-2 w-14 rounded-full bg-indigo-200 mb-2" />
-            <div className="h-6 w-full rounded-lg bg-blue-50 mb-2" />
-            <div className="h-4 w-3/4 rounded-lg bg-indigo-50 mb-1.5" />
-            <div className="h-4 w-1/2 rounded-lg bg-violet-50" />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 2, y: 30 }} animate={{ opacity: 0.7, rotate: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.28 }}
-            className="absolute right-32 -bottom-2 w-28 rounded-2xl bg-white/70 backdrop-blur shadow-lg border-2 border-white p-3">
-            <div className="h-5 w-full rounded-lg bg-emerald-100 mb-1.5" />
-            <div className="h-3 w-3/4 rounded-full bg-gray-100" />
-          </motion.div>
-        </div>
-        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
-          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#1e3a8a" }}>
-            Quotes & Invoices
-          </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            className="text-blue-800/70 mb-6 text-sm">
-            Create, send and track professional invoices and quotes for your clients
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="flex items-center justify-center gap-3 flex-wrap">
-            <Button onClick={() => openCreate("invoice")}
-              className="bg-blue-700 hover:bg-blue-800 text-white shadow-md gap-2 rounded-xl">
-              <Plus className="h-4 w-4" /> New Invoice
+      <NeroSectionHeader
+        section="Transactions"
+        title="Quotes & Invoices"
+        description="Create, send and track professional invoices and quotes for your clients"
+        actions={
+          <>
+            <Button onClick={() => openCreate("invoice")} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
+              <Plus className="h-4 w-4" /> New invoice
             </Button>
-            <Button onClick={() => openCreate("quote")}
-              variant="outline" className="bg-white/80 border-white shadow-sm gap-2 text-blue-900 hover:bg-white rounded-xl">
-              <Plus className="h-4 w-4" /> New Quote
+            <Button
+              onClick={() => openCreate("quote")}
+              variant="outline"
+              className="gap-2 rounded-lg border-slate-500/70 bg-slate-800/70 text-slate-100 shadow-sm hover:bg-slate-700 hover:text-white"
+            >
+              <Plus className="h-4 w-4" /> New quote
             </Button>
-          </motion.div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
-      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+      <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
           {[
-            { label: "Export CSV",   icon: Download, action: () => handleExport("csv"),              grad: "from-violet-500 to-purple-500" },
-            { label: "Export Excel", icon: Download, action: () => handleExport("xlsx"),             grad: "from-sky-500 to-blue-500" },
-            { label: "Import CSV",   icon: Upload,   action: () => fileInputRef.current?.click(),   grad: "from-teal-500 to-emerald-500" },
+            { label: "Export CSV",   icon: Download, action: () => handleExport("csv") },
+            { label: "Export Excel", icon: Download, action: () => handleExport("xlsx") },
+            { label: "Import CSV",   icon: Upload,   action: () => fileInputRef.current?.click() },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
-              className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group min-w-[80px] shrink-0">
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-                <a.icon className="h-4 w-4 text-white" />
+              className="group flex min-w-[80px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
+                <a.icon className="h-4 w-4" />
               </div>
-              <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">{a.label}</span>
+              <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700 dark:text-slate-300">{a.label}</span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            onClick={() => openCreate("invoice")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all shrink-0">
-            <Plus className="h-4 w-4" /> New Invoice
-          </motion.button>
+          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
       <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImport} className="hidden" />
@@ -659,7 +627,7 @@ export default function InvoicesPage() {
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? "border-primary text-primary"
+                  ? "border-blue-600 text-blue-700"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -671,7 +639,7 @@ export default function InvoicesPage() {
           onClick={() => setActiveTab("designer")}
           className={`px-5 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
             activeTab === "designer"
-              ? "border-primary text-primary"
+              ? "border-blue-600 text-blue-700"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >

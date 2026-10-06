@@ -7,6 +7,7 @@ import {
   StopCircle, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NeroSectionHeader from "@/components/NeroSectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,75 +107,38 @@ export default function InventoryPage() {
   useEffect(() => { loadStats(); }, [loadStats]);
 
   return (
-    <div className="min-h-full bg-white dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #ffedd5 0%, #fed7aa 30%, #fef3c7 70%, #fef9c3 100%)" }}>
-        <div className="pointer-events-none select-none absolute inset-0">
-          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
-            className="absolute -left-4 top-4 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center"><Package className="h-3.5 w-3.5 text-orange-600"/></div>
-              <div className="space-y-1"><div className="h-2 w-14 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
-            </div>
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              {["bg-orange-100","bg-amber-100","bg-yellow-100","bg-orange-50","bg-amber-50","bg-orange-100"].map((c,i) => (<div key={i} className={`h-6 rounded ${c}`}/>))}
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-gray-100"><div className="h-1.5 w-2/3 rounded-full bg-orange-300"/></div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
-            className="absolute -right-3 top-5 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="h-2 w-14 rounded-full bg-orange-200 mb-2"/>
-            <div className="flex items-end gap-1 h-12">
-              {[60,40,80,55,90,70,45].map((h,i) => <div key={i} className="flex-1 rounded-t-sm" style={{height:`${h}%`,background:"#f97316",opacity:0.6+(i%3)*0.1}}/>)}
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 2, y: 30 }} animate={{ opacity: 0.72, rotate: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.28 }}
-            className="absolute right-32 -bottom-2 w-28 rounded-2xl bg-white/70 backdrop-blur shadow-lg border-2 border-white p-2.5">
-            <div className="h-2 w-10 rounded-full bg-gray-200 mb-2"/>
-            <div className="space-y-1.5">{["w-full","w-4/5","w-2/3"].map((w,i) => <div key={i} className={`h-2 ${w} rounded-full bg-orange-100`}/>)}</div>
-          </motion.div>
-        </div>
-        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
-          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#7c2d12" }}>
-            Inventory & Stock
-          </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            className="text-orange-800/70 mb-6 text-sm">
-            {stats ? `${stats.totalProducts} products · ${stats.lowStockCount > 0 ? `${stats.lowStockCount} low stock · ` : ""}${stats.outOfStockCount > 0 ? `${stats.outOfStockCount} out of stock · ` : ""}Scan barcodes and run stock takes` : "Manage products, scan barcodes, and run stock takes"}
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="flex items-center justify-center gap-3 flex-wrap">
-            <Button onClick={() => setShowAddProduct(true)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-md gap-2 rounded-xl">
-              <Plus className="h-4 w-4" /> Add Product
-            </Button>
-          </motion.div>
-        </div>
-      </div>
+      <NeroSectionHeader
+        section="Operations"
+        title="Inventory & Stock"
+        description={stats
+          ? `${stats.totalProducts} products · ${stats.lowStockCount > 0 ? `${stats.lowStockCount} low stock · ` : ""}${stats.outOfStockCount > 0 ? `${stats.outOfStockCount} out of stock · ` : ""}Scan barcodes and run stock takes`
+          : "Manage products, scan barcodes, and run stock takes"}
+        actions={
+          <Button onClick={() => setShowAddProduct(true)} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
+            <Plus className="h-4 w-4" /> Add product
+          </Button>
+        }
+      />
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
-      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+      <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
         <div className="max-w-[1400px] mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
           {[
-            { label: "Scan Barcode", icon: ScanLine, action: () => setScanMode(scanMode === "barcode" ? null : "barcode"), grad: "from-amber-500 to-orange-500" },
-            { label: "Stock Take",   icon: ClipboardCheck, action: () => setShowStockTake(true),                             grad: "from-teal-500 to-emerald-500" },
+            { label: "Scan Barcode", icon: ScanLine, action: () => setScanMode(scanMode === "barcode" ? null : "barcode") },
+            { label: "Stock Take",   icon: ClipboardCheck, action: () => setShowStockTake(true) },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={a.action}
-              className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group min-w-[80px] shrink-0">
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-                <a.icon className="h-4 w-4 text-white" />
+              className="group flex min-w-[80px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
+                <a.icon className="h-4 w-4" />
               </div>
-              <span className="text-[11px] font-medium text-gray-600 whitespace-nowrap">{a.label}</span>
+              <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700 dark:text-slate-300">{a.label}</span>
             </motion.button>
           ))}
-          <div className="mx-2 h-10 w-px bg-gray-200 shrink-0" />
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-            onClick={() => setShowAddProduct(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all shrink-0">
-            <Plus className="h-4 w-4" /> Add Product
-          </motion.button>
+          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
 

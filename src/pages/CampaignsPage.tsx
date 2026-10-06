@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import NeroSectionHeader from "@/components/NeroSectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -381,85 +382,53 @@ export default function CampaignsPage() {
   );
 
   return (
-    <div className="min-h-full bg-white dark:bg-gray-950">
+    <div className="nero-page min-h-full bg-slate-50 dark:bg-gray-950">
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #ffe4e6 0%, #fce7f3 35%, #fdf2f8 70%, #fff1f2 100%)" }}>
-        <div className="pointer-events-none select-none absolute inset-0">
-          <motion.div initial={{ opacity: 0, rotate: -5, y: 20 }} animate={{ opacity: 0.88, rotate: -3, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
-            className="absolute -left-4 top-4 w-40 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-7 w-7 rounded-full bg-rose-100 flex items-center justify-center"><Megaphone className="h-3.5 w-3.5 text-rose-600"/></div>
-              <div className="space-y-1"><div className="h-2 w-14 rounded-full bg-gray-200"/><div className="h-1.5 w-8 rounded-full bg-gray-100"/></div>
-            </div>
-            <div className="h-3 w-full rounded-full bg-rose-100 mb-1.5"/>
-            <div className="h-3 w-4/5 rounded-full bg-pink-100 mb-1.5"/>
-            <div className="h-5 w-full rounded-lg bg-rose-500/15 mt-2"/>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 5, y: 20 }} animate={{ opacity: 0.85, rotate: 3, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
-            className="absolute -right-3 top-5 w-36 rounded-2xl bg-white/85 backdrop-blur shadow-2xl border-2 border-white p-3">
-            <div className="h-2 w-14 rounded-full bg-rose-200 mb-2"/>
-            <div className="grid grid-cols-2 gap-1.5">
-              {["bg-rose-100","bg-pink-100","bg-orange-100","bg-fuchsia-100"].map((c,i) => (<div key={i} className={`h-8 rounded-lg ${c}`}/>))}
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, rotate: 2, y: 30 }} animate={{ opacity: 0.72, rotate: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.28 }}
-            className="absolute right-32 -bottom-2 w-28 rounded-2xl bg-white/70 backdrop-blur shadow-lg border-2 border-white p-2.5">
-            <div className="h-2 w-10 rounded-full bg-gray-200 mb-2"/><div className="h-4 w-full rounded-lg bg-rose-100"/>
-          </motion.div>
-        </div>
-        <div className="relative z-10 py-12 px-6 text-center max-w-2xl mx-auto">
-          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-            className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style={{ color: "#881337" }}>
-            Email Campaigns
-          </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            className="text-rose-800/70 mb-6 text-sm">
-            Create and send targeted email campaigns to your clients and subscribers
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="flex items-center justify-center gap-3 flex-wrap">
-            <Button onClick={() => openBuilder(null)} className="bg-rose-700 hover:bg-rose-800 text-white shadow-md gap-2 rounded-xl">
-              <Plus className="h-4 w-4" /> New Campaign
+      <NeroSectionHeader
+        section="Operations"
+        title="Email Campaigns"
+        description="Create and send targeted email campaigns to your clients and subscribers"
+        actions={
+          <>
+            <Button onClick={() => openBuilder(null)} className="gap-2 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-500">
+              <Plus className="h-4 w-4" /> New campaign
             </Button>
-            <Button onClick={() => { setEditContact(null); setShowContactModal(true); }}
-              variant="outline" className="bg-white/80 border-white shadow-sm gap-2 text-rose-900 hover:bg-white rounded-xl">
-              <Plus className="h-4 w-4" /> Add Contact
+            <Button
+              onClick={() => { setEditContact(null); setShowContactModal(true); }}
+              variant="outline"
+              className="gap-2 rounded-lg border-slate-500/70 bg-slate-800/70 text-slate-100 shadow-sm hover:bg-slate-700 hover:text-white"
+            >
+              <Plus className="h-4 w-4" /> Add contact
             </Button>
-          </motion.div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* ── Quick action bar ─────────────────────────────────────── */}
-      <div className="border-b border-gray-100 bg-white dark:bg-gray-950 px-4 py-2">
+      <div className="border-b border-slate-200 bg-white px-4 py-2 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto flex items-center gap-0.5 overflow-x-auto scrollbar-none">
           {[
-            { label: "Campaigns", icon: Megaphone, tab: "campaigns" as const, grad: "from-rose-500 to-pink-500" },
-            { label: "Contacts",  icon: Users,     tab: "contacts"  as const, grad: "from-violet-500 to-purple-500" },
+            { label: "Campaigns", icon: Megaphone, tab: "campaigns" as const },
+            { label: "Contacts",  icon: Users,     tab: "contacts"  as const },
           ].map((a, i) => (
             <motion.button key={a.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={() => setTab(a.tab)}
-              className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-colors group min-w-[72px] shrink-0 ${tab === a.tab ? "bg-rose-50" : "hover:bg-gray-50"}`}>
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${a.grad} flex items-center justify-center shadow-sm ${tab === a.tab ? "scale-110" : ""} transition-transform`}>
-                <a.icon className="h-4 w-4 text-white" />
+              className={`group flex min-w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors ${tab === a.tab ? "bg-blue-50" : "hover:bg-blue-50"}`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors ${tab === a.tab ? "bg-blue-100" : ""}`}>
+                <a.icon className="h-4 w-4" />
               </div>
-              <span className={`text-[11px] font-medium whitespace-nowrap ${tab === a.tab ? "text-rose-700" : "text-gray-600"}`}>{a.label}</span>
+              <span className={`whitespace-nowrap text-[11px] font-medium ${tab === a.tab ? "text-blue-700" : "text-slate-600"}`}>{a.label}</span>
             </motion.button>
           ))}
           <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             onClick={loadAll}
-            className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group min-w-[72px] shrink-0">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <RefreshCw className="h-4 w-4 text-white" />
+            className="group flex min-w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-lg px-4 py-2.5 transition-colors hover:bg-blue-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100">
+              <RefreshCw className="h-4 w-4" />
             </div>
-            <span className="text-[11px] font-medium text-gray-600 whitespace-nowrap">Refresh</span>
+            <span className="whitespace-nowrap text-[11px] font-medium text-slate-600 group-hover:text-blue-700">Refresh</span>
           </motion.button>
-          <div className="mx-2 h-10 w-px bg-gray-200 shrink-0" />
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-            onClick={() => openBuilder(null)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all shrink-0">
-            <Plus className="h-4 w-4" /> New Campaign
-          </motion.button>
+          <div className="mx-2 h-10 w-px shrink-0 bg-slate-200" />
         </div>
       </div>
 
