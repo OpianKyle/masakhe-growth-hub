@@ -261,11 +261,15 @@ authRouter.post("/register", async (req, res) => {
       }
     }
 
-    // Registration also starts an authenticated session, so it must pass
-    // through the same mandatory phone challenge as a normal login.
-    const verification = await beginPhoneVerification(req, { id: userId, phone });
-    if (!verification.ok) return res.status(400).json({ error: verification.error });
-    req.session.save(async () => {
+    // Phone verification is not active for signup. Start the user's session
+    // directly, while keeping the optional login 2FA flow separate.
+    req.session.userId = userId;
+    req.session.save(async (sessionError) => {
+      if (sessionError) {
+        console.error("[Auth] registration session-save error:", sessionError.message);
+        return res.status(500).json({ error: "Account created, but sign-in could not be started. Please log in." });
+      }
+
       // Wrap entire callback so a thrown error never leaves res unsent
       let user: any = null;
       try {
@@ -372,7 +376,10 @@ authRouter.post("/register", async (req, res) => {
       }
 
       try {
-        res.json({ ok: true, requiresOtp: true, phoneHint: phoneHint(phone) });
+        if (!user) {
+          return res.status(500).json({ error: "Account created, but sign-in could not be started. Please log in." });
+        }
+        res.json({ ok: true, user: { ...user, is_nexo_client, nexo_franchise_code } });
       } catch (e: any) {
         console.error("[Auth] res.json error:", e.message);
       }
