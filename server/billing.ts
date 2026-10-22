@@ -242,7 +242,7 @@ billingRouter.get("/subscription", requireAuth, (_req, res) => {
   });
 });
 
-billingRouter.get("/status", requireAuth, async (req, res) => {
+billingRouter.get("/status", requireAuth, (_req, res) => {
   return res.json({
     active: true,
     status: "ACTIVE",
@@ -253,173 +253,17 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     trialExpired: false,
     trialEndsAt: null,
   });
-  /* Legacy subscription status lookup retained below; Masakhe access is free. */
-  try {
-    const userId = getDataOwnerId(req);
-    const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
-    
-    const ALL_MODULES = ["web_builder", "social_biz", "transactions_ops", "people_hr"];
-
-    // Admin users always have full access to all modules
-    if (user?.role === "admin") {
-      return res.json({ active: true, status: "ACTIVE", plan: "all_modules", modules: ALL_MODULES, maxUsers: 10 });
-    }
-    // Exempt users (free access granted by super admin) get full access to all modules
-    if (user?.subscription_exempt) {
-      return res.json({ active: true, status: "EXEMPT", plan: "all_modules", modules: ALL_MODULES, maxUsers: 10 });
-    }
-    
-    const workspace = await queryOne(
-      "SELECT w.id, w.created_at FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [userId]
-    );
-    if (!workspace) {
-      return res.json({ active: false, status: null, plan: null });
-    }
-
-    const subscription = await queryOne(
-      `SELECT bs.status, bs.plan_id, bp.code as plan_code, bs.trial_end_at
-       FROM billing_subscriptions bs
-       LEFT JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ?
-         AND bs.status IN ('ACTIVE','TRIAL')
-         AND (bs.status != 'TRIAL' OR bs.trial_end_at > NOW())
-       ORDER BY bs.created_at DESC LIMIT 1`,
-      [workspace.id]
-    );
-
-    if (!subscription) {
-      // Check if there was a trial that has since expired
-      const expiredTrial = await queryOne(
-        `SELECT trial_end_at FROM billing_subscriptions
-         WHERE workspace_id = ? AND status = 'TRIAL' AND trial_end_at <= NOW()
-         ORDER BY created_at DESC LIMIT 1`,
-        [workspace.id]
-      );
-      if (expiredTrial) {
-        return res.json({
-          active: false, status: 'TRIAL', plan: null, modules: [], maxUsers: 0,
-          trialExpired: true, trialEndedAt: expiredTrial.trial_end_at,
-        });
-      }
-      return res.json({ active: false, status: null, plan: null, modules: [], maxUsers: 0 });
-    }
-
-    const { getActiveModules, MODULE_PLAN_MAP } = await import("./feature-gate.js");
-    const modules = await getActiveModules(workspace.id);
-    const maxUsers = subscription.max_users || 2;
-
-    res.json({
-      active: true,
-      status: subscription.status,
-      plan: subscription.plan_code || null,
-      modules,
-      maxUsers,
-      trialEndsAt: subscription.trial_end_at || null,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
-billingRouter.get("/access-status", requireAuth, async (req, res) => {
+billingRouter.get("/access-status", requireAuth, (_req, res) => {
   return res.json({
     blocked: false,
     showPayNow: false,
     daysUntilBilling: null,
     nextBillingDate: null,
     subscriptionStatus: "FREE",
+    isFree: true,
   });
-  /* Legacy access calculation retained below; Masakhe access is free. */
-  try {
-    const userId = getDataOwnerId(req);
-    const user = await queryOne("SELECT role, subscription_exempt FROM users WHERE id = ?", [userId]);
-
-    if (user?.role === "admin") {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "ACTIVE" });
-    }
-    if (user?.subscription_exempt) {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "EXEMPT" });
-    }
-
-    const workspace = await queryOne(
-      "SELECT w.id FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id WHERE wm.user_id = ? LIMIT 1",
-      [userId]
-    );
-    if (!workspace) {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
-    }
-
-    const subscription = await queryOne(
-      `SELECT bs.status, bs.next_billing_at, bs.trial_end_at, bs.plan_id,
-              bp.name as plan_name, bp.price_cents
-       FROM billing_subscriptions bs
-       JOIN billing_plans bp ON bp.id = bs.plan_id
-       WHERE bs.workspace_id = ?
-       ORDER BY bs.created_at DESC LIMIT 1`,
-      [workspace.id]
-    );
-
-    if (!subscription) {
-      // No subscription yet — website builder is free, no block
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "NONE" });
-    }
-
-    const now = new Date();
-    const status = subscription.status;
-
-    if (status === "TRIAL") {
-      const trialEnd = subscription.trial_end_at ? new Date(subscription.trial_end_at) : null;
-      const expired = trialEnd && trialEnd < now;
-      return res.json({ blocked: !!expired, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "TRIAL" });
-    }
-
-    if (status === "CANCELLED") {
-      return res.json({ blocked: false, showPayNow: false, daysUntilBilling: null, nextBillingDate: null, subscriptionStatus: "CANCELLED" });
-    }
-
-    const nextBilling = subscription.next_billing_at ? new Date(subscription.next_billing_at) : null;
-    let daysUntilBilling: number | null = null;
-    let blocked = false;
-    let showPayNow = false;
-
-    if (nextBilling) {
-      const msUntil = nextBilling.getTime() - now.getTime();
-      daysUntilBilling = Math.ceil(msUntil / (1000 * 60 * 60 * 24));
-
-      if (daysUntilBilling <= 5) showPayNow = true;
-
-      if (daysUntilBilling < -3) blocked = true;
-    }
-
-    if (status === "PAST_DUE") {
-      const pendingInvoice = await queryOne(
-        `SELECT created_at FROM billing_invoices
-         WHERE workspace_id = ? AND status = 'PENDING'
-         ORDER BY created_at DESC LIMIT 1`,
-        [workspace.id]
-      );
-      if (pendingInvoice) {
-        const daysOverdue = Math.floor((now.getTime() - new Date(pendingInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysOverdue >= 3) blocked = true;
-      } else {
-        blocked = true;
-      }
-      showPayNow = true;
-    }
-
-    res.json({
-      blocked,
-      showPayNow,
-      daysUntilBilling,
-      nextBillingDate: nextBilling ? nextBilling.toISOString() : null,
-      subscriptionStatus: status,
-      planName: subscription.plan_name,
-      amountCents: subscription.price_cents,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
 billingRouter.post("/start-trial", requireAuth, requireOwner, async (req, res) => {
