@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
-import { queryOne, execute } from "./db";
+import { pool, queryOne, execute } from "./db";
 import { generatePaymentToken, verifyResponseToken } from "./adumo";
 import { sendThankYouReceipt } from "./automations";
+import { allocateDocumentNumber, writeInvoiceAudit } from "./commercial-documents";
 
 export const invoicePaymentsRouter = Router();
 
@@ -26,9 +27,11 @@ invoicePaymentsRouter.get("/:token", async (req, res) => {
     const { token } = req.params;
     const invoice = await queryOne(
       `SELECT i.id, i.invoice_number, i.customer_name, i.customer_email,
-              i.total_cents, i.vat_cents, i.vat_enabled, i.items_json,
+              i.total_cents, i.vat_cents, i.vat_enabled, i.tax_rate, i.tax_label, i.items_json,
               i.status, i.type, i.payment_terms, i.due_date, i.notes,
-              i.created_at, i.paid_at, i.payment_token_expires_at, i.user_id
+              i.created_at, i.paid_at, i.payment_token_expires_at, i.user_id,
+              COALESCE((SELECT SUM(p.amount_cents) FROM invoice_payments p WHERE p.invoice_id = i.id AND p.user_id = i.user_id), 0) AS payments_total_cents,
+              COALESCE((SELECT SUM(c.amount_cents) FROM invoice_credit_notes c WHERE c.invoice_id = i.id AND c.user_id = i.user_id AND c.status = 'issued'), 0) AS credits_total_cents
        FROM invoices i
        WHERE i.payment_token = ? AND i.type = 'invoice'`,
       [token]
@@ -49,6 +52,11 @@ invoicePaymentsRouter.get("/:token", async (req, res) => {
        WHERE u.id = ?`,
       [invoice.user_id]
     );
+    const paymentsTotal = Number(invoice.payments_total_cents || 0);
+    const creditsTotal = Number(invoice.credits_total_cents || 0);
+    const balanceCents = invoice.paid_at && paymentsTotal === 0
+      ? 0
+      : Math.max(0, Number(invoice.total_cents) - paymentsTotal - creditsTotal);
 
     res.json({
       invoice: {
@@ -57,8 +65,13 @@ invoicePaymentsRouter.get("/:token", async (req, res) => {
         customerName: invoice.customer_name,
         customerEmail: invoice.customer_email,
         totalCents: invoice.total_cents,
+        paymentsTotalCents: paymentsTotal,
+        creditsTotalCents: creditsTotal,
+        balanceCents,
         vatCents: invoice.vat_cents || 0,
         vatEnabled: !!invoice.vat_enabled,
+        taxRate: Number(invoice.tax_rate ?? 15),
+        taxLabel: invoice.tax_label || "VAT",
         items: JSON.parse(invoice.items_json || "[]"),
         status: invoice.status,
         paymentTerms: invoice.payment_terms,
@@ -104,13 +117,25 @@ invoicePaymentsRouter.post("/:token/session", async (req, res) => {
       return res.status(503).json({ error: "Payment gateway not configured." });
     }
 
-    const amount = (invoice.total_cents / 100).toFixed(2);
+    const [paymentsRows] = await pool.execute(
+      "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM invoice_payments WHERE invoice_id = ? AND user_id = ?",
+      [invoice.id, invoice.user_id],
+    );
+    const [creditsRows] = await pool.execute(
+      "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM invoice_credit_notes WHERE invoice_id = ? AND user_id = ? AND status = 'issued'",
+      [invoice.id, invoice.user_id],
+    );
+    const paid = Number((paymentsRows as any[])[0]?.total || 0);
+    const credited = Number((creditsRows as any[])[0]?.total || 0);
+    const amountCents = Math.max(0, Number(invoice.total_cents) - paid - credited);
+    if (!amountCents) return res.status(409).json({ error: "This invoice has no balance due." });
+    const amount = (amountCents / 100).toFixed(2);
     const refSuffix = randomBytes(4).toString("hex");
     const merchantRef = `CUSTINV_${refSuffix}`;
 
     await execute(
-      "UPDATE invoices SET payment_merchant_ref = ? WHERE id = ?",
-      [merchantRef, invoice.id]
+      "UPDATE invoices SET payment_merchant_ref = ?, payment_merchant_amount_cents = ? WHERE id = ?",
+      [merchantRef, amountCents, invoice.id]
     );
 
     const user = await queryOne(
@@ -198,7 +223,7 @@ async function handleInvoicePayReturn(req: any, res: any) {
           console.error(`[InvPay] Token mref mismatch`);
           return res.redirect(`/pay/${token}?error=verify`);
         }
-        const expectedAmount = (invoice.total_cents / 100).toFixed(2);
+        const expectedAmount = (Number(invoice.payment_merchant_amount_cents || invoice.total_cents) / 100).toFixed(2);
         if (decoded.amount && decoded.amount !== expectedAmount) {
           console.error(`[InvPay] Token amount mismatch`);
           return res.redirect(`/pay/${token}?error=verify`);
@@ -213,10 +238,24 @@ async function handleInvoicePayReturn(req: any, res: any) {
       return res.redirect(`/pay/${token}?error=verify`);
     }
 
+    if (!merchantRef || invoice.payment_merchant_ref !== merchantRef) {
+      console.error("[InvPay] Stored merchant reference does not match callback");
+      return res.redirect(`/pay/${token}?error=verify`);
+    }
+    const receiptNumber = await allocateDocumentNumber(invoice.user_id, "receipt");
+    const amountCents = Number(invoice.payment_merchant_amount_cents || invoice.total_cents);
+    await execute(
+      `INSERT INTO invoice_payments (id, user_id, invoice_id, receipt_number, amount_cents, payment_method, reference, notes, paid_at)
+       VALUES (?, ?, ?, ?, ?, 'online', ?, 'Online payment via Adumo', NOW())`,
+      [randomBytes(16).toString("hex"), invoice.user_id, invoice.id, receiptNumber, amountCents, merchantRef],
+    );
     await execute(
       "UPDATE invoices SET status = 'paid', paid_at = NOW() WHERE id = ?",
       [invoice.id]
     );
+    await writeInvoiceAudit(invoice.user_id, invoice.id, null, "online_payment_recorded", {
+      receipt_number: receiptNumber, amount_cents: amountCents, merchant_reference: merchantRef,
+    });
 
     sendThankYouReceipt(invoice.id).catch(() => {});
 

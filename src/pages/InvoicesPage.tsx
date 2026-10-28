@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2, Eye, ReceiptText, Clock3, AlertCircle, WalletCards, ArrowUpRight } from "lucide-react";
+import { Plus, Trash2, Download, Upload, FileText, X, Pencil, ArrowRight, RefreshCw, Mail, Loader2, Palette, CheckCircle2, Users, Search, Building2, Package, Link2, Eye, ReceiptText, Clock3, AlertCircle, WalletCards, ArrowUpRight, Settings2, ClipboardList, Wallet, History, CreditCard, Ban, Copy } from "lucide-react";
 import InvoiceTemplateDesigner, { loadTemplateConfig, hasSavedTemplateConfig, getSavedTemplateName } from "@/components/InvoiceTemplateDesigner";
 import { TEMPLATES, TEMPLATE_STYLES, InvoicePreview, type InvoiceItem } from "@/components/InvoiceTemplates";
 import heroImage from "@/assets/hero-image.jpg";
@@ -55,17 +55,44 @@ interface Invoice {
   status: string;
   type: string;
   template: number;
+  tax_rate?: number;
   created_at: string;
   paid_at?: string | null;
   late_fee_cents?: number;
   payment_token?: string | null;
+  acceptance_token?: string | null;
+  accepted_at?: string | null;
+  converted_to_invoice_id?: string | null;
+  revision_number?: number;
+  payments_total_cents?: number;
+  credits_total_cents?: number;
+}
+
+interface CatalogItem {
+  id: string;
+  item_type: "product" | "service";
+  code?: string | null;
+  name: string;
+  description?: string | null;
+  unit: string;
+  unit_price_cents: number;
+}
+
+interface DocumentSettings {
+  default_tax_enabled: boolean | number;
+  tax_rate: number;
+  tax_label: string;
+  invoice_prefix: string;
+  quote_prefix: string;
+  receipt_prefix: string;
+  default_payment_terms: string;
 }
 
 export default function InvoicesPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "admin";
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [activeTab, setActiveTab] = useState<"invoice" | "quote" | "designer">("invoice");
+  const [activeTab, setActiveTab] = useState<"invoice" | "quote" | "designer" | "catalog" | "settings">("invoice");
   const [showCreate, setShowCreate] = useState(false);
   const [docType, setDocType] = useState<"invoice" | "quote">("invoice");
   const [selectedTemplate, setSelectedTemplate] = useState(1);
@@ -88,6 +115,7 @@ export default function InvoicesPage() {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([{ name: "", qty: 1, unitPrice: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(true);
+  const [taxRate, setTaxRate] = useState(15);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [platformUserId, setPlatformUserId] = useState<string>("");
@@ -99,6 +127,28 @@ export default function InvoicesPage() {
   const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
   const [openItemDropdownIndex, setOpenItemDropdownIndex] = useState<number | null>(null);
   const [showClientPicker, setShowClientPicker] = useState(false);
+  const [documentSettings, setDocumentSettings] = useState<DocumentSettings>({
+    default_tax_enabled: true, tax_rate: 15, tax_label: "VAT",
+    invoice_prefix: "INV", quote_prefix: "QUO", receipt_prefix: "REC", default_payment_terms: "30 days",
+  });
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+  const [editingCatalogItem, setEditingCatalogItem] = useState<CatalogItem | null>(null);
+  const [catalogForm, setCatalogForm] = useState({ item_type: "service", code: "", name: "", description: "", unit: "unit", unit_price: "" });
+  const [savingCatalog, setSavingCatalog] = useState(false);
+  const [savingDocumentSettings, setSavingDocumentSettings] = useState(false);
+  const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null);
+  const [paymentForm, setPaymentForm] = useState({ amount: "", payment_method: "eft", reference: "", notes: "" });
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [creditTarget, setCreditTarget] = useState<Invoice | null>(null);
+  const [creditForm, setCreditForm] = useState({ amount: "", reason: "" });
+  const [savingCredit, setSavingCredit] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<Invoice | null>(null);
+  const [auditEvents, setAuditEvents] = useState<any[]>([]);
+  const [revisionEvents, setRevisionEvents] = useState<any[]>([]);
+  const [creditNotes, setCreditNotes] = useState<any[]>([]);
+  const [invoicePayments, setInvoicePayments] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const defaultDueDate = () => {
     const d = new Date();
@@ -144,7 +194,28 @@ export default function InvoicesPage() {
     if (res.ok) setInvoices(await res.json());
   };
 
-  useEffect(() => { loadInvoices(); }, []);
+  const loadDocumentSettings = async () => {
+    const res = await fetch("/api/commercial-documents/settings", { credentials: "include" });
+    if (res.ok) {
+      const settings = await res.json();
+      setDocumentSettings({
+        ...settings,
+        default_tax_enabled: !!settings.default_tax_enabled,
+        tax_rate: Number(settings.tax_rate ?? 15),
+      });
+    }
+  };
+
+  const loadCatalogItems = async () => {
+    const res = await fetch("/api/commercial-documents/catalog", { credentials: "include" });
+    if (res.ok) setCatalogItems(await res.json());
+  };
+
+  useEffect(() => {
+    loadInvoices();
+    loadDocumentSettings();
+    loadCatalogItems();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -232,15 +303,24 @@ export default function InvoicesPage() {
     setOpenItemDropdownIndex(null);
   };
 
+  const selectCatalogItem = (itemIndex: number, item: CatalogItem) => {
+    const updated = [...items];
+    updated[itemIndex] = { ...updated[itemIndex], name: item.name, unitPrice: item.unit_price_cents / 100 };
+    setItems(updated);
+    setOpenItemDropdownIndex(null);
+  };
+
   const subtotal = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
-  const vatAmount = vatEnabled ? subtotal * 0.15 : 0;
+  const vatAmount = vatEnabled ? subtotal * taxRate / 100 : 0;
   const total = subtotal + vatAmount;
 
   const openCreate = (type: "invoice" | "quote") => {
     setDocType(type);
     setActiveTab(type);
     setSelectedTemplate(1);
-    setPaymentTerms("30 days");
+    setTaxRate(Number(documentSettings.tax_rate || 0));
+    setVatEnabled(!!documentSettings.default_tax_enabled);
+    setPaymentTerms(documentSettings.default_payment_terms || "30 days");
     setDueDate(type === "invoice" ? defaultDueDate() : "");
     setStartingInvoiceNum("");
     setShowCreate(true);
@@ -263,7 +343,7 @@ export default function InvoicesPage() {
       paymentTerms: docType === "quote" ? (paymentTerms || undefined) : undefined,
       dueDate: docType === "invoice" ? (dueDate || undefined) : undefined,
       notes: notes || undefined,
-      items, vatEnabled,
+      items, vatEnabled, taxRate, taxLabel: documentSettings.tax_label,
       type: docType,
       template: selectedTemplate,
       templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
@@ -284,12 +364,17 @@ export default function InvoicesPage() {
         const phone = c.business_phone || c.phone || "";
         const address = c.business_address || c.physical_address || "";
         const vat = c.vat_number || "";
-        await fetch("/api/invoices", {
+        const response = await fetch("/api/invoices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(buildPayload(name, email, phone, address, isFirst && created === 0, clientId, vat)),
         });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          toast.error(error.error || `Could not create a ${docType} for ${name}`);
+          return;
+        }
         created++;
       }
       toast.success(`${created} ${docType === "quote" ? "quotes" : "invoices"} created`);
@@ -322,12 +407,12 @@ export default function InvoicesPage() {
   };
 
   const handleDelete = async (inv: Invoice) => {
-    if (!window.confirm(`Delete ${inv.type === "quote" ? "quote" : "invoice"} ${inv.invoice_number}? This cannot be undone.`)) return;
+    if (!window.confirm(`Void ${inv.type === "quote" ? "quote" : "invoice"} ${inv.invoice_number}? The record will be retained in your history.`)) return;
     setDeletingId(inv.id);
     try {
       const res = await fetch(`/api/invoices/${inv.id}`, { method: "DELETE", credentials: "include" });
       if (res.ok) {
-        toast.success(`${inv.type === "quote" ? "Quote" : "Invoice"} deleted`);
+        toast.success(`${inv.type === "quote" ? "Quote" : "Invoice"} voided`);
         loadInvoices();
       } else {
         const d = await res.json().catch(() => ({}));
@@ -404,6 +489,7 @@ export default function InvoicesPage() {
     setEditingId(inv.id);
     setDocType(inv.type as "invoice" | "quote");
     setSelectedTemplate(inv.template || 1);
+    setTaxRate(Number(inv.tax_rate ?? documentSettings.tax_rate ?? 15));
     setCustomerName(inv.customer_name);
     setCustomerEmail(inv.customer_email || "");
     setCustomerAddress(inv.customer_address || "");
@@ -428,6 +514,7 @@ export default function InvoicesPage() {
     setStartingInvoiceNum("");
     setItems([{ name: "", qty: 1, unitPrice: 0 }]);
     setVatEnabled(true);
+    setTaxRate(Number(documentSettings.tax_rate || 0));
     setSelectedTemplate(1);
     setSelectedClientIds([]);
     setClientSearch("");
@@ -452,7 +539,7 @@ export default function InvoicesPage() {
         payment_terms: docType === "quote" ? (paymentTerms || undefined) : undefined,
         due_date: docType === "invoice" ? (dueDate || undefined) : undefined,
         notes: notes || undefined,
-        items, vat_enabled: vatEnabled,
+        items, vat_enabled: vatEnabled, tax_rate: taxRate, tax_label: documentSettings.tax_label,
         template: selectedTemplate,
         templateConfig: selectedTemplate === 8 ? loadTemplateConfig() : undefined,
       }),
@@ -493,30 +580,6 @@ export default function InvoicesPage() {
     a.download = `${num}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
-  const markPaid = async (inv: Invoice) => {
-    if (inv.paid_at) return;
-    if (!confirm(`Mark invoice ${inv.invoice_number} as paid? A thank-you receipt will be emailed to the customer.`)) return;
-    setMarkingPaidId(inv.id);
-    try {
-      const res = await fetch(`/api/invoices/${inv.id}/mark-paid`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (res.ok) {
-        toast.success(`Invoice ${inv.invoice_number} marked paid${inv.customer_email ? " — receipt emailed" : ""}`);
-        loadInvoices();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to mark paid");
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Failed to mark paid");
-    } finally {
-      setMarkingPaidId(null);
-    }
   };
 
   const emailInvoice = async (id: string, customerEmail: string) => {
@@ -570,15 +633,206 @@ export default function InvoicesPage() {
     }
   };
 
-  const filtered = invoices.filter(inv => (inv.type || "invoice") === (activeTab === "designer" ? "invoice" : activeTab));
+  const saveDocumentSettings = async () => {
+    setSavingDocumentSettings(true);
+    try {
+      const res = await fetch("/api/commercial-documents/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(documentSettings),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not save settings");
+      setDocumentSettings({ ...data, default_tax_enabled: !!data.default_tax_enabled, tax_rate: Number(data.tax_rate) });
+      toast.success("Document settings saved");
+    } catch (err: any) {
+      toast.error(err.message || "Could not save settings");
+    } finally {
+      setSavingDocumentSettings(false);
+    }
+  };
+
+  const openNewCatalogItem = () => {
+    setEditingCatalogItem(null);
+    setCatalogForm({ item_type: "service", code: "", name: "", description: "", unit: "unit", unit_price: "" });
+    setCatalogModalOpen(true);
+  };
+
+  const openEditCatalogItem = (item: CatalogItem) => {
+    setEditingCatalogItem(item);
+    setCatalogForm({
+      item_type: item.item_type, code: item.code || "", name: item.name,
+      description: item.description || "", unit: item.unit || "unit",
+      unit_price: (Number(item.unit_price_cents) / 100).toFixed(2),
+    });
+    setCatalogModalOpen(true);
+  };
+
+  const saveCatalogItem = async () => {
+    if (!catalogForm.name.trim()) { toast.error("Enter a product or service name"); return; }
+    const price = Number(catalogForm.unit_price);
+    if (!Number.isFinite(price) || price < 0) { toast.error("Enter a valid price"); return; }
+    setSavingCatalog(true);
+    try {
+      const res = await fetch(editingCatalogItem
+        ? `/api/commercial-documents/catalog/${editingCatalogItem.id}`
+        : "/api/commercial-documents/catalog", {
+        method: editingCatalogItem ? "PUT" : "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...catalogForm, unit_price: price }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not save catalogue item");
+      toast.success(editingCatalogItem ? "Catalogue item updated" : "Catalogue item added");
+      setCatalogModalOpen(false);
+      await loadCatalogItems();
+    } catch (err: any) {
+      toast.error(err.message || "Could not save catalogue item");
+    } finally {
+      setSavingCatalog(false);
+    }
+  };
+
+  const archiveCatalogItem = async (item: CatalogItem) => {
+    if (!confirm(`Archive ${item.name}? It will remain on existing documents.`)) return;
+    const res = await fetch(`/api/commercial-documents/catalog/${item.id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) { toast.success("Catalogue item archived"); loadCatalogItems(); }
+    else toast.error("Could not archive catalogue item");
+  };
+
+  const balanceFor = (inv: Invoice) => {
+    const paid = Number(inv.payments_total_cents || 0);
+    if (inv.paid_at && paid === 0) return 0;
+    return Math.max(0, Number(inv.total_cents || 0) - paid - Number(inv.credits_total_cents || 0));
+  };
+
+  const downloadReceipt = async (paymentId: string, receiptNumber: string) => {
+    const res = await fetch(`/api/invoices/payments/${paymentId}/receipt.pdf`, { credentials: "include" });
+    if (!res.ok) { toast.error("Could not download receipt"); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${receiptNumber}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCreditNote = async (creditId: string, creditNumber: string) => {
+    const res = await fetch(`/api/invoices/credit-notes/${creditId}/pdf`, { credentials: "include" });
+    if (!res.ok) { toast.error("Could not download credit note"); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${creditNumber}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const submitPayment = async () => {
+    if (!paymentTarget) return;
+    const amountCents = Math.round(Number(paymentForm.amount) * 100);
+    if (!Number.isInteger(amountCents) || amountCents <= 0) { toast.error("Enter a valid payment amount"); return; }
+    setSavingPayment(true);
+    try {
+      const res = await fetch(`/api/invoices/${paymentTarget.id}/payments`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount_cents: amountCents, payment_method: paymentForm.payment_method,
+          reference: paymentForm.reference, notes: paymentForm.notes,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not record payment");
+      toast.success(`Payment recorded · receipt ${data.receiptNumber}`);
+      setPaymentTarget(null);
+      await loadInvoices();
+      await downloadReceipt(data.paymentId, data.receiptNumber);
+    } catch (err: any) {
+      toast.error(err.message || "Could not record payment");
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
+  const submitCreditNote = async () => {
+    if (!creditTarget) return;
+    const amountCents = Math.round(Number(creditForm.amount) * 100);
+    if (!Number.isInteger(amountCents) || amountCents <= 0 || !creditForm.reason.trim()) {
+      toast.error("Enter a valid amount and reason"); return;
+    }
+    setSavingCredit(true);
+    try {
+      const res = await fetch(`/api/invoices/${creditTarget.id}/credit-notes`, {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_cents: amountCents, reason: creditForm.reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not issue credit note");
+      toast.success(`Credit note ${data.creditNumber} issued`);
+      setCreditTarget(null);
+      await loadInvoices();
+    } catch (err: any) {
+      toast.error(err.message || "Could not issue credit note");
+    } finally {
+      setSavingCredit(false);
+    }
+  };
+
+  const openHistory = async (inv: Invoice) => {
+    setHistoryTarget(inv);
+    setHistoryLoading(true);
+    try {
+      const [auditRes, revisionRes, creditRes, paymentRes] = await Promise.all([
+        fetch(`/api/invoices/${inv.id}/audit`, { credentials: "include" }),
+        fetch(`/api/invoices/${inv.id}/revisions`, { credentials: "include" }),
+        fetch(`/api/invoices/${inv.id}/credit-notes`, { credentials: "include" }),
+        fetch(`/api/invoices/${inv.id}/payments`, { credentials: "include" }),
+      ]);
+      setAuditEvents(auditRes.ok ? await auditRes.json() : []);
+      setRevisionEvents(revisionRes.ok ? await revisionRes.json() : []);
+      setCreditNotes(creditRes.ok ? await creditRes.json() : []);
+      const payments = paymentRes.ok ? await paymentRes.json() : [];
+      setInvoicePayments(payments);
+      setAuditEvents((current) => [...current, ...payments.map((payment: any) => ({
+        id: `payment-${payment.id}`, action: "payment_recorded", created_at: payment.paid_at,
+        details: { receipt_number: payment.receipt_number, amount_cents: payment.amount_cents, payment_method: payment.payment_method },
+      }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const copyQuoteAcceptanceLink = async (inv: Invoice) => {
+    if (!inv.acceptance_token) { toast.error("This quote needs to be emailed once to create an acceptance link"); return; }
+    const link = `${window.location.origin}/quote/respond/${inv.acceptance_token}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Quote acceptance link copied");
+    } catch {
+      window.prompt("Copy this quote acceptance link", link);
+    }
+  };
+
+  const filtered = activeTab === "invoice" || activeTab === "quote"
+    ? invoices.filter(inv => (inv.type || "invoice") === activeTab)
+    : [];
   const invoiceDocs = invoices.filter((inv) => (inv.type || "invoice") === "invoice");
   const invoicedCents = invoiceDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
   const paidDocs = invoiceDocs.filter((inv) => inv.paid_at || inv.status === "paid");
-  const paidCents = paidDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
-  const outstandingCents = Math.max(0, invoicedCents - paidCents);
+  const paidCents = invoiceDocs.reduce((sum, inv) => {
+    const recorded = Number(inv.payments_total_cents || 0);
+    return sum + (recorded || (inv.paid_at ? Number(inv.total_cents || 0) : 0));
+  }, 0);
+  const outstandingCents = invoiceDocs.reduce((sum, inv) => sum + balanceFor(inv), 0);
   const today = new Date().toISOString().slice(0, 10);
   const overdueDocs = invoiceDocs.filter((inv) =>
-    !inv.paid_at && inv.status !== "paid" && inv.due_date && inv.due_date.slice(0, 10) < today
+    balanceFor(inv) > 0 && inv.due_date && inv.due_date.slice(0, 10) < today
   );
   const overdueCents = overdueDocs.reduce((sum, inv) => sum + Number(inv.total_cents || 0), 0);
   const collectionRate = invoicedCents > 0 ? Math.min(100, Math.round((paidCents / invoicedCents) * 100)) : 0;
@@ -712,12 +966,88 @@ export default function InvoicesPage() {
         >
           <Palette className="h-3.5 w-3.5" /> Template Designer
         </button>
+        {[
+          { id: "catalog" as const, label: "Products & Services", icon: ClipboardList },
+          { id: "settings" as const, label: "Document Settings", icon: Settings2 },
+        ].map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setActiveTab(id)}
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              activeTab === id ? "bg-slate-900 text-white shadow-sm" : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
+            }`}>
+            <Icon className="h-3.5 w-3.5" /> {label}
+          </button>
+        ))}
       </div>
 
       {/* Template Designer Tab */}
       {activeTab === "designer" && (
         <Card className="p-6">
           <InvoiceTemplateDesigner onSave={refreshCustomTemplateMeta} />
+        </Card>
+      )}
+
+      {activeTab === "catalog" && (
+        <Card className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
+            <div>
+              <h3 className="font-semibold">Products & Services</h3>
+              <p className="text-sm text-muted-foreground">Save frequently billed items and add them to quotes or invoices in one click.</p>
+            </div>
+            <Button onClick={openNewCatalogItem} className="gap-2"><Plus className="h-4 w-4" /> Add item</Button>
+          </div>
+          {catalogItems.length === 0 ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">No catalogue items yet. Add a product or service to reuse it on documents.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-muted/30 text-left text-xs text-muted-foreground">
+                  <th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3">Code</th><th className="p-3">Unit</th><th className="p-3 text-right">Price</th><th className="p-3 text-right">Actions</th>
+                </tr></thead>
+                <tbody>{catalogItems.map(item => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="p-3 font-medium">{item.name}{item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}</td>
+                    <td className="p-3 capitalize">{item.item_type}</td><td className="p-3 text-muted-foreground">{item.code || "—"}</td>
+                    <td className="p-3">{item.unit}</td><td className="p-3 text-right font-semibold">R{(item.unit_price_cents / 100).toFixed(2)}</td>
+                    <td className="p-3"><div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditCatalogItem(item)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
+                      <Button variant="outline" size="sm" onClick={() => archiveCatalogItem(item)} className="text-destructive"><Ban className="h-3.5 w-3.5 mr-1" /> Archive</Button>
+                    </div></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {activeTab === "settings" && (
+        <Card className="mx-auto max-w-3xl p-5 sm:p-7">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold">Document settings</h3>
+            <p className="text-sm text-muted-foreground">Set defaults for tax, payment terms and document numbering. Each document saves its own tax rate.</p>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="flex items-center gap-3 rounded-xl border p-4 sm:col-span-2">
+              <input type="checkbox" checked={!!documentSettings.default_tax_enabled}
+                onChange={e => setDocumentSettings(current => ({ ...current, default_tax_enabled: e.target.checked }))} />
+              <span><span className="block text-sm font-medium">Include tax by default</span><span className="text-xs text-muted-foreground">You can still change this on each quote or invoice.</span></span>
+            </label>
+            <div><Label>Default tax rate (%)</Label><Input type="number" min="0" max="100" step="0.01" className="mt-1" value={documentSettings.tax_rate}
+              onChange={e => setDocumentSettings(current => ({ ...current, tax_rate: Number(e.target.value) }))} /></div>
+            <div><Label>Tax label</Label><Input className="mt-1" maxLength={40} value={documentSettings.tax_label}
+              onChange={e => setDocumentSettings(current => ({ ...current, tax_label: e.target.value }))} placeholder="VAT" /></div>
+            <div><Label>Invoice number prefix</Label><Input className="mt-1 uppercase" maxLength={10} value={documentSettings.invoice_prefix}
+              onChange={e => setDocumentSettings(current => ({ ...current, invoice_prefix: e.target.value.toUpperCase() }))} /></div>
+            <div><Label>Quote number prefix</Label><Input className="mt-1 uppercase" maxLength={10} value={documentSettings.quote_prefix}
+              onChange={e => setDocumentSettings(current => ({ ...current, quote_prefix: e.target.value.toUpperCase() }))} /></div>
+            <div><Label>Receipt number prefix</Label><Input className="mt-1 uppercase" maxLength={10} value={documentSettings.receipt_prefix}
+              onChange={e => setDocumentSettings(current => ({ ...current, receipt_prefix: e.target.value.toUpperCase() }))} /></div>
+            <div><Label>Default payment terms</Label><Input className="mt-1" maxLength={100} value={documentSettings.default_payment_terms}
+              onChange={e => setDocumentSettings(current => ({ ...current, default_payment_terms: e.target.value }))} placeholder="30 days" /></div>
+          </div>
+          <div className="mt-6 flex justify-end"><Button onClick={saveDocumentSettings} disabled={savingDocumentSettings} className="gap-2">
+            {savingDocumentSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save settings
+          </Button></div>
         </Card>
       )}
 
@@ -956,13 +1286,13 @@ export default function InvoicesPage() {
                         <div className="col-span-5 relative">
                           <div className="flex gap-1">
                             <Input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} className="h-8 text-sm flex-1" placeholder="Description" />
-                            {inventoryProducts.length > 0 && (
+                            {(inventoryProducts.length > 0 || catalogItems.length > 0) && (
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8 flex-shrink-0"
-                                title="Pick from inventory"
+                                title="Pick from catalogue or inventory"
                                 onClick={() => setOpenItemDropdownIndex(openItemDropdownIndex === i ? null : i)}
                               >
                                 <Package className="h-3.5 w-3.5" />
@@ -971,6 +1301,17 @@ export default function InvoicesPage() {
                           </div>
                           {openItemDropdownIndex === i && (
                             <div className="absolute top-full left-0 right-0 z-[60] mt-1 bg-background border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                              {catalogItems.map(item => (
+                                <button
+                                  key={`catalog-${item.id}`}
+                                  type="button"
+                                  className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 text-left gap-2"
+                                  onClick={() => selectCatalogItem(i, item)}
+                                >
+                                  <span className="truncate">{item.name}<span className="text-muted-foreground ml-1 text-xs">({item.item_type})</span></span>
+                                  <span className="text-primary font-medium flex-shrink-0">R{(item.unit_price_cents / 100).toFixed(2)}</span>
+                                </button>
+                              ))}
                               {inventoryProducts.map(prod => (
                                 <button
                                   key={prod.id}
@@ -1020,17 +1361,23 @@ export default function InvoicesPage() {
 
               </div>{/* end scrollable body */}
 
-              {/* Sticky footer — VAT toggle + totals + actions */}
+              {/* Sticky footer — tax toggle + totals + actions */}
               <div className="border-t px-6 py-4 pb-5 bg-background shrink-0">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                     <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} className="rounded" />
-                    <span>Include VAT (15%)</span>
+                  <span>Include {documentSettings.tax_label || "tax"} ({taxRate}%)</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Rate
+                    <Input type="number" min="0" max="100" step="0.01" value={taxRate}
+                      onChange={e => setTaxRate(Number(e.target.value) || 0)} className="h-8 w-24" />
+                    %
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="text-right text-sm leading-tight">
                       {vatEnabled && (
-                        <div className="text-muted-foreground text-xs">Subtotal R{subtotal.toFixed(2)} + VAT R{vatAmount.toFixed(2)}</div>
+                        <div className="text-muted-foreground text-xs">Subtotal R{subtotal.toFixed(2)} + {documentSettings.tax_label || "Tax"} R{vatAmount.toFixed(2)}</div>
                       )}
                       <div className="font-bold text-primary">Total R{total.toFixed(2)}</div>
                     </div>
@@ -1072,6 +1419,8 @@ export default function InvoicesPage() {
                   notes={notes}
                   items={items}
                   vatEnabled={vatEnabled}
+                  taxLabel={documentSettings.tax_label}
+                  taxRate={taxRate}
                   subtotal={subtotal}
                   vatAmount={vatAmount}
                   total={total}
@@ -1083,8 +1432,8 @@ export default function InvoicesPage() {
         </>
       )}{/* end slide-out drawer */}
 
-      {/* List — hidden in designer tab */}
-      {activeTab !== "designer" && <Card className="overflow-hidden">
+      {/* Document list */}
+      {(activeTab === "invoice" || activeTab === "quote") && <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead>
@@ -1121,10 +1470,15 @@ export default function InvoicesPage() {
                   </td>
                   <td className="p-3 text-muted-foreground hidden sm:table-cell">
                     {inv.items.length} item{inv.items.length !== 1 ? "s" : ""}
-                    {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ VAT</span>}
+                    {inv.vat_enabled && <span className="ml-1 text-xs text-green-600 font-medium">+ {inv.tax_label || "VAT"}</span>}
                   </td>
                   <td className="p-3 text-right font-bold text-primary">
                     R{(inv.total_cents / 100).toFixed(2)}
+                    {inv.type === "invoice" && Number(inv.credits_total_cents || 0) > 0 && (
+                      <div className="text-[10px] font-normal text-emerald-700 mt-0.5">
+                        R{(Number(inv.credits_total_cents) / 100).toFixed(2)} credited · R{(balanceFor(inv) / 100).toFixed(2)} due
+                      </div>
+                    )}
                     {inv.late_fee_cents && inv.late_fee_cents > 0 ? (
                       <div className="text-[10px] font-normal text-red-600 mt-0.5">
                         incl. R{(inv.late_fee_cents / 100).toFixed(2)} late fee
@@ -1134,41 +1488,61 @@ export default function InvoicesPage() {
                   <td className="p-3 text-muted-foreground hidden md:table-cell">
                     <div>{new Date(inv.created_at).toLocaleDateString("en-ZA")}</div>
                     {inv.type === "invoice" && (
-                      inv.paid_at ? (
+                      balanceFor(inv) === 0 ? (
                         <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                          <CheckCircle2 className="h-3 w-3" /> Paid
+                          <CheckCircle2 className="h-3 w-3" /> {inv.status === "credited" ? "Credited" : inv.status === "settled" ? "Settled" : "Paid"}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                          Outstanding
+                          {Number(inv.payments_total_cents || 0) > 0 ? "Part paid" : "Outstanding"}
                         </span>
                       )
+                    )}
+                    {inv.type === "quote" && (
+                      <span className={`inline-flex items-center gap-1 mt-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${
+                        inv.status === "accepted" || inv.status === "converted" ? "text-emerald-700 bg-emerald-50" : inv.status === "void" ? "text-slate-600 bg-slate-100" : "text-amber-700 bg-amber-50"
+                      }`}>
+                        {inv.status === "converted" ? "Converted" : inv.status === "accepted" ? "Accepted" : inv.status === "void" ? "Voided" : inv.status === "sent" ? "Sent · awaiting response" : "Draft"}
+                      </span>
                     )}
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex gap-1 justify-end flex-wrap">
-                      {inv.type === "quote" && (
-                        <Button variant="outline" size="sm" onClick={() => handleConvert(inv)} title="Convert to Invoice">
-                          <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
-                        </Button>
+              {inv.type === "quote" && inv.status !== "converted" && inv.status !== "void" && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => copyQuoteAcceptanceLink(inv)} title="Copy customer acceptance link">
+                            <Copy className="h-3.5 w-3.5 mr-1" /> Accept link
+                          </Button>
+                          {inv.status === "accepted" && (
+                            <Button variant="outline" size="sm" onClick={() => handleConvert(inv)} title="Create an invoice and keep the accepted quote">
+                              <RefreshCw className="h-3.5 w-3.5 mr-1" /> To Invoice
+                            </Button>
+                          )}
+                        </>
                       )}
-                      {inv.type === "invoice" && !inv.paid_at && (
+                      {inv.type === "invoice" && balanceFor(inv) > 0 && inv.status !== "void" && (
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={markingPaidId === inv.id}
-                          onClick={() => markPaid(inv)}
+                          onClick={() => { setPaymentTarget(inv); setPaymentForm({ amount: (balanceFor(inv) / 100).toFixed(2), payment_method: "eft", reference: "", notes: "" }); }}
                           className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-                          title="Mark as paid (sends thank-you receipt)"
+                          title="Record a full or partial payment and create a receipt"
                         >
-                          {markingPaidId === inv.id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                            : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
-                          Mark Paid
+                          <CreditCard className="h-3.5 w-3.5 mr-1" /> Record payment
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
-                        <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                      {inv.type === "invoice" && inv.status !== "void" && balanceFor(inv) > 0 && (
+                        <Button variant="outline" size="sm" onClick={() => { setCreditTarget(inv); setCreditForm({ amount: "", reason: "" }); }}>
+                          <FileText className="h-3.5 w-3.5 mr-1" /> Credit note
+                        </Button>
+                      )}
+                      {inv.status !== "paid" && inv.status !== "void" && inv.status !== "converted" && (
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(inv)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => openHistory(inv)} title="View audit trail, revisions, payments and credits">
+                        <History className="h-3.5 w-3.5 mr-1" /> History
                       </Button>
                       {inv.type === "invoice" && (
                         recurringSourceIds.has(inv.id) ? (
@@ -1210,7 +1584,7 @@ export default function InvoicesPage() {
                           Email
                         </Button>
                       )}
-                      {inv.type !== "quote" && !inv.paid_at && (
+                      {inv.type !== "quote" && balanceFor(inv) > 0 && inv.status !== "void" && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -1224,18 +1598,18 @@ export default function InvoicesPage() {
                           Pay Link
                         </Button>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={deletingId === inv.id}
-                        onClick={() => handleDelete(inv)}
-                        className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                        title="Delete"
-                      >
-                        {deletingId === inv.id
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <Trash2 className="h-3.5 w-3.5" />}
-                      </Button>
+                      {inv.status !== "void" && inv.status !== "paid" && inv.status !== "converted" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={deletingId === inv.id}
+                          onClick={() => handleDelete(inv)}
+                          className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                          title="Void document and preserve its history"
+                        >
+                          {deletingId === inv.id ? <Loader2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1245,7 +1619,7 @@ export default function InvoicesPage() {
               <tr>
                 <td colSpan={7} className="p-8 text-center text-muted-foreground">
                   No {activeTab === "quote" ? "quotes" : "invoices"} yet.
-                  <button onClick={() => openCreate(activeTab as "invoice" | "quote")} className="ml-2 text-primary underline underline-offset-2">
+                  <button onClick={() => openCreate(activeTab)} className="ml-2 text-primary underline underline-offset-2">
                     Create your first {activeTab === "quote" ? "quote" : "invoice"}.
                   </button>
                 </td>
@@ -1255,6 +1629,122 @@ export default function InvoicesPage() {
         </table>
         </div>
       </Card>}
+
+      {catalogModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setCatalogModalOpen(false)}>
+          <Card className="w-full max-w-lg p-5 sm:p-6" onClick={(e: any) => e.stopPropagation()}>
+            <div className="mb-5 flex items-center justify-between">
+              <div><h3 className="font-semibold">{editingCatalogItem ? "Edit catalogue item" : "Add a product or service"}</h3><p className="text-xs text-muted-foreground mt-1">This saved item can be reused on future documents.</p></div>
+              <Button variant="ghost" size="icon" onClick={() => setCatalogModalOpen(false)}><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><Label>Type</Label><select className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm" value={catalogForm.item_type} onChange={e => setCatalogForm(f => ({ ...f, item_type: e.target.value }))}>
+                <option value="service">Service</option><option value="product">Product</option>
+              </select></div>
+              <div><Label>Item code (optional)</Label><Input className="mt-1" value={catalogForm.code} onChange={e => setCatalogForm(f => ({ ...f, code: e.target.value }))} /></div>
+              <div className="sm:col-span-2"><Label>Name</Label><Input className="mt-1" value={catalogForm.name} onChange={e => setCatalogForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Website maintenance" /></div>
+              <div><Label>Unit</Label><Input className="mt-1" value={catalogForm.unit} onChange={e => setCatalogForm(f => ({ ...f, unit: e.target.value }))} placeholder="hour, item, project" /></div>
+              <div><Label>Unit price (R)</Label><Input className="mt-1" type="number" min="0" step="0.01" value={catalogForm.unit_price} onChange={e => setCatalogForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
+              <div className="sm:col-span-2"><Label>Description (optional)</Label><textarea className="mt-1 min-h-20 w-full rounded-md border bg-background p-3 text-sm" value={catalogForm.description} onChange={e => setCatalogForm(f => ({ ...f, description: e.target.value }))} /></div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setCatalogModalOpen(false)}>Cancel</Button>
+              <Button onClick={saveCatalogItem} disabled={savingCatalog}>{savingCatalog ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}{editingCatalogItem ? "Save changes" : "Add item"}</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {paymentTarget && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setPaymentTarget(null)}>
+          <Card className="w-full max-w-md p-5 sm:p-6" onClick={(e: any) => e.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between">
+              <div><h3 className="font-semibold">Record payment</h3><p className="text-sm text-muted-foreground">{paymentTarget.invoice_number} · balance R{(balanceFor(paymentTarget) / 100).toFixed(2)}</p></div>
+              <Button variant="ghost" size="icon" onClick={() => setPaymentTarget(null)}><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="space-y-4">
+              <div><Label>Amount received (R)</Label><Input className="mt-1" type="number" min="0.01" max={(balanceFor(paymentTarget) / 100).toFixed(2)} step="0.01" value={paymentForm.amount} onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))} /></div>
+              <div><Label>Payment method</Label><select className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm" value={paymentForm.payment_method} onChange={e => setPaymentForm(f => ({ ...f, payment_method: e.target.value }))}>
+                <option value="eft">EFT / bank transfer</option><option value="cash">Cash</option><option value="card">Card</option><option value="online">Online payment</option><option value="other">Other</option>
+              </select></div>
+              <div><Label>Reference (optional)</Label><Input className="mt-1" value={paymentForm.reference} onChange={e => setPaymentForm(f => ({ ...f, reference: e.target.value }))} /></div>
+              <div><Label>Notes (optional)</Label><Input className="mt-1" value={paymentForm.notes} onChange={e => setPaymentForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setPaymentTarget(null)}>Cancel</Button>
+              <Button onClick={submitPayment} disabled={savingPayment}>{savingPayment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}Record payment & issue receipt</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {creditTarget && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setCreditTarget(null)}>
+          <Card className="w-full max-w-md p-5 sm:p-6" onClick={(e: any) => e.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between">
+              <div><h3 className="font-semibold">Issue credit note</h3><p className="text-sm text-muted-foreground">{creditTarget.invoice_number} · balance R{(balanceFor(creditTarget) / 100).toFixed(2)}</p></div>
+              <Button variant="ghost" size="icon" onClick={() => setCreditTarget(null)}><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="space-y-4">
+              <div><Label>Credit amount (R)</Label><Input className="mt-1" type="number" min="0.01" max={(balanceFor(creditTarget) / 100).toFixed(2)} step="0.01" value={creditForm.amount} onChange={e => setCreditForm(f => ({ ...f, amount: e.target.value }))} /></div>
+              <div><Label>Reason</Label><textarea className="mt-1 min-h-24 w-full rounded-md border bg-background p-3 text-sm" value={creditForm.reason} onChange={e => setCreditForm(f => ({ ...f, reason: e.target.value }))} placeholder="Describe the adjustment or returned goods" /></div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setCreditTarget(null)}>Cancel</Button>
+              <Button onClick={submitCreditNote} disabled={savingCredit}>{savingCredit ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Issue credit note</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {historyTarget && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setHistoryTarget(null)}>
+          <Card className="max-h-[88vh] w-full max-w-2xl overflow-y-auto p-5 sm:p-6" onClick={(e: any) => e.stopPropagation()}>
+            <div className="mb-5 flex items-start justify-between">
+              <div><h3 className="font-semibold">Document history</h3><p className="text-sm text-muted-foreground">{historyTarget.invoice_number} · {historyTarget.customer_name}</p></div>
+              <Button variant="ghost" size="icon" onClick={() => setHistoryTarget(null)}><X className="h-4 w-4" /></Button>
+            </div>
+            {historyLoading ? <div className="py-10 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></div> : (
+              <div className="space-y-6">
+                <section>
+                  <h4 className="mb-3 text-sm font-semibold">Audit trail</h4>
+                  {auditEvents.length === 0 ? <p className="text-sm text-muted-foreground">No audit events yet.</p> : <div className="space-y-2">
+                    {auditEvents.map(event => <div key={event.id} className="rounded-lg border p-3">
+                      <div className="flex flex-wrap justify-between gap-2"><span className="text-sm font-medium capitalize">{String(event.action).replaceAll("_", " ")}</span><time className="text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString("en-ZA")}</time></div>
+                      {event.details && <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-muted-foreground">{JSON.stringify(event.details, null, 2)}</pre>}
+                    </div>)}
+                  </div>}
+                </section>
+                <section>
+                  <h4 className="mb-3 text-sm font-semibold">Previous revisions</h4>
+                  {revisionEvents.length === 0 ? <p className="text-sm text-muted-foreground">No revisions; the current version is the original.</p> : <div className="space-y-2">
+                    {revisionEvents.map(revision => <details key={revision.id} className="rounded-lg border p-3">
+                      <summary className="cursor-pointer text-sm font-medium">Before revision {revision.revision_number} · {new Date(revision.created_at).toLocaleString("en-ZA")}</summary>
+                      <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">{JSON.stringify(revision.snapshot, null, 2)}</pre>
+                    </details>)}
+                  </div>}
+                </section>
+                <section>
+                  <h4 className="mb-3 text-sm font-semibold">Payment receipts</h4>
+                  {invoicePayments.length === 0 ? <p className="text-sm text-muted-foreground">No payment receipts recorded.</p> : <div className="space-y-2">
+                    {invoicePayments.map(payment => <div key={payment.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                      <div><p className="text-sm font-medium">{payment.receipt_number} · R{(payment.amount_cents / 100).toFixed(2)}</p><p className="text-xs text-muted-foreground">{payment.payment_method} · {new Date(payment.paid_at).toLocaleString("en-ZA")}{payment.reference ? ` · ${payment.reference}` : ""}</p></div>
+                      <Button variant="outline" size="sm" onClick={() => downloadReceipt(payment.id, payment.receipt_number)}><Download className="mr-1 h-3.5 w-3.5" /> Receipt</Button>
+                    </div>)}
+                  </div>}
+                </section>
+                <section>
+                  <h4 className="mb-3 text-sm font-semibold">Credit notes</h4>
+                  {creditNotes.length === 0 ? <p className="text-sm text-muted-foreground">No credit notes issued.</p> : <div className="space-y-2">
+                    {creditNotes.map(note => <div key={note.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                      <div><div className="flex justify-between gap-2"><span className="text-sm font-medium">{note.credit_number}</span><span className="text-sm font-semibold">R{(note.amount_cents / 100).toFixed(2)}</span></div>
+                        <p className="mt-1 text-xs text-muted-foreground">{note.reason} · {new Date(note.created_at).toLocaleString("en-ZA")}</p></div>
+                      <Button variant="outline" size="sm" onClick={() => downloadCreditNote(note.id, note.credit_number)}><Download className="mr-1 h-3.5 w-3.5" /> Credit PDF</Button>
+                    </div>)}
+                  </div>}
+                </section>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
 
       {payLinkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPayLinkModal(null)}>

@@ -27,6 +27,7 @@ import SetPasswordPage from "./pages/SetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import VerifyOtpPage from "./pages/VerifyOtpPage";
 import PayInvoice from "./pages/PayInvoice";
+import QuoteAcceptancePage from "./pages/QuoteAcceptancePage";
 import SocialHubStandalone from "./pages/social/SocialHubStandalone";
 import WebsiteBuilderStandalone from "./pages/WebsiteBuilderStandalone";
 import MTNPortalPage from "./pages/MTNPortalPage";
@@ -131,6 +132,7 @@ const App = () => (
               <Route path="/verify-otp" element={<VerifyOtpPage />} />
               <Route path="/meta-deletion-status" element={<MetaDeletionStatusPage />} />
               <Route path="/pay/:token" element={<PayInvoice />} />
+              <Route path="/quote/respond/:token" element={<QuoteAcceptancePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

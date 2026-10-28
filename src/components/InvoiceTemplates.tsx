@@ -197,12 +197,14 @@ export interface InvoicePreviewProps {
   notes: string;
   items: InvoiceItem[];
   vatEnabled: boolean;
+  taxLabel?: string;
+  taxRate?: number;
   subtotal: number;
   vatAmount: number;
   total: number;
 }
 
-export function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail, customerPhone, customerAddress, customerVat, paymentTerms, dueDate, notes, items, vatEnabled, subtotal, vatAmount, total }: InvoicePreviewProps) {
+export function InvoicePreview({ docType, selectedTemplate, customerName, customerEmail, customerPhone, customerAddress, customerVat, paymentTerms, dueDate, notes, items, vatEnabled, taxLabel = "VAT", taxRate = 15, subtotal, vatAmount, total }: InvoicePreviewProps) {
   const { user } = useAuth();
   const s = TEMPLATE_STYLES[selectedTemplate] || TEMPLATE_STYLES[1];
   const today = new Date().toLocaleDateString("en-ZA");
@@ -292,18 +294,18 @@ export function InvoicePreview({ docType, selectedTemplate, customerName, custom
               <span>Subtotal</span><span>R{subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", color: "#777", marginBottom: 0 }}>
-              <span>VAT (15%)</span><span>R{vatAmount.toFixed(2)}</span>
+              <span>{taxLabel} ({taxRate}%)</span><span>R{vatAmount.toFixed(2)}</span>
             </div>
           </>
         )}
         {boxBg ? (
           <div style={{ background: boxBg, padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: vatEnabled ? 6 : 0 }}>
-            <span style={{ color: "#fff", fontWeight: 700, fontSize: 8 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: 8 }}>{vatEnabled ? `TOTAL DUE (incl. ${taxLabel})` : "TOTAL DUE"}</span>
             <span style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>R{total.toFixed(2)}</span>
           </div>
         ) : (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: vatEnabled ? "1px solid #ddd" : "none", paddingTop: vatEnabled ? 5 : 0, marginTop: vatEnabled ? 4 : 0 }}>
-            <span style={{ color: "#333", fontWeight: 700, fontSize: 8.5 }}>{vatEnabled ? "TOTAL DUE (incl. VAT)" : "TOTAL DUE"}</span>
+            <span style={{ color: "#333", fontWeight: 700, fontSize: 8.5 }}>{vatEnabled ? `TOTAL DUE (incl. ${taxLabel})` : "TOTAL DUE"}</span>
             <span style={{ color: accent, fontWeight: 800, fontSize: 14 }}>R{total.toFixed(2)}</span>
           </div>
         )}

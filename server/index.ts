@@ -31,6 +31,7 @@ import { mtnRouter, runMtnMigrations } from "./mtn";
 import { nexoRouter, runNexoMigrations } from "./nexo";
 import { documentsRouter } from "./documents";
 import { invoicePaymentsRouter } from "./invoice-payments";
+import { commercialDocumentsRouter, quotePublicRouter, runCommercialDocumentMigrations } from "./commercial-documents";
 import { docPdfRouter } from "./doc-pdf";
 import { vehicleRouter } from "./vehicles";
 import { leadsRouter } from "./leads";
@@ -134,6 +135,8 @@ async function main() {
   app.use("/api/admin", adminRouter);
   app.use("/api/finance", financeRouter);
   app.use("/api/invoices/pay", invoicePaymentsRouter);
+  app.use("/api/quotes", quotePublicRouter);
+  app.use("/api/commercial-documents", commercialDocumentsRouter);
   app.use("/api/invoices", invoiceRouter);
   app.use("/api/compliance", complianceRouter);
   app.use("/api/funding", grantsRouter);
@@ -191,7 +194,10 @@ async function main() {
 
     // Each migration group runs independently so one failure never blocks the others
     runMigrations()
-      .then(() => console.log("MySQL migrations completed successfully"))
+      .then(async () => {
+        console.log("MySQL migrations completed successfully");
+        await runCommercialDocumentMigrations();
+      })
       .catch(e => console.error("[Startup] Migration error:", e.message));
 
     runAdminMigrations().catch(e => console.error("[Admin] Migration error:", e.message));

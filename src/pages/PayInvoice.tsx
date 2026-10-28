@@ -8,8 +8,13 @@ interface InvoiceData {
   customerName: string;
   customerEmail: string;
   totalCents: number;
+  paymentsTotalCents: number;
+  creditsTotalCents: number;
+  balanceCents: number;
   vatCents: number;
   vatEnabled: boolean;
+  taxRate: number;
+  taxLabel: string;
   items: Array<{ name: string; qty: number; unitPrice: number }>;
   status: string;
   paymentTerms: string | null;
@@ -84,7 +89,7 @@ export default function PayInvoice() {
         }
         const inv: InvoiceData = data.invoice;
         const biz: BusinessData = data.business;
-        if (inv.status === "paid" || inv.paidAt) {
+        if (inv.status === "paid" || inv.paidAt || inv.balanceCents <= 0) {
           setState({ type: "already_paid", invoice: inv, business: biz });
         } else {
           setState({ type: "ready", invoice: inv, business: biz });
@@ -203,7 +208,9 @@ export default function PayInvoice() {
                 <div className="bg-green-50 border-b border-green-100 px-8 py-3 flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <span className="text-green-800 text-sm font-medium">
-                    This invoice was paid on {fmtDate(inv.paidAt)}
+                    {inv.status === "paid" || inv.paidAt
+                      ? `This invoice was paid on ${fmtDate(inv.paidAt)}`
+                      : "No balance is currently due for this invoice."}
                   </span>
                 </div>
               )}
@@ -245,14 +252,24 @@ export default function PayInvoice() {
                       <span>{fmt(subtotalCents)}</span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-500">
-                      <span>VAT (15%)</span>
+                      <span>{inv.taxLabel} ({inv.taxRate}%)</span>
                       <span>{fmt(inv.vatCents)}</span>
                     </div>
                   </>
                 )}
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
-                  <span>Total Due</span>
-                  <span className="text-green-700 text-lg">{fmt(inv.totalCents)}</span>
+                  <span>Invoice total</span>
+                  <span>{fmt(inv.totalCents)}</span>
+                </div>
+                {inv.paymentsTotalCents > 0 && (
+                  <div className="flex justify-between text-sm text-gray-500"><span>Payments received</span><span>− {fmt(inv.paymentsTotalCents)}</span></div>
+                )}
+                {inv.creditsTotalCents > 0 && (
+                  <div className="flex justify-between text-sm text-gray-500"><span>Credit notes</span><span>− {fmt(inv.creditsTotalCents)}</span></div>
+                )}
+                <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
+                  <span>Balance due</span>
+                  <span className="text-green-700 text-lg">{fmt(inv.balanceCents)}</span>
                 </div>
               </div>
 

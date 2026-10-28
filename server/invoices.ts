@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { queryOne, queryAll, execute } from "./db";
+import { pool, queryOne, queryAll, execute } from "./db";
 import { requireAuth, getDataOwnerId } from "./auth";
 import { randomUUID } from "crypto";
 import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb, RGB } from "pdf-lib";
@@ -10,6 +10,7 @@ import multer from "multer";
 import { getTransporterForUser } from "./email-settings";
 import { sendThankYouReceipt, checkStopCreditAndAlert } from "./automations";
 import { generateInvoicePaymentToken } from "./invoice-payments";
+import { allocateDocumentNumber, getDocumentSettings, writeInvoiceAudit } from "./commercial-documents";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -196,6 +197,8 @@ function drawStandardTable(ctx: TemplateCtx, y: number, headerBg: RGB, headerTex
 
 function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | null): number {
   const { page, font, fontBold, invoice, vatEnabled, vatCents, subtotalCents, isQuote } = ctx;
+  const taxLabel = invoice.tax_label || "VAT";
+  const taxRate = Number(invoice.tax_rate ?? 15);
   const labelX = 350;
   const amtRight = RIGHT - 10; // 10pt padding from the right border
   y -= 16;
@@ -203,7 +206,7 @@ function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | 
   if (vatEnabled) {
     page.drawText("Subtotal:", { x: labelX, y, size: 9, font, color: grey });
     rText(page, `R${(subtotalCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 20;
-    page.drawText("VAT (15%):", { x: labelX, y, size: 9, font, color: grey });
+    page.drawText(`${taxLabel} (${taxRate}%):`, { x: labelX, y, size: 9, font, color: grey });
     rText(page, `R${(vatCents / 100).toFixed(2)}`, amtRight, y, 9, font, black); y -= 14;
     // Only draw the separator for the plain (no-box) total style; skip it when a
     // coloured box is used — it lands inside the box and cuts through the text.
@@ -215,7 +218,7 @@ function drawTotals(ctx: TemplateCtx, y: number, accentColor: RGB, boxBg: RGB | 
 
   const totalStr = `R${(invoice.total_cents / 100).toFixed(2)}`;
   const totalLabel = vatEnabled
-    ? (isQuote ? "TOTAL ESTIMATE (incl. VAT):" : "TOTAL DUE (incl. VAT):")
+    ? (isQuote ? `TOTAL ESTIMATE (incl. ${taxLabel}):` : `TOTAL DUE (incl. ${taxLabel}):`)
     : (isQuote ? "TOTAL ESTIMATE:" : "TOTAL DUE:");
 
   if (boxBg) {
@@ -832,14 +835,14 @@ function renderTemplate7(ctx: TemplateCtx) {
   if (vatEnabled) {
     page.drawText("Subtotal:", { x: labelX, y, size: 9, font, color: midGrey });
     rText(page, `R${(subtotalCents / 100).toFixed(2)}`, amtRight, y, 9, font, darkGrey); y -= 18;
-    page.drawText("VAT (15%):", { x: labelX, y, size: 9, font, color: midGrey });
+    page.drawText(`${ctx.invoice.tax_label || "VAT"} (${Number(ctx.invoice.tax_rate ?? 15)}%):`, { x: labelX, y, size: 9, font, color: midGrey });
     rText(page, `R${(vatCents / 100).toFixed(2)}`, amtRight, y, 9, font, darkGrey); y -= 12;
     page.drawRectangle({ x: labelX, y, width: RIGHT - labelX, height: 0.5, color: lineGrey }); y -= 8;
   }
 
   const totalStr = `R${(invoice.total_cents / 100).toFixed(2)}`;
   const totalLabel = vatEnabled
-    ? (isQuote ? "TOTAL ESTIMATE (incl. VAT):" : "TOTAL DUE (incl. VAT):")
+    ? (isQuote ? `TOTAL ESTIMATE (incl. ${ctx.invoice.tax_label || "VAT"}):` : `TOTAL DUE (incl. ${ctx.invoice.tax_label || "VAT"}):`)
     : (isQuote ? "TOTAL ESTIMATE:" : "TOTAL DUE:");
 
   // Outlined total box (no fill, just border)
@@ -1221,7 +1224,7 @@ function renderCustomTemplate(ctx: TemplateCtx, rawConfig: any) {
     ty -= 16;
 
     if (vatEnabled && showVat) {
-      const vatLbl = (lbl.vatLabel || `VAT (${vatRate}%)`).replace("15%", `${vatRate}%`);
+      const vatLbl = (lbl.vatLabel || `${invoice.tax_label || "VAT"} (${vatRate}%)`).replace("15%", `${vatRate}%`);
       drawText(vatLbl, totalsX + 10, ty - 10, 9, font, cMuted);
       rText(`${sym}${(vatCents / 100).toFixed(2)}`, totalsX + totalsW - 10, ty - 10, 9, font, cMuted);
       ty -= 16;
@@ -1320,7 +1323,7 @@ invoiceRouter.get("/export", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
     const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
-    const header = "Number,Type,Customer Name,Customer Email,Items,Subtotal,VAT (15%),Total,Status,Date";
+    const header = "Number,Type,Customer Name,Customer Email,Items,Subtotal,Tax,Total,Status,Date";
     const rows = invoices.map((inv: any) => {
       const items = JSON.parse(inv.items_json || "[]");
       const itemsSummary = items.map((item: any) => `${item.qty || 1}x ${item.name || "Item"} @ R${(item.unitPrice || 0).toFixed(2)}`).join("; ");
@@ -1525,7 +1528,7 @@ function parseCSVLine(line: string): string[] {
 invoiceRouter.post("/", async (req, res) => {
   try {
     const callerId = getDataOwnerId(req);
-    const { customerName, customerEmail, customerAddress, customerPhone, customerVat, items, vatEnabled, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId, platformUserId } = req.body;
+    const { customerName, customerEmail, customerAddress, customerPhone, customerVat, items, vatEnabled, taxRate, taxLabel, reference, paymentTerms, notes, type, template, templateConfig, dueDate, customStartSeq, clientId, platformUserId } = req.body;
 
     // If a super admin is creating an invoice on behalf of a platform user, save it under that user's account
     let userId = callerId;
@@ -1538,42 +1541,34 @@ invoiceRouter.post("/", async (req, res) => {
     }
     if (!customerName || !items || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customerName and items are required" });
+    if (items.some((item: any) => !String(item?.name || "").trim() || !Number.isFinite(Number(item?.qty)) || Number(item.qty) <= 0 || !Number.isFinite(Number(item?.unitPrice)) || Number(item.unitPrice) < 0)) {
+      return res.status(400).json({ error: "Each line item needs a description, a positive quantity, and a valid unit price" });
+    }
     const docType = type === "quote" ? "quote" : "invoice";
     const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
-    const subtotalCents = items.reduce((sum: number, item: any) => sum + Math.round((item.qty || 1) * (item.unitPrice || 0) * 100), 0);
-    const vatCents = vatEnabled ? Math.round(subtotalCents * 0.15) : 0;
+    const settings = await getDocumentSettings(userId);
+    const appliedTaxRate = Number.isFinite(Number(taxRate)) ? Math.min(100, Math.max(0, Number(taxRate))) : Number(settings.tax_rate);
+    const appliedTaxLabel = String(taxLabel || settings.tax_label || "VAT").trim().slice(0, 40);
+    const subtotalCents = items.reduce((sum: number, item: any) => sum + Math.round(Number(item.qty) * Number(item.unitPrice) * 100), 0);
+    const vatCents = vatEnabled ? Math.round(subtotalCents * appliedTaxRate / 100) : 0;
     const totalCents = subtotalCents + vatCents;
-    const prefix = docType === "quote" ? "QUO" : "INV";
-    const year = new Date().getFullYear();
-
-    let docNumber: string;
-    if (docType === "invoice") {
-      const userRow = await queryOne("SELECT invoice_next_seq FROM users WHERE id = ?", [userId]);
-      if (userRow?.invoice_next_seq != null) {
-        docNumber = `INV-${year}-${userRow.invoice_next_seq}`;
-        await execute("UPDATE users SET invoice_next_seq = invoice_next_seq + 1 WHERE id = ?", [userId]);
-      } else if (customStartSeq && Number.isInteger(Number(customStartSeq)) && Number(customStartSeq) > 0) {
-        const seq = Number(customStartSeq);
-        docNumber = `INV-${year}-${seq}`;
-        await execute("UPDATE users SET invoice_next_seq = ? WHERE id = ?", [seq + 1, userId]);
-      } else {
-        const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
-        docNumber = `INV-${year}-${String(count + 1).padStart(3, "0")}`;
-      }
-    } else {
-      const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'quote'", [userId]))?.c || 0;
-      docNumber = `QUO-${year}-${String(count + 1).padStart(3, "0")}`;
-    }
+    const docNumber = await allocateDocumentNumber(
+      userId,
+      docType,
+      docType === "invoice" && Number.isInteger(Number(customStartSeq)) && Number(customStartSeq) > 0 ? Number(customStartSeq) : undefined,
+    );
 
     const id = randomUUID();
     const now = new Date().toISOString();
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
     const dueDateVal = (docType === "invoice" && dueDate) ? dueDate : null;
+    const acceptanceToken = docType === "quote" ? randomUUID().replace(/-/g, "") : null;
     await execute(
-      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, customer_vat, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, items_json, status, type, template, template_config, due_date, client_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?, ?)`,
-      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, customerVat || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, clientId || null, now]
+      `INSERT INTO invoices (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, customer_vat, reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, tax_rate, tax_label, items_json, status, type, template, template_config, due_date, client_id, acceptance_token, revision_number, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', ?, ?, ?, ?, ?, ?, 0, ?)`,
+      [id, userId, docNumber, customerName, customerEmail || null, customerAddress || null, customerPhone || null, customerVat || null, reference || null, paymentTerms || null, notes || null, totalCents, vatEnabled ? 1 : 0, vatCents, appliedTaxRate, appliedTaxLabel, JSON.stringify(items), docType, docTemplate, configJson, dueDateVal, clientId || null, acceptanceToken, now]
     );
+    await writeInvoiceAudit(userId, id, req.session?.userId || null, `${docType}_created`, { invoice_number: docNumber, total_cents: totalCents });
 
     // Stop-credit check (invoices only, not quotes; non-blocking)
     if (docType === "invoice") {
@@ -1589,12 +1584,28 @@ invoiceRouter.post("/", async (req, res) => {
 invoiceRouter.get("/", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const invoices = await queryAll("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", [userId]);
+    const invoices = await queryAll(
+      `SELECT i.*,
+              COALESCE((SELECT SUM(p.amount_cents) FROM invoice_payments p WHERE p.invoice_id = i.id AND p.user_id = i.user_id), 0) AS payments_total_cents,
+              COALESCE((SELECT SUM(c.amount_cents) FROM invoice_credit_notes c WHERE c.invoice_id = i.id AND c.user_id = i.user_id AND c.status = 'issued'), 0) AS credits_total_cents
+       FROM invoices i WHERE i.user_id = ? ORDER BY i.created_at DESC`,
+      [userId],
+    );
+    for (const invoice of invoices) {
+      if (invoice.type === "quote" && !invoice.acceptance_token) {
+        invoice.acceptance_token = randomUUID().replace(/-/g, "");
+        await execute(
+          "UPDATE invoices SET acceptance_token = ? WHERE id = ? AND user_id = ?",
+          [invoice.acceptance_token, invoice.id, userId],
+        );
+      }
+    }
     res.json(invoices.map((inv: any) => ({
       ...inv,
       items: JSON.parse(inv.items_json),
       vat_enabled: !!inv.vat_enabled,
       vat_cents: inv.vat_cents || 0,
+      tax_rate: Number(inv.tax_rate ?? 15),
       type: inv.type || "invoice",
       template: inv.template || 1,
       template_config: inv.template_config ? JSON.parse(inv.template_config) : null,
@@ -1605,25 +1616,82 @@ invoiceRouter.get("/", async (req, res) => {
 });
 
 invoiceRouter.post("/:id/convert", async (req, res) => {
+  const userId = getDataOwnerId(req);
+  let conn: any;
+  let inTransaction = false;
   try {
-    const userId = getDataOwnerId(req);
-    const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
-    if (!invoice) return res.status(404).json({ error: "Not found" });
-    if (invoice.type !== "quote") return res.status(400).json({ error: "Only quotes can be converted" });
-    const year = new Date().getFullYear();
-    let invoiceNumber: string;
-    const userRow = await queryOne("SELECT invoice_next_seq FROM users WHERE id = ?", [userId]);
-    if (userRow?.invoice_next_seq != null) {
-      invoiceNumber = `INV-${year}-${userRow.invoice_next_seq}`;
-      await execute("UPDATE users SET invoice_next_seq = invoice_next_seq + 1 WHERE id = ?", [userId]);
-    } else {
-      const count = (await queryOne("SELECT COUNT(*) as c FROM invoices WHERE user_id = ? AND type = 'invoice'", [userId]))?.c || 0;
-      invoiceNumber = `INV-${year}-${String(count + 1).padStart(3, "0")}`;
+    const quote = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!quote) return res.status(404).json({ error: "Not found" });
+    if (quote.type !== "quote") return res.status(400).json({ error: "Only quotes can be converted" });
+    if (quote.status === "converted" || quote.converted_to_invoice_id) {
+      return res.status(409).json({ error: "This quote has already been converted", invoiceId: quote.converted_to_invoice_id });
     }
-    await execute("UPDATE invoices SET type = 'invoice', invoice_number = ? WHERE id = ?", [invoiceNumber, invoice.id]);
-    res.json({ ok: true, invoiceNumber });
+    if (quote.status !== "accepted" && !quote.accepted_at) {
+      return res.status(409).json({ error: "The customer must accept this quote before conversion" });
+    }
+    const invoiceNumber = await allocateDocumentNumber(userId, "invoice");
+    const invoiceId = randomUUID();
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+    inTransaction = true;
+    const [lockedRows] = await conn.execute(
+      "SELECT * FROM invoices WHERE id = ? AND user_id = ? FOR UPDATE",
+      [req.params.id, userId],
+    );
+    const lockedQuote = (lockedRows as any[])[0];
+    if (!lockedQuote) {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(404).json({ error: "Not found" });
+    }
+    if (lockedQuote.status === "converted" || lockedQuote.converted_to_invoice_id) {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(409).json({ error: "This quote has already been converted", invoiceId: lockedQuote.converted_to_invoice_id });
+    }
+    if (lockedQuote.type !== "quote" || (lockedQuote.status !== "accepted" && !lockedQuote.accepted_at)) {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(409).json({ error: "The quote must be accepted before conversion" });
+    }
+    await conn.execute(
+      `INSERT INTO invoices
+       (id, user_id, invoice_number, customer_name, customer_email, customer_address, customer_phone, customer_vat,
+        reference, payment_terms, notes, total_cents, vat_enabled, vat_cents, tax_rate, tax_label, items_json, status, type,
+        template, template_config, due_date, client_id, converted_from_quote_id, revision_number, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'final', 'invoice', ?, ?, ?, ?, ?, 0, NOW())`,
+      [invoiceId, userId, invoiceNumber, lockedQuote.customer_name, lockedQuote.customer_email, lockedQuote.customer_address,
+        lockedQuote.customer_phone, lockedQuote.customer_vat, lockedQuote.reference, lockedQuote.payment_terms, lockedQuote.notes,
+        lockedQuote.total_cents, lockedQuote.vat_enabled ? 1 : 0, lockedQuote.vat_cents || 0, lockedQuote.tax_rate || 15, lockedQuote.tax_label || "VAT",
+        lockedQuote.items_json, lockedQuote.template || 1, lockedQuote.template_config, lockedQuote.due_date, lockedQuote.client_id, lockedQuote.id],
+    );
+    const [updateResult] = await conn.execute(
+      "UPDATE invoices SET status = 'converted', converted_to_invoice_id = ? WHERE id = ? AND user_id = ? AND status = 'accepted' AND converted_to_invoice_id IS NULL",
+      [invoiceId, lockedQuote.id, userId],
+    );
+    if (Number((updateResult as any).affectedRows) !== 1) {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(409).json({ error: "This quote has already been converted" });
+    }
+    await conn.execute(
+      `INSERT INTO invoice_audit_log (id, user_id, invoice_id, actor_user_id, action, details_json, created_at)
+       VALUES (?, ?, ?, ?, 'quote_converted', ?, NOW()), (?, ?, ?, ?, 'invoice_created_from_quote', ?, NOW())`,
+      [
+        randomUUID(), userId, lockedQuote.id, req.session?.userId || null,
+        JSON.stringify({ invoice_id: invoiceId, invoice_number: invoiceNumber }),
+        randomUUID(), userId, invoiceId, req.session?.userId || null,
+        JSON.stringify({ quote_id: lockedQuote.id, quote_number: lockedQuote.invoice_number }),
+      ],
+    );
+    await conn.commit();
+    inTransaction = false;
+    res.json({ ok: true, invoiceNumber, invoiceId });
   } catch (err: any) {
+    if (inTransaction && conn) await conn.rollback().catch(() => {});
     res.status(500).json({ error: err.message || "Failed to convert" });
+  } finally {
+    conn?.release();
   }
 });
 
@@ -1719,6 +1787,11 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     // Generate or refresh the payment token (only for invoices, not quotes)
     const isInvoice = (invoice.type || "invoice") === "invoice";
     let paymentToken = invoice.payment_token;
+    let acceptanceToken = invoice.acceptance_token;
+    if (!isInvoice && !acceptanceToken) {
+      acceptanceToken = randomUUID().replace(/-/g, "");
+      await execute("UPDATE invoices SET acceptance_token = ? WHERE id = ? AND user_id = ?", [acceptanceToken, invoice.id, userId]);
+    }
     if (isInvoice && process.env.ADUMO_MERCHANT_ID) {
       paymentToken = generateInvoicePaymentToken();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
@@ -1808,6 +1881,9 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     const paymentLink = (isInvoice && paymentToken)
       ? `${baseUrl.replace(/\/+$/, "")}/pay/${paymentToken}`
       : null;
+    const quoteAcceptanceLink = (!isInvoice && acceptanceToken)
+      ? `${baseUrl.replace(/\/+$/, "")}/quote/respond/${acceptanceToken}`
+      : null;
 
     const payButtonHtml = paymentLink ? `
   <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:28px;">
@@ -1816,6 +1892,15 @@ invoiceRouter.post("/:id/email", async (req, res) => {
         Pay Now — ${totalFormatted}
       </a>
       <p style="margin:10px 0 0;font-size:12px;color:#9a9aaa;">Secure online payment · Click the button above to pay instantly</p>
+    </td></tr>
+  </table>` : "";
+    const quoteAcceptButton = quoteAcceptanceLink ? `
+  <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:28px;">
+    <tr><td align="center">
+      <a href="${quoteAcceptanceLink}" style="display:inline-block;background:#007749;color:#fff;font-size:16px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
+        Review and Accept Quote
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#9a9aaa;">Use the secure link above to accept this quote.</p>
     </td></tr>
   </table>` : "";
 
@@ -1840,7 +1925,7 @@ invoiceRouter.post("/:id/email", async (req, res) => {
     ${invoice.payment_terms ? `<tr><td style="padding:12px 16px;color:#4a4a5a;font-size:14px;border-bottom:1px solid #f3f4f6;">Payment Terms</td><td style="padding:12px 16px;color:#1a1a2e;font-size:14px;text-align:right;border-bottom:1px solid #f3f4f6;">${invoice.payment_terms}</td></tr>` : ""}
     <tr style="background:#f9fafb;"><td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a1a2e;">Total</td><td style="padding:14px 16px;font-size:18px;font-weight:700;color:#007749;text-align:right;">${totalFormatted}</td></tr>
   </table>
-  ${payButtonHtml}
+  ${payButtonHtml}${quoteAcceptButton}
   ${invoice.notes ? `<p style="margin:0 0 20px;color:#6b7280;font-size:13px;font-style:italic;">${invoice.notes}</p>` : ""}
   <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">If you have any questions, please reply to this email or contact us at ${mailer.fromEmail}.</p>
   <p style="margin:16px 0 0;color:#4a4a5a;font-size:14px;">Thank you for your business!<br><strong style="color:#1a1a2e;">${businessName}</strong></p>
@@ -1876,7 +1961,9 @@ invoiceRouter.get("/:id/pay-link", async (req, res) => {
     const userId = getDataOwnerId(req);
     const invoice = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ? AND type = 'invoice'", [req.params.id, userId]);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
-    if (invoice.status === "paid") return res.status(400).json({ error: "Invoice is already paid." });
+    if (invoice.status === "paid" || invoice.status === "credited" || invoice.status === "settled") {
+      return res.status(400).json({ error: "Invoice has no outstanding balance." });
+    }
 
     let token = invoice.payment_token;
     const expired = token && invoice.payment_token_expires_at && new Date(invoice.payment_token_expires_at) < new Date();
@@ -1903,24 +1990,353 @@ invoiceRouter.get("/:id/pay-link", async (req, res) => {
 invoiceRouter.put("/:id", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    const existing = await queryOne("SELECT * FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    const { customer_name, customer_email, customer_address, customer_phone, customer_vat, items, vat_enabled, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
+    if (existing.status === "void" || existing.status === "converted") return res.status(409).json({ error: "Voided or converted documents cannot be edited." });
+    if (existing.status === "paid" || existing.paid_at) return res.status(409).json({ error: "Paid invoices cannot be edited. Create a credit note to adjust the balance." });
+    const { customer_name, customer_email, customer_address, customer_phone, customer_vat, items, vat_enabled, tax_rate, tax_label, reference, payment_terms, notes, template, templateConfig, due_date } = req.body;
     if (!customer_name || !Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "customer_name and items are required" });
+    if (items.some((item: any) => !String(item?.name || "").trim() || !Number.isFinite(Number(item?.qty)) || Number(item.qty) <= 0 || !Number.isFinite(Number(item?.unitPrice)) || Number(item.unitPrice) < 0)) {
+      return res.status(400).json({ error: "Each line item needs a description, a positive quantity, and a valid unit price" });
+    }
     const docTemplate = Math.min(8, Math.max(1, parseInt(template) || 1));
     const vatOn = !!vat_enabled;
     let subtotalCents = 0;
     for (const it of items) subtotalCents += Math.round((it.qty || 1) * ((it.unitPrice || 0) * 100));
-    const vatCents = vatOn ? Math.round(subtotalCents * 0.15) : 0;
+    const appliedTaxRate = Number.isFinite(Number(tax_rate ?? req.body.taxRate))
+      ? Math.min(100, Math.max(0, Number(tax_rate ?? req.body.taxRate)))
+      : Number(existing.tax_rate || 15);
+    const appliedTaxLabel = String(tax_label || existing.tax_label || "VAT").trim().slice(0, 40);
+    const vatCents = vatOn ? Math.round(subtotalCents * appliedTaxRate / 100) : 0;
     const configJson = templateConfig ? JSON.stringify(templateConfig) : null;
+    const nextRevision = Number(existing.revision_number || 0) + 1;
+    const snapshot = {
+      invoice_number: existing.invoice_number,
+      customer_name: existing.customer_name,
+      customer_email: existing.customer_email,
+      customer_address: existing.customer_address,
+      customer_phone: existing.customer_phone,
+      customer_vat: existing.customer_vat,
+      reference: existing.reference,
+      payment_terms: existing.payment_terms,
+      notes: existing.notes,
+      items: JSON.parse(existing.items_json || "[]"),
+      total_cents: existing.total_cents,
+      vat_enabled: !!existing.vat_enabled,
+      vat_cents: existing.vat_cents,
+      tax_rate: Number(existing.tax_rate || 15),
+      tax_label: existing.tax_label || "VAT",
+      status: existing.status,
+      revision_number: Number(existing.revision_number || 0),
+    };
     await execute(
-      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, customer_vat=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, total_cents=?, template=?, template_config=?, due_date=? WHERE id=?`,
-      [customer_name, customer_email || null, customer_address || null, customer_phone || null, customer_vat || null, reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents, subtotalCents + vatCents, docTemplate, configJson, due_date || null, req.params.id]
+      `INSERT INTO invoice_revisions (id, user_id, invoice_id, revision_number, snapshot_json, changed_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [randomUUID(), userId, existing.id, nextRevision, JSON.stringify(snapshot), req.session?.userId || null],
     );
+    const isQuote = existing.type === "quote";
+    const resetQuoteAcceptance = isQuote ? "status = 'final', accepted_at = NULL, acceptance_token = ?" : "status = status";
+    const values = isQuote
+      ? [randomUUID().replace(/-/g, "")]
+      : [];
+    await execute(
+      `UPDATE invoices SET customer_name=?, customer_email=?, customer_address=?, customer_phone=?, customer_vat=?, reference=?, payment_terms=?, notes=?, items_json=?, vat_enabled=?, vat_cents=?, tax_rate=?, tax_label=?, total_cents=?, template=?, template_config=?, due_date=?, revision_number=?, payment_token=NULL, payment_token_expires_at=NULL, payment_merchant_ref=NULL, payment_merchant_amount_cents=NULL, ${resetQuoteAcceptance} WHERE id=? AND user_id=?`,
+      [customer_name, customer_email || null, customer_address || null, customer_phone || null, customer_vat || null,
+        reference || null, payment_terms || null, notes || null, JSON.stringify(items), vatOn ? 1 : 0, vatCents,
+        appliedTaxRate, appliedTaxLabel, subtotalCents + vatCents, docTemplate, configJson, due_date || null, nextRevision,
+        ...values, req.params.id, userId],
+    );
+    await writeInvoiceAudit(userId, existing.id, req.session?.userId || null, `${isQuote ? "quote" : "invoice"}_revised`, { revision_number: nextRevision });
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update" });
+  }
+});
+
+invoiceRouter.get("/:id/payments", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoice = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    res.json(await queryAll(
+      "SELECT * FROM invoice_payments WHERE invoice_id = ? AND user_id = ? ORDER BY paid_at DESC",
+      [req.params.id, userId],
+    ));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load payments" });
+  }
+});
+
+invoiceRouter.post("/:id/payments", async (req, res) => {
+  const userId = getDataOwnerId(req);
+  const amountCents = Number(req.body.amount_cents);
+  const paymentMethod = ["cash", "eft", "card", "online", "other"].includes(req.body.payment_method) ? req.body.payment_method : "other";
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    return res.status(400).json({ error: "Payment amount must be a positive amount in cents" });
+  }
+  const receiptNumber = await allocateDocumentNumber(userId, "receipt");
+  const conn = await pool.getConnection();
+  let completed = false;
+  try {
+    await conn.beginTransaction();
+    const [invoiceRows] = await conn.execute(
+      "SELECT id, invoice_number, customer_name, total_cents, status, paid_at, type FROM invoices WHERE id = ? AND user_id = ? FOR UPDATE",
+      [req.params.id, userId],
+    );
+    const invoice = (invoiceRows as any[])[0];
+    if (!invoice) {
+      await conn.rollback();
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    if (invoice.type !== "invoice" || invoice.status === "void") {
+      await conn.rollback();
+      return res.status(400).json({ error: "Payments can only be recorded against active invoices" });
+    }
+    if (invoice.paid_at && invoice.status === "paid") {
+      await conn.rollback();
+      return res.status(409).json({ error: "This invoice is already fully paid" });
+    }
+    const [paymentRows] = await conn.execute(
+      "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM invoice_payments WHERE invoice_id = ? AND user_id = ?",
+      [invoice.id, userId],
+    );
+    const [creditRows] = await conn.execute(
+      "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM invoice_credit_notes WHERE invoice_id = ? AND user_id = ? AND status = 'issued'",
+      [invoice.id, userId],
+    );
+    const paymentsTotal = Number((paymentRows as any[])[0]?.total || 0);
+    const creditsTotal = Number((creditRows as any[])[0]?.total || 0);
+    const legacyPaid = invoice.paid_at && paymentsTotal === 0;
+    const balanceCents = legacyPaid ? 0 : Math.max(0, Number(invoice.total_cents) - paymentsTotal - creditsTotal);
+    if (amountCents > balanceCents) {
+      await conn.rollback();
+      return res.status(400).json({ error: `Payment exceeds the remaining balance of R${(balanceCents / 100).toFixed(2)}` });
+    }
+
+    const paymentId = randomUUID();
+    await conn.execute(
+      `INSERT INTO invoice_payments (id, user_id, invoice_id, receipt_number, amount_cents, payment_method, reference, notes, paid_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [paymentId, userId, invoice.id, receiptNumber, amountCents, paymentMethod,
+        String(req.body.reference || "").trim() || null, String(req.body.notes || "").trim() || null],
+    );
+    const newBalance = balanceCents - amountCents;
+    const fullyPaid = newBalance === 0;
+    await conn.execute(
+      "UPDATE invoices SET status = ?, paid_at = ?, payment_token = NULL, payment_token_expires_at = NULL, payment_merchant_ref = NULL, payment_merchant_amount_cents = NULL WHERE id = ? AND user_id = ?",
+      [fullyPaid ? "paid" : "partially_paid", fullyPaid ? new Date() : null, invoice.id, userId],
+    );
+    await conn.execute(
+      `INSERT INTO invoice_audit_log (id, user_id, invoice_id, actor_user_id, action, details_json, created_at)
+       VALUES (?, ?, ?, ?, 'payment_recorded', ?, NOW())`,
+      [randomUUID(), userId, invoice.id, req.session?.userId || null,
+        JSON.stringify({ receipt_number: receiptNumber, amount_cents: amountCents, payment_method: paymentMethod, balance_cents: newBalance })],
+    );
+    await conn.commit();
+    completed = true;
+    if (fullyPaid) sendThankYouReceipt(invoice.id).catch(() => {});
+    res.json({ ok: true, paymentId, receiptNumber, balanceCents: newBalance, fullyPaid });
+  } catch (err: any) {
+    if (!completed) await conn.rollback().catch(() => {});
+    res.status(500).json({ error: err.message || "Failed to record payment" });
+  } finally {
+    conn.release();
+  }
+});
+
+invoiceRouter.get("/payments/:paymentId/receipt.pdf", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const payment = await queryOne(
+      `SELECT p.*, i.invoice_number, i.customer_name, u.full_name,
+              bp.business_name
+       FROM invoice_payments p
+       JOIN invoices i ON i.id = p.invoice_id AND i.user_id = p.user_id
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = p.user_id
+       WHERE p.id = ? AND p.user_id = ?`,
+      [req.params.paymentId, userId],
+    );
+    if (!payment) return res.status(404).json({ error: "Receipt not found" });
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([595, 842]);
+    const regular = await pdf.embedFont(StandardFonts.Helvetica);
+    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const draw = (text: string, y: number, size = 12, font = regular) => page.drawText(text, { x: 54, y, size, font, color: rgb(0.12, 0.16, 0.2) });
+    draw(payment.business_name || payment.full_name || "Business", 770, 20, bold);
+    draw("PAYMENT RECEIPT", 706, 16, bold);
+    draw(`Receipt number: ${payment.receipt_number}`, 670);
+    draw(`Invoice number: ${payment.invoice_number}`, 644);
+    draw(`Received from: ${payment.customer_name}`, 618);
+    draw(`Amount received: R${(Number(payment.amount_cents) / 100).toFixed(2)}`, 574, 15, bold);
+    draw(`Payment method: ${payment.payment_method}`, 544);
+    if (payment.reference) draw(`Reference: ${payment.reference}`, 518);
+    draw(`Date: ${new Date(payment.paid_at).toLocaleString("en-ZA")}`, 492);
+    draw("Thank you for your payment.", 428, 12, bold);
+    const bytes = await pdf.save();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${payment.receipt_number}.pdf"`);
+    res.send(Buffer.from(bytes));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to generate receipt" });
+  }
+});
+
+invoiceRouter.get("/:id/credit-notes", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoice = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    res.json(await queryAll(
+      "SELECT * FROM invoice_credit_notes WHERE invoice_id = ? AND user_id = ? ORDER BY created_at DESC",
+      [req.params.id, userId],
+    ));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load credit notes" });
+  }
+});
+
+invoiceRouter.post("/:id/credit-notes", async (req, res) => {
+  const userId = getDataOwnerId(req);
+  let conn: any;
+  let inTransaction = false;
+  try {
+    const amountCents = Number(req.body.amount_cents);
+    const reason = String(req.body.reason || "").trim();
+    if (!Number.isInteger(amountCents) || amountCents <= 0 || !reason) {
+      return res.status(400).json({ error: "A positive amount and reason are required" });
+    }
+    const existing = await queryOne(
+      "SELECT id, invoice_number, total_cents, type, status, paid_at FROM invoices WHERE id = ? AND user_id = ?",
+      [req.params.id, userId],
+    );
+    if (!existing || existing.type !== "invoice" || existing.status === "void") return res.status(404).json({ error: "Active invoice not found" });
+    const creditNumber = await allocateDocumentNumber(userId, "credit");
+    const creditId = randomUUID();
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+    inTransaction = true;
+    const [invoiceRows] = await conn.execute(
+      "SELECT id, invoice_number, total_cents, type, status, paid_at FROM invoices WHERE id = ? AND user_id = ? FOR UPDATE",
+      [req.params.id, userId],
+    );
+    const invoice = (invoiceRows as any[])[0];
+    if (!invoice || invoice.type !== "invoice" || invoice.status === "void") {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(404).json({ error: "Active invoice not found" });
+    }
+    const [sumRows] = await conn.execute(
+      `SELECT
+         COALESCE((SELECT SUM(amount_cents) FROM invoice_payments WHERE invoice_id = ? AND user_id = ?), 0) AS paid,
+         COALESCE((SELECT SUM(amount_cents) FROM invoice_credit_notes WHERE invoice_id = ? AND user_id = ? AND status = 'issued'), 0) AS credited`,
+      [invoice.id, userId, invoice.id, userId],
+    );
+    const sums = (sumRows as any[])[0];
+    const paid = Number(sums?.paid || 0);
+    const legacyPaid = invoice.paid_at && paid === 0 ? Number(invoice.total_cents) : paid;
+    const balanceCents = Math.max(0, Number(invoice.total_cents) - legacyPaid - Number(sums?.credited || 0));
+    if (amountCents > balanceCents) {
+      await conn.rollback();
+      inTransaction = false;
+      return res.status(400).json({ error: `Credit exceeds the remaining balance of R${(balanceCents / 100).toFixed(2)}` });
+    }
+    await conn.execute(
+      `INSERT INTO invoice_credit_notes (id, user_id, invoice_id, credit_number, amount_cents, reason, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'issued', NOW())`,
+      [creditId, userId, invoice.id, creditNumber, amountCents, reason],
+    );
+    const newBalance = balanceCents - amountCents;
+    const settledStatus = paid > 0 ? "settled" : "credited";
+    await conn.execute(
+      "UPDATE invoices SET status = IF(? = 0, ?, status), payment_token = NULL, payment_token_expires_at = NULL, payment_merchant_ref = NULL, payment_merchant_amount_cents = NULL WHERE id = ? AND user_id = ?",
+      [newBalance, settledStatus, invoice.id, userId],
+    );
+    await conn.execute(
+      `INSERT INTO invoice_audit_log (id, user_id, invoice_id, actor_user_id, action, details_json, created_at)
+       VALUES (?, ?, ?, ?, 'credit_note_issued', ?, NOW())`,
+      [
+        randomUUID(), userId, invoice.id, req.session?.userId || null,
+        JSON.stringify({ credit_number: creditNumber, amount_cents: amountCents, reason }),
+      ],
+    );
+    await conn.commit();
+    inTransaction = false;
+    res.json({ ok: true, id: creditId, creditNumber, balanceCents: newBalance });
+  } catch (err: any) {
+    if (inTransaction && conn) await conn.rollback().catch(() => {});
+    res.status(500).json({ error: err.message || "Failed to issue credit note" });
+  } finally {
+    conn?.release();
+  }
+});
+
+invoiceRouter.get("/credit-notes/:creditId/pdf", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const note = await queryOne(
+      `SELECT c.*, i.invoice_number, i.customer_name, u.full_name, bp.business_name
+       FROM invoice_credit_notes c
+       JOIN invoices i ON i.id = c.invoice_id AND i.user_id = c.user_id
+       JOIN users u ON u.id = c.user_id
+       LEFT JOIN business_profiles bp ON bp.user_id = c.user_id
+       WHERE c.id = ? AND c.user_id = ?`,
+      [req.params.creditId, userId],
+    );
+    if (!note) return res.status(404).json({ error: "Credit note not found" });
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([595, 842]);
+    const regular = await pdf.embedFont(StandardFonts.Helvetica);
+    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const draw = (text: string, y: number, size = 12, font = regular) =>
+      page.drawText(text, { x: 54, y, size, font, color: rgb(0.12, 0.16, 0.2) });
+    draw(note.business_name || note.full_name || "Business", 770, 20, bold);
+    draw("CREDIT NOTE", 706, 16, bold);
+    draw(`Credit note number: ${note.credit_number}`, 670);
+    draw(`Original invoice: ${note.invoice_number}`, 644);
+    draw(`Customer: ${note.customer_name}`, 618);
+    draw(`Credit amount: R${(Number(note.amount_cents) / 100).toFixed(2)}`, 574, 15, bold);
+    draw(`Issued: ${new Date(note.created_at).toLocaleDateString("en-ZA")}`, 544);
+    draw("Reason:", 500, 12, bold);
+    const reasonLines = String(note.reason || "").match(/.{1,72}(?:\s|$)/g) || [String(note.reason || "")];
+    reasonLines.slice(0, 8).forEach((line, index) => draw(line.trim(), 478 - index * 18, 11));
+    const bytes = await pdf.save();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${note.credit_number}.pdf"`);
+    res.send(Buffer.from(bytes));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to generate credit note" });
+  }
+});
+
+invoiceRouter.get("/:id/audit", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoice = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Document not found" });
+    const events = await queryAll(
+      "SELECT id, actor_user_id, action, details_json, created_at FROM invoice_audit_log WHERE invoice_id = ? AND user_id = ? ORDER BY created_at DESC",
+      [req.params.id, userId],
+    );
+    res.json(events.map((event: any) => ({ ...event, details: event.details_json ? JSON.parse(event.details_json) : null })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load audit history" });
+  }
+});
+
+invoiceRouter.get("/:id/revisions", async (req, res) => {
+  try {
+    const userId = getDataOwnerId(req);
+    const invoice = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    if (!invoice) return res.status(404).json({ error: "Document not found" });
+    const revisions = await queryAll(
+      "SELECT id, revision_number, snapshot_json, changed_by, created_at FROM invoice_revisions WHERE invoice_id = ? AND user_id = ? ORDER BY revision_number DESC",
+      [req.params.id, userId],
+    );
+    res.json(revisions.map((revision: any) => ({ ...revision, snapshot: JSON.parse(revision.snapshot_json) })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load revisions" });
   }
 });
 
@@ -1928,17 +2344,34 @@ invoiceRouter.post("/:id/mark-paid", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
     const inv = await queryOne(
-      "SELECT id, type, status, paid_at FROM invoices WHERE id = ? AND user_id = ?",
+      "SELECT id, type, status, paid_at, total_cents FROM invoices WHERE id = ? AND user_id = ?",
       [req.params.id, userId]
     );
     if (!inv) return res.status(404).json({ error: "Not found" });
     if (inv.type !== "invoice") return res.status(400).json({ error: "Only invoices can be marked paid" });
     if (inv.paid_at) return res.json({ ok: true, alreadyPaid: true });
 
+    const totals = await queryOne(
+      `SELECT
+         COALESCE((SELECT SUM(amount_cents) FROM invoice_payments WHERE invoice_id = ? AND user_id = ?), 0) AS paid,
+         COALESCE((SELECT SUM(amount_cents) FROM invoice_credit_notes WHERE invoice_id = ? AND user_id = ? AND status = 'issued'), 0) AS credited`,
+      [inv.id, userId, inv.id, userId],
+    );
+    const balance = Math.max(0, Number(inv.total_cents) - Number(totals?.paid || 0) - Number(totals?.credited || 0));
+    if (balance > 0) {
+      const receiptNumber = await allocateDocumentNumber(userId, "receipt");
+      const receiptId = randomUUID();
+      await execute(
+        `INSERT INTO invoice_payments (id, user_id, invoice_id, receipt_number, amount_cents, payment_method, notes, paid_at)
+         VALUES (?, ?, ?, ?, ?, 'other', 'Recorded as fully paid', NOW())`,
+        [receiptId, userId, inv.id, receiptNumber, balance],
+      );
+    }
     await execute(
-      "UPDATE invoices SET status = 'paid', paid_at = NOW() WHERE id = ?",
+      "UPDATE invoices SET status = 'paid', paid_at = NOW(), payment_token = NULL, payment_token_expires_at = NULL, payment_merchant_ref = NULL, payment_merchant_amount_cents = NULL WHERE id = ?",
       [req.params.id]
     );
+    await writeInvoiceAudit(userId, inv.id, req.session?.userId || null, "invoice_marked_paid", { amount_cents: balance });
 
     // Fire thank-you receipt (non-blocking)
     sendThankYouReceipt(req.params.id).catch(() => {});
@@ -1953,14 +2386,17 @@ invoiceRouter.post("/:id/mark-unpaid", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
     const inv = await queryOne(
-      "SELECT id FROM invoices WHERE id = ? AND user_id = ?",
+      "SELECT id, paid_at FROM invoices WHERE id = ? AND user_id = ?",
       [req.params.id, userId]
     );
     if (!inv) return res.status(404).json({ error: "Not found" });
+    const payments = await queryOne("SELECT COUNT(*) AS count FROM invoice_payments WHERE invoice_id = ? AND user_id = ?", [inv.id, userId]);
+    if (Number(payments?.count || 0) > 0) return res.status(409).json({ error: "Invoices with recorded payment receipts cannot be marked unpaid. Issue a refund or credit adjustment instead." });
     await execute(
       "UPDATE invoices SET status = 'sent', paid_at = NULL, thank_you_sent_at = NULL WHERE id = ?",
       [req.params.id]
     );
+    await writeInvoiceAudit(userId, inv.id, req.session?.userId || null, "invoice_marked_unpaid");
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -1970,9 +2406,16 @@ invoiceRouter.post("/:id/mark-unpaid", async (req, res) => {
 invoiceRouter.delete("/:id", async (req, res) => {
   try {
     const userId = getDataOwnerId(req);
-    const existing = await queryOne("SELECT id FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
+    const existing = await queryOne("SELECT id, invoice_number, type, status FROM invoices WHERE id = ? AND user_id = ?", [req.params.id, userId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    await execute("DELETE FROM invoices WHERE id = ?", [req.params.id]);
+    if (existing.status === "paid") return res.status(409).json({ error: "Paid invoices cannot be deleted. Keep the record and issue a credit note if needed." });
+    await execute(
+      "UPDATE invoices SET status = 'void', payment_token = NULL, payment_token_expires_at = NULL, payment_merchant_ref = NULL, payment_merchant_amount_cents = NULL WHERE id = ? AND user_id = ?",
+      [req.params.id, userId],
+    );
+    await writeInvoiceAudit(userId, existing.id, req.session?.userId || null, "document_voided", {
+      invoice_number: existing.invoice_number, type: existing.type,
+    });
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to delete" });

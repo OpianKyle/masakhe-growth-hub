@@ -1,2 +1,3 @@
 - [Free platform access](free-platform-access.md) — all core Masakhe features are free; customer invoice payments remain separate from platform access
 - [Invoice template sharing](invoice-template-sharing.md) — 8-template picker + live preview shared via InvoiceTemplates.tsx; invoices API uses templateConfig (camelCase), automations API uses template_config (snake_case)
+- [Safe invoice schema migrations](safe-invoice-schema-migrations.md) — verify additive columns explicitly and surface DDL failures; silent migration catches can break quote and invoice routes
