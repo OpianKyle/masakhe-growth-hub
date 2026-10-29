@@ -47,7 +47,7 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
   {
     name: "Finance & sales",
     perms: [
-      { key: "finance",             label: "Income & Expenses",   group: "Finance & sales" },
+      { key: "finance",             label: "Accounting & Cashflow", group: "Finance & sales" },
       { key: "invoices",            label: "Quotes & Invoices",   group: "Finance & sales" },
       { key: "clients",             label: "Clients",             group: "Finance & sales" },
       { key: "campaigns",           label: "Campaigns",           group: "Finance & sales" },

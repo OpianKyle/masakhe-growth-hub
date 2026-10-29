@@ -11,6 +11,7 @@ import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import WebsiteHub from "./WebsiteHub";
 import FinancePage from "./FinancePage";
+import AccountingPage from "./AccountingPage";
 import InvoicesPage from "./InvoicesPage";
 import GrantReadinessPage from "./GrantReadinessPage";
 import SocialHub from "./social/SocialHub";
@@ -83,6 +84,7 @@ const baseNavItems: NavItem[] = [
     perms: ["finance", "invoices"],
     children: [
       { icon: Wallet, label: "Income/Expenses", path: "/dashboard/finance", perm: "finance" },
+      { icon: BookOpen, label: "Accounting", path: "/dashboard/accounting", perm: "finance" },
       { icon: Receipt, label: "Quotes/Invoices", path: "/dashboard/invoices", perm: "invoices" },
     ],
   },
@@ -676,6 +678,7 @@ export default function DashboardPage() {
             <Route path="social/*" element={<SocialHub />} />
             <Route path="biz-connect/*" element={<BizConnectHub />} />
             <Route path="finance" element={<FinancePage />} />
+            <Route path="accounting" element={<AccountingPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="inventory" element={<InventoryPage />} />

@@ -9,6 +9,7 @@ import { router } from "./routes";
 import { authRouter } from "./auth";
 import { adminRouter, runAdminMigrations } from "./admin";
 import { financeRouter } from "./finance";
+import { accountingRouter, runAccountingMigrations } from "./accounting";
 import { invoiceRouter } from "./invoices";
 import { complianceRouter } from "./compliance";
 import { grantsRouter } from "./grants";
@@ -134,6 +135,7 @@ async function main() {
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/finance", financeRouter);
+  app.use("/api/accounting", accountingRouter);
   app.use("/api/invoices/pay", invoicePaymentsRouter);
   app.use("/api/quotes", quotePublicRouter);
   app.use("/api/commercial-documents", commercialDocumentsRouter);
@@ -197,6 +199,7 @@ async function main() {
       .then(async () => {
         console.log("MySQL migrations completed successfully");
         await runCommercialDocumentMigrations();
+        await runAccountingMigrations();
       })
       .catch(e => console.error("[Startup] Migration error:", e.message));
 
