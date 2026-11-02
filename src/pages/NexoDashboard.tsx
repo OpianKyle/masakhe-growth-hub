@@ -985,7 +985,7 @@ function ProfileTab({ franchise, totalClients, activeClients }: any) {
                   "Client Management",
                   "Business Analytics",
                   "Inventory Control",
-                  "Social Media Hub",
+                  "Design Hub",
                   "POPIA Compliance",
                 ].map(f => (
                   <div key={f} className="flex items-center gap-2.5">

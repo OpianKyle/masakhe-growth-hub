@@ -176,7 +176,7 @@ export default function DashboardPage() {
   );
 
   const getPageTitle = () => {
-    if (location.pathname.startsWith("/dashboard/social")) return "Social Media Hub";
+    if (location.pathname.startsWith("/dashboard/social")) return "Design Hub";
     if (location.pathname.startsWith("/dashboard/biz-connect")) return "Biz Connect";
     const match = allPaths.find(p =>
       p.path === "/dashboard" ? location.pathname === "/dashboard" : location.pathname.startsWith(p.path)

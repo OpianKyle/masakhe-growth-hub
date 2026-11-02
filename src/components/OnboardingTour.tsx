@@ -32,7 +32,7 @@ const STEPS: Step[] = [
     icon: Megaphone,
     color: "text-pink-600",
     bg: "bg-pink-50 dark:bg-pink-950/40",
-    title: "Social Media Hub",
+    title: "Design Hub",
     subtitle: "Schedule and publish across all your social platforms.",
     bullets: [
       "Facebook, Instagram & LinkedIn",

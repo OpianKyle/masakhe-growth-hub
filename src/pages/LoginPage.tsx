@@ -15,7 +15,7 @@ const features = [
   { icon: FileText,    label: "Invoicing & Quotes",    desc: "7 professional templates" },
   { icon: Wallet,      label: "Financial Tracking",    desc: "Income & expense management" },
   { icon: Users,       label: "Client Management",     desc: "Full CRM built-in" },
-  { icon: Smartphone,  label: "Social Media Hub",      desc: "Schedule & publish posts" },
+  { icon: Smartphone,  label: "Design Hub",             desc: "Schedule & publish posts" },
   { icon: Headphones,  label: "Payroll Management",    desc: "Salaries & payslips" },
 ];
 

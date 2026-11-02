@@ -22,7 +22,7 @@ const SERVICES = [
   { icon: Link2,      title: "Municipality Portal",      desc: "A dedicated management portal to oversee all registered SMMEs, track growth, and manage communication.", tag: "Management"    },
   { icon: BarChart3,  title: "SMME Analytics",           desc: "Monitor SMME growth, sector distribution, and registration trends across your municipality in real time.", tag: "Insights"      },
   { icon: TicketCheck,title: "Support Ticket System",    desc: "Manage business support requests and queries from local SMMEs directly through your portal.", tag: "Support"       },
-  { icon: Globe,      title: "Free Business Tools",      desc: "Every registered SMME gets access to a website builder, invoicing, social media hub, and financial tracking.", tag: "Tools"         },
+  { icon: Globe,      title: "Free Business Tools",      desc: "Every registered SMME gets access to a website builder, invoicing, Design Hub, and financial tracking.", tag: "Tools"         },
   { icon: Shield,     title: "Verified SMME Directory",  desc: "Build a trusted, verified directory of local businesses that boosts credibility and economic visibility.", tag: "Credibility"   },
 ];
 

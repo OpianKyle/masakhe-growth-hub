@@ -76,7 +76,7 @@ export default function TermsOfServicePage() {
           <div className="grid sm:grid-cols-2 gap-3">
             {[
               { name: "Website Builder", desc: "Create and publish a business website using customisable templates." },
-              { name: "Social Media Hub", desc: "Manage and schedule posts across connected social media accounts." },
+              { name: "Design Hub", desc: "Create, manage, and schedule branded posts across connected social media accounts." },
               { name: "Finance & Invoicing", desc: "Create professional invoices and track business finances." },
               { name: "Funding Toolkit", desc: "Business plans, funding proposals, readiness assessments, and applications." },
               { name: "Company Verification", desc: "Verify company registration details against CIPC format standards." },

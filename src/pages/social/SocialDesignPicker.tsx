@@ -388,7 +388,7 @@ export default function SocialDesignPicker() {
           onClick={() => navigate("/social-hub")}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium"
         >
-          <ArrowLeft className="h-4 w-4" /> Social Hub
+          <ArrowLeft className="h-4 w-4" /> Design Hub
         </button>
         <span className="text-gray-200 select-none">›</span>
         <span className="text-sm font-semibold text-gray-700">

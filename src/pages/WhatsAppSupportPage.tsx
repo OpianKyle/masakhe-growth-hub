@@ -21,7 +21,7 @@ const quickTopics = [
   { label: "I need help getting started",      msg: "Hi Masakhe Support, I just signed up and need help getting started with my dashboard." },
   { label: "Customer payment question",        msg: "Hi Masakhe Support, I need help with payments from my customers." },
   { label: "Website Builder issue",            msg: "Hi Masakhe Support, I'm having trouble with the Website Builder." },
-  { label: "Social Media / Biz Connect issue", msg: "Hi Masakhe Support, I need help with the Social Media Hub / Biz Connect." },
+  { label: "Design Hub / Biz Connect issue", msg: "Hi Masakhe Support, I need help with the Design Hub / Biz Connect." },
   { label: "Report a bug",                     msg: "Hi Masakhe Support, I'd like to report a bug on the Masakhe Portal." },
   { label: "Request a feature",                msg: "Hi Masakhe Support, I'd like to suggest a new feature for the platform." },
 ];

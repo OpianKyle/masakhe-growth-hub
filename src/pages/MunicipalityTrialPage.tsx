@@ -25,7 +25,7 @@ const MODULES = [
   },
   {
     icon: Smartphone,
-    name: "Social Media Hub",
+    name: "Design Hub",
     description: "Plan and publish polished posts",
     color: "from-violet-500 to-fuchsia-500",
   },

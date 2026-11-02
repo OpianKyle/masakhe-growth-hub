@@ -939,7 +939,7 @@ const DRIP_CONFIGS: Record<number, { subject: (name: string) => string; headline
     Here's what other clients are using this week:
     <br><br>
     <strong style="color:#007749;">Payroll</strong> &mdash; Run payslips for your team in minutes, fully SARS-compliant.<br>
-    <strong style="color:#007749;">Social Media Hub</strong> &mdash; Schedule posts for Facebook, Instagram &amp; more from one place.<br>
+    <strong style="color:#007749;">Design Hub</strong> &mdash; Create and schedule posts for Facebook, Instagram &amp; more from one place.<br>
     <strong style="color:#007749;">Client Management (CRM)</strong> &mdash; Track all your clients, notes, and follow-ups.<br>
     <strong style="color:#007749;">Tender Finder</strong> &mdash; Discover and apply for government tenders relevant to your business.
     <br><br>
