@@ -59,7 +59,7 @@ export default function TrialBanner() {
       <div className="flex items-center gap-2">
         <CreditCard className="h-4 w-4 shrink-0" />
         <span>
-          <strong>Upgrade your plan</strong> to unlock Social Media, Finance, Payroll and more.
+          <strong>Upgrade your plan</strong> to unlock Design Studio, Finance, Payroll and more.
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">

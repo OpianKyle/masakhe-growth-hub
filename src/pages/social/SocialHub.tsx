@@ -530,7 +530,7 @@ function SubPageWrapper({ children, title }: { children: React.ReactNode; title:
           to="/dashboard/social"
           className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-800 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Design Hub
+          <ArrowLeft className="h-4 w-4" /> Design Studio
         </Link>
         <span className="text-gray-300">/</span>
         <span className="text-sm font-semibold text-gray-700">{title}</span>

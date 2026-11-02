@@ -24,7 +24,7 @@ const fadeUp = {
 
 const modules = [
   { icon: Globe,      title: "AI Website Builder",      description: "Generate a professional business website in minutes. Choose from industry templates, answer a few questions, and go live.", tag: "Online Presence" },
-  { icon: Smartphone, title: "Design Hub",                description: "Create, schedule, and publish posts across your social media pages from a single dashboard.", tag: "Marketing" },
+  { icon: Smartphone, title: "Design Studio",             description: "Create, schedule, and publish posts across your social media pages from a single dashboard.", tag: "Marketing" },
   { icon: FileText,   title: "Invoicing & Quotes",       description: "Create branded invoices and quotes, choose from 6 professional PDF templates, and track outstanding payments.", tag: "Finance" },
   { icon: Wallet,     title: "Financial Tracking",       description: "Log income and expenses, categorise transactions, and get a clear picture of your business finances.", tag: "Finance" },
   { icon: Users,      title: "Client Management",        description: "Keep track of all your clients, manage contacts, and build lasting business relationships from one place.", tag: "CRM" },
@@ -58,7 +58,7 @@ const pricingPlans = [
       "2 Users (Owner + 1 Team Member)",
       "Overview Dashboard",
       "Website Builder",
-      "Design Hub",
+      "Design Studio",
       "Biz Connect",
       "WhatsApp Support Portal",
     ],
@@ -75,7 +75,7 @@ const pricingPlans = [
       "3 Users (Owner + 2 Team Members)",
       "Overview Dashboard",
       "Website Builder",
-      "Design Hub",
+      "Design Studio",
       "Biz Connect",
       "Financial Transactions (Income/Expenses, Quotes/Invoices)",
       "Manage Leads & Clients",
@@ -95,7 +95,7 @@ const pricingPlans = [
       "10 Users (Owner + 9 Team Members, Permission Based)",
       "Overview Dashboard",
       "Website Builder",
-      "Design Hub",
+      "Design Studio",
       "Biz Connect",
       "Financial Transactions (Income/Expenses, Quotes/Invoices)",
       "Manage Leads & Clients",
@@ -797,7 +797,7 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: "Platform", links: [{ label: "Website Builder", href: "#" }, { label: "Design Hub", href: "#" }, { label: "Invoicing & Quotes", href: "#" }, { label: "Payroll", href: "#" }, { label: "Client Management", href: "#" }] },
+              { title: "Platform", links: [{ label: "Website Builder", href: "#" }, { label: "Design Studio", href: "#" }, { label: "Invoicing & Quotes", href: "#" }, { label: "Payroll", href: "#" }, { label: "Client Management", href: "#" }] },
               { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Support", href: "#" }] },
               { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#contact" }] },
             ].map((col) => (

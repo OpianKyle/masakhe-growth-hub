@@ -21,7 +21,7 @@ const steps = [
     color: "bg-sa-green",
   },
   {
-    title: "Design Hub",
+    title: "Design Studio",
     description: "Manage all your social media platforms from one place. Schedule posts, track engagement, and grow your audience.",
     icon: Smartphone,
     path: "/dashboard/social",

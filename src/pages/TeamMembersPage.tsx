@@ -39,7 +39,7 @@ const PERMISSION_GROUPS: { name: string; perms: PermDef[] }[] = [
     name: "Online presence",
     perms: [
       { key: "website",    label: "Website Builder", group: "Online presence" },
-      { key: "social",     label: "Social Media",    group: "Online presence" },
+      { key: "social",     label: "Design Studio",   group: "Online presence" },
       { key: "biz_connect",label: "Biz Connect",     group: "Online presence" },
       { key: "support",    label: "WhatsApp Support",group: "Online presence" },
     ],

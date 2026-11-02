@@ -27,7 +27,7 @@ const MODULES = [
   },
   {
     code: "social_biz",
-    name: "Social Media & Biz Connect",
+    name: "Design Studio & Biz Connect",
     price: 34900,
     maxUsers: 4,
     bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30",

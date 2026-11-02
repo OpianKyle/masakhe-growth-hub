@@ -75,7 +75,7 @@ const isGroup = (item: NavItem): item is NavGroup => "groupId" in item;
 const baseNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", path: "/dashboard", perm: "overview" },
   { icon: Globe, label: "Website Builder", path: "/website-builder", perm: "website", openNewTab: true },
-  { icon: Smartphone, label: "Social Media", path: "/social-hub", perm: "social", openNewTab: true },
+  { icon: Smartphone, label: "Design Studio", path: "/social-hub", perm: "social", openNewTab: true },
   { icon: Linkedin, label: "Biz Connect", path: "/dashboard/biz-connect", perm: "biz_connect" },
   {
     icon: Wallet,
@@ -163,7 +163,7 @@ export default function DashboardPage() {
   const isMtnClient = !!user?.is_mtn_client;
   const isNexoClient = !!user?.is_nexo_client;
 
-  const NEXO_HIDDEN_LABELS = ["Website Builder", "Social Media", "Biz Connect"];
+  const NEXO_HIDDEN_LABELS = ["Website Builder", "Design Studio", "Biz Connect"];
   const navItems: NavItem[] = filterForTeamMember([
     ...baseNavItems.slice(0, 5),
     ...(hasShowroomSite ? [{ icon: Car, label: "Vehicles", path: "/dashboard/vehicles", perm: "website" } as NavSingle] : []),
@@ -176,7 +176,7 @@ export default function DashboardPage() {
   );
 
   const getPageTitle = () => {
-    if (location.pathname.startsWith("/dashboard/social")) return "Design Hub";
+    if (location.pathname.startsWith("/dashboard/social")) return "Design Studio";
     if (location.pathname.startsWith("/dashboard/biz-connect")) return "Biz Connect";
     const match = allPaths.find(p =>
       p.path === "/dashboard" ? location.pathname === "/dashboard" : location.pathname.startsWith(p.path)

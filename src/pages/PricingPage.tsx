@@ -39,7 +39,7 @@ const MODULES = [
   },
   {
     code: "social_biz",
-    name: "Social Media & Biz Connect",
+    name: "Design Studio & Biz Connect",
     price: "R349",
     priceSub: "/month",
     maxUsers: 4,
@@ -204,7 +204,7 @@ export default function PricingPage() {
                 </div>
                 <h2 className="text-2xl font-extrabold mb-2">Complete Suite</h2>
                 <p className="text-gray-400 max-w-xl">
-                  All 4 modules bundled together — Web Builder, Social Media & Biz Connect, Transactions & Operations, and People & HR. Includes up to 10 user accounts.
+                  All 4 modules bundled together — Web Builder, Design Studio & Biz Connect, Transactions & Operations, and People & HR. Includes up to 10 user accounts.
                 </p>
               </div>
               <div className="text-center md:text-right shrink-0">

@@ -44,7 +44,7 @@ You help users with:
 - The website can be published at a custom subdomain
 - Users can upload images and customise colours and content
 
-### 3. Design Hub
+### 3. Design Studio
 - Schedule and publish social media posts
 - Manage a content calendar
 - Upload media to the library

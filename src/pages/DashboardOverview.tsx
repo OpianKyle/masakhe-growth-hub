@@ -145,7 +145,7 @@ export default function DashboardOverview() {
 
   const MODULE_OVERVIEW = [
     { code: "web_builder", label: "Web Builder", color: "from-sky-500 to-emerald-500", bg: "from-sky-50 to-emerald-50 dark:from-sky-950/30 dark:to-emerald-950/30", border: "border-sky-200 dark:border-sky-800" },
-    { code: "social_biz", label: "Social & Biz", color: "from-violet-500 to-fuchsia-500", bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30", border: "border-violet-200 dark:border-violet-800" },
+    { code: "social_biz", label: "Design Studio", color: "from-violet-500 to-fuchsia-500", bg: "from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30", border: "border-violet-200 dark:border-violet-800" },
     { code: "transactions_ops", label: "Transactions", color: "from-emerald-500 to-teal-500", bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30", border: "border-emerald-200 dark:border-emerald-800" },
     { code: "people_hr", label: "Human Capital", color: "from-amber-500 to-orange-500", bg: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200 dark:border-amber-800" },
   ];
@@ -254,7 +254,7 @@ export default function DashboardOverview() {
     { label: "Clients",   icon: Users,         path: "/dashboard/clients",    grad: "from-violet-500 to-purple-500",  desc: "Manage clients" },
     { label: "Inventory", icon: Package,       path: "/dashboard/inventory",  grad: "from-orange-500 to-amber-500",   desc: "Stock control" },
     { label: "Payroll",   icon: Banknote,      path: "/dashboard/payroll",    grad: "from-sky-500 to-blue-500",       desc: "Salaries & PAYE" },
-    { label: "Social",    icon: Smartphone,    path: "/dashboard/social",     grad: "from-pink-500 to-rose-500",      desc: "Posts & campaigns" },
+    { label: "Design Studio", icon: Smartphone, path: "/dashboard/social",     grad: "from-pink-500 to-rose-500",      desc: "Posts & campaigns" },
     { label: "Leave",     icon: CalendarDays,  path: "/dashboard/leave",      grad: "from-teal-500 to-cyan-500",      desc: "HR & leave" },
     { label: "Website",   icon: Globe,         path: "/website-builder",      grad: "from-sky-500 to-emerald-500",    desc: "Build & publish" },
   ];
@@ -677,7 +677,7 @@ export default function DashboardOverview() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-              <Smartphone className="h-5 w-5 text-violet-500" /> Social Media Activity
+              <Smartphone className="h-5 w-5 text-violet-500" /> Design Studio Activity
             </h3>
             <p className="text-xs text-gray-500 mb-4">Published posts per day (last 14 days)</p>
             <div className="h-48">
@@ -753,7 +753,7 @@ export default function DashboardOverview() {
                 <StatusRow label="Website"           ok={k?.websitePublished}          detail={k?.websitePublished ? "Published" : "Not published"} />
                 <StatusRow label="Financial Records" ok={(k?.ledgerCount||0) >= 10}    detail={`${k?.ledgerCount||0} entries`} />
                 <StatusRow label="Invoices"          ok={(k?.totalInvoices||0) >= 1}   detail={`${k?.totalInvoices||0} created`} />
-                <StatusRow label="Social Media"      ok={(k?.socialConnected||0) >= 1} detail={`${k?.socialConnected||0} accounts`} />
+                <StatusRow label="Design Studio"     ok={(k?.socialConnected||0) >= 1} detail={`${k?.socialConnected||0} accounts`} />
               </div>
             </div>
           </div>

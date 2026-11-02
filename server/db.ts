@@ -1251,10 +1251,16 @@ export async function runMigrations() {
       INSERT IGNORE INTO billing_plans (code, name, price_cents, currency, bill_interval, max_users)
       VALUES
         ('web_builder',       'Web Builder',                    29900, 'ZAR', 'MONTHLY', 2),
-        ('social_biz',        'Social Media & Biz Connect',     34900, 'ZAR', 'MONTHLY', 4),
+        ('social_biz',        'Design Studio & Biz Connect',   34900, 'ZAR', 'MONTHLY', 4),
         ('transactions_ops',  'Transactions & Operations',      79900, 'ZAR', 'MONTHLY', 4),
         ('people_hr',         'Human Capital',                  49900, 'ZAR', 'MONTHLY', 3),
         ('all_modules',       'Complete Suite',                129900, 'ZAR', 'MONTHLY', 10)
+    `);
+    await conn.query(`
+      UPDATE billing_plans
+      SET name = 'Design Studio & Biz Connect'
+      WHERE code = 'social_biz'
+        AND name IN ('Social Media & Biz Connect', 'Social & Biz Connect')
     `);
 
     // Keep old plans updated, set their max_users

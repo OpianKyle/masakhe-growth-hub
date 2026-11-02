@@ -19,7 +19,7 @@ const features = [
   { icon: FileText,    label: "Invoicing & Quotes",   desc: "Send professional quotes in minutes" },
   { icon: Wallet,      label: "Financial Tracking",   desc: "Track income, expenses & cash flow" },
   { icon: Users,       label: "Client Management",    desc: "Full CRM — contacts, notes & deals" },
-  { icon: Smartphone,  label: "Design Hub",            desc: "Schedule posts across all platforms" },
+  { icon: Smartphone,  label: "Design Studio",         desc: "Schedule posts across all platforms" },
   { icon: CreditCard,  label: "Payroll Management",   desc: "Auto-calculate salaries & payslips" },
   { icon: BarChart3,   label: "Business Analytics",   desc: "Real-time reports & insights" },
   { icon: Shield,      label: "POPIA Compliance",     desc: "Stay compliant with SA regulations" },

@@ -68,7 +68,7 @@ export default function SocialOverview({ workspaceId }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-heading">Design Hub</h2>
+          <h2 className="text-2xl font-bold font-heading">Design Studio</h2>
           <p className="text-muted-foreground">Manage your social presence across platforms</p>
         </div>
         <Link to="/dashboard/social/create">

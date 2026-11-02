@@ -457,7 +457,7 @@ function ClientList() {
 
   const MODULE_LABELS: Record<string, string> = {
     web_builder: "Web Builder",
-    social_biz: "Social & Biz Connect",
+    social_biz: "Design Studio & Biz Connect",
     transactions_ops: "Transactions & Operations",
     people_hr: "Human Capital",
     all_modules: "All Modules",
@@ -968,7 +968,7 @@ function ClientList() {
                         className="h-7 px-2 text-[10px] gap-1 border-violet-300 text-violet-700 hover:bg-violet-50"
                         onClick={() => grantSubscription(client.id, "social_biz" as any, client.full_name)}
                       >
-                        <Smartphone className="h-3 w-3" /> Social & Biz
+                        <Smartphone className="h-3 w-3" /> Design Studio
                       </Button>
                       <Button
                         variant="outline"

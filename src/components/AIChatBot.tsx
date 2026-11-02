@@ -21,7 +21,7 @@ const QUICK_QUESTIONS = [
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard Overview",
   "/dashboard/website": "Website Builder",
-  "/dashboard/social": "Design Hub",
+  "/dashboard/social": "Design Studio",
   "/dashboard/finance": "Income & Expenses",
   "/dashboard/invoices": "Quotes & Invoices",
   "/dashboard/payroll": "Payroll",
