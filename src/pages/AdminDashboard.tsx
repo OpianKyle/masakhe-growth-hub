@@ -133,6 +133,10 @@ function fmtRandPrecise(cents: number) {
   return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function isLegacyTrialAccess(client: Pick<Client, "subscription_status">) {
+  return client.subscription_status === "TRIAL";
+}
+
 function AdminOverview() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [fin, setFin] = useState<FinancialStats | null>(null);
@@ -440,21 +444,6 @@ function ClientList() {
     }
   };
 
-  const grantTrial = async (id: string, name: string) => {
-    if (!confirm(`Grant ${name} a 7-day Premium trial?`)) return;
-    const res = await fetch(`/api/admin/clients/${id}/trial`, {
-      method: "POST",
-      credentials: "include",
-    });
-    if (res.ok) {
-      toast.success(`7-day Premium trial granted to ${name}`);
-      loadClients();
-    } else {
-      const data = await res.json();
-      toast.error(data.error || "Failed to grant trial");
-    }
-  };
-
   const MODULE_LABELS: Record<string, string> = {
     web_builder: "Web Builder",
     social_biz: "Design Studio & Biz Connect",
@@ -647,15 +636,11 @@ function ClientList() {
   const allTags = Array.from(new Set(clients.flatMap(c => Array.isArray(c.admin_tags) ? c.admin_tags : []))).sort();
 
   const matchesStatus = (c: Client) => {
-    const trialActive = c.subscription_status === "TRIAL" &&
-      c.trial_end_at && new Date(c.trial_end_at).getTime() > Date.now();
-    const trialExpired = c.subscription_status === "TRIAL" &&
-      c.trial_end_at && new Date(c.trial_end_at).getTime() <= Date.now();
-    if (statusFilter === "trial") return !!trialActive;
+    const legacyTrialAccess = isLegacyTrialAccess(c);
     if (statusFilter === "active") return c.subscription_status === "ACTIVE";
-    if (statusFilter === "free") return !!c.subscription_exempt;
-    if (statusFilter === "none") return c.role !== "admin" && !c.subscription_exempt && !trialActive && !trialExpired && c.subscription_status !== "ACTIVE";
-    if (statusFilter === "past-due") return c.subscription_status === "PAST_DUE" || !!trialExpired;
+    if (statusFilter === "free") return !!c.subscription_exempt || legacyTrialAccess;
+    if (statusFilter === "none") return c.role !== "admin" && !c.subscription_exempt && !legacyTrialAccess && c.subscription_status !== "ACTIVE";
+    if (statusFilter === "past-due") return c.subscription_status === "PAST_DUE";
     return true;
   };
 
@@ -689,11 +674,11 @@ function ClientList() {
       "Phone": c.phone || "",
       "Industry": c.industry_sector || "",
       "Role": c.role,
-      "Plan": c.plan_name || "",
-      "Plan Code": c.plan_code || "",
-      "Subscription Status": c.subscription_status || (c.subscription_exempt ? "FREE_ACCESS" : "NONE"),
-      "Free Access": c.subscription_exempt ? "Yes" : "No",
-      "Trial Ends": c.trial_end_at ? new Date(c.trial_end_at).toLocaleDateString("en-ZA") : "",
+      "Plan": isLegacyTrialAccess(c) ? "" : c.plan_name || "",
+      "Plan Code": isLegacyTrialAccess(c) ? "" : c.plan_code || "",
+      "Subscription Status": isLegacyTrialAccess(c) ? "FREE_ACCESS" : c.subscription_status || (c.subscription_exempt ? "FREE_ACCESS" : "NONE"),
+      "Free Access": c.subscription_exempt || isLegacyTrialAccess(c) ? "Yes" : "No",
+      "Legacy Trial Ended": isLegacyTrialAccess(c) && c.trial_end_at ? new Date(c.trial_end_at).toLocaleDateString("en-ZA") : "",
       "Websites": c.website_count ?? 0,
       "Tags": (c.admin_tags || []).join(", "),
       "Admin Notes": c.admin_notes || "",
@@ -733,7 +718,6 @@ function ClientList() {
           {([
             { v: "all", label: "All" },
             { v: "active", label: "Active" },
-            { v: "trial", label: "Trial" },
             { v: "past-due", label: "Past Due" },
             { v: "free", label: "Free Access" },
             { v: "none", label: "No Subscription" },
@@ -889,45 +873,22 @@ function ClientList() {
                 <td className="p-4">
                   {client.role === "admin" ? (
                     <span className="text-xs text-muted-foreground italic">Admin</span>
-                  ) : client.subscription_exempt ? (
+                  ) : client.subscription_exempt || isLegacyTrialAccess(client) ? (
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-800">
                         <Star className="h-3 w-3" />
                         Free Access
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => toggleExempt(client.id, client.full_name, true)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : client.subscription_status === "TRIAL" && client.trial_end_at && new Date(client.trial_end_at).getTime() > Date.now() ? (
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800">
-                        <Clock className="h-3 w-3" />
-                        Trial · {Math.max(0, Math.ceil((new Date(client.trial_end_at!).getTime() - Date.now()) / 86400000))} days left
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => revokeSubscription(client.id, client.full_name)}
-                      >
-                        Revoke
-                      </Button>
-                    </div>
-                  ) : client.subscription_status === "TRIAL" && client.trial_end_at && new Date(client.trial_end_at).getTime() <= Date.now() ? (
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-red-100 text-red-800 w-fit">
-                        <XCircle className="h-3 w-3" />
-                        Trial Expired
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Ended {new Date(client.trial_end_at!).toLocaleDateString()}
-                      </span>
+                      {client.subscription_exempt && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => toggleExempt(client.id, client.full_name, true)}
+                        >
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   ) : client.subscription_status === "ACTIVE" ? (
                     <div className="flex items-center gap-2">
@@ -946,14 +907,6 @@ function ClientList() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-[10px] gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
-                        onClick={() => grantTrial(client.id, client.full_name)}
-                      >
-                        <Clock className="h-3 w-3" /> 7-day Trial
-                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1017,23 +970,22 @@ function ClientList() {
                   )}
                 </td>
                 <td className="p-4 min-w-[160px]">
-                  {client.plan_name ? (
+                  {(client.plan_name && !isLegacyTrialAccess(client)) || (client.pending_amount_cents != null && client.pending_amount_cents > 0) ? (
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-foreground">{client.plan_name}</span>
-                      {client.plan_price_cents != null && (
+                      {client.plan_name && !isLegacyTrialAccess(client) && (
+                        <>
+                          <span className="text-xs font-medium text-foreground">{client.plan_name}</span>
+                          {client.plan_price_cents != null && (
                         <span className="text-[11px] text-muted-foreground">
                           R{(client.plan_price_cents / 100).toFixed(0)}/mo
                         </span>
-                      )}
-                      {client.subscription_status === "ACTIVE" && client.next_billing_at && (
-                        <span className="text-[10px] text-blue-600">
-                          Next bill: {new Date(client.next_billing_at).toLocaleDateString()}
-                        </span>
-                      )}
-                      {client.subscription_status === "TRIAL" && client.trial_end_at && (
-                        <span className={`text-[10px] ${new Date(client.trial_end_at).getTime() > Date.now() ? "text-amber-600" : "text-red-600"}`}>
-                          Trial {new Date(client.trial_end_at).getTime() > Date.now() ? "ends" : "ended"}: {new Date(client.trial_end_at).toLocaleDateString()}
-                        </span>
+                          )}
+                          {client.subscription_status === "ACTIVE" && client.next_billing_at && (
+                            <span className="text-[10px] text-blue-600">
+                              Next bill: {new Date(client.next_billing_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </>
                       )}
                       {client.pending_amount_cents != null && client.pending_amount_cents > 0 && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 px-1.5 py-0.5 rounded">
