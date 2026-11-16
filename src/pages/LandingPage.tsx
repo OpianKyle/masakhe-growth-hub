@@ -6,7 +6,7 @@ import {
   Megaphone, Check, Headphones, Users, Zap, Lock, Wallet,
   Fingerprint, Tag, Building2, AlertTriangle, CreditCard,
   PiggyBank, BadgeCheck, Award, MapPin, Mail, MessageSquare, Send,
-  Handshake, Phone, Play, Sparkles
+  Handshake, Phone, Play, Sparkles, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -24,30 +24,30 @@ const fadeUp = {
 };
 
 const modules = [
-  { icon: Globe, title: "Website Builder", description: "Build a professional business website with industry templates and AI-generated content. No coding required.", tag: "Online presence" },
-  { icon: Smartphone, title: "Social Media Hub", description: "Create social posts from scratch or start with ready-made templates, all from your dashboard.", tag: "Marketing" },
-  { icon: Handshake, title: "Biz Connect", description: "Plan and schedule LinkedIn updates to grow your professional presence from one place.", tag: "Networking" },
-  { icon: Wallet, title: "Income & Expenses", description: "Track every rand coming in and going out, and keep a clear view of your business cash flow.", tag: "Finance" },
-  { icon: FileText, title: "Quotes & Invoices", description: "Create professional quotes and invoices, track payment status, and follow up with customers.", tag: "Finance" },
-  { icon: Headphones, title: "Payroll, Leave & HR", description: "Manage employee records, payroll, and leave information from one organised workspace.", tag: "People" },
-  { icon: Users, title: "Client Management", description: "Track client conversations and follow-ups from first contact through to conversion.", tag: "CRM" },
-  { icon: Megaphone, title: "Campaign Builder", description: "Plan and launch marketing campaigns to help more customers discover your business.", tag: "Growth" },
-  { icon: Award, title: "Partner Program", description: "Refer businesses in your network and take part in the Masakhe Partner Program.", tag: "Partnerships" },
+  { icon: Globe, title: "Website Builder", description: "Build a professional business website with our easy drag-and-drop builder. No coding required.", tag: "Online presence" },
+  { icon: Smartphone, title: "Social Media Hub", description: "Design social posts from scratch or use ready-made templates in your dashboard.", tag: "Marketing" },
+  { icon: Handshake, title: "Biz Connect", description: "Post and schedule LinkedIn updates on different topics to grow your professional presence.", tag: "Networking" },
+  { icon: Wallet, title: "Income & Expenses", description: "Track every rand coming in and going out with clear cash-flow reporting.", tag: "Finance" },
+  { icon: FileText, title: "Quotes & Invoices", description: "Generate professional quotes and invoices in seconds and follow up with customers.", tag: "Finance" },
+  { icon: Headphones, title: "Payroll, Leave & HR", description: "Manage employee records, process payroll, and keep employee data organised.", tag: "People" },
+  { icon: Users, title: "Clients", description: "Track every client interaction from first contact through conversion and beyond.", tag: "CRM" },
+  { icon: Megaphone, title: "Campaign Builder", description: "Plan, build, and launch marketing campaigns from one easy-to-use builder.", tag: "Growth" },
+  { icon: Award, title: "Partner Program", description: "Refer other businesses in your network to the Masakhe SME Platform.", tag: "Partnerships" },
 ];
 
 const benefits = [
-  { icon: Zap, title: "Less admin", description: "Bring routine business tasks together so you can spend more time serving customers." },
-  { icon: Wallet, title: "Core tools are free", description: "Use the core Masakhe platform without a subscription, trial period, or platform payment." },
-  { icon: Building2, title: "Made for South African SMMEs", description: "Get practical business tools designed with local small businesses in mind." },
-  { icon: Users, title: "Fewer disconnected tools", description: "Manage your website, clients, finances, and day-to-day operations in one place." },
-  { icon: Sparkles, title: "Keeps improving", description: "New improvements help the platform keep supporting your business as it grows." },
-  { icon: PiggyBank, title: "No extra specialists needed", description: "Handle more everyday business work yourself with tools in one accessible workspace." },
+  { icon: Fingerprint, title: "Simplicity", description: "One intuitive platform that anyone can use — no technical expertise needed." },
+  { icon: Zap, title: "Save Time", description: "Bring everyday admin tasks together so you can focus on running your business." },
+  { icon: Wallet, title: "Lower Tool Costs", description: "Use core business tools in one place without a Masakhe platform subscription." },
+  { icon: Building2, title: "No Outsource Hassles", description: "Handle more business tasks yourself without hiring separate specialists for every function." },
+  { icon: Sparkles, title: "Ongoing Development", description: "Benefit from continuous platform improvements and new features." },
+  { icon: BadgeCheck, title: "Free Core Access", description: "Get started without a platform subscription, trial period, or platform payment." },
 ];
 
 const howItWorks = [
-  { step: "01", title: "Create your account", desc: "Sign up in minutes and complete your business profile with guided onboarding.", icon: Lock },
-  { step: "02", title: "Set up your digital presence", desc: "Use the AI website builder to create a professional site. Connect your social media and start publishing content.", icon: Globe },
-  { step: "03", title: "Run your business", desc: "Manage invoices, track finances, handle payroll, and grow your client base — all from one dashboard.", icon: Zap },
+  { step: "01", title: "Create a Free Account", desc: "Register at Masakhe and get access to the platform without a trial or credit card.", icon: Lock },
+  { step: "02", title: "Set Up Your Business", desc: "Add your business details, build your website, configure invoicing, and add your clients.", icon: Building2 },
+  { step: "03", title: "Start Growing", desc: "Run your business from one dashboard and keep building toward your goals.", icon: Zap },
 ];
 
 const regSteps = [
@@ -63,6 +63,30 @@ export default function LandingPage() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [contactStatus, setContactStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [contactError, setContactError] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    { role: "assistant", text: "Hi! I’m Masi, the Masakhe support assistant. Ask me about the SME BUILDER platform." },
+  ]);
+
+  const sendChatMessage = (message = chatInput) => {
+    const question = message.trim();
+    if (!question) return;
+    const normalized = question.toLowerCase();
+    const answer = normalized.includes("price") || normalized.includes("cost") || normalized.includes("subscription") || normalized.includes("trial")
+      ? "Core Masakhe platform features are available without a subscription or trial. Payments your business collects from its own customers are separate."
+      : normalized.includes("feature") || normalized.includes("module") || normalized.includes("include")
+        ? "The platform includes Website Builder, Social Media Hub, Biz Connect, Income & Expenses, Quotes & Invoices, Payroll, Leave & HR, Clients, Campaign Builder, and the Partner Program."
+        : normalized.includes("register") || normalized.includes("start") || normalized.includes("account")
+          ? "You can create an account using the Register Free button. Follow the steps to add your business details and start using the platform."
+          : "For more help, email hello@masakhegroup.co.za or call +27 (0)81 038 3955.";
+    setChatMessages((messages) => [
+      ...messages,
+      { role: "user", text: question },
+      { role: "assistant", text: answer },
+    ]);
+    setChatInput("");
+  };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +102,8 @@ export default function LandingPage() {
       if (!res.ok) throw new Error(data.error || "Submission failed.");
       setContactStatus("success");
       setContactForm({ name: "", email: "", subject: "", message: "" });
-    } catch (err: any) {
-      setContactError(err.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setContactStatus("error");
     }
   };
@@ -109,9 +133,9 @@ export default function LandingPage() {
           <div className="hidden items-center gap-1 md:flex">
             {[
               { label: "About", href: "#about" },
-              { label: "Platform", href: "#platform" },
+              { label: "Features", href: "#services" },
               { label: "Benefits", href: "#benefits" },
-              { label: "Free access", href: "#access" },
+              { label: "Free access", href: "#pricing" },
               { label: "Contact", href: "#contact" },
             ].map((item) => (
               <a key={item.href} href={item.href} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
@@ -131,7 +155,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative pt-16 min-h-screen flex items-center overflow-hidden bg-slate-950">
+      <section id="home" className="relative pt-16 min-h-[88vh] flex items-center overflow-hidden bg-slate-950">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
@@ -140,27 +164,28 @@ export default function LandingPage() {
           <motion.div initial="hidden" animate="visible" className="max-w-2xl space-y-8">
             <motion.div variants={fadeUp} custom={0}>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-1.5 text-xs font-semibold text-blue-300 backdrop-blur-sm">
-                <Shield className="h-3 w-3" /> Built for South African SMMEs
+                <Shield className="h-3 w-3" /> Cloud-Based Platform for Small Businesses
               </span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-5xl md:text-7xl font-bold font-heading leading-[1.05] text-white">
-              Let us{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">build</span>{" "}
-              your business,{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">together</span>
+              The Masakhe{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">SME BUILDER</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-lg md:text-xl text-white/60 max-w-xl leading-relaxed">
-              Website builder, invoicing, payroll, social media, and client management — everything your SMME needs to grow, in one place.
+              An easy-to-navigate platform that helps small businesses run their operations — from websites and invoicing to payroll and funding proposals.
             </motion.p>
             <motion.p variants={fadeUp} custom={3} className="text-sm font-semibold text-emerald-300">
-              Every Masakhe feature is free. No trial or subscription required.
+              Free access to Masakhe’s core platform. No subscription or trial required.
             </motion.p>
             <motion.div variants={fadeUp} custom={4} className="flex flex-wrap gap-4 pt-2">
               <Link to="/register">
                 <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-base h-12 px-7 shadow-lg shadow-blue-900/30">
-                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                  Register Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
+              <a href="#video" className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/20 px-6 font-semibold text-white transition hover:bg-white/10">
+                <Play className="h-4 w-4" /> View Video
+              </a>
             </motion.div>
           </motion.div>
         </div>
@@ -171,19 +196,37 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Trust Strip ── */}
+      <section className="border-b border-slate-200 bg-white py-7">
+        <div className="container mx-auto grid grid-cols-2 gap-5 px-6 text-center md:grid-cols-4">
+          {[
+            { icon: Zap, title: "One Dashboard", caption: "Everyday business tools" },
+            { icon: Wallet, title: "Free Core Access", caption: "No platform subscription" },
+            { icon: Building2, title: "Built for SMMEs", caption: "Designed for local businesses" },
+            { icon: Shield, title: "Cloud Access", caption: "Work from anywhere" },
+          ].map(({ icon: Icon, title, caption }) => (
+            <div key={title} className="flex flex-col items-center gap-1.5">
+              <Icon className="h-5 w-5 text-blue-700" />
+              <p className="text-sm font-bold text-slate-900">{title}</p>
+              <p className="text-xs text-slate-500">{caption}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── About Masakhe ── */}
       <section id="about" className="scroll-mt-20 py-20 md:py-24">
         <div className="container mx-auto grid items-center gap-12 px-6 lg:grid-cols-2">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">About the platform</p>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">About the Platform</p>
             <h2 className="text-3xl font-bold leading-tight text-slate-900 md:text-4xl">
-              One platform for the work behind your business.
+              One Platform. Everything Your Business Needs.
             </h2>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
-              Masakhe is a cloud-based platform built for small businesses. Bring your website, social media, invoices, payroll, client follow-ups, and funding proposals together in one workspace.
+              The Masakhe SME BUILDER is a cloud-based platform built for small businesses. It brings essential business tools together in one easy-to-navigate dashboard.
             </p>
             <p className="mt-4 text-base leading-relaxed text-slate-600">
-              Spend less time switching between tools and more time looking after your customers and moving your business forward.
+              From building your website to managing payroll, creating funding proposals, and tracking clients, the platform is designed to help you manage your business in one place.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/register">
@@ -191,7 +234,7 @@ export default function LandingPage() {
                   Create your free account <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <a href="#platform" className="inline-flex h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700">
+                <a href="#services" className="inline-flex h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700">
                 Explore the tools
               </a>
             </div>
@@ -210,20 +253,20 @@ export default function LandingPage() {
       </section>
 
       {/* ── Platform Modules ── */}
-      <section id="platform" className="scroll-mt-20 py-20 bg-white md:py-28">
+      <section id="services" className="scroll-mt-20 py-20 bg-white md:py-28">
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-[1fr_2fr] gap-16 items-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="lg:sticky lg:top-28">
-              <p className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-4">The Platform</p>
+              <p className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-4">Main Features</p>
               <h2 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 leading-tight">
-                Nine tools.<br />One dashboard.
+                Everything to Run Your Business
               </h2>
               <p className="text-slate-500 mt-5 text-lg leading-relaxed">
-                Everything from your online presence to daily operations, designed for South African SMMEs.
+                Nine powerful modules — all in one platform. No switching between apps or extra subscriptions.
               </p>
               <Link to="/register" className="mt-8 inline-block">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold h-11 px-6">
-                  Explore the platform <ArrowRight className="ml-2 h-4 w-4" />
+                  Register Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </motion.div>
@@ -258,30 +301,35 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Benefits ── */}
-      <section id="benefits" className="scroll-mt-20 bg-slate-50 py-20 md:py-24">
-        <div className="container mx-auto px-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mx-auto mb-12 max-w-2xl text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">Why Masakhe</p>
-            <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">Practical support for the work you do every day.</h2>
-            <p className="mt-4 leading-relaxed text-slate-600">One accessible workspace for South African small businesses, with core platform features available for free.</p>
-          </motion.div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {benefits.map((benefit, i) => (
-              <motion.article
-                key={benefit.title}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-              >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                  <benefit.icon className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-slate-900">{benefit.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{benefit.description}</p>
-              </motion.article>
+      {/* ── Why It Matters ── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-slate-900 to-slate-950 py-20 md:py-24">
+        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
+        <div className="relative container mx-auto grid items-center gap-12 px-6 lg:grid-cols-[1.2fr_1fr]">
+          <div>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-emerald-300">Why It Matters</p>
+            <h2 className="text-3xl font-bold leading-tight text-white md:text-4xl">
+              Built Around the Needs of South African Small Businesses
+            </h2>
+            <p className="mt-5 max-w-2xl leading-relaxed text-slate-300">
+              South African small businesses face unique challenges. The Masakhe SME BUILDER brings practical business tools together in one place, with free access to core platform features.
+            </p>
+            <Link to="/register" className="mt-7 inline-block">
+              <Button className="h-11 bg-emerald-400 px-6 font-bold text-slate-950 hover:bg-emerald-300">
+                Start Free — No Subscription <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { value: "9", label: "Business Modules" },
+              { value: "Free", label: "Core Platform Access" },
+              { value: "1", label: "All-in-One Platform" },
+              { value: "24/7", label: "Cloud Access" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+                <p className="text-3xl font-black text-white md:text-4xl">{stat.value}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-300">{stat.label}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -295,8 +343,9 @@ export default function LandingPage() {
         </div>
         <div className="relative container mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <p className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-3">Getting Started</p>
-            <h2 className="text-4xl font-bold font-heading text-white">Up and running in 3 steps</h2>
+            <p className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-3">How It Works</p>
+            <h2 className="text-4xl font-bold font-heading text-white">Get Started in 3 Simple Steps</h2>
+            <p className="mx-auto mt-4 max-w-xl text-white/60">Be up and running in minutes — not days.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-0 relative">
@@ -331,6 +380,35 @@ export default function LandingPage() {
               </Button>
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Main Benefits ── */}
+      <section id="benefits" className="scroll-mt-20 bg-slate-50 py-20 md:py-24">
+        <div className="container mx-auto px-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">Main Benefits</p>
+            <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">Why the Masakhe SME BUILDER?</h2>
+            <p className="mt-4 leading-relaxed text-slate-600">Designed from the ground up for South African small businesses, with practical results from day one.</p>
+          </motion.div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {benefits.map((benefit, i) => (
+              <motion.article
+                key={benefit.title}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                  <benefit.icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-slate-900">{benefit.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{benefit.description}</p>
+              </motion.article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -425,7 +503,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Website Builder feature ── */}
-      <section id="features" className="relative min-h-[80vh] flex items-center overflow-hidden">
+      <section id="features" className="hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${smmeOwner})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/20" />
 
@@ -478,7 +556,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Invoicing & Finance feature ── */}
-      <section id="finance" className="grid lg:grid-cols-2 min-h-[70vh]">
+      <section id="finance" className="hidden">
         <div className="bg-slate-900 flex items-center py-20">
           <div className="px-8 lg:px-14 xl:px-20 max-w-xl w-full">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-8">
@@ -527,60 +605,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Platform video ── */}
-      <section className="bg-slate-50 py-20 md:py-24">
-        <div className="container mx-auto grid items-center gap-10 px-6 lg:grid-cols-2">
-          <div>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">See Masakhe in action</p>
-            <h2 className="text-3xl font-bold leading-tight text-slate-900 md:text-4xl">A clearer way to run your business.</h2>
-            <p className="mt-4 max-w-xl leading-relaxed text-slate-600">
-              Take a quick look at the Masakhe SME Builder and see how your everyday business tools fit together.
-            </p>
-            <a
-              href="https://youtube.com/shorts/KAXpRTpojbk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center gap-2 font-semibold text-blue-700 hover:text-blue-900"
-            >
-              <Play className="h-4 w-4" /> Watch the video on YouTube
-            </a>
-          </div>
-          <div className="aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-xl">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/KAXpRTpojbk"
-              title="Masakhe SME Builder overview"
-              className="h-full w-full border-0"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ── */}
-      <section id="access" className="scroll-mt-20 bg-slate-950 py-20 md:py-24">
+      {/* ── Choose Your Plan / Free Core Access ── */}
+      <section id="pricing" className="scroll-mt-20 bg-slate-950 py-20 md:py-24">
         <div className="container mx-auto grid items-center gap-12 px-6 lg:grid-cols-[1fr_1.1fr]">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-emerald-300">
-              <Shield className="h-3.5 w-3.5" /> Full platform access
+              <Shield className="h-3.5 w-3.5" /> Platform Access
             </span>
-            <h2 className="text-3xl font-bold leading-tight text-white md:text-4xl">Simple, transparent access.</h2>
+            <h2 className="text-3xl font-bold leading-tight text-white md:text-4xl">Simple, Free Platform Access</h2>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-300">
               Use Masakhe’s core business tools without a subscription, trial period, or platform payment.
             </p>
             <Link to="/register" className="mt-7 inline-block">
               <Button className="h-12 bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700">
-                Create your free account <ArrowRight className="ml-2 h-4 w-4" />
+                Register Free <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </motion.div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {[
-              { title: "No subscription", description: "Core platform features are available without a monthly platform fee." },
-              { title: "No trial countdown", description: "Get started without a trial that expires or a credit card requirement." },
-              { title: "Tools in one place", description: "Bring business admin, customer follow-up, and marketing together." },
+              { title: "No Monthly Platform Fee", description: "Core Masakhe platform features are available without a subscription." },
+              { title: "No Trial Period", description: "Get started without a trial countdown or platform payment." },
+              { title: "All-in-One Tools", description: "Bring your business operations, customer follow-up, and marketing together." },
+              { title: "Customer Payments Stay Yours", description: "Payments your business collects from its own customers remain separate." },
             ].map((item, i) => (
               <motion.div
                 key={item.title}
@@ -595,6 +642,33 @@ export default function LandingPage() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.description}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── See It In Action ── */}
+      <section id="video" className="scroll-mt-20 bg-slate-50 py-20 md:py-24">
+        <div className="container mx-auto grid items-center gap-10 px-6 lg:grid-cols-2">
+          <div>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">See It In Action</p>
+            <h2 className="text-3xl font-bold leading-tight text-slate-900 md:text-4xl">Watch the Masakhe SME BUILDER in Action</h2>
+            <p className="mt-4 max-w-xl leading-relaxed text-slate-600">
+              See how the platform works and how it can support the way you run your business.
+            </p>
+            <Link to="/register" className="mt-6 inline-flex items-center gap-2 font-semibold text-blue-700 hover:text-blue-900">
+              Register Free <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-xl">
+            <iframe
+              src="https://www.youtube.com/embed/3nwe_4LF8_k"
+              title="Watch the Masakhe SME BUILDER in Action"
+              className="h-full w-full border-0"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
           </div>
         </div>
       </section>
@@ -623,37 +697,38 @@ export default function LandingPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl mx-auto"
           >
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-blue-300">Get Started Today</p>
             <h2 className="text-5xl md:text-6xl font-black font-heading text-white leading-tight mb-6">
-              Ready to grow your{" "}
+              Start Your Business{" "}
               <span className="relative inline-block">
                 <span className="bg-gradient-to-r from-blue-400 via-green-400 to-amber-400 bg-clip-text text-transparent">
-                  business
+                  with Masakhe
                 </span>
                 <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 via-green-400 to-amber-400 rounded-full opacity-60" />
               </span>
-              {" "}with Masakhe?
+              {" "}Today
             </h2>
 
             <p className="text-lg text-slate-400 mb-10 leading-relaxed max-w-xl mx-auto">
-              Sign up in minutes. Website, payroll, invoicing, and client management — all in one place.
+              Register now and access the Masakhe SME BUILDER platform without a subscription or trial.
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Link to="/register">
                 <Button className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-base h-14 px-10 rounded-xl shadow-2xl shadow-blue-600/40 hover:shadow-blue-500/50 transition-all duration-300 group">
-                  Create Your Free Account
+                  Register Free
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Button>
               </Link>
-              <Link to="/login">
+              <a href="#contact">
                 <Button className="border-2 border-white/20 text-white bg-white/5 backdrop-blur-sm hover:bg-white/15 hover:border-white/40 font-semibold text-base h-14 px-8 rounded-xl transition-all duration-300">
-                  Sign In
+                  Reach Out for Info
                 </Button>
-              </Link>
+              </a>
             </div>
 
             <div className="flex flex-wrap gap-6 justify-center text-sm text-slate-500">
-              {["All features included", "No subscription required", "Free to use"].map((item) => (
+              {["No platform subscription", "No trial period", "Core tools in one place"].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-500" /> {item}
                 </span>
@@ -664,7 +739,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Contact Form ── */}
-      <section id="contact" className="scroll-mt-20 bg-slate-50 py-20 md:py-24">
+      <section id="legacy-contact-form" className="hidden">
         <div className="container mx-auto px-6 max-w-5xl">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
             <motion.p custom={0} variants={fadeUp} className="text-blue-600 text-sm font-semibold uppercase tracking-widest mb-3">Get In Touch</motion.p>
@@ -782,7 +857,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── B-BEE Banner ── */}
-      <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-700 py-5">
+      <div className="hidden">
         <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 flex-shrink-0">
@@ -801,7 +876,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── Footer ── */}
-      <footer className="bg-slate-950 py-16">
+      <footer id="contact" className="scroll-mt-20 bg-slate-950 py-16">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-10 pb-12 border-b border-white/8">
             <div className="md:col-span-1">
@@ -810,7 +885,7 @@ export default function LandingPage() {
                 <span className="text-lg font-bold font-heading text-white">Masakhe</span>
               </Link>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-                "Let us build" — Empowering South African SMMEs through digital transformation.
+                A cloud-based platform helping South African small businesses run their operations — websites, invoicing, payroll, accounting, clients, and more.
               </p>
               <div className="flex gap-2 mt-5">
                 <div className="h-1.5 flex-1 rounded bg-green-500" />
@@ -820,21 +895,16 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: "Platform", links: [{ label: "All platform tools", href: "#platform" }, { label: "Website Builder", href: "#features" }, { label: "Invoicing & Finance", href: "#finance" }, { label: "Benefits", href: "#benefits" }, { label: "Free access", href: "#access" }] },
-              { title: "Account", links: [{ label: "Sign Up", href: "/register" }, { label: "Sign In", href: "/login" }, { label: "Support", href: "#" }] },
-              { title: "Legal", links: [{ label: "Privacy Policy (POPIA)", href: "/privacy" }, { label: "Terms of Service", href: "/terms" }, { label: "Contact Us", href: "#contact" }] },
+              { title: "Quick Links", links: [{ label: "Home", href: "#home" }, { label: "About", href: "#about" }, { label: "Features", href: "#services" }, { label: "Benefits", href: "#benefits" }, { label: "Free Access", href: "#pricing" }, { label: "View Video", href: "#video" }, { label: "Register Free", href: "/register" }] },
+              { title: "Services", links: modules.map((mod) => ({ label: mod.title, href: "#services" })) },
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="text-xs font-bold text-white mb-4 uppercase tracking-widest">{col.title}</h4>
                 <ul className="space-y-3">
                   {col.links.map((link) => (
                     <li key={link.label}>
-                      {link.href.startsWith("/") || link.href.startsWith("#") ? (
-                        link.href.startsWith("/") ? (
-                          <Link to={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</Link>
-                        ) : (
-                          <a href={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</a>
-                        )
+                      {link.href.startsWith("/") ? (
+                        <Link to={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</Link>
                       ) : (
                         <a href={link.href} className="text-sm text-slate-400 hover:text-white transition-colors">{link.label}</a>
                       )}
@@ -843,6 +913,14 @@ export default function LandingPage() {
                 </ul>
               </div>
             ))}
+            <div>
+              <h4 className="text-xs font-bold text-white mb-4 uppercase tracking-widest">Contact Us</h4>
+              <ul className="space-y-4 text-sm text-slate-400">
+                <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>260 Uys Krige Drive, Loevenstein, South Africa</span></li>
+                <li className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0" /><a href="tel:+27810383955" className="hover:text-white">+27 (0)81 038 3955</a></li>
+                <li className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0" /><a href="mailto:hello@masakhegroup.co.za" className="hover:text-white">hello@masakhegroup.co.za</a></li>
+              </ul>
+            </div>
           </div>
           <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
@@ -853,6 +931,56 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── Ask Masi support chat ── */}
+      {chatOpen ? (
+        <div className="fixed bottom-24 right-5 z-[60] flex h-[min(32rem,calc(100vh-8rem))] w-[min(22rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between bg-blue-950 px-4 py-3 text-white">
+            <div>
+              <p className="font-semibold">Masi — Support</p>
+              <p className="text-xs text-blue-200">Masakhe SME BUILDER</p>
+            </div>
+            <button onClick={() => setChatOpen(false)} aria-label="Close support chat" className="rounded-md p-1 hover:bg-white/10">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+            {chatMessages.map((message, index) => (
+              <div key={`${message.role}-${index}`} className={`max-w-[90%] rounded-xl px-3 py-2 text-sm leading-relaxed ${message.role === "user" ? "ml-auto bg-blue-600 text-white" : "bg-white text-slate-700 shadow-sm"}`}>
+                {message.text}
+              </div>
+            ))}
+            {chatMessages.length === 1 && (
+              <div className="flex flex-wrap gap-2">
+                {["What features are included?", "How much does it cost?", "How do I get started?"].map((prompt) => (
+                  <button key={prompt} onClick={() => sendChatMessage(prompt)} className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs text-blue-700 hover:bg-blue-50">
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <form onSubmit={(event) => { event.preventDefault(); sendChatMessage(); }} className="flex gap-2 border-t border-slate-200 p-3">
+            <input
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              placeholder="Ask about the platform..."
+              aria-label="Ask Masi a question"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
+            <button type="submit" aria-label="Send message" className="rounded-lg bg-blue-600 px-3 text-white hover:bg-blue-700">
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+      ) : null}
+      <button
+        onClick={() => setChatOpen((open) => !open)}
+        aria-label={chatOpen ? "Close support chat" : "Open support chat"}
+        className="fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-blue-700 text-white shadow-xl transition hover:scale-105 hover:bg-blue-800"
+      >
+        {chatOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+      </button>
     </div>
   );
 }
