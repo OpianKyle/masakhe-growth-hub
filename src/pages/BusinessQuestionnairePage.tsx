@@ -11,6 +11,7 @@ interface QuestionnaireQuestion {
   options: string[];
   select?: boolean;
   selectPlaceholder?: string;
+  singleChoice?: boolean;
 }
 
 const QUESTIONS: QuestionnaireQuestion[] = [
@@ -18,13 +19,14 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     key: "stage",
     category: "Your business journey",
     title: "Where are you in your business journey?",
-    help: "Select all stages that describe your business journey.",
+    help: "Choose the stage that best describes your business.",
     options: [
       "I’m planning my business",
       "I’m getting ready to launch",
       "I’m trading and getting organised",
       "I’m growing an established business",
     ],
+    singleChoice: true,
   },
   {
     key: "industry",
@@ -40,7 +42,8 @@ const QUESTIONS: QuestionnaireQuestion[] = [
       "Creative, media & entertainment",
       "Manufacturing & agriculture",
       "Technology & digital services",
-      "Other / still deciding",
+      "Other",
+      "I’m still deciding",
     ],
     select: true,
     selectPlaceholder: "Select your business type",
@@ -49,8 +52,9 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     key: "team",
     category: "Your people",
     title: "How many people work in your business?",
-    help: "Include yourself. Select every team size that applies to your business.",
+    help: "Choose the team size that best fits your business, including yourself.",
     options: ["Just me", "2–5 people", "6–20 people", "21+ people"],
+    singleChoice: true,
   },
   {
     key: "turnover",
@@ -63,7 +67,6 @@ const QUESTIONS: QuestionnaireQuestion[] = [
       "R1,000,001–R5,000,000",
       "R5,000,001–R10,000,000",
       "More than R10,000,000",
-      "Prefer not to say",
     ],
     select: true,
     selectPlaceholder: "Select annual turnover",
@@ -174,6 +177,11 @@ export default function BusinessQuestionnairePage() {
       ? [currentAnswer]
       : [];
   const progress = ((step + 1) / QUESTIONS.length) * 100;
+  const needsIndustryDetails = question.key === "industry" && currentAnswer === "Other";
+  const hasIndustryDetails =
+    typeof answers.industryOther === "string" && answers.industryOther.trim().length > 0;
+  const canContinue =
+    currentSelections.length > 0 && (!needsIndustryDetails || hasIndustryDetails);
 
   const signupPath = useMemo(() => {
     const params = new URLSearchParams();
@@ -235,7 +243,7 @@ export default function BusinessQuestionnairePage() {
   }
 
   function continueQuestionnaire() {
-    if (currentSelections.length === 0) return;
+    if (!canContinue) return;
     if (step === QUESTIONS.length - 1) {
       setShowResult(true);
       return;
@@ -254,7 +262,7 @@ export default function BusinessQuestionnairePage() {
         <title>Business Questionnaire | Masakhe SME Builder</title>
         <meta
           name="description"
-          content="Answer six quick questions to find a useful starting point for your business with Masakhe SME Builder."
+          content="Answer seven quick questions to find a useful starting point for your business with Masakhe SME Builder."
         />
       </Helmet>
 
@@ -349,11 +357,15 @@ export default function BusinessQuestionnairePage() {
                 <p className="mt-3 text-sm leading-6 text-slate-500">{question.help}</p>
               </div>
 
-              <div className="mt-5 grid gap-2.5" role="group" aria-labelledby="question-title">
+              <div
+                className="mt-5 grid gap-2.5"
+                role={question.singleChoice ? "radiogroup" : "group"}
+                aria-labelledby="question-title"
+              >
                 {question.select ? (
                   <select
                     aria-label={question.title}
-                    data-testid="select-business-industry"
+                    data-testid={question.key === "industry" ? "select-business-industry" : "select-annual-turnover"}
                     value={typeof currentAnswer === "string" ? currentAnswer : ""}
                     onChange={(event) => chooseSingleAnswer(event.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-[#092b45] focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-100"
@@ -366,6 +378,7 @@ export default function BusinessQuestionnairePage() {
                 ) : (
                   question.options.map((option, optionIndex) => {
                     const selected = currentSelections.includes(option);
+                    const singleChoice = Boolean(question.singleChoice);
                     return (
                       <label
                         key={option}
@@ -377,16 +390,21 @@ export default function BusinessQuestionnairePage() {
                         }`}
                       >
                         <input
-                          type="checkbox"
+                          type={singleChoice ? "radio" : "checkbox"}
+                          name={singleChoice ? `answer-${question.key}` : undefined}
                           checked={selected}
-                          onChange={() => toggleAnswer(option)}
-                          data-testid={`checkbox-answer-${step}-${optionIndex}`}
+                          onChange={() => singleChoice ? chooseSingleAnswer(option) : toggleAnswer(option)}
+                          data-testid={`${singleChoice ? "radio" : "checkbox"}-answer-${step}-${optionIndex}`}
                           className="sr-only"
                         />
-                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center ${
+                          singleChoice ? "rounded-full border" : "rounded border"
+                        } ${
                           selected ? "border-emerald-700 bg-emerald-700" : "border-slate-300 bg-white"
                         }`}>
-                          {selected && <Check className="h-3.5 w-3.5 text-white" />}
+                          {singleChoice
+                            ? selected && <span className="h-2 w-2 rounded-full bg-white" />
+                            : selected && <Check className="h-3.5 w-3.5 text-white" />}
                         </span>
                         <span>{option}</span>
                       </label>
@@ -394,6 +412,30 @@ export default function BusinessQuestionnairePage() {
                   })
                 )}
               </div>
+              {needsIndustryDetails && (
+                <div className="mt-3">
+                  <label htmlFor="industry-other" className="mb-2 block text-sm font-medium text-[#092b45]">
+                    What kind of business or work do you do?
+                  </label>
+                  <input
+                    id="industry-other"
+                    type="text"
+                    value={typeof answers.industryOther === "string" ? answers.industryOther : ""}
+                    onChange={(event) =>
+                      setAnswers((previous) => ({ ...previous, industryOther: event.target.value }))
+                    }
+                    maxLength={120}
+                    required
+                    aria-required="true"
+                    data-testid="input-industry-other"
+                    placeholder="Tell us briefly"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm text-[#092b45] placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  />
+                  {!hasIndustryDetails && (
+                    <p className="mt-1.5 text-xs text-slate-500">Please add a short description to continue.</p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-auto flex items-center justify-between gap-4 pt-7">
                 <button
@@ -408,7 +450,7 @@ export default function BusinessQuestionnairePage() {
                 <button
                   type="button"
                   onClick={continueQuestionnaire}
-                  disabled={currentSelections.length === 0}
+                  disabled={!canContinue}
                   data-testid="button-question-continue"
                   className="inline-flex items-center gap-3 rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-45"
                 >
@@ -440,7 +482,10 @@ export default function BusinessQuestionnairePage() {
                 Based on your answers, here are a few tools that can support your business priorities.
               </p>
               <p data-testid="text-questionnaire-summary" className="mt-2 text-xs text-slate-500">
-                {answers.industry} · {currentAnswerText(answers.team)} · {currentAnswerText(answers.stage)}
+                {answers.industry === "Other" && hasIndustryDetails
+                  ? answers.industryOther
+                  : currentAnswerText(answers.industry)}
+                {" · "}{currentAnswerText(answers.team)} · {currentAnswerText(answers.stage)}
               </p>
               <p data-testid="text-questionnaire-turnover" className="mt-1 text-xs text-slate-500">
                 Annual turnover: {currentAnswerText(answers.turnover)}
