@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCircle2, Sparkles } from "lucide-react";
 
 interface QuestionnaireQuestion {
   key: string;
@@ -10,6 +10,7 @@ interface QuestionnaireQuestion {
   help: string;
   options: string[];
   select?: boolean;
+  selectPlaceholder?: string;
 }
 
 const QUESTIONS: QuestionnaireQuestion[] = [
@@ -17,7 +18,7 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     key: "stage",
     category: "Your business journey",
     title: "Where are you in your business journey?",
-    help: "Choose the stage that feels closest to where you are today.",
+    help: "Select all stages that describe your business journey.",
     options: [
       "I’m planning my business",
       "I’m getting ready to launch",
@@ -42,19 +43,36 @@ const QUESTIONS: QuestionnaireQuestion[] = [
       "Other / still deciding",
     ],
     select: true,
+    selectPlaceholder: "Select your business type",
   },
   {
     key: "team",
     category: "Your people",
     title: "How many people work in your business?",
-    help: "Include yourself. This helps shape your starting suggestions.",
+    help: "Include yourself. Select every team size that applies to your business.",
     options: ["Just me", "2–5 people", "6–20 people", "21+ people"],
+  },
+  {
+    key: "turnover",
+    category: "Your business finances",
+    title: "What is your business’s annual turnover?",
+    help: "Select the closest range for your business’s annual turnover.",
+    options: [
+      "R0–R500,000",
+      "R500,001–R1,000,000",
+      "R1,000,001–R5,000,000",
+      "R5,000,001–R10,000,000",
+      "More than R10,000,000",
+      "Prefer not to say",
+    ],
+    select: true,
+    selectPlaceholder: "Select annual turnover",
   },
   {
     key: "challenge",
     category: "Your everyday challenges",
     title: "What gets in the way most often?",
-    help: "Pick the one challenge you’d most like to work on first.",
+    help: "Select all the challenges you’d like help with.",
     options: [
       "My business needs more online visibility",
       "Admin feels scattered across different tools",
@@ -67,7 +85,7 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     key: "priority",
     category: "Your first priority",
     title: "Which tool would you like to start with?",
-    help: "You can explore the other tools after signup.",
+    help: "Select all the tools you’d like to explore first.",
     options: [
       "Website builder",
       "Social media tools",
@@ -81,7 +99,7 @@ const QUESTIONS: QuestionnaireQuestion[] = [
     key: "goal",
     category: "Your next chapter",
     title: "What would you like to focus on next?",
-    help: "Choose a practical goal for the next 30 days.",
+    help: "Select every practical goal you want to focus on in the next 30 days.",
     options: [
       "Launch my business online",
       "Create a more consistent marketing routine",
@@ -137,15 +155,24 @@ const GOAL_TO_TOOL = [
 
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
+function currentAnswerText(value: string | string[] | undefined) {
+  return (Array.isArray(value) ? value : value ? [value] : []).join(", ");
+}
+
 export default function BusinessQuestionnairePage() {
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [showResult, setShowResult] = useState(false);
   const questionHeading = useRef<HTMLHeadingElement>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const question = QUESTIONS[step];
-  const currentAnswer = answers[question.key] || "";
+  const currentAnswer = answers[question.key];
+  const currentSelections = Array.isArray(currentAnswer)
+    ? currentAnswer
+    : currentAnswer
+      ? [currentAnswer]
+      : [];
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   const signupPath = useMemo(() => {
@@ -159,17 +186,26 @@ export default function BusinessQuestionnairePage() {
   }, [searchParams]);
 
   const recommendations = useMemo(() => {
-    const priority = answers.priority;
-    const goalIndex = QUESTIONS[5].options.indexOf(answers.goal || "");
-    const challengeIndex = QUESTIONS[3].options.indexOf(answers.challenge || "");
+    const selectedValues = (key: string) => {
+      const value = answers[key];
+      return Array.isArray(value) ? value : value ? [value] : [];
+    };
+    const goalQuestion = QUESTIONS.find((item) => item.key === "goal")!;
+    const challengeQuestion = QUESTIONS.find((item) => item.key === "challenge")!;
+    const goalRecommendations = selectedValues("goal")
+      .map((goal) => GOAL_TO_TOOL[goalQuestion.options.indexOf(goal)])
+      .filter(Boolean);
+    const challengeRecommendations = selectedValues("challenge")
+      .map((challenge) => CHALLENGE_TO_TOOL[challengeQuestion.options.indexOf(challenge)])
+      .filter(Boolean);
     const fallback =
-      answers.team === "Just me"
+      selectedValues("team").includes("Just me")
         ? ["Client management", "Quotes & invoices", "Website builder"]
         : ["Payroll, leave & HR", "Client management", "Quotes & invoices"];
     const keys = [
-      priority,
-      GOAL_TO_TOOL[goalIndex],
-      CHALLENGE_TO_TOOL[challengeIndex],
+      ...selectedValues("priority"),
+      ...goalRecommendations,
+      ...challengeRecommendations,
       ...fallback,
     ];
     return [...new Set(keys)]
@@ -183,12 +219,23 @@ export default function BusinessQuestionnairePage() {
     else questionHeading.current?.focus();
   }, [step, showResult]);
 
-  function chooseAnswer(value: string) {
+  function chooseSingleAnswer(value: string) {
     setAnswers((previous) => ({ ...previous, [question.key]: value }));
   }
 
+  function toggleAnswer(value: string) {
+    setAnswers((previous) => {
+      const current = previous[question.key];
+      const selected = Array.isArray(current) ? current : [];
+      const next = selected.includes(value)
+        ? selected.filter((answer) => answer !== value)
+        : [...selected, value];
+      return { ...previous, [question.key]: next };
+    });
+  }
+
   function continueQuestionnaire() {
-    if (!currentAnswer) return;
+    if (currentSelections.length === 0) return;
     if (step === QUESTIONS.length - 1) {
       setShowResult(true);
       return;
@@ -307,38 +354,42 @@ export default function BusinessQuestionnairePage() {
                   <select
                     aria-label={question.title}
                     data-testid="select-business-industry"
-                    value={currentAnswer}
-                    onChange={(event) => chooseAnswer(event.target.value)}
+                    value={typeof currentAnswer === "string" ? currentAnswer : ""}
+                    onChange={(event) => chooseSingleAnswer(event.target.value)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-[#092b45] focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                   >
-                    <option value="" disabled>Select your business type</option>
+                    <option value="" disabled>{question.selectPlaceholder || "Select an option"}</option>
                     {question.options.map((option) => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 ) : (
-                  question.options.map((option) => {
-                    const selected = currentAnswer === option;
+                  question.options.map((option, optionIndex) => {
+                    const selected = currentSelections.includes(option);
                     return (
-                      <button
+                      <label
                         key={option}
-                        type="button"
-                        aria-pressed={selected}
-                        data-testid={`button-answer-${step}-${question.options.indexOf(option)}`}
-                        onClick={() => chooseAnswer(option)}
-                        className={`flex min-h-14 items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors ${
+                        data-testid={`option-answer-${step}-${optionIndex}`}
+                        className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors focus-within:ring-2 focus-within:ring-emerald-600 focus-within:ring-offset-2 ${
                           selected
                             ? "border-emerald-600 bg-emerald-50 text-[#092b45] ring-1 ring-emerald-600"
                             : "border-slate-200 bg-white text-[#092b45] hover:border-emerald-500 hover:bg-emerald-50/40"
                         }`}
                       >
-                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          selected ? "border-emerald-700 bg-emerald-700" : "border-slate-300"
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleAnswer(option)}
+                          data-testid={`checkbox-answer-${step}-${optionIndex}`}
+                          className="sr-only"
+                        />
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                          selected ? "border-emerald-700 bg-emerald-700" : "border-slate-300 bg-white"
                         }`}>
-                          {selected && <span className="h-2 w-2 rounded-full bg-white" />}
+                          {selected && <Check className="h-3.5 w-3.5 text-white" />}
                         </span>
                         <span>{option}</span>
-                      </button>
+                      </label>
                     );
                   })
                 )}
@@ -357,7 +408,7 @@ export default function BusinessQuestionnairePage() {
                 <button
                   type="button"
                   onClick={continueQuestionnaire}
-                  disabled={!currentAnswer}
+                  disabled={currentSelections.length === 0}
                   data-testid="button-question-continue"
                   className="inline-flex items-center gap-3 rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-45"
                 >
@@ -386,10 +437,13 @@ export default function BusinessQuestionnairePage() {
                 </h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                Start with {answers.priority?.toLowerCase()}, then explore the tools that support your next goal.
+                Based on your answers, here are a few tools that can support your business priorities.
               </p>
               <p data-testid="text-questionnaire-summary" className="mt-2 text-xs text-slate-500">
-                {answers.industry} · {answers.team} · {answers.stage}
+                {answers.industry} · {currentAnswerText(answers.team)} · {currentAnswerText(answers.stage)}
+              </p>
+              <p data-testid="text-questionnaire-turnover" className="mt-1 text-xs text-slate-500">
+                Annual turnover: {currentAnswerText(answers.turnover)}
               </p>
 
               <div className="my-5 grid gap-3">
