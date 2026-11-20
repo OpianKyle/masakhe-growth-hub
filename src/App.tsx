@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute, FranchiseRoute, MunicipalityRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
+import BusinessQuestionnairePage from "./pages/BusinessQuestionnairePage";
 import RegisterPage from "./pages/RegisterPage";
 import ResellerRegisterPage from "./pages/ResellerRegisterPage";
 import LoginPage from "./pages/LoginPage";
@@ -90,6 +91,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/landing" element={<LandingPage />} />
+              <Route path="/business-questionnaire" element={<BusinessQuestionnairePage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/partner/register" element={<ResellerRegisterPage />} />
               <Route path="/mtn" element={<MTNPortalPage />} />

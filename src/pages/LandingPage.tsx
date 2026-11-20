@@ -142,6 +142,13 @@ export default function LandingPage() {
                 {item.label}
               </a>
             ))}
+            <Link
+              to="/business-questionnaire"
+              data-testid="link-business-questionnaire-nav"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            >
+              Business questionnaire
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login"><Button variant="ghost" size="sm" className="text-slate-600">Sign In</Button></Link>
@@ -186,6 +193,13 @@ export default function LandingPage() {
               <a href="#video" className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/20 px-6 font-semibold text-white transition hover:bg-white/10">
                 <Play className="h-4 w-4" /> View Video
               </a>
+              <Link
+                to="/business-questionnaire"
+                data-testid="link-business-questionnaire-hero"
+                className="inline-flex h-12 items-center gap-2 rounded-lg border border-emerald-300/50 px-6 font-semibold text-emerald-100 transition hover:bg-emerald-300/10"
+              >
+                Find your starting point <ArrowRight className="h-4 w-4" />
+              </Link>
             </motion.div>
           </motion.div>
         </div>
@@ -895,7 +909,7 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: "Quick Links", links: [{ label: "Home", href: "#home" }, { label: "About", href: "#about" }, { label: "Features", href: "#services" }, { label: "Benefits", href: "#benefits" }, { label: "Free Access", href: "#pricing" }, { label: "View Video", href: "#video" }, { label: "Register Free", href: "/register" }] },
+              { title: "Quick Links", links: [{ label: "Home", href: "#home" }, { label: "About", href: "#about" }, { label: "Features", href: "#services" }, { label: "Benefits", href: "#benefits" }, { label: "Free Access", href: "#pricing" }, { label: "Business questionnaire", href: "/business-questionnaire" }, { label: "View Video", href: "#video" }, { label: "Register Free", href: "/register" }] },
               { title: "Services", links: modules.map((mod) => ({ label: mod.title, href: "#services" })) },
             ].map((col) => (
               <div key={col.title}>
